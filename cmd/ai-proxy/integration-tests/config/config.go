@@ -36,6 +36,7 @@ type Config struct {
 	AudioModels      []string
 	ImageModels      []string
 	ResponsesModels  []string
+	ThinkingModels   []string
 }
 
 var globalConfig *Config
@@ -125,6 +126,8 @@ func setConfigValue(config *Config, key, value string) {
 		config.ImageModels = parseModelList(value)
 	case "RESPONSES_MODELS":
 		config.ResponsesModels = parseModelList(value)
+	case "THINKING_MODELS":
+		config.ThinkingModels = parseModelList(value)
 	}
 }
 

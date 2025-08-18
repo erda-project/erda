@@ -1,0 +1,14 @@
+{
+  "thinking": {
+    "type": "enabled"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    }
+  ],
+  "max_tokens": 2000,
+  "temperature": 0.3,
+  "stream": false
+}

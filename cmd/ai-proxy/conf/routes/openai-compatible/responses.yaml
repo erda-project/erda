@@ -12,6 +12,7 @@ routes:
       - name: audit
         config: { stage: in-context-parsed }
       - name: reserved-header
+      - name: thinking-handler
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
       - name: audit

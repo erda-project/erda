@@ -26,8 +26,19 @@ func (t *UnifiedThinking) ToAnthropicThinking(maxTokens int) *AnthropicThinking 
 		return nil
 	}
 	// check budget_tokens
-	if t.Thinking.BudgetTokens <= 0 {
-		t.Thinking.BudgetTokens = maxTokens / 2
+	if t.Thinking.Type == "enabled" {
+		suitableBudget := t.Thinking.BudgetTokens
+		halfMaxTokens := maxTokens / 2
+		if suitableBudget == 0 || suitableBudget >= maxTokens {
+			suitableBudget = halfMaxTokens
+		}
+		if suitableBudget < 1024 {
+			suitableBudget = 1024 // minimum budget, see: https://docs.anthropic.com/en/api/messages#body-thinking-budget-tokens
+		}
+		if suitableBudget >= maxTokens {
+			panic("max_tokens should be greater than 1024 when you enable thinking")
+		}
+		t.Thinking.BudgetTokens = suitableBudget
 	}
 	return &AnthropicThinking{Thinking: t.Thinking}
 }

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"reflect"
+	"runtime/debug"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -147,6 +148,10 @@ var myRewrite = func(w http.ResponseWriter, filters []FilterWithName) func(*http
 	return func(pr *httputil.ProxyRequest) {
 		var brokenInErr error
 		defer func() {
+			if r := recover(); r != nil {
+				debug.PrintStack()
+				brokenInErr = fmt.Errorf("panic: %v", r)
+			}
 			if brokenInErr == nil {
 				return
 			}
@@ -211,6 +216,7 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 
 		defer func() {
 			if r := recover(); r != nil {
+				debug.PrintStack()
 				// ① Close pipe -> client immediately receives 502
 				pw.CloseWithError(fmt.Errorf("panic: %v", r))
 				// ② Let ReverseProxy go to ErrorHandler instead of continuing normal flow
