@@ -28,7 +28,12 @@ help:
 	@echo "  test-responses-stream  - Run responses stream tests"
 	@echo "  test-openai-v1-models  - Run OpenAI v1/models tests"
 	@echo "  test-rich-client       - Run rich client API tests"
+	@echo "  test-thinking-curl     - Run thinking-handler curl-based tests"
 	@echo "  test-chat              - Alias for test-chat-completions"
+	@echo ""
+	@echo "Specialized tests:"
+	@echo "  test-stress            - Run stress tests with multiple concurrent executions"
+	@echo "  test-coverage          - Run tests with coverage report generation"
 	@echo ""
 	@echo "Utility targets:"
 	@echo "  help                   - Show this help message"
@@ -45,11 +50,11 @@ setup:
 	fi
 
 ## Run all tests
-test: test-chat-completions test-audio test-images test-embeddings test-responses test-openai-v1-models test-rich-client
+test: test-chat-completions test-audio test-images test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
 	@echo "✓ All tests completed!"
 
 ## Run all tests except image generation (faster execution)
-test-except-images: test-chat-completions test-audio test-embeddings test-responses test-openai-v1-models test-rich-client
+test-except-images: test-chat-completions test-audio test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
 	@echo "✓ All tests completed (excluding image generation)!"
 
 
@@ -113,6 +118,14 @@ test-rich-client: setup mod-init
 	@echo "Running Rich Client API tests..."
 	go test -v -count=1 -timeout 300s -failfast -run "^TestRichClientAPI" ./...
 	@echo "✓ All Rich Client API tests completed!"
+
+## Run thinking-handler curl-based tests
+test-thinking-curl: setup mod-init
+	@echo "Running Thinking Handler Curl tests..."
+	@echo "Testing Bytedance thinking format to multi-vendor conversion..."
+	go test -v -count=1 -timeout 300s -failfast -run "^TestThinkingHandlerCurl" ./...
+	@echo "✓ All Thinking Handler Curl tests completed!"
+
 
 ## ===== Utility test targets =====
 
