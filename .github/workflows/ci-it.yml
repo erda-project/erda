@@ -137,7 +137,7 @@ jobs:
         with:
           version: v2.4.0
           # Use both GitHub annotations and plain log output with filenames
-          args: --out-format=tab,github-actions --timeout=30m
+          args: --output.tab.path --output.tab.print-linter-name --output.tab.colors --output.github-actions.path --timeout=30m
           #skip-go-installation: true # not available in v1.49.0
           #skip-cache: true # not available in v1.49.0
           skip-pkg-cache: true
