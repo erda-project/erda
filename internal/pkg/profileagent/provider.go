@@ -17,7 +17,7 @@ package profileagent
 import (
 	"os"
 
-	"github.com/grafana/pyroscope-go"
+	pyroscope "github.com/grafana/pyroscope-go"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

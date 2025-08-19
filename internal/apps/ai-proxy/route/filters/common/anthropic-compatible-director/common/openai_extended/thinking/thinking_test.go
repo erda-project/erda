@@ -60,7 +60,7 @@ func TestThinking_ToAnthropicThinking(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.fields.UnifiedThinking.ToAnthropicThinking(); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.fields.UnifiedThinking.ToAnthropicThinking(0); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Thinking.ToAnthropicThinking() = %v, want %v", got, tt.want)
 			}
 		})
