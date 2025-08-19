@@ -107,7 +107,7 @@ jobs:
     needs: CHECK-CHANGED-FILES
     if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-dbmigration == 'true' }}
     container:
-      image: registry.erda.cloud/erda/gohub:1.0.9
+      image: registry.erda.cloud/erda/gohub:1.0.10
     steps:
       - name: Clone repo
         uses: actions/checkout@v3

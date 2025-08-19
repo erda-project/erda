@@ -177,7 +177,7 @@ func TestJSONBodyTransformer(t *testing.T) {
 
 			// Verify changes were stored in context
 			if len(tt.expectedChanges) > 0 {
-				transformResult, ok := ctxhelper.GetBodyTransformChanges(ctx)
+				transformResult, ok := ctxhelper.GetRequestBodyTransformChanges(ctx)
 				assert.True(t, ok)
 				assert.NotNil(t, transformResult)
 

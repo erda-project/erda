@@ -35,7 +35,7 @@ TARGET_ARCH="${ARCH}"
 VERSION="$(build/scripts/make-version.sh)"
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20240607"
+BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20250812"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
 # setup single module environment variables
