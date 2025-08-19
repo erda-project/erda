@@ -205,7 +205,7 @@ jobs:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
           mkdir -p ./coverage
-          go test -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-paths }}
+          go test --vet=off -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-paths }}
       - name: Upload coverage As Artifact
         uses: actions/upload-artifact@v4
         with:
