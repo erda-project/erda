@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -143,55 +142,39 @@ func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
 		return nil
 	}
 
-	var updateReq pb.AuditUpdateRequestAfterBasicContextParsed
-	updateReq.AuditId = auditRecID
-
-	// client id
-	client, _ := ctxhelper.GetClient(pr.Out.Context())
-	updateReq.ClientId = client.Id
-	// model id
-	model, _ := ctxhelper.GetModel(pr.Out.Context())
-	updateReq.ModelId = model.Id
-	// session id
-	session, _ := ctxhelper.GetSession(pr.Out.Context())
-	if session != nil {
-		updateReq.SessionId = session.Id
+	if sink, ok := ctxhelper.GetAuditSink(pr.Out.Context()); ok {
+		if client, _ := ctxhelper.GetClient(pr.Out.Context()); client != nil {
+			sink.Note("client_id", client.Id)
+		}
+		if model, ok := ctxhelper.GetModel(pr.Out.Context()); ok {
+			sink.Note("model_id", model.Id)
+		}
+		if session, _ := ctxhelper.GetSession(pr.Out.Context()); session != nil {
+			sink.Note("session_id", session.Id)
+		}
+		sink.Note("source", vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource))
+		sink.Note("operation_id", pr.Out.Method+" "+pr.Out.URL.Path)
+		userInfo := getUserInfoFromClientToken(pr)
+		for k, v := range userInfo {
+			sink.Note(k, v)
+		}
 	}
 
-	// biz source
-	updateReq.BizSource = vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource)
-	// operation id
-	updateReq.OperationId = pr.Out.Method + " " + pr.Out.URL.Path
-
-	// set from client token
-	setUserInfoFromClientToken(pr, &updateReq)
-
-	// update audit into db
-	_, err := ctxhelper.MustGetDBClient(pr.Out.Context()).AuditClient().UpdateAfterBasicContextParsed(pr.Out.Context(), &updateReq)
-	if err != nil {
-		// log it
-		l := ctxhelper.MustGetLogger(pr.Out.Context())
-		l.Errorf("failed to update audit: %v", err)
-	}
 	return nil
 }
 
-func setUserInfoFromClientToken(pr *httputil.ProxyRequest, updateReq *pb.AuditUpdateRequestAfterBasicContextParsed) {
+func getUserInfoFromClientToken(pr *httputil.ProxyRequest) map[string]any {
 	clientToken, ok := ctxhelper.GetClientToken(pr.Out.Context())
 	if !ok || clientToken == nil {
-		return
+		return nil
 	}
 	meta := metadata.FromProtobuf(clientToken.Metadata)
 	metaCfg := metadata.Config{IgnoreCase: true}
-	updateReq.DingtalkStaffId = meta.MustGetValueByKey(vars.XAIProxyDingTalkStaffID, metaCfg)
-	updateReq.Email = meta.MustGetValueByKey(vars.XAIProxyEmail, metaCfg)
-	updateReq.IdentityJobNumber = meta.MustGetValueByKey(vars.XAIProxyJobNumber, metaCfg)
-	updateReq.Username = meta.MustGetValueByKey(vars.XAIProxyName, metaCfg)
-	updateReq.IdentityPhoneNumber = meta.MustGetValueByKey(vars.XAIProxyPhone, metaCfg)
-	if vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource) == "" { // use token's client's name
-		client, ok := ctxhelper.GetClient(pr.Out.Context())
-		if ok {
-			updateReq.BizSource = client.Name
-		}
-	}
+	result := map[string]any{}
+	result["dingtalk_staff_id"] = meta.MustGetValueByKey(vars.XAIProxyDingTalkStaffID, metaCfg)
+	result["email"] = meta.MustGetValueByKey(vars.XAIProxyEmail, metaCfg)
+	result["identity_job_number"] = meta.MustGetValueByKey(vars.XAIProxyJobNumber, metaCfg)
+	result["username"] = meta.MustGetValueByKey(vars.XAIProxyName, metaCfg)
+	result["identity_phone_number"] = meta.MustGetValueByKey(vars.XAIProxyPhone, metaCfg)
+	return result
 }

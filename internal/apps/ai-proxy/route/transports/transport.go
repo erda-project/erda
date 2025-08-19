@@ -74,7 +74,7 @@ func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		t.Inner = BaseTransport
 	}
 	res, err := t.Inner.RoundTrip(req)
-	ctxhelper.MustGetLogger(req.Context()).Sub(reflect.TypeOf(t).String()).
+	ctxhelper.MustGetLoggerBase(req.Context()).Sub(reflect.TypeOf(t).String()).
 		Infof("RoundTrip costs: %s", time.Now().Sub(start).String())
 	return res, err
 }
@@ -87,7 +87,7 @@ func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, err
 	if t.Inner == nil {
 		t.Inner = BaseTransport
 	}
-	logger := ctxhelper.MustGetLogger(req.Context())
+	logger := ctxhelper.MustGetLoggerBase(req.Context())
 	logger.Sub(reflect.TypeOf(t).String()).
 		Infof("generated cURL command:\n\t" + GenCurl(req))
 	return t.Inner.RoundTrip(req)
@@ -137,14 +137,14 @@ func GenCurl(req *http.Request) string {
 	}
 	bodyCopy, err := body_util.SmartCloneBody(&req.Body, body_util.MaxSample)
 	if err != nil {
-		ctxhelper.MustGetLogger(req.Context()).Errorf("failed to clone request body, err: %v", err)
+		ctxhelper.MustGetLoggerBase(req.Context()).Errorf("failed to clone request body, err: %v", err)
 		return "no curl generated"
 	}
 	defer bodyCopy.Close()
 	if bodyCopy.Size() > 0 {
 		bodyBytes, err := io.ReadAll(bodyCopy)
 		if err != nil {
-			ctxhelper.MustGetLogger(req.Context()).Errorf("failed to read cloned request body, err: %v", err)
+			ctxhelper.MustGetLoggerBase(req.Context()).Errorf("failed to read cloned request body, err: %v", err)
 			return "no curl generated"
 		}
 		// handle multipart form format

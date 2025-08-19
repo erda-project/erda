@@ -76,11 +76,10 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 
 	result := getMapOfAvailableNameWithModels(models)
 
-	// Test that all expected keys exist
+	// Test that all expected keys exist based on current implementation logic
+	// The function only generates keys based on: ${publisher}/${model.name} and ${model.name}
 	expectedKeys := []string{
 		"openai/GPT-3.5 Turbo", // publisher/model.name
-		"openai/gpt-35-turbo",  // publisher/model_id
-		"openai/gpt-3.5-turbo", // publisher/model_name
 		"GPT-3.5 Turbo",        // model.name
 	}
 

@@ -52,13 +52,11 @@ func TestGetOrSetRequestID(t *testing.T) {
 				req.Header.Set(vars.XRequestId, tt.existingRequestID)
 			}
 
-			result := GetOrSetRequestID(req)
+			result := GetOrGenRequestID(req)
 
 			if tt.expectNewUUID {
 				// Should generate a new UUID
 				assert.True(t, uuidRegex.MatchString(result), "Result should be a valid UUID")
-				// Should set the header
-				assert.Equal(t, result, req.Header.Get(vars.XRequestId))
 			} else {
 				// Should return the existing value
 				assert.Equal(t, tt.existingRequestID, result)
@@ -147,7 +145,7 @@ func TestGetOrSetID(t *testing.T) {
 			name:            "with header key and no existing value",
 			headerKey:       "X-Test-Id",
 			existingValue:   "",
-			expectSetHeader: true,
+			expectSetHeader: false,
 			expectNewUUID:   true,
 		},
 	}
@@ -159,7 +157,7 @@ func TestGetOrSetID(t *testing.T) {
 				req.Header.Set(tt.headerKey, tt.existingValue)
 			}
 
-			result := getOrSetID(req, tt.headerKey)
+			result := getOrGenID(req, tt.headerKey)
 
 			if tt.expectNewUUID {
 				assert.True(t, uuidRegex.MatchString(result), "Result should be a valid UUID")
@@ -167,9 +165,7 @@ func TestGetOrSetID(t *testing.T) {
 				assert.Equal(t, tt.existingValue, result)
 			}
 
-			if tt.expectSetHeader {
-				assert.Equal(t, result, req.Header.Get(tt.headerKey), "Header should be set with the result")
-			} else if tt.headerKey != "" && tt.existingValue != "" {
+			if tt.headerKey != "" && tt.existingValue != "" {
 				assert.Equal(t, tt.existingValue, req.Header.Get(tt.headerKey), "Header should remain unchanged")
 			}
 		})
@@ -180,23 +176,24 @@ func TestGetOrSetRequestID_Integration(t *testing.T) {
 	// Test the integration with actual vars.XRequestId
 	req := httptest.NewRequest("GET", "/test", nil)
 
-	// First call should generate and set UUID
-	result1 := GetOrSetRequestID(req)
+	// First call should generate UUID but not set header
+	result1 := GetOrGenRequestID(req)
 	assert.True(t, uuidRegex.MatchString(result1))
-	assert.Equal(t, result1, req.Header.Get(vars.XRequestId))
+	assert.Equal(t, "", req.Header.Get(vars.XRequestId))
 
-	// Second call should return the same UUID
-	result2 := GetOrSetRequestID(req)
-	assert.Equal(t, result1, result2)
-	assert.Equal(t, result1, req.Header.Get(vars.XRequestId))
+	// Second call should generate a different UUID
+	result2 := GetOrGenRequestID(req)
+	assert.True(t, uuidRegex.MatchString(result2))
+	assert.NotEqual(t, result1, result2)
+	assert.Equal(t, "", req.Header.Get(vars.XRequestId))
 }
 
 func TestUUIDFormat(t *testing.T) {
 	req := httptest.NewRequest("GET", "/test", nil)
 
-	// Test GetOrSetRequestID UUID format
-	requestID := GetOrSetRequestID(req)
-	assert.True(t, uuidRegex.MatchString(requestID), "GetOrSetRequestID should return valid UUID format")
+	// Test GetOrGenRequestID UUID format
+	requestID := GetOrGenRequestID(req)
+	assert.True(t, uuidRegex.MatchString(requestID), "GetOrGenRequestID should return valid UUID format")
 
 	// Test GetCallID UUID format
 	callID := GetCallID(req)

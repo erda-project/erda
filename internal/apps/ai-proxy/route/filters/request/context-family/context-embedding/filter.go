@@ -57,15 +57,21 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	if err := json.NewDecoder(bodyCopy).Decode(&req); err != nil {
 		return fmt.Errorf("failed to decode embedding request, err: %v", err)
 	}
+	var prompt string
 	switch req.Input.(type) {
 	case string:
-		ctxhelper.PutUserPrompt(pr.Out.Context(), req.Input.(string))
+		prompt = req.Input.(string)
 	case []interface{}:
 		var ss []string
 		for _, item := range req.Input.([]interface{}) {
 			ss = append(ss, strutil.String(item))
 		}
-		ctxhelper.PutUserPrompt(pr.Out.Context(), strutil.Join(ss, "\n"))
+		prompt = strutil.Join(ss, "\n")
+	}
+	if prompt != "" {
+		if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
+			sink.Note("prompt", prompt)
+		}
 	}
 
 	// set model name in JSON body

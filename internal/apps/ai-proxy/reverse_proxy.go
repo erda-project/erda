@@ -17,32 +17,30 @@ package ai_proxy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"reflect"
 	"runtime/debug"
-	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/notes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/skeleton"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
 	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 )
-
-type FilterWithName struct {
-	Name     string
-	Stage    string // "request" or "response"
-	Instance any
-}
 
 func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -52,11 +50,14 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 
 		// create a request-level Logger
 		logger := logrusx.New().Sub("reverse-proxy-api")
-		reqID := requestid.GetOrSetRequestID(r)
+		baseLogger := logrusx.New().Sub("reverse-proxy-api")
+		reqID := requestid.GetOrGenRequestID(r)
 		callID := requestid.GetCallID(r)
 		logger.Set("req", reqID).Set("call", callID)
+		baseLogger.Set("req", reqID).Set("call", callID)
 		logger.Infof("reverse proxy handler: %s %s", r.Method, r.URL.String())
 		ctxhelper.PutLogger(ctx, logger)
+		ctxhelper.PutLoggerBase(ctx, baseLogger)
 		ctxhelper.PutRequestID(ctx, reqID)
 		ctxhelper.PutGeneratedCallID(ctx, callID)
 
@@ -72,7 +73,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		}
 
 		// get all route filters
-		var filters []FilterWithName
+		var requestFilters []filter_define.FilterWithName[filter_define.ProxyRequestRewriter]
 		for _, filterConfig := range matchedRoute.RequestFilters {
 			creator, ok := filter_define.FilterFactory.RequestFilters[filterConfig.Name]
 			if !ok {
@@ -85,8 +86,9 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 				return
 			}
 			f := creator(filterConfig.Name, fc)
-			filters = append(filters, FilterWithName{Name: filterConfig.Name, Stage: "request", Instance: f})
+			requestFilters = append(requestFilters, filter_define.FilterWithName[filter_define.ProxyRequestRewriter]{Name: filterConfig.Name, Instance: f})
 		}
+		var responseFilters []filter_define.FilterWithName[filter_define.ProxyResponseModifier]
 		for _, filterConfig := range matchedRoute.ResponseFilters {
 			creator, ok := filter_define.FilterFactory.ResponseFilters[filterConfig.Name]
 			if !ok {
@@ -99,7 +101,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 				return
 			}
 			f := creator(filterConfig.Name, fc)
-			filters = append(filters, FilterWithName{Name: filterConfig.Name, Stage: "response", Instance: f})
+			responseFilters = append(responseFilters, filter_define.FilterWithName[filter_define.ProxyResponseModifier]{Name: filterConfig.Name, Instance: f})
 		}
 
 		ctxhelper.PutDBClient(ctx, p.Dao)
@@ -108,7 +110,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 
 		// reverse proxy
 		proxy := httputil.ReverseProxy{
-			Rewrite: myRewrite(w, filters),
+			Rewrite: myRewrite(w, requestFilters),
 			Transport: &transports.RequestFilterGeneratedResponseTransport{
 				Inner: &transports.CurlPrinterTransport{
 					Inner: &transports.TimerTransport{},
@@ -117,35 +119,16 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 			FlushInterval:  -1,
 			ErrorLog:       nil,
 			BufferPool:     nil,
-			ModifyResponse: myResponseModify(w, filters),
-			ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
-				// check error at rewrite stage
-				if rewriteErr, _ := ctxhelper.GetReverseProxyAtRewriteStage(r.Context()); rewriteErr != nil {
-					err = rewriteErr
-				}
-
-				// Check if error is from response modifier
-				if responseErr, _ := ctxhelper.GetResponseModifierError(r.Context()); responseErr != nil {
-					err = responseErr
-				}
-
-				var httpError *httperror.HTTPError
-				switch {
-				case errors.As(err, &httpError):
-					httpError.WriteJSONHTTPError(w)
-					return
-				default:
-					httperror.NewHTTPError(http.StatusBadRequest, err.Error()).WriteJSONHTTPError(w)
-					return
-				}
-			},
+			ModifyResponse: myResponseModify(w, responseFilters),
+			ErrorHandler:   myErrorHandler(),
 		}
 		proxy.ServeHTTP(w, r)
 	}
 }
 
-var myRewrite = func(w http.ResponseWriter, filters []FilterWithName) func(*httputil.ProxyRequest) {
+var myRewrite = func(w http.ResponseWriter, requestFilters []filter_define.FilterWithName[filter_define.ProxyRequestRewriter]) func(*httputil.ProxyRequest) {
 	return func(pr *httputil.ProxyRequest) {
+		var brokenFilterName string
 		var brokenInErr error
 		defer func() {
 			if r := recover(); r != nil {
@@ -155,7 +138,10 @@ var myRewrite = func(w http.ResponseWriter, filters []FilterWithName) func(*http
 			if brokenInErr == nil {
 				return
 			}
-			ctxhelper.PutReverseProxyAtRewriteStage(pr.In.Context(), brokenInErr)
+			ctxhelper.PutReverseProxyRequestRewriterError(pr.In.Context(), &ctxhelper.ReverseProxyRequestRewriterError{
+				FilterName: brokenFilterName,
+				Error:      brokenInErr,
+			})
 			// force make RoundTrip failed and handle error at ErrorHandler
 			pr.Out.URL.Host = ""
 			pr.Out.URL.Scheme = ""
@@ -180,22 +166,27 @@ var myRewrite = func(w http.ResponseWriter, filters []FilterWithName) func(*http
 			panic(brokenInErr)
 		}
 
-		//pr.Out.Header.Set("Accept-Encoding", "identity") // Disable compression to avoid affecting body reading
-		for _, filter := range filters {
-			if filter.Stage != "request" {
-				continue
-			}
-			// Inject logger with package name into the context
-			injectLogger(pr.In.Context(), filter, "request")
+		// dump request in
+		if err := skeleton.CreateSkeleton(pr.In); err != nil {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("failed to create audit skeleton: %v", err)
+		}
+		dumplog.DumpRequestIn(pr.In)
+
+		for _, filter := range requestFilters {
+			// inject logger with package name into the context
+			logutil.InjectLoggerWithFilterInfo(pr.In.Context(), filter)
 
 			if rewriter, ok := filter.Instance.(filter_define.ProxyRequestRewriter); ok {
 				pr.In = &inSnap // pr.In cannot be modified, so we always put original pr.In, discard changes by previous filters
 				if err := rewriter.OnProxyRequest(pr); err != nil {
+					brokenFilterName = filter.Name
 					brokenInErr = err
 					break
 				}
 			}
 		}
+
+		dumplog.DumpRequestOut(pr.Out)
 	}
 }
 
@@ -208,7 +199,7 @@ var myRewrite = func(w http.ResponseWriter, filters []FilterWithName) func(*http
 //  3. When stream ends or errors, call each Modifier.OnComplete();
 //     they can write trailer headers to resp.Trailer.
 //  4. Return nil; ReverseProxy will continue copying resp to client.
-var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) func(*http.Response) error {
+var myResponseModify = func(w http.ResponseWriter, filters []filter_define.FilterWithName[filter_define.ProxyResponseModifier]) func(*http.Response) error {
 	return func(resp *http.Response) (_err error) {
 		upstream := resp.Body
 		pr, pw := io.Pipe()
@@ -223,15 +214,6 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 				_err = fmt.Errorf("panic from response modify: %v", r)
 			}
 		}()
-		// Filter out Modifiers with stage != "response"
-		var nfs []FilterWithName
-		for _, filter := range filters {
-			if filter.Stage != "response" {
-				continue
-			}
-			nfs = append(nfs, filter)
-		}
-		filters = nfs
 
 		// 1) Choose chunk splitting strategy -- get from ctx; fallback to FixedSize if none
 		// Determine splitter based on original response header
@@ -241,13 +223,14 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 		}
 		// Wrap as auto-decompressing splitter
 		autoDecompressSplitter := set_resp_body_chunk_splitter.NewDecompressingChunkSplitter(splitter, resp)
-		ctxhelper.MustGetLogger(resp.Request.Context()).Infof("splitter: %s", reflect.TypeOf(splitter))
+		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("splitter: %s", reflect.TypeOf(splitter))
 
 		// ---------------------------------------------------------------------
 		// 2) Let all Modifiers run OnHeaders first
+		dumplog.DumpResponseHeaders(resp)
 		for _, filter := range filters {
-			injectLogger(resp.Request.Context(), filter, "resp.OnHeaders")
-			if err := filter.Instance.(filter_define.ProxyResponseModifier).OnHeaders(resp); err != nil {
+			logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
+			if err := filter.Instance.OnHeaders(resp); err != nil {
 				return err
 			}
 		}
@@ -262,6 +245,14 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 		// 3) Write upstream Body-Splitter-Modifier chain results to Pipe, let ReverseProxy copy to client
 
 		go func() {
+			defer func() {
+				// sink audit
+				if sink, ok := ctxhelper.GetAuditSink(resp.Request.Context()); ok {
+					sinkWriter := notes.NewDBWriter(ctxhelper.MustGetDBClient(resp.Request.Context()))
+					sink.Flush(resp.Request.Context(), sinkWriter)
+				}
+			}()
+
 			defer upstream.Close()
 
 			if len(filters) == 0 {
@@ -274,10 +265,9 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 				return
 			}
 
-			chunkIndex := -1
+			var chunkIndex int64 = -1
 			for {
 				chunkIndex++
-				ctxhelper.PutResponseChunkIndex(resp.Request.Context(), chunkIndex)
 				chunk, rerr := autoDecompressSplitter.NextChunk(upstream)
 				if len(chunk) == 0 && rerr == nil {
 					// Indicates Splitter violated contract, avoid infinite loop
@@ -287,10 +277,11 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 				if len(chunk) > 0 {
 					out := chunk
 					// 3.2 Same chunk flows through all Modifiers in sequence
+					dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
 					for _, filter := range filters {
-						m := filter.Instance.(filter_define.ProxyResponseModifier)
-						injectLogger(resp.Request.Context(), filter, "resp.OnBodyChunk")
-						o, err := m.OnBodyChunk(resp, out)
+						m := filter.Instance
+						logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
+						o, err := m.OnBodyChunk(resp, out, chunkIndex)
 						if err != nil {
 							pw.CloseWithError(err)
 							return
@@ -300,6 +291,7 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 							break
 						}
 					}
+					dumplog.DumpResponseBodyChunk(resp, out, int64(chunkIndex))
 					if len(out) > 0 {
 						if _, err := pw.Write(out); err != nil {
 							// Downstream disconnected
@@ -313,9 +305,10 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 						pw.CloseWithError(rerr)
 					}
 					// Cleanup: all Modifiers call OnComplete; ensure call even if previous errors
+					dumplog.DumpResponseComplete(resp)
 					for _, filter := range filters {
 						if m, ok := filter.Instance.(filter_define.ProxyResponseModifier); ok {
-							injectLogger(resp.Request.Context(), filter, "resp.OnComplete")
+							logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
 							out, _ := m.OnComplete(resp)
 							if len(out) > 0 {
 								pw.Write(out)
@@ -332,22 +325,46 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 	}
 }
 
-// injectLogger injects a sub-logger with package name into the context and returns the new context
-func injectLogger(ctx context.Context, filter FilterWithName, stage string) {
-	// Use reflection to get package name from filter type
-	pkgPath := reflect.TypeOf(filter.Instance).Elem().PkgPath()
-	// Extract two levels of package path (e.g., "filters/after-audit" from "github.com/.../filters/after-audit")
-	parts := strings.Split(pkgPath, "/")
-	var packageName string
-	if len(parts) >= 2 {
-		packageName = parts[len(parts)-2] + "/" + parts[len(parts)-1]
-	} else {
-		packageName = pkgPath[strings.LastIndex(pkgPath, "/")+1:]
-	}
-	// Add filter name
-	fullFilterPath := packageName + "@" + filter.Name
+var myErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err error) {
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		// sink audit when error
+		defer func() {
+			if sink, ok := ctxhelper.GetAuditSink(r.Context()); ok {
+				sinkWriter := notes.NewDBWriter(ctxhelper.MustGetDBClient(r.Context()))
+				sink.Flush(r.Context(), sinkWriter)
+			}
+		}()
 
-	logger := ctxhelper.MustGetLogger(ctx)
-	logger.Set("filter", fullFilterPath).Set("stage", stage)
-	ctxhelper.PutLogger(ctx, logger)
+		// check error at rewrite stage
+		if rewriteErr, _ := ctxhelper.GetReverseProxyRequestRewriterError(r.Context()); rewriteErr != nil {
+			if sink, ok := ctxhelper.GetAuditSink(r.Context()); ok {
+				sink.Note("request.rewriter.error.filter", rewriteErr.FilterName)
+				sink.Note("request.rewriter.error.message", rewriteErr.Error.Error())
+			}
+			if rewriteErr.FilterName != "" {
+				err = fmt.Errorf("%s: %w", rewriteErr.FilterName, rewriteErr.Error)
+			} else {
+				err = rewriteErr.Error
+			}
+		}
+
+		// Check if error is from response modifier
+		if responseErr, _ := ctxhelper.GetResponseModifierError(r.Context()); responseErr != nil {
+			err = responseErr
+		}
+
+		// set x-request-id
+		w.Header().Set(vars.XRequestId, ctxhelper.MustGetRequestID(r.Context()))
+		w.Header().Set(vars.XAIProxyGeneratedCallId, ctxhelper.MustGetGeneratedCallID(r.Context()))
+
+		var httpError *httperror.HTTPError
+		switch {
+		case errors.As(err, &httpError):
+			httpError.WriteJSONHTTPError(w)
+			return
+		default:
+			httperror.NewHTTPError(http.StatusBadRequest, err.Error()).WriteJSONHTTPError(w)
+			return
+		}
+	}
 }

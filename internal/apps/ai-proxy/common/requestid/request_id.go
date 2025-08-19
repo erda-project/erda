@@ -21,23 +21,20 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
-func GetOrSetRequestID(r *http.Request) string {
-	return getOrSetID(r, vars.XRequestId)
+func GetOrGenRequestID(r *http.Request) string {
+	return getOrGenID(r, vars.XRequestId)
 }
 
 // GetCallID always generate a new uuid.
 func GetCallID(r *http.Request) string {
-	return getOrSetID(r, "")
+	return getOrGenID(r, "")
 }
 
-func getOrSetID(r *http.Request, headerKey string) string {
+func getOrGenID(r *http.Request, headerKey string) string {
 	v := r.Header.Get(headerKey)
 	if v != "" {
 		return v
 	}
 	v = uuid.New()
-	if headerKey != "" {
-		r.Header.Set(headerKey, v)
-	}
 	return v
 }

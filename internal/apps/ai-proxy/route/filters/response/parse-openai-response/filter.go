@@ -22,91 +22,86 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 )
 
-func (f *AuditResponse) inParsedEnable(resp *http.Response) bool {
+type Filter struct {
+	allChunks  []byte
+	completion string
+}
+
+func init() {
+	filter_define.RegisterFilterCreator("parse-openai-response", ResponseModifierCreator)
+}
+
+var (
+	_ filter_define.ProxyResponseModifier = (*Filter)(nil)
+)
+
+var ResponseModifierCreator filter_define.ResponseModifierCreator = func(name string, config json.RawMessage) filter_define.ProxyResponseModifier {
+	return &Filter{}
+}
+
+func (f *Filter) Enable(resp *http.Response) bool {
 	auditRecID, ok := ctxhelper.GetAuditID(resp.Request.Context())
 	return ok && auditRecID != ""
 }
 
-func (f *AuditResponse) inParsedOnHeaders(resp *http.Response) error {
+func (f *Filter) OnHeaders(resp *http.Response) error {
 	return nil
 }
 
-func (f *AuditResponse) inParsedOnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err error) {
-	if !f.inParsedEnable(resp) {
+func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
+	if !f.Enable(resp) {
 		return chunk, nil
 	}
-	f.inParsed.allChunks = append(f.inParsed.allChunks, chunk...)
+	f.allChunks = append(f.allChunks, chunk...)
 
 	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		completion, responseFunctionCallName := ExtractEventStreamCompletionAndFcName(string(chunk))
-		f.inParsed.completion += completion
-		f.inParsed.responseFunctionCallName = f.inParsed.responseFunctionCallName + responseFunctionCallName + " "
+		completion, _ := ExtractEventStreamCompletionAndFcName(string(chunk))
+		f.completion += completion
 	}
 
 	return chunk, nil
 }
 
-func (f *AuditResponse) inParsedOnComplete(resp *http.Response) (out []byte, err error) {
-	if !f.inParsedEnable(resp) {
+func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
+	if !f.Enable(resp) {
 		return nil, nil
 	}
 
 	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		var completion, responseFunctionCallName string
+		var completion string
 		// routing by model type
 		model := ctxhelper.MustGetModel(resp.Request.Context())
 		switch model.Type {
 		case modelpb.ModelType_text_generation, modelpb.ModelType_multimodal:
-			completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(string(f.inParsed.allChunks))
+			completion, _ = ExtractApplicationJsonCompletionAndFcName(string(f.allChunks))
 		case modelpb.ModelType_audio:
 			var openaiAudioResp openai.AudioResponse
-			if err := json.Unmarshal(f.inParsed.allChunks, &openaiAudioResp); err == nil {
+			if err := json.Unmarshal(f.allChunks, &openaiAudioResp); err == nil {
 				completion = openaiAudioResp.Text
 			} else {
-				completion = string(f.inParsed.allChunks)
+				completion = string(f.allChunks)
 			}
 		case modelpb.ModelType_image:
-			completion = string(f.inParsed.allChunks)
+			completion = string(f.allChunks)
 			var openaiImageResp openai.ImageResponse
-			if err := json.Unmarshal(f.inParsed.allChunks, &openaiImageResp); err == nil {
+			if err := json.Unmarshal(f.allChunks, &openaiImageResp); err == nil {
 				if len(openaiImageResp.Data) > 0 {
 					completion = openaiImageResp.Data[0].URL
 				}
 			}
 		}
-		f.inParsed.completion = completion
-		f.inParsed.responseFunctionCallName = responseFunctionCallName
+		f.completion = completion
 	}
 
-	auditRecID, _ := ctxhelper.GetAuditID(resp.Request.Context())
-	// collect actual llm response info
-	updateReq := pb.AuditUpdateRequestAfterLLMDirectorResponse{
-		AuditId:    auditRecID,
-		Completion: f.inParsed.completion,
-		//ResponseBody: string(f.inParsed.allChunks), // TODO not store raw body anymore, but store parsed content
-		ResponseHeader: func() string {
-			b, err := json.Marshal(resp.Header)
-			if err != nil {
-				return err.Error()
-			}
-			return string(b)
-		}(),
-		ResponseFunctionCallName: f.inParsed.responseFunctionCallName,
+	if sink, ok := ctxhelper.GetAuditSink(resp.Request.Context()); ok {
+		sink.Note("completion", f.completion)
 	}
 
-	// update audit into db
-	dao := ctxhelper.MustGetDBClient(resp.Request.Context())
-	dbClient := dao.AuditClient()
-	_, err = dbClient.UpdateAfterLLMDirectorResponse(resp.Request.Context(), &updateReq)
-	if err != nil {
-		l := ctxhelper.MustGetLogger(resp.Request.Context())
-		l.Errorf("failed to update audit on response EOF, audit id: %s, err: %v", auditRecID, err)
-	}
 	return nil, nil
 }
 

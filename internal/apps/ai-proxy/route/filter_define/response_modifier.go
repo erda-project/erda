@@ -52,7 +52,7 @@ type ProxyResponseModifier interface {
 
 	// OnBodyChunk called when each logical chunk is ready.
 	// Needs to be synchronous: if processing takes long time, should split into goroutines yourself.
-	OnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err error)
+	OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error)
 
 	// OnComplete called on EOF or when framework encounters read error (called even if previous two steps error,
 	// ensuring cleanup). Can write Trailer, output summary statistics, close internal resources, etc.
@@ -67,7 +67,7 @@ type PassThroughResponseModifier struct{}
 func (m *PassThroughResponseModifier) OnHeaders(resp *http.Response) error {
 	return nil
 }
-func (m *PassThroughResponseModifier) OnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err error) {
+func (m *PassThroughResponseModifier) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	return chunk, nil
 }
 func (m *PassThroughResponseModifier) OnComplete(resp *http.Response) (out []byte, err error) {

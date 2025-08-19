@@ -54,7 +54,7 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 	return nil, nil
 }
 
-func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err error) {
+func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	logger := ctxhelper.MustGetLogger(resp.Request.Context())
 
 	logger.Debugf("method:%v response: %v", resp.Request.Method, string(chunk))
