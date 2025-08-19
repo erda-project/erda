@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/cmd/mcp-proxy/integration-tests/config"
-
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
+
+	"github.com/erda-project/erda/cmd/mcp-proxy/integration-tests/config"
 )
 
 // ProxyConnectRequest represents the proxy connect request
