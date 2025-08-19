@@ -80,7 +80,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.5.1
-	github.com/grafana/pyroscope-go v1.1.1
+	github.com/grafana/pyroscope-go v1.2.4
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hpcloud/tail v1.0.0
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
@@ -325,7 +325,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
-	github.com/grafana/pyroscope-go/godeltaprof v0.1.6 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.8 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
@@ -354,7 +354,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/kedacore/keda/v2 v2.15.1
-	github.com/klauspost/compress v1.17.8
+	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
