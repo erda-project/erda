@@ -51,6 +51,10 @@ type (
 	mapKeyImageInfo          struct{ ImageInfo }
 	mapKeyLogger             struct{ logs.Logger }
 
+	mapKeyMcpInfo struct {
+		McpInfo
+	}
+
 	// Keys for response processing
 	mapKeyRespBodyChunkSplitter struct {
 		filter_define.RespBodyChunkSplitter

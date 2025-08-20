@@ -16,14 +16,29 @@ package handler_mcp_server
 
 import (
 	"context"
+	"errors"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
+var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
+
 type MCPHandler struct {
-	DAO dao.DAO
+	DAO               dao.DAO
+	McpProxyPublicURL string
+}
+
+func NewMCPHandler(d dao.DAO, addr string) *MCPHandler {
+	handler := MCPHandler{
+		DAO:               d,
+		McpProxyPublicURL: strings.TrimSuffix(addr, "/"),
+	}
+	return &handler
 }
 
 func (m *MCPHandler) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (*pb.MCPServerUpdateResponse, error) {
@@ -45,6 +60,16 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 		return nil, err
 	}
 
+	if !req.UseRawEndpoint {
+		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
+			return nil, err
+		}
+
+		for i := range servers {
+			servers[i].Endpoint = m.buildEndpoint(servers[i])
+		}
+	}
+
 	return &pb.MCPServerVersionResponse{
 		Total: total,
 		List:  servers,
@@ -60,7 +85,17 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 }
 
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
-	return m.DAO.MCPServerClient().Get(ctx, req)
+	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
+	mcpServer := resp.GetData()
+
+	if !req.UseRawEndpoint {
+		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
+			return nil, err
+		}
+		mcpServer.Endpoint = m.buildEndpoint(mcpServer)
+	}
+
+	return resp, err
 }
 
 func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*pb.MCPServerListResponse, error) {
@@ -73,8 +108,44 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		return nil, err
 	}
 
+	if !req.UseRawEndpoint {
+		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
+			return nil, err
+		}
+
+		for i := range servers {
+			servers[i].Endpoint = m.buildEndpoint(servers[i])
+		}
+	}
+
 	return &pb.MCPServerListResponse{
 		Total: total,
 		List:  servers,
 	}, nil
+}
+
+func (m *MCPHandler) buildEndpoint(server *pb.MCPServer) string {
+	// http://127.0.0.1:8081/proxy/connect/demo/1.0.0
+	return m.McpProxyPublicURL + "/proxy/connect/" + server.Name + "/" + server.Version
+}
+
+func VerifyAddr(addr string) error {
+	if addr == "" {
+		return errors.New("mcp proxy addr is empty")
+	}
+
+	matches := addrRegex.FindStringSubmatch(addr)
+	if matches == nil {
+		return errors.New("mcp proxy addr is invalid")
+	}
+
+	// matches[1] is host, matches[2] is port（optional）
+	if matches[2] != "" {
+		port, err := strconv.Atoi(matches[2])
+		if err != nil || port < 1 || port > 65535 {
+			return errors.New("mcp proxy addr port is invalid")
+		}
+	}
+
+	return nil
 }
