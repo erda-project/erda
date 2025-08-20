@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -64,7 +63,6 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 			}
 
 			dbServer = MCPServer{
-				ID:               uuid.New().String(),
 				Name:             req.Name,
 				Description:      req.Description,
 				Instruction:      req.Instruction,
@@ -76,7 +74,6 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
 				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
 			}
-
 			// create new server
 			if err = tx.Create(&dbServer).Error; err != nil {
 				return fmt.Errorf("failed to create mcp server: %v", err)
