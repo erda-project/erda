@@ -7,6 +7,7 @@ routes:
       - name: rate-limit
       - name: audit # save audit after rate limit
         config: { stage: in-create-audit }
+      - name: context-authorization
       - name: context
       - name: context-image
       - name: audit
