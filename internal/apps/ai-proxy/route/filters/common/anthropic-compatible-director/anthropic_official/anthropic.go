@@ -74,7 +74,7 @@ func (f *AnthropicDirector) OfficialDirector(pr *httputil.ProxyRequest, apiStyle
 	return nil
 }
 
-func (f *AnthropicDirector) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
+func (f *AnthropicDirector) OnBodyChunk(resp *http.Response, chunk []byte, index int64) ([]byte, error) {
 	// non-stream
 	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		// convert all at once

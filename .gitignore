@@ -106,8 +106,8 @@ testdata/
 
 # claude code
 CLAUDE.md
+.claude/
 
 # go cache
 .gocache/
 .gomodcache/
-

@@ -487,41 +487,6 @@ func TestFindModelIdentifier(t *testing.T) {
 	}
 }
 
-func TestGetCustomBodyModelFieldByPathAndMethod(t *testing.T) {
-	tests := []struct {
-		name          string
-		method        string
-		path          string
-		expectedField string
-	}{
-		{
-			name:          "anthropic path returns model field",
-			method:        "POST",
-			path:          "/proxy/v1/anthropic/messages",
-			expectedField: "model",
-		},
-		{
-			name:          "other path returns empty",
-			method:        "POST",
-			path:          "/proxy/v1/openai/chat/completions",
-			expectedField: "",
-		},
-		{
-			name:          "non-POST method returns empty",
-			method:        "GET",
-			path:          "/proxy/v1/anthropic/messages",
-			expectedField: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := getCustomBodyModelFieldByPathAndMethod(tt.method, tt.path)
-			assert.Equal(t, tt.expectedField, result)
-		})
-	}
-}
-
 func TestGetStandardFinderByContentType(t *testing.T) {
 	tests := []struct {
 		name         string

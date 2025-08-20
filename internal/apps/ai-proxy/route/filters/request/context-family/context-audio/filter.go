@@ -84,7 +84,6 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 
 	// get prompt
 	prompt := pr.In.FormValue(formBodyFieldPrompt)
-	ctxhelper.PutUserPrompt(pr.Out.Context(), prompt)
 
 	// check file type
 	ext := strings.TrimPrefix(filepath.Ext(fileInfo.Filename), ".")
@@ -115,13 +114,12 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		return fmt.Errorf("failed to set request body: %w", err)
 	}
 
-	// put audio info into context
-	audioInfo := ctxhelper.AudioInfo{
-		FileName:    fileInfo.Filename,
-		FileSize:    bytesize.ByteSize(fileInfo.Size),
-		FileHeaders: fileInfo.Header,
+	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
+		sink.Note("prompt", prompt)
+		sink.Note("audio.file_name", fileInfo.Filename)
+		sink.Note("audio.file_size", bytesize.ByteSize(fileInfo.Size))
+		sink.Note("audio.file_headers", fileInfo.Header)
 	}
-	ctxhelper.PutAudioInfo(pr.Out.Context(), audioInfo)
 
 	return nil
 }

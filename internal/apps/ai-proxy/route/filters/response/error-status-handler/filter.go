@@ -53,7 +53,7 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 	return nil
 }
 
-func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
+func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) ([]byte, error) {
 	if f.isError {
 		// If error response, collect all response body data but don't pass to downstream
 		f.bodyBuffer = append(f.bodyBuffer, chunk...)

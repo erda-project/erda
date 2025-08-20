@@ -14,22 +14,15 @@
 
 package ctxhelper
 
-import (
-	"net/textproto"
-
-	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
-)
-
-// AudioInfo represents audio file information
-type AudioInfo struct {
-	FileName    string               `json:"fileName"`
-	FileSize    bytesize.ByteSize    `json:"fileSize"`
-	FileHeaders textproto.MIMEHeader `json:"fileHeaders"`
+type McpInfo struct {
+	Name           string
+	Version        string
+	Host           string
+	Scheme         string
+	NeedTerminusId bool
 }
 
-// ImageInfo represents image generation parameters
-type ImageInfo struct {
-	ImageQuality string `json:"imageQuality"`
-	ImageSize    string `json:"imageSize"`
-	ImageStyle   string `json:"imageStyle"`
+type ReverseProxyRequestRewriterError struct {
+	FilterName string
+	Error      error
 }

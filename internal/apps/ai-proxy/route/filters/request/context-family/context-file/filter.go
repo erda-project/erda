@@ -66,7 +66,10 @@ func onUploadFile(pr *httputil.ProxyRequest) error {
 	}
 	// use purpose as prompt
 	prompt := fmt.Sprintf("filename: %s, purpose: %s", fileHeader.Filename, purpose)
-	ctxhelper.PutUserPrompt(pr.Out.Context(), prompt)
+
+	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
+		sink.Note("prompt", prompt)
+	}
 
 	return nil
 }

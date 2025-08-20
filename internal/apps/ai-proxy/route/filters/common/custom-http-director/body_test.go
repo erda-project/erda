@@ -68,12 +68,12 @@ func TestJSONBodyTransformer(t *testing.T) {
 				"messages": []any{
 					map[string]any{"role": "user", "content": "Hello"},
 				},
-				"max_completion_tokens": int64(150), // Renamed from max_tokens
-				"temperature":           0.8,        // Original value kept (not defaulted)
+				"max_completion_tokens": float64(150), // Renamed from max_tokens, JSON unmarshals to float64
+				"temperature":           0.8,          // Original value kept (not defaulted)
 				// top_p should be dropped
 			},
 			expectedChanges: []BodyTransformChange{
-				{Op: "rename", Key: "max_tokens", From: 150, To: "max_completion_tokens"},
+				{Op: "rename", From: "max_tokens", To: "max_completion_tokens"},
 				{Op: "drop", Key: "top_p", From: 0.9},
 			},
 		},
@@ -94,10 +94,10 @@ func TestJSONBodyTransformer(t *testing.T) {
 				},
 			},
 			expectedBody: map[string]any{
-				"max_completion_tokens": int64(8192), // Clamped from 50000
+				"max_completion_tokens": float64(8192), // Clamped from 50000, JSON unmarshals to float64
 			},
 			expectedChanges: []BodyTransformChange{
-				{Op: "rename", Key: "max_tokens", From: 50000, To: "max_completion_tokens"},
+				{Op: "rename", From: "max_tokens", To: "max_completion_tokens"},
 				{Op: "clamp", Key: "max_completion_tokens", From: 50000.0, To: 8192.0},
 			},
 		},
@@ -184,18 +184,25 @@ func TestJSONBodyTransformer(t *testing.T) {
 				actualChanges := *transformResult.(*[]BodyTransformChange)
 				assert.Len(t, actualChanges, len(tt.expectedChanges))
 
-				for i, expected := range tt.expectedChanges {
-					assert.Equal(t, expected.Op, actualChanges[i].Op)
-					assert.Equal(t, expected.Key, actualChanges[i].Key)
-					if expected.From != nil {
-						assert.Equal(t, expected.From, actualChanges[i].From)
+				// compare changes unordered since map iteration order is not deterministic
+				for _, expected := range tt.expectedChanges {
+					found := false
+					for _, actual := range actualChanges {
+						if expected.Op == actual.Op && expected.Key == actual.Key {
+							if expected.From != nil {
+								assert.Equal(t, expected.From, actual.From)
+							}
+							if expected.To != nil {
+								assert.Equal(t, expected.To, actual.To)
+							}
+							if expected.Value != nil {
+								assert.Equal(t, expected.Value, actual.Value)
+							}
+							found = true
+							break
+						}
 					}
-					if expected.To != nil {
-						assert.Equal(t, expected.To, actualChanges[i].To)
-					}
-					if expected.Value != nil {
-						assert.Equal(t, expected.Value, actualChanges[i].Value)
-					}
+					assert.True(t, found, "Expected change not found: %+v", expected)
 				}
 			}
 		})
