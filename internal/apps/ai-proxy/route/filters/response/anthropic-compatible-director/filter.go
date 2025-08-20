@@ -61,7 +61,7 @@ func (f *AnthropicCompatibleDirectorResponse) OnHeaders(resp *http.Response) err
 	return nil
 }
 
-func (f *AnthropicCompatibleDirectorResponse) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
+func (f *AnthropicCompatibleDirectorResponse) OnBodyChunk(resp *http.Response, chunk []byte, index int64) ([]byte, error) {
 	if !f.Enable(resp.Request.Context()) {
 		return chunk, nil
 	}
@@ -71,9 +71,9 @@ func (f *AnthropicCompatibleDirectorResponse) OnBodyChunk(resp *http.Response, c
 	apiSegment := api_segment_getter.GetAPISegment(resp.Request.Context())
 	switch strings.ToLower(string(apiSegment.APIVendor)) {
 	case strings.ToLower(string(aws_bedrock.APIVendor)):
-		return f.BedrockDirector.OnBodyChunk(resp, chunk)
+		return f.BedrockDirector.OnBodyChunk(resp, chunk, index)
 	case strings.ToLower(string(anthropic_official.APIVendor)):
-		return f.AnthropicDirector.OnBodyChunk(resp, chunk)
+		return f.AnthropicDirector.OnBodyChunk(resp, chunk, index)
 	default:
 		return nil, fmt.Errorf("unsupported anthropic-compatible api vendor: %s", apiSegment.APIVendor)
 	}

@@ -26,6 +26,7 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -34,22 +35,20 @@ import (
 
 type (
 	// Keys migrated from vars package
-	mapKeyClient             struct{ *clientpb.Client }
-	mapKeyModel              struct{ *modelpb.Model }
-	mapKeyModelProvider      struct{ *modelproviderpb.ModelProvider }
-	mapKeyPromptTemplate     struct{ *promptpb.Prompt }
-	mapKeySession            struct{ *sessionpb.Session }
-	mapKeyClientToken        struct{ *clienttokenpb.ClientToken }
-	mapKeyMessageGroup       struct{ message.Group }
-	mapKeyUserPrompt         struct{ string }
-	mapKeyIsStream           struct{ bool }
-	mapKeyAuditID            struct{ string }
-	mapKeyRequestID          struct{ string }
-	mapKeyGeneratedCallID    struct{ string }
-	mapKeyResponseChunkIndex struct{ int }
-	mapKeyAudioInfo          struct{ AudioInfo }
-	mapKeyImageInfo          struct{ ImageInfo }
-	mapKeyLogger             struct{ logs.Logger }
+	mapKeyClient          struct{ *clientpb.Client }
+	mapKeyModel           struct{ *modelpb.Model }
+	mapKeyModelProvider   struct{ *modelproviderpb.ModelProvider }
+	mapKeyPromptTemplate  struct{ *promptpb.Prompt }
+	mapKeySession         struct{ *sessionpb.Session }
+	mapKeyClientToken     struct{ *clienttokenpb.ClientToken }
+	mapKeyMessageGroup    struct{ message.Group }
+	mapKeyIsStream        struct{ bool }
+	mapKeyAuditID         struct{ string }
+	mapKeyAuditSink       struct{ types.Sink }
+	mapKeyRequestID       struct{ string }
+	mapKeyGeneratedCallID struct{ string }
+	mapKeyLogger          struct{ logs.Logger }
+	mapKeyLoggerBase      struct{ logs.Logger }
 
 	mapKeyMcpInfo struct {
 		McpInfo
@@ -66,7 +65,9 @@ type (
 	mapKeyRequestFilterGeneratedResponse struct{ *http.Response }
 
 	// Keys for reverse proxy
-	mapKeyReverseProxyAtRewriteStage struct{ error }
+	mapKeyReverseProxyRequestRewriterError struct {
+		*ReverseProxyRequestRewriterError
+	}
 
 	// Keys for migrated context keys
 	mapKeyDBClient    struct{ dao.DAO }
@@ -84,7 +85,5 @@ type (
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)
 var KeysWithCustomMustGet = map[any]bool{
-	mapKeyLogger{}:             true,
-	mapKeyResponseChunkIndex{}: true,
-	mapKeyIsStream{}:           true,
+	mapKeyIsStream{}: true,
 }

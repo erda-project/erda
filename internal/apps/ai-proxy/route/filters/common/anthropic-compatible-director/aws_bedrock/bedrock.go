@@ -152,7 +152,7 @@ func SignAwsRequest(pr *httputil.ProxyRequest, bodyBytes []byte) error {
 	return nil
 }
 
-func (f *BedrockDirector) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
+func (f *BedrockDirector) OnBodyChunk(resp *http.Response, chunk []byte, index int64) ([]byte, error) {
 	// non-stream
 	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		// convert all at once

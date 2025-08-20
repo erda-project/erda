@@ -25,7 +25,6 @@ import (
 
 	"golang.org/x/time/rate"
 
-	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -89,18 +88,6 @@ func (f *RateLimiter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	limiter := tokenLimiter.GetLimiter(token)
 	if !limiter.Allow() {
 		err := fmt.Errorf("too many requests for token rate limit, token: %s", token)
-		auditID, ok := ctxhelper.GetAuditID(ctx)
-		if ok {
-			_, err := ctxhelper.MustGetDBClient(ctx).AuditClient().SetFilterErrorAudit(ctx, &auditpb.AuditUpdateRequestWhenFilterError{
-				AuditId:     auditID,
-				FilterName:  name,
-				FilterError: err.Error(),
-			})
-			if err != nil {
-				l := ctxhelper.MustGetLogger(ctx)
-				l.Errorf("failed to update audit when rate limited, audit id: %s, err: %v", auditID, err)
-			}
-		}
 		l.Warn(err)
 		return http_error.NewHTTPError(http.StatusTooManyRequests, "too many requests for token rate limit")
 	}

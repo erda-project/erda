@@ -12,48 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package audit
+package skeleton
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/excerptor"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/audit/audit_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (f *Audit) requestInCreateAudit(in *http.Request) error {
+func CreateSkeleton(in *http.Request) error {
 	var createReq pb.AuditCreateRequestWhenReceived
 	createReq.RequestAt = timestamppb.New(time.Now())
 	createReq.AuthKey = vars.TrimBearer(in.Header.Get(vars.TrimBearer(httperrorutil.HeaderKeyAuthorization)))
-	// request body - decide whether to save body based on content-type
-	contentType := in.Header.Get("Content-Type")
-	shouldSaveBody := audit_util.ShouldDumpBody(contentType)
 
-	if shouldSaveBody {
-		bodyCopy, err := body_util.SmartCloneBody(&in.Body, body_util.MaxSample)
-		if err != nil {
-			return fmt.Errorf("failed to clone request body: %w", err)
-		}
-		bodyCopyBytes, err := io.ReadAll(bodyCopy)
-		if err != nil {
-			return fmt.Errorf("failed to read cloned request body: %w", err)
-		}
-		createReq.RequestBody = excerptor.ExcerptActualRequestBody(string(bodyCopyBytes))
-	} else {
-		// For binary content, only save a descriptive message
-		createReq.RequestBody = fmt.Sprintf("[Binary content omitted - content-type: %s]", contentType)
-	}
 	// user agent
 	createReq.UserAgent = httperrorutil.GetUserAgent(in.Header)
 	// x-request-id
@@ -84,11 +63,12 @@ func (f *Audit) requestInCreateAudit(in *http.Request) error {
 	// insert audit into db
 	newAudit, err := ctxhelper.MustGetDBClient(in.Context()).AuditClient().CreateWhenReceived(in.Context(), &createReq)
 	if err != nil {
-		l := ctxhelper.MustGetLogger(in.Context())
+		l := ctxhelper.MustGetLoggerBase(in.Context())
 		l.Errorf("failed to create audit: %v", err)
 	}
 	if newAudit != nil {
 		ctxhelper.PutAuditID(in.Context(), newAudit.Id)
+		ctxhelper.PutAuditSink(in.Context(), types.New(newAudit.Id, ctxhelper.MustGetLoggerBase(in.Context())))
 	}
 	return nil
 }

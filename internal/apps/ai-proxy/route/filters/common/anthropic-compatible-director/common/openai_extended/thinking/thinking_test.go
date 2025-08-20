@@ -43,7 +43,7 @@ func TestThinking_ToAnthropicThinking(t *testing.T) {
 				},
 			},
 			want: &AnthropicThinking{
-				Thinking: &AnthropicThinkingInternal{Type: "enabled", BudgetTokens: 100},
+				Thinking: &AnthropicThinkingInternal{Type: "enabled", BudgetTokens: 1024}, // adjusted to minimum
 			},
 		},
 		{
@@ -60,7 +60,8 @@ func TestThinking_ToAnthropicThinking(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.fields.UnifiedThinking.ToAnthropicThinking(0); !reflect.DeepEqual(got, tt.want) {
+			maxTokens := 2048 // provide sufficient max_tokens to avoid panic
+			if got := tt.fields.UnifiedThinking.ToAnthropicThinking(maxTokens); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Thinking.ToAnthropicThinking() = %v, want %v", got, tt.want)
 			}
 		})

@@ -88,7 +88,6 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 			prompts = append(prompts, FindUserPrompts(input)...)
 		}
 
-		ctxhelper.PutUserPrompt(pr.Out.Context(), strings.Join(prompts, "\n"))
 		isStream := false
 		if v := req["stream"]; v != nil && v.(bool) {
 			isStream = v.(bool)
@@ -98,6 +97,12 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		// set model name in JSON body
 		if err := f.trySetJSONBodyModelName(pr); err != nil {
 			return fmt.Errorf("failed to set model name in JSON body: %v", err)
+		}
+
+		// prompt
+		prompt := strings.Join(prompts, "\n")
+		if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
+			sink.Note("prompt", prompt)
 		}
 	}
 

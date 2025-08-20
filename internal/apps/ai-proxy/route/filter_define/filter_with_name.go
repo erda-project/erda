@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ctxhelper
+package filter_define
 
-import "context"
-
-// MustGetIsStream retrieves IsStream from context, panics if not found
-func MustGetIsStream(ctx context.Context) bool {
-	value, ok := GetIsStream(ctx)
-	return ok && value
+type FilterWithName[T any] struct {
+	Name     string
+	Instance T
 }

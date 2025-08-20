@@ -4,51 +4,21 @@ routes:
   - path: /proxy/connect/{mcpName}/{mcpTag}
     method: GET
     request_filters:
-      - name: audit
-        config: { stage: in-log }
-      - name: audit
-        config: { stage: in-create-audit }
-      - name: context-authorization
+      - name: auth
       - name: mcp-server-request
-      - name: audit
-        config: { stage: out-log }
     response_filters:
-      - name: audit
-        config: { stage: in-log }
       - name: mcp-server-response
-      - name: audit
-        config: { stage: out-log }
   - path: /proxy/connect/{mcpName}/{mcpTag}
     method: POST
     request_filters:
-      - name: audit
-        config: { stage: in-log }
-      - name: audit
-        config: { stage: in-create-audit }
-      - name: context-authorization
+      - name: auth
       - name: mcp-server-request
-      - name: audit
-        config: { stage: out-log }
     response_filters:
-      - name: audit
-        config: { stage: in-log }
       - name: mcp-server-response
-      - name: audit
-        config: { stage: out-log }
   - path: /proxy/message/{mcpName}/{mcpTag}/*
     method: POST
     request_filters:
-      - name: audit
-        config: { stage: in-log }
-      - name: audit
-        config: { stage: in-create-audit }
-      - name: context-authorization
+      - name: auth
       - name: mcp-server-request
-      - name: audit
-        config: { stage: out-log }
     response_filters:
-      - name: audit
-        config: { stage: in-log }
       - name: mcp-server-response
-      - name: audit
-        config: { stage: out-log }

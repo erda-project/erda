@@ -65,7 +65,6 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	if strings.TrimSpace(req.Prompt) == "" {
 		return fmt.Errorf("prompt is empty")
 	}
-	ctxhelper.PutUserPrompt(pr.Out.Context(), req.Prompt)
 
 	model := ctxhelper.MustGetModel(pr.In.Context())
 
@@ -87,13 +86,12 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		return fmt.Errorf("failed to set req body for set json body model name, err: %v", err)
 	}
 
-	// put image info
-	imageInfo := ctxhelper.ImageInfo{
-		ImageQuality: req.Quality,
-		ImageSize:    req.Size,
-		ImageStyle:   req.Style,
+	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
+		sink.Note("prompt", req.Prompt)
+		sink.Note("image.quality", req.Quality)
+		sink.Note("image.size", req.Size)
+		sink.Note("image.style", req.Style)
 	}
-	ctxhelper.PutImageInfo(pr.Out.Context(), imageInfo)
 
 	return nil
 }

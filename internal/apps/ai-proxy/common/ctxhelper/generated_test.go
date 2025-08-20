@@ -59,12 +59,6 @@ func TestGeneratedFunctions(t *testing.T) {
 		t.Error("Retrieved logger doesn't match stored logger")
 	}
 
-	// Test that custom MustGetLogger works (should create new logger if not found)
-	emptyCtx := InitCtxMapIfNeed(context.Background())
-	customLogger := MustGetLogger(emptyCtx)
-	if customLogger == nil {
-		t.Fatal("MustGetLogger should create a new logger when not found")
-	}
 }
 
 func TestGeneratedFunctionsPanic(t *testing.T) {
@@ -80,30 +74,3 @@ func TestGeneratedFunctionsPanic(t *testing.T) {
 	MustGetRequestID(ctx)
 }
 
-func TestResponseChunkIndexCustomLogic(t *testing.T) {
-	// Test that ResponseChunkIndex has custom MustGet logic (returns -1 instead of panic)
-	ctx := InitCtxMapIfNeed(context.Background())
-
-	// Should not panic, should return -1
-	index := MustGetResponseChunkIndex(ctx)
-	if index != -1 {
-		t.Errorf("MustGetResponseChunkIndex should return -1 when not found, got %d", index)
-	}
-
-	// Test increment functionality
-	newIndex := IncrementResponseChunkIndex(ctx)
-	if newIndex != 1 {
-		t.Errorf("IncrementResponseChunkIndex should return 1 for first increment, got %d", newIndex)
-	}
-
-	// Test IsFirstResponseChunk (should return false when index > 0)
-	if IsFirstResponseChunk(ctx) {
-		t.Error("IsFirstResponseChunk should return false when index is 1")
-	}
-
-	// Test IsFirstResponseChunk with empty context (should return true)
-	emptyCtx2 := InitCtxMapIfNeed(context.Background())
-	if !IsFirstResponseChunk(emptyCtx2) {
-		t.Error("IsFirstResponseChunk should return true when no index is set")
-	}
-}

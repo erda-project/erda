@@ -40,7 +40,7 @@ func init() {
 	filter_define.RegisterFilterCreator("json-no-unicode", ResponseModifierCreator)
 }
 
-func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
+func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) ([]byte, error) {
 	// Only handle non-streaming responses with Content-Type as application/json
 	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		return chunk, nil

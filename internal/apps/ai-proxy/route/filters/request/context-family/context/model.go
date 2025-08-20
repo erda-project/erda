@@ -202,5 +202,5 @@ func constructFriendlyError(ctx context.Context, inputModelName string, inputMod
 	if inputModelPublisher != "" {
 		errMsg += fmt.Sprintf(", publisher: %s", inputModelPublisher)
 	}
-	return fmt.Errorf(errMsg)
+	return fmt.Errorf("%s", errMsg)
 }

@@ -177,12 +177,17 @@ func (c *SessionContext) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		RequestedMessages:       requestedMessages,
 	}
 	ctxhelper.PutMessageGroup(pr.In.Context(), messageGroup)
-	ctxhelper.PutUserPrompt(pr.In.Context(), getPromptFromOpenAIMessage(chatCompletionRequest.Messages[len(chatCompletionRequest.Messages)-1]))
+	userPrompt := getPromptFromOpenAIMessage(chatCompletionRequest.Messages[len(chatCompletionRequest.Messages)-1])
 	ctxhelper.PutIsStream(pr.In.Context(), chatCompletionRequest.Stream)
 
 	// set model name in JSON body
 	if err := c.trySetJSONBodyModelName(pr); err != nil {
 		return fmt.Errorf("failed to set model name in JSON body: %v", err)
+	}
+
+	// audit sink
+	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
+		sink.Note("prompt", userPrompt)
 	}
 
 	return nil

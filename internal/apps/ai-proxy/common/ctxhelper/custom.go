@@ -16,19 +16,20 @@ package ctxhelper
 
 import (
 	"context"
-
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
 )
 
-// MustGetLogger retrieves Logger from context, creates a new one if not found
-// This overrides the generated MustGetLogger to provide special fallback logic
-func MustGetLogger(ctx context.Context) logs.Logger {
-	logger, ok := GetLogger(ctx)
-	if ok {
-		return logger
+// MustGetIsStream retrieves IsStream from context, panics if not found
+func MustGetIsStream(ctx context.Context) bool {
+	value, ok := GetIsStream(ctx)
+	return ok && value
+}
+
+// GetPathParam retrieves a path parameter by key from the PathMatcher in context
+// This is a convenience function that combines PathMatcher retrieval with parameter lookup
+func GetPathParam(ctx context.Context, key string) (string, bool) {
+	pm, ok := GetPathMatcher(ctx)
+	if !ok {
+		return "", false
 	}
-	logger = logrusx.New()
-	PutLogger(ctx, logger)
-	return logger
+	return pm.GetValue(key)
 }

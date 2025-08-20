@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package context_authorization
+package auth
 
 import (
 	"encoding/json"
@@ -20,19 +20,17 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
-const Name = "context-authorization"
+const Name = "auth"
 
 var (
 	_ filter_define.ProxyRequestRewriter = (*Context)(nil)
@@ -97,59 +95,5 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// store data to context
 	ctxhelper.PutClient(ctx, client)
 
-	// model name will be set by specific context-xxx filters
-
-	// save to db
-	return f.saveContextToAudit(pr)
-}
-
-func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
-	auditRecID, ok := ctxhelper.GetAuditID(pr.Out.Context())
-	if !ok || auditRecID == "" {
-		return nil
-	}
-
-	var updateReq pb.AuditUpdateRequestAfterBasicContextParsed
-	updateReq.AuditId = auditRecID
-
-	// client id
-	client, _ := ctxhelper.GetClient(pr.Out.Context())
-	updateReq.ClientId = client.Id
-
-	// biz source
-	updateReq.BizSource = vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource)
-	// operation id
-	updateReq.OperationId = pr.Out.Method + " " + pr.Out.URL.Path
-
-	// set from client token
-	setUserInfoFromClientToken(pr, &updateReq)
-
-	// update audit into db
-	_, err := ctxhelper.MustGetDBClient(pr.Out.Context()).AuditClient().UpdateAfterBasicContextParsed(pr.Out.Context(), &updateReq)
-	if err != nil {
-		// log it
-		l := ctxhelper.MustGetLogger(pr.Out.Context())
-		l.Errorf("failed to update audit: %v", err)
-	}
 	return nil
-}
-
-func setUserInfoFromClientToken(pr *httputil.ProxyRequest, updateReq *pb.AuditUpdateRequestAfterBasicContextParsed) {
-	clientToken, ok := ctxhelper.GetClientToken(pr.Out.Context())
-	if !ok || clientToken == nil {
-		return
-	}
-	meta := metadata.FromProtobuf(clientToken.Metadata)
-	metaCfg := metadata.Config{IgnoreCase: true}
-	updateReq.DingtalkStaffId = meta.MustGetValueByKey(vars.XAIProxyDingTalkStaffID, metaCfg)
-	updateReq.Email = meta.MustGetValueByKey(vars.XAIProxyEmail, metaCfg)
-	updateReq.IdentityJobNumber = meta.MustGetValueByKey(vars.XAIProxyJobNumber, metaCfg)
-	updateReq.Username = meta.MustGetValueByKey(vars.XAIProxyName, metaCfg)
-	updateReq.IdentityPhoneNumber = meta.MustGetValueByKey(vars.XAIProxyPhone, metaCfg)
-	if vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource) == "" { // use token's client's name
-		client, ok := ctxhelper.GetClient(pr.Out.Context())
-		if ok {
-			updateReq.BizSource = client.Name
-		}
-	}
 }
