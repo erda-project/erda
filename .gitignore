@@ -110,3 +110,5 @@ CLAUDE.md
 # go cache
 .gocache/
 .gomodcache/
+
+internal/apps/ai-proxy/route/filters/all/all.go
