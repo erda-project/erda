@@ -16,9 +16,9 @@ package mcp_server
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 )
 
 type MCPServer struct {
