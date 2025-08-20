@@ -15,7 +15,6 @@
 package handler_mcp_server
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"regexp"
@@ -127,13 +126,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 
 func (m *MCPHandler) buildEndpoint(server *pb.MCPServer) string {
 	// http://127.0.0.1:8081/proxy/connect/demo/1.0.0
-	buffer := bytes.Buffer{}
-	buffer.WriteString(m.McpProxyPublicURL)
-	buffer.WriteString("/proxy/connect/")
-	buffer.WriteString(server.Name)
-	buffer.WriteString("/")
-	buffer.WriteString(server.Version)
-	return buffer.String()
+	return m.McpProxyPublicURL + "/proxy/connect/" + server.Name + "/" + server.Version
 }
 
 func VerifyAddr(addr string) error {
