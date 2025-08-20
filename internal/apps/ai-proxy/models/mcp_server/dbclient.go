@@ -312,7 +312,7 @@ func (c *DBClient) ListAll(ctx context.Context, needDeleted bool) ([]*MCPServer,
 	var mcpServers []*MCPServer
 	err := c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if !needDeleted {
-			tx.Where("deleted_at is not null")
+			tx = tx.Unscoped()
 		}
 		return tx.Model(&MCPServer{}).Find(&mcpServers).Error
 	})
