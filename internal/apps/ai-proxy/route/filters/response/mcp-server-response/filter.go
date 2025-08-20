@@ -63,7 +63,7 @@ func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err
 	if err != nil {
 		return chunk, nil
 	}
-	info, ok := ctxhelper.GetmcpMcpInfo(resp.Request.Context())
+	info, ok := ctxhelper.GetMcpInfo(resp.Request.Context())
 	if !ok {
 		return nil, fmt.Errorf("[Proxy Error] mcp info fail")
 	}

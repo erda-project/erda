@@ -51,7 +51,7 @@ type (
 	mapKeyImageInfo          struct{ ImageInfo }
 	mapKeyLogger             struct{ logs.Logger }
 
-	mcpMcpInfo struct {
+	mapKeyMcpInfo struct {
 		McpInfo
 	}
 
