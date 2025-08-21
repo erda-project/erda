@@ -147,8 +147,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Routes = yamlFile.Routes
 	p.Router = router_define.NewRouter()
 	for _, route := range p.Routes {
-		p.Router.AddRoute(route)
-		p.L.Infof("register route from yaml: %s", route)
+		expandedRoutes, err := router_define.ExpandRoute(route)
+		if err != nil {
+			return err
+		}
+		for _, expandedRoute := range expandedRoutes {
+			p.Router.AddRoute(expandedRoute)
+			p.L.Infof("register route from yaml: %s", expandedRoute)
+		}
 	}
 
 	// register gRPC and http handler
