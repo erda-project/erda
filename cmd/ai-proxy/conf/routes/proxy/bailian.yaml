@@ -1,0 +1,14 @@
+routes:
+  - path: /proxy/bailian/*
+    method: POST,GET
+    request_filters:
+      - name: rate-limit
+      - name: check-pass-through
+      - name: auth
+      - name: context
+      - name: reserved-header
+      - name: pass-through-bailian
+    response_filters:
+      - name: set-ai-proxy-header
+      - name: ensure-content-type
+      - name: error-status-handler

@@ -15,7 +15,10 @@
 package router_define
 
 import (
+	"errors"
 	"strings"
+
+	"github.com/mohae/deepcopy"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define/path_matcher"
@@ -76,4 +79,33 @@ func (r *Route) GetPath() string {
 
 func (r *Route) GetMethod() string {
 	return r.Method
+}
+
+// ExpandRoute splits comma-separated paths and methods from a route configuration
+// and returns a slice of individual routes with single path and method
+func ExpandRoute(route *Route) ([]*Route, error) {
+	var expandedRoutes []*Route
+
+	paths := strings.Split(route.Path, ",")
+	methods := strings.Split(route.Method, ",")
+
+	for _, path := range paths {
+		if path == "" {
+			continue
+		}
+		for _, method := range methods {
+			if method == "" {
+				continue
+			}
+			if method == "*" {
+				return nil, errors.New("method cannot be *")
+			}
+			newRoute := deepcopy.Copy(route).(*Route)
+			newRoute.Path = path
+			newRoute.Method = method
+			expandedRoutes = append(expandedRoutes, newRoute)
+		}
+	}
+
+	return expandedRoutes, nil
 }
