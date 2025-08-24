@@ -137,7 +137,7 @@ func (client *DBClient) BatchCleanIssueRelation(issueIDs []uint64) error {
 }
 
 func (client *DBClient) GetIssueRelationsByIDs(issueIDs []uint64, relationTypes []string) ([]IssueRelation, error) {
-	sql := client.Table("dice_issue_relation").Where("issue_id in (?)", issueIDs)
+	sql := client.Table("dice_issue_relation").Where("issue_id in (?)", issueIDs).Or("related_issue in (?)", issueIDs)
 	if len(relationTypes) > 0 {
 		sql = sql.Where("type IN (?)", relationTypes)
 	}
