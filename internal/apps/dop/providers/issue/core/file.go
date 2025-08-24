@@ -404,6 +404,7 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 			inclusionMap[int64(relation.IssueID)] = append(inclusionMap[int64(relation.IssueID)], int64(relation.RelatedIssue))
 		case apistructs.IssueRelationConnection:
 			connectionMap[int64(relation.IssueID)] = append(connectionMap[int64(relation.IssueID)], int64(relation.RelatedIssue))
+			connectionMap[int64(relation.RelatedIssue)] = append(connectionMap[int64(relation.RelatedIssue)], int64(relation.IssueID))
 		}
 	}
 	data.ExportOnly.InclusionMap = inclusionMap
