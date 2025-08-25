@@ -42,6 +42,7 @@ import (
 	_ "github.com/erda-project/erda/modules/core/openapi-ng/routes/openapi-v1"
 	_ "github.com/erda-project/erda/modules/core/openapi-ng/routes/proto"
 	_ "github.com/erda-project/erda/modules/openapi"
+	_ "github.com/erda-project/erda/modules/openapi/settings"
 	_ "github.com/erda-project/erda/providers/audit"
 	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
 	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"

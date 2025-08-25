@@ -11,6 +11,9 @@ redis:
   master_name: "${REDIS_MASTER_NAME}"
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
+openapi-settings:
+  session_expire: "${OPENAPI_SESSION_EXPIRE:30m}"
+
 openapi-ng:
 
 openapi-interceptor-dump:

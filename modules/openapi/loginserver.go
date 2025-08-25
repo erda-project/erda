@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/hooks"
 	"github.com/erda-project/erda/modules/openapi/hooks/prehandle"
+	"github.com/erda-project/erda/modules/openapi/settings"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -42,11 +43,12 @@ type LoginServer struct {
 	auth *auth.Auth
 
 	oauth2server *oauth2.OAuth2Server
+	settings     settings.OpenapiSettings
 }
 
-func NewLoginServer() (*LoginServer, error) {
+func NewLoginServer(settings settings.OpenapiSettings) (*LoginServer, error) {
 	oauth2server := oauth2.NewOAuth2Server()
-	auth, err := auth.NewAuth(oauth2server)
+	auth, err := auth.NewAuth(oauth2server, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +65,7 @@ func NewLoginServer() (*LoginServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LoginServer{r: h, auth: auth, oauth2server: oauth2server}, nil
+	return &LoginServer{r: h, auth: auth, oauth2server: oauth2server, settings: settings}, nil
 }
 
 func (s *LoginServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -158,7 +160,7 @@ func (s *LoginServer) LoginCB(rw http.ResponseWriter, req *http.Request) {
 	}
 	redirectURI := "https://" + conf.GetUCRedirectHost(referer) + "/logincb?referer=" + referer
 	redirectURI = replaceProto(isHTTPS, redirectURI)
-	sessionID, _, err := user.Login(code, redirectURI)
+	sessionID, _, err := user.Login(code, redirectURI, s.settings.GetSessionExpire())
 	if err != nil {
 		logrus.Errorf("login fail: %v", err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
@@ -215,7 +217,7 @@ func (s *LoginServer) PwdLogin(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	user := auth.NewUser(s.auth.RedisCli)
-	sessionID, err := user.PwdLogin(request.Username, request.Password)
+	sessionID, err := user.PwdLogin(request.Username, request.Password, s.settings.GetSessionExpire())
 	if err != nil {
 		errStr := fmt.Sprintf("pwdlogin fail: %v", err)
 		logrus.Error(errStr)

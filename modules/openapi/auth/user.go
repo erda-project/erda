@@ -212,21 +212,21 @@ func (u *User) GetScopeInfo(req *http.Request) (ScopeInfo, AuthResult) {
 }
 
 // return (token, expiredays, err)
-func (u *User) Login(uccode string, redirectURI string) (string, int, error) {
+func (u *User) Login(uccode string, redirectURI string, expire time.Duration) (string, int, error) {
 	u.ucUserAuth.RedirectURI = redirectURI
 	otoken, err := u.ucUserAuth.Login(uccode)
 	if err != nil {
 		logrus.Error(err)
-		return "", SessionExpireDays, err
+		return "", int(expire), err
 	}
 	u.token = otoken
 	userInfo, err := u.ucUserAuth.GetUserInfo(u.token)
 	if err != nil {
-		return "", SessionExpireDays, err
+		return "", int(expire), err
 	}
 	u.info = userInfo
 	u.state = GotInfo
-	if err := u.storeSession(otoken.AccessToken); err != nil {
+	if err := u.storeSession(otoken.AccessToken, expire); err != nil {
 		err_ := errors.Wrap(err, "login: storeSession fail")
 		logrus.Error(err_)
 		return "", SessionExpireDays, err_
@@ -234,7 +234,7 @@ func (u *User) Login(uccode string, redirectURI string) (string, int, error) {
 	return u.sessionID, SessionExpireDays, nil
 }
 
-func (u *User) PwdLogin(username, password string) (string, error) {
+func (u *User) PwdLogin(username, password string, expire time.Duration) (string, error) {
 	otoken, err := u.ucUserAuth.PwdAuth(username, password)
 	if err != nil {
 		logrus.Error(err)
@@ -247,7 +247,7 @@ func (u *User) PwdLogin(username, password string) (string, error) {
 	}
 	u.info = userInfo
 	u.state = GotInfo
-	if err := u.storeSession(otoken.AccessToken); err != nil {
+	if err := u.storeSession(otoken.AccessToken, expire); err != nil {
 		err_ := errors.Wrap(err, "pwdlogin: storeSession fail")
 		logrus.Error(err_)
 		return "", err_
@@ -255,9 +255,9 @@ func (u *User) PwdLogin(username, password string) (string, error) {
 	return u.sessionID, nil
 }
 
-func (u *User) storeSession(token string) error {
+func (u *User) storeSession(token string, expire time.Duration) error {
 	u.sessionID = genSessionID()
-	_, err := u.redisCli.Set(MkSessionKey(u.sessionID), token, SessionExpireDays*24*time.Hour).Result()
+	_, err := u.redisCli.Set(MkSessionKey(u.sessionID), token, expire).Result()
 	if err != nil {
 		err_ := errors.Wrap(err, "storeSession: store redis fail")
 		return err_
