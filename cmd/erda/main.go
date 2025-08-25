@@ -21,6 +21,7 @@ import (
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/openapi"
+	_ "github.com/erda-project/erda/modules/openapi/settings"
 	_ "github.com/erda-project/erda/modules/orchestrator"
 	_ "github.com/erda-project/erda/modules/pipeline"
 )

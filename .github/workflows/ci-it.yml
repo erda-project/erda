@@ -33,7 +33,7 @@ jobs:
       - name: Install Tools
         run: apk add tar
       - name: Go Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           action-name: build
         with:
@@ -91,7 +91,7 @@ jobs:
       - name: Install Tools
         run: apk add tar
       - name: Test Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-test

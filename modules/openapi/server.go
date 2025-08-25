@@ -21,10 +21,11 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/modules/openapi/settings"
 )
 
-func NewServer() (*http.Server, error) {
-	s, err := NewLoginServer()
+func NewServer(settings settings.OpenapiSettings) (*http.Server, error) {
+	s, err := NewLoginServer(settings)
 	if err != nil {
 		return nil, err
 	}

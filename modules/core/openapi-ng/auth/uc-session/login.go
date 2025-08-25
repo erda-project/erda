@@ -59,7 +59,7 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 	redirectURI := fmt.Sprintf("%s://%s/logincb?referer=%s", scheme, p.getUCRedirectHost(referer, r.URL.Host), url.QueryEscape(referer))
 
 	user := auth.NewUser(p.Redis)
-	sessionID, _, err := user.Login(code, redirectURI)
+	sessionID, _, err := user.Login(code, redirectURI, p.Settings.GetSessionExpire())
 	if err != nil {
 		p.Log.Errorf("failed to login: %v", err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
