@@ -41,7 +41,7 @@ func (p *provider) Run(ctx context.Context) error {
 	logrus.Infof(version.String())
 	logrus.Errorf("[alert] openapi instance start")
 	conf.Load()
-	srv, err := NewServer(p.TokenService)
+	srv, err := NewServer(p.TokenService, nil)
 	if err != nil {
 		return err
 	}

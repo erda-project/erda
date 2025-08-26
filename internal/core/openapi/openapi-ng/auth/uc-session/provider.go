@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/core/openapi/settings"
 	"github.com/erda-project/erda/internal/core/org"
 )
 
@@ -54,6 +55,7 @@ type provider struct {
 	Org    org.Interface
 
 	referMatcher *referMatcher
+	Settings     settings.OpenapiSettings `autowired:"openapi-settings"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

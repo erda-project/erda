@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/hooks"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/hooks/prehandle"
+	"github.com/erda-project/erda/internal/core/openapi/settings"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -45,9 +46,9 @@ type LoginServer struct {
 	oauth2server *oauth2.OAuth2Server
 }
 
-func NewLoginServer(token tokenpb.TokenServiceServer) (*LoginServer, error) {
+func NewLoginServer(token tokenpb.TokenServiceServer, settings settings.OpenapiSettings) (*LoginServer, error) {
 	oauth2server := oauth2.NewOAuth2Server()
-	auth, err := auth.NewAuth(oauth2server, token)
+	auth, err := auth.NewAuth(oauth2server, token, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ func (s *LoginServer) Login(rw http.ResponseWriter, req *http.Request) {
 func (s *LoginServer) LoginCB(rw http.ResponseWriter, req *http.Request) {
 	code := req.URL.Query().Get("code")
 	referer := req.URL.Query().Get("referer")
-	user := auth.NewUser(s.auth.RedisCli)
+	user := auth.NewUser(s.auth.RedisCli, s.auth.Settings.GetSessionExpire())
 	isHTTPS, err := IsHTTPS(req)
 	if err != nil {
 		logrus.Errorf("LoginCB: no Referer Header in request")
@@ -153,7 +154,7 @@ func (s *LoginServer) LoginCB(rw http.ResponseWriter, req *http.Request) {
 	}
 	redirectURI := "https://" + conf.GetUCRedirectHost(referer) + "/logincb?referer=" + referer
 	redirectURI = replaceProto(isHTTPS, redirectURI)
-	sessionID, _, err := user.Login(code, redirectURI)
+	sessionID, _, err := user.Login(code, redirectURI, s.auth.Settings.GetSessionExpire())
 	if err != nil {
 		logrus.Errorf("login fail: %v", err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
@@ -209,8 +210,8 @@ func (s *LoginServer) PwdLogin(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, errStr, http.StatusUnauthorized)
 		return
 	}
-	user := auth.NewUser(s.auth.RedisCli)
-	sessionID, err := user.PwdLogin(request.Username, request.Password)
+	user := auth.NewUser(s.auth.RedisCli, s.auth.Settings.GetSessionExpire())
+	sessionID, err := user.PwdLogin(request.Username, request.Password, s.auth.Settings.GetSessionExpire())
 	if err != nil {
 		errStr := fmt.Sprintf("pwdlogin fail: %v", err)
 		logrus.Error(errStr)
@@ -252,7 +253,7 @@ func (s *LoginServer) Logout(rw http.ResponseWriter, req *http.Request) {
 	if conf.OryEnabled() {
 		// no need to delete cookie
 	} else {
-		user := auth.NewUser(s.auth.RedisCli)
+		user := auth.NewUser(s.auth.RedisCli, s.auth.Settings.GetSessionExpire())
 		if err := user.Logout(req); err != nil {
 			errStr := fmt.Sprintf("logout: %v", err)
 			logrus.Error(errStr)
@@ -298,7 +299,7 @@ type ApiData struct {
 }
 
 func (s *LoginServer) UserInfo(rw http.ResponseWriter, req *http.Request) {
-	user := auth.NewUser(s.auth.RedisCli)
+	user := auth.NewUser(s.auth.RedisCli, s.auth.Settings.GetSessionExpire())
 	logrus.Debugf("userinfo: %v", req.Cookies())
 	info, authr := user.GetInfo(req)
 	if authr.Code != auth.AuthSucc {

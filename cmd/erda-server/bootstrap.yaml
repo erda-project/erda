@@ -111,6 +111,8 @@ grpc-client@erda.core.clustermanager.cluster:
 erda.core.clustermanager.cluster-client: { }
 
 ############# openapi
+openapi-settings:
+  session_expire: "${OPENAPI_SESSION_EXPIRE:120h}"
 openapi-ng:
 http-server@openapi:
   addr: ":9529"
