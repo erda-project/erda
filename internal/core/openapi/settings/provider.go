@@ -15,10 +15,13 @@
 package settings
 
 import (
+	"errors"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
+
+const DefaultSessionExpire time.Duration = time.Hour * 24 * 5
 
 type OpenapiSettings interface {
 	GetSessionExpire() time.Duration
@@ -36,6 +39,9 @@ func (p *provider) GetSessionExpire() time.Duration {
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
+	if p.Cfg.SessionExpire < 0 {
+		return errors.New("session_expire must be greater than or equal to 0")
+	}
 	return nil
 }
 

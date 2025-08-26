@@ -172,6 +172,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		fallthrough
 	case GotScopeInfo:
 		if state == GotScopeInfo {
+			// if sessionExpire is less than or equal to zero, it means no need to renew session in Redis
 			if u.sessionExpire > 0 {
 				u.redisCli.Expire(MkSessionKey(u.sessionID), u.sessionExpire)
 			}
@@ -236,23 +237,24 @@ func (u *User) GetScopeInfo(req *http.Request) (ScopeInfo, AuthResult) {
 func (u *User) Login(uccode string, redirectURI string, expiration time.Duration) (string, int, error) {
 	u.ucUserAuth.RedirectURI = redirectURI
 	otoken, err := u.ucUserAuth.Login(uccode)
+	expireDays := int(expiration / (time.Hour * 24))
 	if err != nil {
 		logrus.Error(err)
-		return "", int(expiration), err
+		return "", expireDays, err
 	}
 	u.token = otoken
 	userInfo, err := u.ucUserAuth.GetUserInfo(u.token)
 	if err != nil {
-		return "", int(expiration), err
+		return "", expireDays, err
 	}
 	u.info = userInfo
 	u.state = GotInfo
 	if err := u.storeSession(otoken.AccessToken, expiration); err != nil {
 		err_ := errors.Wrap(err, "login: storeSession fail")
 		logrus.Error(err_)
-		return "", int(expiration), err_
+		return "", expireDays, err_
 	}
-	return u.sessionID, int(expiration), nil
+	return u.sessionID, expireDays, nil
 }
 
 func (u *User) PwdLogin(username, password string, expiration time.Duration) (string, error) {
