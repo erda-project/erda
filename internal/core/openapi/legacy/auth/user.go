@@ -69,26 +69,27 @@ type ScopeInfo struct {
 }
 
 type User struct {
-	sessionID  string
-	token      uc.OAuthToken
-	info       identity.UserInfo
-	scopeInfo  ScopeInfo
-	state      GetUserState
-	redisCli   *redis.Client
-	ucUserAuth *uc.UCUserAuth
+	sessionID     string
+	token         uc.OAuthToken
+	info          identity.UserInfo
+	scopeInfo     ScopeInfo
+	state         GetUserState
+	redisCli      *redis.Client
+	ucUserAuth    *uc.UCUserAuth
+	sessionExpire time.Duration
 
 	bundle *bundle.Bundle
 }
 
 var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
-func NewUser(redisCli *redis.Client) *User {
+func NewUser(redisCli *redis.Client, expire time.Duration) *User {
 	ucUserAuth := uc.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client}
+	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client, sessionExpire: expire}
 }
 
 func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
@@ -108,7 +109,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 			token = u.sessionID
 			err = nil
 		}
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return nil, AuthResult{AuthFail,
 				errors.Wrap(ErrNotExist, "User:GetInfo:GotSessionID:not exist: "+u.sessionID).Error()}
 		} else if err != nil {
@@ -171,6 +172,10 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		fallthrough
 	case GotScopeInfo:
 		if state == GotScopeInfo {
+			// if sessionExpire is less than or equal to zero, it means no need to renew session in Redis
+			if u.sessionExpire > 0 {
+				u.redisCli.Expire(MkSessionKey(u.sessionID), u.sessionExpire)
+			}
 			return u.scopeInfo, AuthResult{AuthSucc, ""}
 		}
 	}
@@ -229,29 +234,30 @@ func (u *User) GetScopeInfo(req *http.Request) (ScopeInfo, AuthResult) {
 }
 
 // return (token, expiredays, err)
-func (u *User) Login(uccode string, redirectURI string) (string, int, error) {
+func (u *User) Login(uccode string, redirectURI string, expiration time.Duration) (string, int, error) {
 	u.ucUserAuth.RedirectURI = redirectURI
 	otoken, err := u.ucUserAuth.Login(uccode)
+	expireDays := int(expiration / (time.Hour * 24))
 	if err != nil {
 		logrus.Error(err)
-		return "", SessionExpireDays, err
+		return "", expireDays, err
 	}
 	u.token = otoken
 	userInfo, err := u.ucUserAuth.GetUserInfo(u.token)
 	if err != nil {
-		return "", SessionExpireDays, err
+		return "", expireDays, err
 	}
 	u.info = userInfo
 	u.state = GotInfo
-	if err := u.storeSession(otoken.AccessToken); err != nil {
+	if err := u.storeSession(otoken.AccessToken, expiration); err != nil {
 		err_ := errors.Wrap(err, "login: storeSession fail")
 		logrus.Error(err_)
-		return "", SessionExpireDays, err_
+		return "", expireDays, err_
 	}
-	return u.sessionID, SessionExpireDays, nil
+	return u.sessionID, expireDays, nil
 }
 
-func (u *User) PwdLogin(username, password string) (string, error) {
+func (u *User) PwdLogin(username, password string, expiration time.Duration) (string, error) {
 	otoken, err := u.ucUserAuth.PwdAuth(username, password)
 	if err != nil {
 		logrus.Error(err)
@@ -264,7 +270,7 @@ func (u *User) PwdLogin(username, password string) (string, error) {
 	}
 	u.info = userInfo
 	u.state = GotInfo
-	if err := u.storeSession(otoken.AccessToken); err != nil {
+	if err := u.storeSession(otoken.AccessToken, expiration); err != nil {
 		err_ := errors.Wrap(err, "pwdlogin: storeSession fail")
 		logrus.Error(err_)
 		return "", err_
@@ -272,9 +278,9 @@ func (u *User) PwdLogin(username, password string) (string, error) {
 	return u.sessionID, nil
 }
 
-func (u *User) storeSession(token string) error {
+func (u *User) storeSession(token string, expiration time.Duration) error {
 	u.sessionID = genSessionID()
-	_, err := u.redisCli.Set(MkSessionKey(u.sessionID), token, SessionExpireDays*24*time.Hour).Result()
+	_, err := u.redisCli.Set(MkSessionKey(u.sessionID), token, expiration).Result()
 	if err != nil {
 		err_ := errors.Wrap(err, "storeSession: store redis fail")
 		return err_

@@ -42,7 +42,7 @@ func (a *loginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, i
 }
 
 func (a *loginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
-	user := auth.NewUser(a.p.Redis)
+	user := auth.NewUser(a.p.Redis, a.p.Settings.GetSessionExpire())
 	r = r.WithContext(context.WithValue(r.Context(), "session", data.(string)))
 	result := user.IsLogin(r)
 	if result.Code != auth.AuthSucc {
@@ -93,7 +93,7 @@ func (a *tryLoginChecker) Match(r *http.Request, opts openapiauth.Options) (bool
 }
 
 func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
-	user := auth.NewUser(a.p.Redis)
+	user := auth.NewUser(a.p.Redis, a.p.Settings.GetSessionExpire())
 	r = r.WithContext(context.WithValue(r.Context(), "session", data.(string)))
 	result := user.IsLogin(r)
 	if result.Code == auth.AuthSucc {

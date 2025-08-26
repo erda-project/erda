@@ -33,7 +33,7 @@ func (p *provider) GetUserInfo(rw http.ResponseWriter, r *http.Request) {
 	if len(session) > 0 {
 		r = r.WithContext(context.WithValue(r.Context(), "session", session))
 	}
-	user := auth.NewUser(p.Redis)
+	user := auth.NewUser(p.Redis, p.Settings.GetSessionExpire())
 	info, authr := user.GetInfo(r)
 	if authr.Code != auth.AuthSucc {
 		http.Error(rw, authr.Detail, authr.Code)
