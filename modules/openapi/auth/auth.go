@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/spec"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/monitor"
+	"github.com/erda-project/erda/modules/openapi/settings"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -56,9 +57,10 @@ const (
 type Auth struct {
 	RedisCli     *redis.Client
 	OAuth2Server *oauth2.OAuth2Server
+	settings     settings.OpenapiSettings
 }
 
-func NewAuth(oauth2server *oauth2.OAuth2Server) (*Auth, error) {
+func NewAuth(oauth2server *oauth2.OAuth2Server, settings settings.OpenapiSettings) (*Auth, error) {
 	sentinelAddrs := strings.Split(conf.RedisSentinelAddrs(), ",")
 	RedisCli := redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    conf.RedisMasterName(),
@@ -68,7 +70,7 @@ func NewAuth(oauth2server *oauth2.OAuth2Server) (*Auth, error) {
 	if _, err := RedisCli.Ping().Result(); err != nil {
 		return nil, err
 	}
-	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server}, nil
+	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server, settings: settings}, nil
 }
 
 func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
@@ -92,7 +94,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 	case NONE:
 		break
 	case LOGIN:
-		user := NewUser(a.RedisCli)
+		user := NewUser(a.RedisCli, a.settings.GetSessionExpire())
 		if r = a.checkLogin(req, user, spec); r.Code != AuthSucc {
 			return r
 		}
@@ -100,7 +102,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			return r
 		}
 	case TRY_LOGIN:
-		user := NewUser(a.RedisCli)
+		user := NewUser(a.RedisCli, a.settings.GetSessionExpire())
 		if r := a.checkLogin(req, user, spec); r.Code != AuthSucc {
 			break
 		}
@@ -108,7 +110,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			break
 		}
 	case BASICAUTH:
-		user := NewUser(a.RedisCli)
+		user := NewUser(a.RedisCli, a.settings.GetSessionExpire())
 		if r = a.checkBasicAuth(req, user); r.Code != AuthSucc {
 			return r
 		}
@@ -221,7 +223,7 @@ func (a *Auth) checkBasicAuth(req *http.Request, user *User) AuthResult {
 		return AuthResult{AuthFail,
 			fmt.Sprintf("checkBasicAuth: split username and password fail: %v", userNameAndPwd)}
 	}
-	_, err = user.PwdLogin(splitted[0], splitted[1])
+	_, err = user.PwdLogin(splitted[0], splitted[1], a.settings.GetSessionExpire())
 	if err != nil {
 		return AuthResult{Unauthed, err.Error()}
 	}

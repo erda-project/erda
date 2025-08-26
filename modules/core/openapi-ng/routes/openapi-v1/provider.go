@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/hooks"
+	"github.com/erda-project/erda/modules/openapi/settings"
 	discover "github.com/erda-project/erda/providers/service-discover"
 )
 
@@ -43,6 +44,7 @@ type provider struct {
 	Router   openapi.Interface  `autowired:"openapi-router"`
 	proxy    proxy.Proxy
 	handler  http.Handler
+	Settings settings.OpenapiSettings `autowired:"openapi-settings"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -50,7 +52,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Discover = p.Discover
 	hooks.Enable = false
 	conf.Load()
-	srv, err := openapiv1.NewServer()
+	srv, err := openapiv1.NewServer(p.Settings)
 	if err != nil {
 		return err
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/modules/openapi/settings"
 )
 
 type config struct {
@@ -30,14 +31,15 @@ type config struct {
 }
 
 type provider struct {
-	Cfg *config
+	Cfg      *config
+	Settings settings.OpenapiSettings `autowired:"openapi-settings"`
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Infof(version.String())
 	logrus.Errorf("[alert] openapi instance start")
 	conf.Load()
-	srv, err := NewServer()
+	srv, err := NewServer(p.Settings)
 	if err != nil {
 		return err
 	}
