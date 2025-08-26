@@ -96,7 +96,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 	case NONE:
 		break
 	case LOGIN:
-		user := NewUser(a.RedisCli)
+		user := NewUser(a.RedisCli, a.Settings.GetSessionExpire())
 		if r = a.checkLogin(req, user, spec); r.Code != AuthSucc {
 			return r
 		}
@@ -104,7 +104,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			return r
 		}
 	case TRY_LOGIN:
-		user := NewUser(a.RedisCli)
+		user := NewUser(a.RedisCli, a.Settings.GetSessionExpire())
 		if r := a.checkLogin(req, user, spec); r.Code != AuthSucc {
 			break
 		}
@@ -112,7 +112,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			break
 		}
 	case BASICAUTH:
-		user := NewUser(a.RedisCli)
+		user := NewUser(a.RedisCli, a.Settings.GetSessionExpire())
 		if r = a.checkBasicAuth(req, user); r.Code != AuthSucc {
 			return r
 		}

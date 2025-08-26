@@ -69,26 +69,27 @@ type ScopeInfo struct {
 }
 
 type User struct {
-	sessionID  string
-	token      uc.OAuthToken
-	info       identity.UserInfo
-	scopeInfo  ScopeInfo
-	state      GetUserState
-	redisCli   *redis.Client
-	ucUserAuth *uc.UCUserAuth
+	sessionID     string
+	token         uc.OAuthToken
+	info          identity.UserInfo
+	scopeInfo     ScopeInfo
+	state         GetUserState
+	redisCli      *redis.Client
+	ucUserAuth    *uc.UCUserAuth
+	sessionExpire time.Duration
 
 	bundle *bundle.Bundle
 }
 
 var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
-func NewUser(redisCli *redis.Client) *User {
+func NewUser(redisCli *redis.Client, expire time.Duration) *User {
 	ucUserAuth := uc.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client}
+	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client, sessionExpire: expire}
 }
 
 func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
@@ -108,7 +109,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 			token = u.sessionID
 			err = nil
 		}
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return nil, AuthResult{AuthFail,
 				errors.Wrap(ErrNotExist, "User:GetInfo:GotSessionID:not exist: "+u.sessionID).Error()}
 		} else if err != nil {
@@ -171,6 +172,9 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		fallthrough
 	case GotScopeInfo:
 		if state == GotScopeInfo {
+			if u.sessionExpire > 0 {
+				u.redisCli.Expire(MkSessionKey(u.sessionID), u.sessionExpire)
+			}
 			return u.scopeInfo, AuthResult{AuthSucc, ""}
 		}
 	}

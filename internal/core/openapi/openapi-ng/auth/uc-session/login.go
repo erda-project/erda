@@ -58,7 +58,7 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 	scheme := p.getScheme(r)
 	redirectURI := fmt.Sprintf("%s://%s/logincb?referer=%s", scheme, p.getUCRedirectHost(referer, r.URL.Host), url.QueryEscape(referer))
 
-	user := auth.NewUser(p.Redis)
+	user := auth.NewUser(p.Redis, p.Settings.GetSessionExpire())
 	sessionID, _, err := user.Login(code, redirectURI, p.Settings.GetSessionExpire())
 	if err != nil {
 		p.Log.Errorf("failed to login: %v", err)
@@ -95,7 +95,7 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 	session := p.getSession(r)
 	if len(session) > 0 {
 		r = r.WithContext(context.WithValue(r.Context(), "session", session))
-		if err := auth.NewUser(p.Redis).Logout(r); err != nil {
+		if err := auth.NewUser(p.Redis, p.Settings.GetSessionExpire()).Logout(r); err != nil {
 			err := fmt.Errorf("logout: %v", err)
 			p.Log.Error(err)
 			http.Error(rw, err.Error(), http.StatusBadGateway)

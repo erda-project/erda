@@ -75,7 +75,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := auth.NewUser(p.Redis)
+	user := auth.NewUser(p.Redis, p.Settings.GetSessionExpire())
 	sessionID, err := user.PwdLogin(params.Username, params.Password, p.Settings.GetSessionExpire())
 	if err != nil {
 		err := fmt.Errorf("failed to PwdLogin: %v", err)
