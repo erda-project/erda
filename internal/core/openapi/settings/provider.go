@@ -15,8 +15,9 @@
 package settings
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"time"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
 type OpenapiSettings interface {
