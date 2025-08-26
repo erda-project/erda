@@ -72,6 +72,78 @@ func (w *DBWriter) Write(ctx context.Context, p types.Patch) {
 		rec.Metadata.Public = map[string]any{}
 	}
 
+	// Decoder with weak typing + custom hooks
+	cfg := &mapstructure.DecoderConfig{
+		Result:           rec,
+		WeaklyTypedInput: true,
+		ZeroFields:       false, // don't zero other fields
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			// time.Time: RFC3339 / common formats / unix seconds or milliseconds
+			func(from, to reflect.Type, data any) (any, error) {
+				if to != reflect.TypeOf(time.Time{}) {
+					return data, nil
+				}
+				switch x := data.(type) {
+				case time.Time:
+					return x, nil
+				case string:
+					s := strings.TrimSpace(x)
+					formats := []string{
+						time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05", "2006-01-02",
+					}
+					for _, f := range formats {
+						if t, err := time.Parse(f, s); err == nil {
+							return t, nil
+						}
+					}
+					if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+						if i > 1e12 {
+							return time.UnixMilli(i), nil
+						}
+						return time.Unix(i, 0), nil
+					}
+				case int64:
+					return time.Unix(x, 0), nil
+				case int:
+					return time.Unix(int64(x), 0), nil
+				case float64:
+					return time.Unix(int64(x), 0), nil
+				}
+				return data, nil
+			},
+			// []byte: allow string -> []byte
+			func(from, to reflect.Type, data any) (any, error) {
+				if to.Kind() == reflect.Slice && to.Elem().Kind() == reflect.Uint8 {
+					switch s := data.(type) {
+					case string:
+						return []byte(s), nil
+					}
+				}
+				return data, nil
+			},
+			// JSON string -> struct/map/slice
+			func(from, to reflect.Type, data any) (any, error) {
+				s, ok := data.(string)
+				if !ok {
+					return data, nil
+				}
+				dstKind := to.Kind()
+				if !(dstKind == reflect.Struct || dstKind == reflect.Map || dstKind == reflect.Slice) {
+					return data, nil
+				}
+				trim := strings.TrimSpace(s)
+				if len(trim) == 0 || (trim[0] != '{' && trim[0] != '[' && trim != "null") {
+					return data, nil
+				}
+				dst := reflect.New(to).Interface()
+				if err := json.Unmarshal([]byte(s), dst); err != nil {
+					return data, nil
+				}
+				return reflect.ValueOf(dst).Elem().Interface(), nil
+			},
+		),
+	}
+
 	for k, v := range p.Notes {
 		// map column name -> struct field name
 		fieldName, exists := tableFieldMap[k]
@@ -84,77 +156,6 @@ func (w *DBWriter) Write(ctx context.Context, p types.Patch) {
 		// Build a tiny updates map for this single field
 		updates := map[string]any{fieldName: v}
 
-		// Decoder with weak typing + custom hooks
-		cfg := &mapstructure.DecoderConfig{
-			Result:           rec,
-			WeaklyTypedInput: true,
-			ZeroFields:       false, // don't zero other fields
-			DecodeHook: mapstructure.ComposeDecodeHookFunc(
-				// time.Time: RFC3339 / common formats / unix seconds or milliseconds
-				func(from, to reflect.Type, data any) (any, error) {
-					if to != reflect.TypeOf(time.Time{}) {
-						return data, nil
-					}
-					switch x := data.(type) {
-					case time.Time:
-						return x, nil
-					case string:
-						s := strings.TrimSpace(x)
-						formats := []string{
-							time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05", "2006-01-02",
-						}
-						for _, f := range formats {
-							if t, err := time.Parse(f, s); err == nil {
-								return t, nil
-							}
-						}
-						if i, err := strconv.ParseInt(s, 10, 64); err == nil {
-							if i > 1e12 {
-								return time.UnixMilli(i), nil
-							}
-							return time.Unix(i, 0), nil
-						}
-					case int64:
-						return time.Unix(x, 0), nil
-					case int:
-						return time.Unix(int64(x), 0), nil
-					case float64:
-						return time.Unix(int64(x), 0), nil
-					}
-					return data, nil
-				},
-				// []byte: allow string -> []byte
-				func(from, to reflect.Type, data any) (any, error) {
-					if to.Kind() == reflect.Slice && to.Elem().Kind() == reflect.Uint8 {
-						switch s := data.(type) {
-						case string:
-							return []byte(s), nil
-						}
-					}
-					return data, nil
-				},
-				// JSON string -> struct/map/slice
-				func(from, to reflect.Type, data any) (any, error) {
-					s, ok := data.(string)
-					if !ok {
-						return data, nil
-					}
-					dstKind := to.Kind()
-					if !(dstKind == reflect.Struct || dstKind == reflect.Map || dstKind == reflect.Slice) {
-						return data, nil
-					}
-					trim := strings.TrimSpace(s)
-					if len(trim) == 0 || (trim[0] != '{' && trim[0] != '[' && trim != "null") {
-						return data, nil
-					}
-					dst := reflect.New(to).Interface()
-					if err := json.Unmarshal([]byte(s), dst); err != nil {
-						return data, nil
-					}
-					return reflect.ValueOf(dst).Elem().Interface(), nil
-				},
-			),
-		}
 		dec, err := mapstructure.NewDecoder(cfg)
 		if err != nil {
 			ctxhelper.MustGetLoggerBase(ctx).Warnf("failed to create decoder: %v", err)

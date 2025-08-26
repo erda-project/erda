@@ -23,6 +23,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 )
@@ -98,9 +99,7 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 		f.completion = completion
 	}
 
-	if sink, ok := ctxhelper.GetAuditSink(resp.Request.Context()); ok {
-		sink.Note("completion", f.completion)
-	}
+	audithelper.Note(resp.Request.Context(), "completion", f.completion)
 
 	return nil, nil
 }

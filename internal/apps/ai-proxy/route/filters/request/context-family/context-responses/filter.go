@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -101,9 +102,7 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 
 		// prompt
 		prompt := strings.Join(prompts, "\n")
-		if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
-			sink.Note("prompt", prompt)
-		}
+		audithelper.Note(pr.In.Context(), "prompt", prompt)
 	}
 
 	return nil

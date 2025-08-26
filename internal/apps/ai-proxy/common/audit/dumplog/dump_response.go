@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -30,11 +31,9 @@ func DumpResponseHeaders(resp *http.Response) {
 	}
 	ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response headers:\n%s", string(dumpBytes))
 	// collect actual llm response info
-	if sink, ok := ctxhelper.GetAuditSink(resp.Request.Context()); ok {
-		sink.Note("status", resp.StatusCode)
-		sink.Note("actual_response_header", resp.Header)
-		sink.Note("response_content_type", resp.Header.Get(httperrorutil.HeaderKeyContentType))
-	}
+	audithelper.Note(resp.Request.Context(), "status", resp.StatusCode)
+	audithelper.Note(resp.Request.Context(), "actual_response_header", resp.Header)
+	audithelper.Note(resp.Request.Context(), "response_content_type", resp.Header.Get(httperrorutil.HeaderKeyContentType))
 }
 
 func DumpResponseBodyChunk(resp *http.Response, chunk []byte, index int64) {

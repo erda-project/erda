@@ -8,13 +8,8 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: reserved-header
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler
 
   # List files
   - path: /v1/files
@@ -24,13 +19,8 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: reserved-header
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler
 
   # Retrieve file
   - path: /v1/files/{file_id}
@@ -40,13 +30,8 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: reserved-header
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler
 
   # Delete file
   - path: /v1/files/{file_id}
@@ -56,13 +41,8 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: reserved-header
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler
 
   # Retrieve file content
   - path: /v1/files/{file_id}/content
@@ -72,10 +52,5 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: reserved-header
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler

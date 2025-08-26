@@ -15,29 +15,16 @@
 package ai_proxy
 
 import (
-	"bytes"
-	"context"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httputil"
-	"reflect"
-	"runtime/debug"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/notes"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/skeleton"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
-	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 )
@@ -55,7 +42,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		callID := requestid.GetCallID(r)
 		logger.Set("req", reqID).Set("call", callID)
 		baseLogger.Set("req", reqID).Set("call", callID)
-		logger.Infof("reverse proxy handler: %s %s", r.Method, r.URL.String())
+		baseLogger.Infof("reverse proxy handler: %s %s", r.Method, r.URL.String())
 		ctxhelper.PutLogger(ctx, logger)
 		ctxhelper.PutLoggerBase(ctx, baseLogger)
 		ctxhelper.PutRequestID(ctx, reqID)
@@ -110,7 +97,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 
 		// reverse proxy
 		proxy := httputil.ReverseProxy{
-			Rewrite: myRewrite(w, requestFilters),
+			Rewrite: reverse_proxy.MyRewrite(w, requestFilters),
 			Transport: &transports.RequestFilterGeneratedResponseTransport{
 				Inner: &transports.CurlPrinterTransport{
 					Inner: &transports.TimerTransport{},
@@ -119,252 +106,9 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 			FlushInterval:  -1,
 			ErrorLog:       nil,
 			BufferPool:     nil,
-			ModifyResponse: myResponseModify(w, responseFilters),
-			ErrorHandler:   myErrorHandler(),
+			ModifyResponse: reverse_proxy.MyResponseModify(w, responseFilters),
+			ErrorHandler:   reverse_proxy.MyErrorHandler(),
 		}
 		proxy.ServeHTTP(w, r)
-	}
-}
-
-var myRewrite = func(w http.ResponseWriter, requestFilters []filter_define.FilterWithName[filter_define.ProxyRequestRewriter]) func(*httputil.ProxyRequest) {
-	return func(pr *httputil.ProxyRequest) {
-		var brokenFilterName string
-		var brokenInErr error
-		defer func() {
-			if r := recover(); r != nil {
-				debug.PrintStack()
-				brokenInErr = fmt.Errorf("panic: %v", r)
-			}
-			if brokenInErr == nil {
-				return
-			}
-			ctxhelper.PutReverseProxyRequestRewriterError(pr.In.Context(), &ctxhelper.ReverseProxyRequestRewriterError{
-				FilterName: brokenFilterName,
-				Error:      brokenInErr,
-			})
-			// force make RoundTrip failed and handle error at ErrorHandler
-			pr.Out.URL.Host = ""
-			pr.Out.URL.Scheme = ""
-			return
-		}()
-		// Enhance ProxyRequest
-		// Since pr.In and pr.Out share the same body reader, need to save data first and give each one a copy
-		if pr.In.Body != nil {
-			save, err := io.ReadAll(pr.In.Body)
-			if err != nil {
-				brokenInErr = err
-				panic(brokenInErr)
-			}
-			_ = pr.In.Body.Close()
-			pr.In.Body = io.NopCloser(bytes.NewReader(save))
-			pr.Out.Body = io.NopCloser(bytes.NewReader(bytes.Clone(save)))
-		}
-
-		inSnap, err := body_util.SafeCloneRequest(pr.In, body_util.MaxSample)
-		if err != nil {
-			brokenInErr = err
-			panic(brokenInErr)
-		}
-
-		// dump request in
-		if err := skeleton.CreateSkeleton(pr.In); err != nil {
-			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("failed to create audit skeleton: %v", err)
-		}
-		dumplog.DumpRequestIn(pr.In)
-
-		for _, filter := range requestFilters {
-			// inject logger with package name into the context
-			logutil.InjectLoggerWithFilterInfo(pr.In.Context(), filter)
-
-			if rewriter, ok := filter.Instance.(filter_define.ProxyRequestRewriter); ok {
-				pr.In = &inSnap // pr.In cannot be modified, so we always put original pr.In, discard changes by previous filters
-				if err := rewriter.OnProxyRequest(pr); err != nil {
-					brokenFilterName = filter.Name
-					brokenInErr = err
-					break
-				}
-			}
-		}
-
-		dumplog.DumpRequestOut(pr.Out)
-	}
-}
-
-// myResponseModify will be assigned to ReverseProxy.ModifyResponse inside p.ServeHTTP.
-//
-// Key flow:
-//  1. First run all ProxyResponseModifier.OnHeaders(), allowing addition/removal of response headers and Trailer declaration.
-//  2. Loop read chunks according to ChunkSplitter in ctx (default FixedSize);
-//     each chunk flows through all Modifier.OnBodyChunk() in sequence; write to downstream immediately after getting out.
-//  3. When stream ends or errors, call each Modifier.OnComplete();
-//     they can write trailer headers to resp.Trailer.
-//  4. Return nil; ReverseProxy will continue copying resp to client.
-var myResponseModify = func(w http.ResponseWriter, filters []filter_define.FilterWithName[filter_define.ProxyResponseModifier]) func(*http.Response) error {
-	return func(resp *http.Response) (_err error) {
-		upstream := resp.Body
-		pr, pw := io.Pipe()
-		resp.Body = pr // Replace with read end
-
-		defer func() {
-			if r := recover(); r != nil {
-				debug.PrintStack()
-				// ① Close pipe -> client immediately receives 502
-				pw.CloseWithError(fmt.Errorf("panic: %v", r))
-				// ② Let ReverseProxy go to ErrorHandler instead of continuing normal flow
-				_err = fmt.Errorf("panic from response modify: %v", r)
-			}
-		}()
-
-		// 1) Choose chunk splitting strategy -- get from ctx; fallback to FixedSize if none
-		// Determine splitter based on original response header
-		splitter := set_resp_body_chunk_splitter.GetSplitterByResp(resp)
-		if splitter == nil {
-			panic("no RespBodyChunkSplitter found in context")
-		}
-		// Wrap as auto-decompressing splitter
-		autoDecompressSplitter := set_resp_body_chunk_splitter.NewDecompressingChunkSplitter(splitter, resp)
-		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("splitter: %s", reflect.TypeOf(splitter))
-
-		// ---------------------------------------------------------------------
-		// 2) Let all Modifiers run OnHeaders first
-		dumplog.DumpResponseHeaders(resp)
-		for _, filter := range filters {
-			logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
-			if err := filter.Instance.OnHeaders(resp); err != nil {
-				return err
-			}
-		}
-
-		// Force chunked transfer, worry-free
-		resp.Header.Del("Content-Length")
-		if ctxhelper.MustGetIsStream(resp.Request.Context()) && resp.Header.Get("Content-Type") == "" {
-			resp.Header.Set("Content-Type", "text/event-stream; charset=utf-8")
-		}
-
-		// ---------------------------------------------------------------------
-		// 3) Write upstream Body-Splitter-Modifier chain results to Pipe, let ReverseProxy copy to client
-
-		go func() {
-			defer func() {
-				// sink audit
-				if sink, ok := ctxhelper.GetAuditSink(resp.Request.Context()); ok {
-					sinkWriter := notes.NewDBWriter(ctxhelper.MustGetDBClient(resp.Request.Context()))
-					sink.Flush(resp.Request.Context(), sinkWriter)
-				}
-			}()
-
-			defer upstream.Close()
-
-			if len(filters) == 0 {
-				// If no Modifiers, directly write upstream content to downstream as-is
-				if _, err := io.Copy(pw, upstream); err != nil {
-					pw.CloseWithError(err)
-					return
-				}
-				pw.Close()
-				return
-			}
-
-			var chunkIndex int64 = -1
-			for {
-				chunkIndex++
-				chunk, rerr := autoDecompressSplitter.NextChunk(upstream)
-				if len(chunk) == 0 && rerr == nil {
-					// Indicates Splitter violated contract, avoid infinite loop
-					pw.CloseWithError(errors.New("splitter returned empty chunk without error"))
-					return
-				}
-				if len(chunk) > 0 {
-					out := chunk
-					// 3.2 Same chunk flows through all Modifiers in sequence
-					dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
-					for _, filter := range filters {
-						m := filter.Instance
-						logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
-						o, err := m.OnBodyChunk(resp, out, chunkIndex)
-						if err != nil {
-							pw.CloseWithError(err)
-							return
-						}
-						out = o
-						if len(out) == 0 { // Swallowed
-							break
-						}
-					}
-					dumplog.DumpResponseBodyChunk(resp, out, int64(chunkIndex))
-					if len(out) > 0 {
-						if _, err := pw.Write(out); err != nil {
-							// Downstream disconnected
-							return
-						}
-					}
-				}
-
-				if rerr != nil { // EOF or real error
-					if rerr != io.EOF && rerr != context.Canceled {
-						pw.CloseWithError(rerr)
-					}
-					// Cleanup: all Modifiers call OnComplete; ensure call even if previous errors
-					dumplog.DumpResponseComplete(resp)
-					for _, filter := range filters {
-						if m, ok := filter.Instance.(filter_define.ProxyResponseModifier); ok {
-							logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
-							out, _ := m.OnComplete(resp)
-							if len(out) > 0 {
-								pw.Write(out)
-							}
-						}
-					}
-					pw.Close()
-					return
-				}
-			}
-		}()
-
-		return nil // Tell ReverseProxy: taken over resp.Body, continue with its own copy
-	}
-}
-
-var myErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err error) {
-	return func(w http.ResponseWriter, r *http.Request, err error) {
-		// sink audit when error
-		defer func() {
-			if sink, ok := ctxhelper.GetAuditSink(r.Context()); ok {
-				sinkWriter := notes.NewDBWriter(ctxhelper.MustGetDBClient(r.Context()))
-				sink.Flush(r.Context(), sinkWriter)
-			}
-		}()
-
-		// check error at rewrite stage
-		if rewriteErr, _ := ctxhelper.GetReverseProxyRequestRewriterError(r.Context()); rewriteErr != nil {
-			if sink, ok := ctxhelper.GetAuditSink(r.Context()); ok {
-				sink.Note("request.rewriter.error.filter", rewriteErr.FilterName)
-				sink.Note("request.rewriter.error.message", rewriteErr.Error.Error())
-			}
-			if rewriteErr.FilterName != "" {
-				err = fmt.Errorf("%s: %w", rewriteErr.FilterName, rewriteErr.Error)
-			} else {
-				err = rewriteErr.Error
-			}
-		}
-
-		// Check if error is from response modifier
-		if responseErr, _ := ctxhelper.GetResponseModifierError(r.Context()); responseErr != nil {
-			err = responseErr
-		}
-
-		// set x-request-id
-		w.Header().Set(vars.XRequestId, ctxhelper.MustGetRequestID(r.Context()))
-		w.Header().Set(vars.XAIProxyGeneratedCallId, ctxhelper.MustGetGeneratedCallID(r.Context()))
-
-		var httpError *httperror.HTTPError
-		switch {
-		case errors.As(err, &httpError):
-			httpError.WriteJSONHTTPError(w)
-			return
-		default:
-			httperror.NewHTTPError(http.StatusBadRequest, err.Error()).WriteJSONHTTPError(w)
-			return
-		}
 	}
 }

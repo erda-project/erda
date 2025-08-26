@@ -6,7 +6,6 @@ routes:
       - name: auth
       - name: context
       - name: context-chat
-      - name: reserved-header
       - name: extra-body
       - name: thinking-handler
       - name: openai-compatible-director
@@ -14,7 +13,4 @@ routes:
       - name: set-response-chunk-splitter
     response_filters:
       - name: anthropic-compatible-director
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
       - name: parse-openai-response
-      - name: error-status-handler
