@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/hooks"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/proxy"
+	"github.com/erda-project/erda/internal/core/openapi/settings"
 	"github.com/erda-project/erda/internal/core/org"
 	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
@@ -49,6 +50,7 @@ type provider struct {
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Identity     userpb.UserServiceServer
 	Org          org.Interface
+	Settings     settings.OpenapiSettings `autowired:"openapi-settings"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -56,7 +58,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Discover = p.Discover
 	hooks.Enable = true
 	conf.Load()
-	srv, err := openapiv1.NewServer(p.TokenService)
+	srv, err := openapiv1.NewServer(p.TokenService, p.Settings)
 	if err != nil {
 		return err
 	}

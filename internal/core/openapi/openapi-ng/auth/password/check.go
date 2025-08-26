@@ -48,7 +48,7 @@ func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Opt
 		return false, r, fmt.Errorf("miss username or password")
 	}
 	user := auth.NewUser(p.Redis)
-	_, err = user.PwdLogin(parts[0], parts[1])
+	_, err = user.PwdLogin(parts[0], parts[1], p.Settings.GetSessionExpire())
 	if err != nil {
 		return false, r, nil
 	}

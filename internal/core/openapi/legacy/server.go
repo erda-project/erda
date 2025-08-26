@@ -22,10 +22,11 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/core/openapi/settings"
 )
 
-func NewServer(token tokenpb.TokenServiceServer) (*http.Server, error) {
-	s, err := NewLoginServer(token)
+func NewServer(token tokenpb.TokenServiceServer, settings settings.OpenapiSettings) (*http.Server, error) {
+	s, err := NewLoginServer(token, settings)
 	if err != nil {
 		return nil, err
 	}
