@@ -2,9 +2,6 @@ http-server:
     addr: ":8080"
 health:
 
-openapi-settings:
-    session_expire: "${OPENAPI_SESSION_EXPIRE:120m}"
-
 i18n:
     files:
         - ${CONFIG_PATH}/i18n/apis.yml
