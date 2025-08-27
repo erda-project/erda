@@ -12,7 +12,7 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 openapi-settings:
-  session_expire: "${OPENAPI_SESSION_EXPIRE:30m}"
+  session_expire: "${OPENAPI_SESSION_EXPIRE:120h}"
 
 openapi-ng:
 
