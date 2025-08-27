@@ -12,17 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ctxhelper
+package audithelper
 
-type McpInfo struct {
-	Name           string
-	Version        string
-	Host           string
-	Scheme         string
-	NeedTerminusId bool
+import (
+	"context"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/notes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+)
+
+func Note(ctx context.Context, k string, v any) {
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok || sink == nil {
+		return
+	}
+	sink.Note(k, v)
 }
 
-type ReverseProxyFilterError struct {
-	FilterName string
-	Error      error
+func Flush(ctx context.Context) {
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok || sink == nil {
+		return
+	}
+	sinkWriter := notes.NewDBWriter(ctxhelper.MustGetDBClient(ctx))
+	sink.Flush(ctx, sinkWriter)
 }

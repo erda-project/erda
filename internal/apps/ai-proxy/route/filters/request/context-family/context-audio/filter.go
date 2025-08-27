@@ -28,6 +28,7 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -114,12 +115,10 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		return fmt.Errorf("failed to set request body: %w", err)
 	}
 
-	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
-		sink.Note("prompt", prompt)
-		sink.Note("audio.file_name", fileInfo.Filename)
-		sink.Note("audio.file_size", bytesize.ByteSize(fileInfo.Size))
-		sink.Note("audio.file_headers", fileInfo.Header)
-	}
+	audithelper.Note(pr.In.Context(), "prompt", prompt)
+	audithelper.Note(pr.In.Context(), "audio.file_name", fileInfo.Filename)
+	audithelper.Note(pr.In.Context(), "audio.file_size", bytesize.ByteSize(fileInfo.Size))
+	audithelper.Note(pr.In.Context(), "audio.file_headers", fileInfo.Header)
 
 	return nil
 }

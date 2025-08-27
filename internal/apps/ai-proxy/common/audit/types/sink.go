@@ -70,7 +70,7 @@ type sink struct {
 }
 
 var (
-	keyRe = regexp.MustCompile(`^[a-z0-9_.-]{1,128}$`)
+	keyRe = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,128}$`)
 )
 
 func (s *sink) Note(k string, v any) {
@@ -79,7 +79,7 @@ func (s *sink) Note(k string, v any) {
 		return
 	}
 	if !keyRe.MatchString(k) {
-		s.logger.Warnf("note key invalid: %s, allowed [a-z0-9_.-], 1..128", k)
+		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
 		return
 	}
 	s.notes[k] = v
@@ -91,7 +91,7 @@ func (s *sink) NoteOnce(k string, v any) bool {
 		return false
 	}
 	if !keyRe.MatchString(k) {
-		s.logger.Warnf("note key invalid: %s, allowed [a-z0-9_.-], 1..128", k)
+		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
 		return false
 	}
 	// If already set (by Note or previous NoteOnce), do nothing.
@@ -112,7 +112,7 @@ func (s *sink) Inc(k string, d int64) int64 {
 		return 0
 	}
 	if !keyRe.MatchString(k) {
-		s.logger.Warnf("note key invalid: %s, allowed [a-z0-9_.-], 1..128", k)
+		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
 		return 0
 	}
 	var cur int64

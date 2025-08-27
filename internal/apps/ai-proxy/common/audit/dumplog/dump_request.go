@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
@@ -38,9 +39,7 @@ func DumpRequestIn(in *http.Request) {
 	}
 
 	// save to sink
-	if sink, ok := ctxhelper.GetAuditSink(in.Context()); ok {
-		sink.Note("request_body", string(dumpBytesIn))
-	}
+	audithelper.Note(in.Context(), "request_body", string(dumpBytesIn))
 }
 
 func DumpRequestOut(out *http.Request) {
@@ -60,8 +59,6 @@ func DumpRequestOut(out *http.Request) {
 	}
 
 	// save to sink
-	if sink, ok := ctxhelper.GetAuditSink(out.Context()); ok {
-		sink.Note("actual_request_body", string(dumpBytesOut))
-		sink.Note("actual_request_url", out.URL.String())
-	}
+	audithelper.Note(out.Context(), "actual_request_body", string(dumpBytesOut))
+	audithelper.Note(out.Context(), "actual_request_url", out.URL.String())
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package set_ai_proxy_header
+package reverse_proxy
 
 import (
 	"net/http"
@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-func TestFilter_OnHeaders_RequestIdHandling(t *testing.T) {
+func TestHandleAIProxyHeader(t *testing.T) {
 	tests := []struct {
 		name                        string
 		requestID                   string
@@ -56,8 +56,6 @@ func TestFilter_OnHeaders_RequestIdHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filter := &Filter{}
-
 			// Create request
 			req, err := http.NewRequest("POST", "http://example.com", nil)
 			assert.NoError(t, err)
@@ -79,9 +77,8 @@ func TestFilter_OnHeaders_RequestIdHandling(t *testing.T) {
 				resp.Header.Set(vars.XRequestId, tt.backendRequestID)
 			}
 
-			// Execute filter
-			err = filter.OnHeaders(resp)
-			assert.NoError(t, err)
+			// Execute handleAIProxyHeader
+			handleAIProxyHeader(resp)
 
 			// Verify X-Request-Id header
 			assert.Equal(t, tt.expectedXRequestId, resp.Header.Get(vars.XRequestId))
@@ -99,7 +96,7 @@ func TestFilter_OnHeaders_RequestIdHandling(t *testing.T) {
 	}
 }
 
-func TestFilter_handleRequestIdHeaders(t *testing.T) {
+func TestHandleRequestIdHeaders(t *testing.T) {
 	tests := []struct {
 		name                        string
 		requestID                   string
@@ -140,8 +137,6 @@ func TestFilter_handleRequestIdHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filter := &Filter{}
-
 			// Create request
 			req, err := http.NewRequest("POST", "http://example.com", nil)
 			assert.NoError(t, err)
@@ -164,7 +159,7 @@ func TestFilter_handleRequestIdHeaders(t *testing.T) {
 			}
 
 			// Test the extracted method directly
-			filter.handleRequestIdHeaders(resp)
+			_handleRequestIdHeaders(resp)
 
 			// Verify results
 			assert.Equal(t, tt.expectedXRequestId, resp.Header.Get(vars.XRequestId))

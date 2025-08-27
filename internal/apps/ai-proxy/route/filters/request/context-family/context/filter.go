@@ -25,6 +25,7 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -142,22 +143,21 @@ func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
 		return nil
 	}
 
-	if sink, ok := ctxhelper.GetAuditSink(pr.Out.Context()); ok {
-		if client, _ := ctxhelper.GetClient(pr.Out.Context()); client != nil {
-			sink.Note("client_id", client.Id)
-		}
-		if model, ok := ctxhelper.GetModel(pr.Out.Context()); ok {
-			sink.Note("model_id", model.Id)
-		}
-		if session, _ := ctxhelper.GetSession(pr.Out.Context()); session != nil {
-			sink.Note("session_id", session.Id)
-		}
-		sink.Note("source", vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource))
-		sink.Note("operation_id", pr.Out.Method+" "+pr.Out.URL.Path)
-		userInfo := getUserInfoFromClientToken(pr)
-		for k, v := range userInfo {
-			sink.Note(k, v)
-		}
+	ctx := pr.Out.Context()
+	if client, _ := ctxhelper.GetClient(ctx); client != nil {
+		audithelper.Note(ctx, "client_id", client.Id)
+	}
+	if model, ok := ctxhelper.GetModel(ctx); ok {
+		audithelper.Note(ctx, "model_id", model.Id)
+	}
+	if session, _ := ctxhelper.GetSession(ctx); session != nil {
+		audithelper.Note(ctx, "session_id", session.Id)
+	}
+	audithelper.Note(ctx, "source", vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource))
+	audithelper.Note(ctx, "operation_id", pr.Out.Method+" "+pr.Out.URL.Path)
+	userInfo := getUserInfoFromClientToken(pr)
+	for k, v := range userInfo {
+		audithelper.Note(ctx, k, v)
 	}
 
 	return nil

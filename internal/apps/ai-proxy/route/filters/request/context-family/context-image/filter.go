@@ -23,6 +23,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -86,12 +87,10 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		return fmt.Errorf("failed to set req body for set json body model name, err: %v", err)
 	}
 
-	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
-		sink.Note("prompt", req.Prompt)
-		sink.Note("image.quality", req.Quality)
-		sink.Note("image.size", req.Size)
-		sink.Note("image.style", req.Style)
-	}
+	audithelper.Note(pr.In.Context(), "prompt", req.Prompt)
+	audithelper.Note(pr.In.Context(), "image.quality", req.Quality)
+	audithelper.Note(pr.In.Context(), "image.size", req.Size)
+	audithelper.Note(pr.In.Context(), "image.style", req.Style)
 
 	return nil
 }

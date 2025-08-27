@@ -6,9 +6,4 @@ routes:
       - name: check-pass-through
       - name: auth
       - name: context
-      - name: reserved-header
       - name: pass-through-bedrock
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler

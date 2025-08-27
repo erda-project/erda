@@ -59,15 +59,14 @@ type (
 		filter_define.RespBodyChunkSplitter
 	}
 	mapKeyResponseContentEncoding struct{ string }
-	mapKeyResponseModifierError   struct{ error }
 
 	// Keys for filter-generated responses
 	mapKeyRequestFilterGeneratedResponse struct{ *http.Response }
 
 	// Keys for reverse proxy
-	mapKeyReverseProxyRequestRewriterError struct {
-		*ReverseProxyRequestRewriterError
-	}
+	mapKeyReverseProxyRequestRewriteError struct{ *ReverseProxyFilterError }
+	mapKeyReverseProxyResponseModifyError struct{ *ReverseProxyFilterError }
+	mapKeyReverseProxyRequestInSnapshot   struct{ *http.Request }
 
 	// Keys for migrated context keys
 	mapKeyDBClient    struct{ dao.DAO }
