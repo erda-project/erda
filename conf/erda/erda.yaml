@@ -3,7 +3,7 @@ http-server:
 health:
 
 openapi-settings:
-    session_expire: "${OPENAPI_SESSION_EXPIRE:30m}"
+    session_expire: "${OPENAPI_SESSION_EXPIRE:120m}"
 
 i18n:
     files:
