@@ -105,6 +105,9 @@ func (s *MetadataEnhancerService) EnhanceModelMetadata(ctx context.Context, mode
 	// set logo
 	s.setModelLogo(meta)
 
+	// enhance pricing info
+	s.enhancePricingInfo(meta, locale)
+
 	model.Metadata = meta.ToProtobuf()
 
 	return model
