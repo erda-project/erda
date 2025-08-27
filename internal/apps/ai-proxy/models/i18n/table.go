@@ -58,6 +58,7 @@ type ConfigCategory string
 const (
 	CategoryPublisher ConfigCategory = "publisher" // publisher configuration
 	CategoryAbility   ConfigCategory = "ability"   // ability configuration
+	CategoryPricing   ConfigCategory = "pricing"   // pricing configuration
 )
 
 // FieldName field name constants
@@ -66,6 +67,8 @@ type FieldName string
 const (
 	FieldNameValue FieldName = "name" // name
 	FieldLogo      FieldName = "logo" // logo URL
+
+	FieldExchangeRate FieldName = "exchange_rate" // exchange rate
 )
 
 // Locale language constants
@@ -80,3 +83,12 @@ const (
 
 // PublisherKey publisher identifier constants
 type PublisherKey string
+
+// Currency is currency constants
+type Currency string
+
+const (
+	CurrencyUSD     Currency = "USD"
+	CurrencyCNY     Currency = "CNY"
+	CurrencyDefault Currency = CurrencyCNY
+)
