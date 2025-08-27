@@ -6,15 +6,11 @@ routes:
       - name: auth
       - name: context
       - name: context-responses
-      - name: reserved-header
       - name: thinking-handler
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
     response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
       - name: json-no-unicode
-      - name: error-status-handler
 
   - path: /v1/responses/{response_id}
     method: GET
@@ -23,10 +19,7 @@ routes:
       - name: context
       - name: openai-compatible-director
     response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
       - name: json-no-unicode
-      - name: error-status-handler
 
   - path: /v1/responses/{response_id}
     method: DELETE
@@ -35,10 +28,7 @@ routes:
       - name: context
       - name: openai-compatible-director
     response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
       - name: json-no-unicode
-      - name: error-status-handler
 
   - path: /v1/responses/{response_id}/input_items
     method: GET
@@ -47,7 +37,4 @@ routes:
       - name: context
       - name: openai-compatible-director
     response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
       - name: json-no-unicode
-      - name: error-status-handler

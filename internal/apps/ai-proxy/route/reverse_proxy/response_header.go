@@ -12,68 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package set_ai_proxy_header
+package reverse_proxy
 
 import (
 	"encoding/json"
 	"net/http"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-const (
-	Name = "set-ai-proxy-header"
-)
-
-var (
-	_ filter_define.ProxyResponseModifier = (*Filter)(nil)
-)
-
-func init() {
-	filter_define.RegisterFilterCreator(Name, Creator)
+func handleAIProxyHeader(resp *http.Response) {
+	// call all header handling functions
+	_handleModelHeaders(resp)
+	_handleRequestIdHeaders(resp)
+	_handleRequestBodyTransformHeaders(resp)
+	_handleRequestThinkingTransformHeaders(resp)
+	_handleEnsureContentType(resp)
 }
 
-type Filter struct {
-	filter_define.PassThroughResponseModifier
-}
-
-var Creator filter_define.ResponseModifierCreator = func(_ string, _ json.RawMessage) filter_define.ProxyResponseModifier {
-	return &Filter{}
-}
-
-func (f *Filter) OnHeaders(resp *http.Response) error {
+// _handleModelHeaders handles model related header settings
+func _handleModelHeaders(resp *http.Response) {
 	if model, ok := ctxhelper.GetModel(resp.Request.Context()); ok && model != nil {
-		resp.Header.Set(vars.XAIProxyModelId, ctxhelper.MustGetModel(resp.Request.Context()).Id)
-		resp.Header.Set(vars.XAIProxyModelName, ctxhelper.MustGetModel(resp.Request.Context()).Name)
-		resp.Header.Set(vars.XAIProxyProviderName, ctxhelper.MustGetModelProvider(resp.Request.Context()).Name)
+		resp.Header.Set(vars.XAIProxyModelId, model.Id)
+		resp.Header.Set(vars.XAIProxyModelName, model.Name)
+		if provider, ok := ctxhelper.GetModelProvider(resp.Request.Context()); ok && provider != nil {
+			resp.Header.Set(vars.XAIProxyProviderName, provider.Name)
+		}
 	}
-
-	f.handleRequestIdHeaders(resp)
-	f.handleRequestBodyTransformHeaders(resp)
-	f.handleRequestThinkingTransformHeaders(resp)
-
-	return nil
 }
 
-// handleRequestIdHeaders handles request ID related header settings
-func (f *Filter) handleRequestIdHeaders(resp *http.Response) {
-	// Handle X-Request-Id returned by LLM backend, rename to X-Request-Id-LLM-Backend
+// _handleRequestIdHeaders handles request ID related header settings
+func _handleRequestIdHeaders(resp *http.Response) {
+	// handle X-Request-Id returned by LLM backend, rename to X-Request-Id-LLM-Backend
 	if backendRequestID := resp.Header.Get(vars.XRequestId); backendRequestID != "" {
 		resp.Header.Set(vars.XRequestIdLLMBackend, backendRequestID)
-		// Delete original X-Request-Id to avoid conflicts
+		// delete original X-Request-Id to avoid conflicts
 		resp.Header.Del(vars.XRequestId)
 	}
 
-	// Set two independent IDs to response headers
-	resp.Header.Set(vars.XRequestId, ctxhelper.MustGetRequestID(resp.Request.Context()))                    // Client-controllable Request ID
-	resp.Header.Set(vars.XAIProxyGeneratedCallId, ctxhelper.MustGetGeneratedCallID(resp.Request.Context())) // System-generated Call ID
+	// set two independent IDs to response headers
+	resp.Header.Set(vars.XRequestId, ctxhelper.MustGetRequestID(resp.Request.Context()))                    // client-controllable Request ID
+	resp.Header.Set(vars.XAIProxyGeneratedCallId, ctxhelper.MustGetGeneratedCallID(resp.Request.Context())) // system-generated Call ID
 }
 
-// handleRequestBodyTransformHeaders handles body transformation related headers
-func (f *Filter) handleRequestBodyTransformHeaders(resp *http.Response) {
+// _handleRequestBodyTransformHeaders handles body transformation related headers
+func _handleRequestBodyTransformHeaders(resp *http.Response) {
 	bodyTransformChanges, ok := ctxhelper.GetRequestBodyTransformChanges(resp.Request.Context())
 	if !ok || bodyTransformChanges == nil {
 		return
@@ -87,7 +72,7 @@ func (f *Filter) handleRequestBodyTransformHeaders(resp *http.Response) {
 	}
 }
 
-func (f *Filter) handleRequestThinkingTransformHeaders(resp *http.Response) {
+func _handleRequestThinkingTransformHeaders(resp *http.Response) {
 	thinkingTransformChanges, ok := ctxhelper.GetRequestThinkingTransformChanges(resp.Request.Context())
 	if !ok || thinkingTransformChanges == nil {
 		return
@@ -98,5 +83,13 @@ func (f *Filter) handleRequestThinkingTransformHeaders(resp *http.Response) {
 	}
 	if changesJSON, err := json.Marshal(v); err == nil {
 		resp.Header.Set(vars.XAIProxyRequestThinkingTransform, string(changesJSON))
+	}
+}
+
+func _handleEnsureContentType(resp *http.Response) {
+	if resp.StatusCode == http.StatusOK {
+		if ctxhelper.MustGetIsStream(resp.Request.Context()) {
+			resp.Header.Set("Content-Type", "text/event-stream")
+		}
 	}
 }

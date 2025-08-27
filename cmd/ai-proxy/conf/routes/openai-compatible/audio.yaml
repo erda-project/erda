@@ -10,10 +10,5 @@ routes:
           maxAudioSize: 25MB
           supportedAudioFileTypes: [ "flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm" ]
           defaultOpenAIAudioModel: whisper-1
-      - name: reserved-header
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
-    response_filters:
-      - name: set-ai-proxy-header
-      - name: ensure-content-type
-      - name: error-status-handler

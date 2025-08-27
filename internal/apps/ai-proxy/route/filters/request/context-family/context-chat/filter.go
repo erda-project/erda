@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
@@ -186,9 +187,7 @@ func (c *SessionContext) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	}
 
 	// audit sink
-	if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
-		sink.Note("prompt", userPrompt)
-	}
+	audithelper.Note(pr.In.Context(), "prompt", userPrompt)
 
 	return nil
 }

@@ -22,6 +22,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -69,9 +70,7 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		prompt = strutil.Join(ss, "\n")
 	}
 	if prompt != "" {
-		if sink, ok := ctxhelper.GetAuditSink(pr.In.Context()); ok {
-			sink.Note("prompt", prompt)
-		}
+		audithelper.Note(pr.In.Context(), "prompt", prompt)
 	}
 
 	// set model name in JSON body
