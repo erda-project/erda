@@ -40,6 +40,8 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
@@ -128,6 +130,8 @@ type provider struct {
 
 	richClientHandler *handler_rich_client.ClientHandler
 
+	cacheManager cachetypes.Manager
+
 	Routes []*router_define.Route
 	Router *router_define.Router
 }
@@ -170,6 +174,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
 	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm, trySetLang())
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
+
+	// initialize cache manager
+	p.cacheManager = cache.NewCacheManager(p.Dao, p.L)
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	// reverse proxy to AI provider's server

@@ -94,6 +94,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		ctxhelper.PutDBClient(ctx, p.Dao)
 		ctxhelper.PutRichClientHandler(ctx, p.richClientHandler)
 		ctxhelper.PutPathMatcher(ctx, matchedRoute.GetPathMatcher())
+		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
 		// reverse proxy
 		proxy := httputil.ReverseProxy{
