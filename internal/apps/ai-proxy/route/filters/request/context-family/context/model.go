@@ -22,12 +22,20 @@ import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type RequestForModel struct {
 	Model string `json:"model"`
+}
+
+// ModelWithProvider combines model with its provider information
+type ModelWithProvider struct {
+	*modelpb.Model
+	Provider *providerpb.ModelProvider
 }
 
 func findModel(req *http.Request, requestCtx interface{}, client *clientpb.Client) (*modelpb.Model, error) {
@@ -113,13 +121,15 @@ func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
 // availableName rules: (priority: high -> low)
 // - ${publisher}/${model.name}
 // - ${model.name}
-func getMapOfAvailableNameWithModels(clientModels []*modelpb.Model) map[string][]*modelpb.Model {
+// - ${model.provider.type}/${model.name}
+func getMapOfAvailableNameWithModels(clientModels []*ModelWithProvider) map[string][]*modelpb.Model {
 	modelsMap := make(map[string][]*modelpb.Model)
 	for _, model := range clientModels {
 		publisher := model.Metadata.Public["publisher"].GetStringValue()
 		keys := append([]string{},
 			fmt.Sprintf("%s/%s", publisher, model.Name),
 			model.Name,
+			fmt.Sprintf("%s/%s", model.Provider.Type, model.Name), // compatible with old format: model.Name + provider.Type
 		)
 		for _, key := range keys {
 			if key == "" || key == "/" {
@@ -128,40 +138,71 @@ func getMapOfAvailableNameWithModels(clientModels []*modelpb.Model) map[string][
 			if _, ok := modelsMap[key]; !ok {
 				modelsMap[key] = []*modelpb.Model{}
 			}
-			modelsMap[key] = append(modelsMap[key], model)
+			modelsMap[key] = append(modelsMap[key], model.Model)
 		}
 	}
 	return modelsMap
 }
 
-func listAllModels(ctx context.Context) ([]*modelpb.Model, error) {
-	q := ctxhelper.MustGetDBClient(ctx)
-	pagingModelResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
-		PageNum:  1,
-		PageSize: 999,
-	})
+func listAllModels(ctx context.Context) ([]*ModelWithProvider, error) {
+	cacheManager := ctxhelper.MustGetCacheManager(ctx)
+
+	// get models from cache
+	modelsV, err := cacheManager.ListAll(ctx, cachetypes.ItemTypeModel)
 	if err != nil {
-		return nil, fmt.Errorf("failed to paging all models, err: %v", err)
+		return nil, err
 	}
-	return pagingModelResp.List, nil
+	models := modelsV.([]*modelpb.Model)
+
+	// get providers from cache
+	providersV, err := cacheManager.ListAll(ctx, cachetypes.ItemTypeProvider)
+	if err != nil {
+		return nil, err
+	}
+	providers := providersV.([]*providerpb.ModelProvider)
+
+	// build provider mapping for fast lookup
+	providerMap := make(map[string]*providerpb.ModelProvider)
+	for _, provider := range providers {
+		providerMap[provider.Id] = provider
+	}
+
+	// combine models with providers
+	var result []*ModelWithProvider
+	for _, model := range models {
+		provider, ok := providerMap[model.ProviderId]
+		if !ok {
+			continue // skip models without provider
+		}
+		result = append(result, &ModelWithProvider{
+			Model:    model,
+			Provider: provider,
+		})
+	}
+
+	return result, nil
 }
 
-func listAllClientModels(ctx context.Context, clientID string) ([]*modelpb.Model, error) {
-	// find client model relations
+func listAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProvider, error) {
+	// get client model IDs directly from database (since it's per-client and changes frequently)
 	q := ctxhelper.MustGetDBClient(ctx)
 	clientModelsResp, err := q.ClientModelRelationClient().ListClientModels(ctx, &clientmodelrelationpb.ListClientModelsRequest{ClientId: clientID})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list client models, err: %v", err)
+		return nil, fmt.Errorf("failed to list client models: %v", err)
 	}
+
 	if len(clientModelsResp.ModelIds) == 0 {
 		return nil, nil
 	}
-	// filter from all models
+
+	// get all models with providers
 	allModels, err := listAllModels(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list all models, err: %v", err)
+		return nil, err
 	}
-	var clientModels []*modelpb.Model
+
+	// filter models by client relations
+	var clientModels []*ModelWithProvider
 	for _, model := range allModels {
 		for _, modelID := range clientModelsResp.ModelIds {
 			if model.Id == modelID {
@@ -170,6 +211,7 @@ func listAllClientModels(ctx context.Context, clientID string) ([]*modelpb.Model
 			}
 		}
 	}
+
 	return clientModels, nil
 }
 
@@ -195,12 +237,15 @@ func constructFriendlyError(ctx context.Context, inputModelName string, inputMod
 	}
 	var errMsg string
 	if !foundModelWithoutPermission {
-		errMsg = fmt.Sprintf("model not exist: %s", inputModelName)
+		errMsg = fmt.Sprintf("model not available: %s", inputModelName)
 	} else {
 		errMsg = fmt.Sprintf("you don't have permission to access the model: %s", inputModelName)
 	}
 	if inputModelPublisher != "" {
 		errMsg += fmt.Sprintf(", publisher: %s", inputModelPublisher)
+	}
+	if !foundModelWithoutPermission {
+		errMsg += ". If this is a newly added model, please wait a moment and try again."
 	}
 	return fmt.Errorf("%s", errMsg)
 }
