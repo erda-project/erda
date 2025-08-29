@@ -30,6 +30,7 @@ func handleAIProxyHeader(resp *http.Response) {
 	_handleRequestBodyTransformHeaders(resp)
 	_handleRequestThinkingTransformHeaders(resp)
 	_handleEnsureContentType(resp)
+	_handleContentLength(resp)
 }
 
 // _handleModelHeaders handles model related header settings
@@ -92,4 +93,9 @@ func _handleEnsureContentType(resp *http.Response) {
 			resp.Header.Set("Content-Type", "text/event-stream")
 		}
 	}
+}
+
+func _handleContentLength(resp *http.Response) {
+	// force chunked transfer, worry-free
+	resp.Header.Del("Content-Length")
 }
