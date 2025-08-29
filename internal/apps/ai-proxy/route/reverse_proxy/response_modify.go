@@ -52,8 +52,6 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 				_err = fmt.Errorf("panic from response modify: %v", r)
 			}
 			if _err == nil {
-				// handle ai-proxy headers
-				handleAIProxyHeader(resp)
 				return
 			}
 			ctxhelper.PutReverseProxyResponseModifyError(resp.Request.Context(), &ctxhelper.ReverseProxyFilterError{
@@ -95,11 +93,8 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 		}
 		brokenFilterName = ""
 
-		// force chunked transfer, worry-free
-		resp.Header.Del("Content-Length")
-		if ctxhelper.MustGetIsStream(resp.Request.Context()) && resp.Header.Get("Content-Type") == "" {
-			resp.Header.Set("Content-Type", "text/event-stream; charset=utf-8")
-		}
+		// handle ai-proxy headers
+		handleAIProxyHeader(resp)
 
 		// ---------------------------------------------------------------------
 		// 3) write upstream Body-Splitter-Modifier chain results to Pipe, let ReverseProxy copy to client
