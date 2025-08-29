@@ -29,6 +29,7 @@ import (
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 )
 
 // createProxyRequest creates a ProxyRequest for testing
@@ -61,15 +62,20 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 	modelIDValue, _ := structpb.NewValue("gpt-35-turbo")
 	modelNameValue, _ := structpb.NewValue("gpt-3.5-turbo")
 
-	models := []*modelpb.Model{
+	models := []*ModelWithProvider{
 		{
-			Name: "GPT-3.5 Turbo",
-			Metadata: &metadatapb.Metadata{
-				Public: map[string]*structpb.Value{
-					"publisher":  publisherValue,
-					"model_id":   modelIDValue,
-					"model_name": modelNameValue,
+			Model: &modelpb.Model{
+				Name: "GPT-3.5 Turbo",
+				Metadata: &metadatapb.Metadata{
+					Public: map[string]*structpb.Value{
+						"publisher":  publisherValue,
+						"model_id":   modelIDValue,
+						"model_name": modelNameValue,
+					},
 				},
+			},
+			Provider: &providerpb.ModelProvider{
+				Type: "Azure",
 			},
 		},
 	}
@@ -77,10 +83,11 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 	result := getMapOfAvailableNameWithModels(models)
 
 	// Test that all expected keys exist based on current implementation logic
-	// The function only generates keys based on: ${publisher}/${model.name} and ${model.name}
+	// The function generates keys based on: ${publisher}/${model.name}, ${model.name}, and ${provider.type}/${model.name}
 	expectedKeys := []string{
 		"openai/GPT-3.5 Turbo", // publisher/model.name
 		"GPT-3.5 Turbo",        // model.name
+		"Azure/GPT-3.5 Turbo",  // provider.type/model.name (same as publisher in this case)
 	}
 
 	for _, key := range expectedKeys {
