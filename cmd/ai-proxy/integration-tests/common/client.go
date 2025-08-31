@@ -90,6 +90,87 @@ func (c *Client) DeleteWithHeaders(ctx context.Context, path string, headers map
 	return c.sendRequestWithHeaders(ctx, "DELETE", path, nil, headers)
 }
 
+// PostJSONStreamWithHeaders sends JSON POST request with custom headers and handles streaming response
+func (c *Client) PostJSONStreamWithHeaders(ctx context.Context, path string, payload interface{}, headers map[string]string, callback func(data []byte) error) *APIResponse {
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return &APIResponse{Error: fmt.Errorf("marshal request: %w", err)}
+	}
+
+	url := c.config.Host + path
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return &APIResponse{Error: fmt.Errorf("create request: %w", err)}
+	}
+
+	// Set request headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+	if c.config.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.config.Token)
+	}
+
+	// Set custom headers
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	fmt.Printf("→ %s %s\n", req.Method, req.URL.String())
+	fmt.Printf("→ Headers: %+v\n", req.Header)
+	fmt.Printf("→ Body: %s\n", string(jsonData))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return &APIResponse{Error: fmt.Errorf("send request: %w", err)}
+	}
+	defer resp.Body.Close()
+
+	fmt.Printf("← %s %d\n", req.URL.String(), resp.StatusCode)
+	fmt.Printf("← Headers: %+v\n", resp.Header)
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return &APIResponse{
+			StatusCode: resp.StatusCode,
+			Headers:    resp.Header,
+			Body:       body,
+			Error:      fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body)),
+		}
+	}
+
+	// Handle streaming response
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		// Parse Server-Sent Events format
+		if strings.HasPrefix(line, "data: ") {
+			data := strings.TrimPrefix(line, "data: ")
+			if data == "[DONE]" {
+				break
+			}
+
+			if callback != nil {
+				if err := callback([]byte(data)); err != nil {
+					return &APIResponse{Error: fmt.Errorf("callback error: %w", err)}
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return &APIResponse{Error: fmt.Errorf("scan response: %w", err)}
+	}
+
+	return &APIResponse{
+		StatusCode: resp.StatusCode,
+		Headers:    resp.Header,
+	}
+}
+
 // PostJSONStream sends JSON POST request and handles streaming response
 func (c *Client) PostJSONStream(ctx context.Context, path string, payload interface{}, callback func(data []byte) error) *APIResponse {
 	jsonData, err := json.Marshal(payload)

@@ -23,6 +23,8 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/labstack/echo"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/skeleton"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -82,8 +84,8 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 		// dump request in
 		dumplog.DumpRequestIn(pr.In)
 
-		// drop ai-proxy headers
-		dropAIProxyHeader(pr)
+		// handle ai-proxy request header
+		handleAIProxyRequestHeader(pr)
 
 		for _, filter := range requestFilters {
 			currentFilterName = filter.Name
@@ -97,6 +99,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 				}
 			}
 		}
+		currentFilterName = ""
 
 		// only dump request out when no error
 		if brokenInErr == nil {
@@ -105,11 +108,13 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 	}
 }
 
-func dropAIProxyHeader(pr *httputil.ProxyRequest) {
+func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	// del all X-AI-Proxy-* headers before invoking llm
 	for k := range pr.Out.Header {
 		if strings.HasPrefix(strings.ToUpper(k), strings.ToUpper(vars.XAIProxyHeaderPrefix)) {
 			pr.Out.Header.Del(k)
 		}
 	}
+	// del Origin to avoid upstream CORS header
+	pr.Out.Header.Del(echo.HeaderOrigin)
 }
