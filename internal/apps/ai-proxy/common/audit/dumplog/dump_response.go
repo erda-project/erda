@@ -23,16 +23,28 @@ import (
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func DumpResponseHeaders(resp *http.Response) {
+func DumpResponseHeadersIn(resp *http.Response) {
 	dumpBytes, err := httputil.DumpResponse(resp, false)
 	if err != nil {
-		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Warnf("failed to dump response headers: %v", err)
+		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Warnf("failed to dump response headers in: %v", err)
 		return
 	}
-	ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response headers:\n%s", string(dumpBytes))
+	ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response headers in:\n%s", string(dumpBytes))
 	// collect actual llm response info
 	audithelper.Note(resp.Request.Context(), "status", resp.StatusCode)
-	audithelper.Note(resp.Request.Context(), "actual_response_header", resp.Header)
+	audithelper.Note(resp.Request.Context(), "actual_response_header", resp.Header.Clone())
+	audithelper.Note(resp.Request.Context(), "actual_response_content_type", resp.Header.Get(httperrorutil.HeaderKeyContentType))
+}
+
+func DumpResponseHeadersOut(resp *http.Response) {
+	dumpBytes, err := httputil.DumpResponse(resp, false)
+	if err != nil {
+		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Warnf("failed to dump response headers out: %v", err)
+		return
+	}
+	ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response headers out:\n%s", string(dumpBytes))
+	// collect handled response info
+	audithelper.Note(resp.Request.Context(), "response_header", resp.Header.Clone())
 	audithelper.Note(resp.Request.Context(), "response_content_type", resp.Header.Get(httperrorutil.HeaderKeyContentType))
 }
 

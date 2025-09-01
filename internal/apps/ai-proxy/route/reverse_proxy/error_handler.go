@@ -56,7 +56,7 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 		}
 
 		// set ai-proxy response header
-		handleAIProxyHeader(&http.Response{
+		handleAIProxyResponseHeader(&http.Response{
 			Header:     w.Header(),
 			Request:    r,
 			StatusCode: defaultStatus,
