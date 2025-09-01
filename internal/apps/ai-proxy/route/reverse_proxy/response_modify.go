@@ -83,18 +83,21 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 
 		// ---------------------------------------------------------------------
 		// 2) let all Modifiers run OnHeaders first
-		dumplog.DumpResponseHeaders(resp)
+		dumplog.DumpResponseHeadersIn(resp)
+
+		// handle ai-proxy response header
+		handleAIProxyResponseHeader(resp)
+
 		for _, filter := range filters {
+			brokenFilterName = filter.Name
 			logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
 			if err := filter.Instance.OnHeaders(resp); err != nil {
-				brokenFilterName = filter.Name
 				return err
 			}
 		}
 		brokenFilterName = ""
 
-		// handle ai-proxy headers
-		handleAIProxyHeader(resp)
+		dumplog.DumpResponseHeadersOut(resp)
 
 		// ---------------------------------------------------------------------
 		// 3) write upstream Body-Splitter-Modifier chain results to Pipe, let ReverseProxy copy to client

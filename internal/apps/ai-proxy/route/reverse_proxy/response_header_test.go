@@ -77,8 +77,8 @@ func TestHandleAIProxyHeader(t *testing.T) {
 				resp.Header.Set(vars.XRequestId, tt.backendRequestID)
 			}
 
-			// Execute handleAIProxyHeader
-			handleAIProxyHeader(resp)
+			// Execute handleAIProxyResponseHeader
+			handleAIProxyResponseHeader(resp)
 
 			// Verify X-Request-Id header
 			assert.Equal(t, tt.expectedXRequestId, resp.Header.Get(vars.XRequestId))

@@ -46,8 +46,12 @@ func TestChatCompletionsNonStream(t *testing.T) {
 	}
 
 	for _, model := range chatModels {
-		t.Run(fmt.Sprintf("NonStream_Model_%s", model), func(t *testing.T) {
-			testChatCompletionNonStreamForModel(t, client, model, testMessages)
+		t.Run(fmt.Sprintf("NonStream_WithoutOrigin_Model_%s", model), func(t *testing.T) {
+			testChatCompletionNonStreamForModel(t, client, model, testMessages, nil, false)
+		})
+		t.Run(fmt.Sprintf("NonStream_WithOrigin_Model_%s", model), func(t *testing.T) {
+			originHeaders := map[string]string{"Origin": "localhost:8081"}
+			testChatCompletionNonStreamForModel(t, client, model, testMessages, originHeaders, true)
 		})
 	}
 }
@@ -68,13 +72,17 @@ func TestChatCompletionsStreaming(t *testing.T) {
 	}
 
 	for _, model := range chatModels {
-		t.Run(fmt.Sprintf("Streaming_Model_%s", model), func(t *testing.T) {
-			testChatCompletionStreamingForModel(t, client, model, testMessages)
+		t.Run(fmt.Sprintf("Streaming_WithoutOrigin_Model_%s", model), func(t *testing.T) {
+			testChatCompletionStreamingForModel(t, client, model, testMessages, nil, false)
+		})
+		t.Run(fmt.Sprintf("Streaming_WithOrigin_Model_%s", model), func(t *testing.T) {
+			originHeaders := map[string]string{"Origin": "localhost:8081"}
+			testChatCompletionStreamingForModel(t, client, model, testMessages, originHeaders, true)
 		})
 	}
 }
 
-func testChatCompletionNonStreamForModel(t *testing.T, client *common.Client, model string, messages []openai.ChatCompletionMessage) {
+func testChatCompletionNonStreamForModel(t *testing.T, client *common.Client, model string, messages []openai.ChatCompletionMessage, headers map[string]string, hasOriginHeader bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.Get().Timeout)
 	defer cancel()
 
@@ -98,20 +106,30 @@ func testChatCompletionNonStreamForModel(t *testing.T, client *common.Client, mo
 			"reasoning_effort": "low",
 		}
 		startTime := time.Now()
-		resp := client.PostJSON(ctx, "/v1/chat/completions", requestMap)
+		var resp *common.APIResponse
+		if headers != nil {
+			resp = client.PostJSONWithHeaders(ctx, "/v1/chat/completions", requestMap, headers)
+		} else {
+			resp = client.PostJSON(ctx, "/v1/chat/completions", requestMap)
+		}
 		responseTime := time.Since(startTime)
-		validateNonStreamResponse(t, resp, model, responseTime)
+		validateNonStreamResponse(t, resp, model, responseTime, hasOriginHeader)
 		return
 	}
 
 	startTime := time.Now()
-	resp := client.PostJSON(ctx, "/v1/chat/completions", request)
+	var resp *common.APIResponse
+	if headers != nil {
+		resp = client.PostJSONWithHeaders(ctx, "/v1/chat/completions", request, headers)
+	} else {
+		resp = client.PostJSON(ctx, "/v1/chat/completions", request)
+	}
 	responseTime := time.Since(startTime)
 
-	validateNonStreamResponse(t, resp, model, responseTime)
+	validateNonStreamResponse(t, resp, model, responseTime, hasOriginHeader)
 }
 
-func validateNonStreamResponse(t *testing.T, resp *common.APIResponse, model string, responseTime time.Duration) {
+func validateNonStreamResponse(t *testing.T, resp *common.APIResponse, model string, responseTime time.Duration, hasOriginHeader bool) {
 	if resp.Error != nil {
 		t.Fatalf("✗ Request failed: %v", resp.Error)
 	}
@@ -150,10 +168,13 @@ func validateNonStreamResponse(t *testing.T, resp *common.APIResponse, model str
 		t.Error("✗ Empty finish reason")
 	}
 
+	// Validate CORS headers
+	validateCORSHeaders(t, resp, hasOriginHeader, "Non-stream")
+
 	t.Logf("✓ Non-stream Model %s: %s (response time: %v)", model, strings.TrimSpace(chatResp.Choices[0].Message.Content), responseTime)
 }
 
-func testChatCompletionStreamingForModel(t *testing.T, client *common.Client, model string, messages []openai.ChatCompletionMessage) {
+func testChatCompletionStreamingForModel(t *testing.T, client *common.Client, model string, messages []openai.ChatCompletionMessage, headers map[string]string, hasOriginHeader bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.Get().Timeout)
 	defer cancel()
 
@@ -180,11 +201,18 @@ func testChatCompletionStreamingForModel(t *testing.T, client *common.Client, mo
 		var streamCount int
 		var chunkTimes []time.Time
 
-		resp := client.PostJSONStream(ctx, "/v1/chat/completions", requestMap, func(data []byte) error {
-			return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
-		})
+		var resp *common.APIResponse
+		if headers != nil {
+			resp = client.PostJSONStreamWithHeaders(ctx, "/v1/chat/completions", requestMap, headers, func(data []byte) error {
+				return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
+			})
+		} else {
+			resp = client.PostJSONStream(ctx, "/v1/chat/completions", requestMap, func(data []byte) error {
+				return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
+			})
+		}
 
-		validateStreamResponse(t, resp, &content, streamCount, chunkTimes, model)
+		validateStreamResponse(t, resp, &content, streamCount, chunkTimes, model, hasOriginHeader)
 		return
 	}
 
@@ -192,11 +220,18 @@ func testChatCompletionStreamingForModel(t *testing.T, client *common.Client, mo
 	var streamCount int
 	var chunkTimes []time.Time
 
-	resp := client.PostJSONStream(ctx, "/v1/chat/completions", request, func(data []byte) error {
-		return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
-	})
+	var resp *common.APIResponse
+	if headers != nil {
+		resp = client.PostJSONStreamWithHeaders(ctx, "/v1/chat/completions", request, headers, func(data []byte) error {
+			return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
+		})
+	} else {
+		resp = client.PostJSONStream(ctx, "/v1/chat/completions", request, func(data []byte) error {
+			return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
+		})
+	}
 
-	validateStreamResponse(t, resp, &content, streamCount, chunkTimes, model)
+	validateStreamResponse(t, resp, &content, streamCount, chunkTimes, model, hasOriginHeader)
 }
 
 func handleStreamChunk(data []byte, content *strings.Builder, streamCount *int, chunkTimes *[]time.Time) error {
@@ -231,7 +266,7 @@ func handleStreamChunk(data []byte, content *strings.Builder, streamCount *int, 
 	return nil
 }
 
-func validateStreamResponse(t *testing.T, resp *common.APIResponse, content *strings.Builder, streamCount int, chunkTimes []time.Time, model string) {
+func validateStreamResponse(t *testing.T, resp *common.APIResponse, content *strings.Builder, streamCount int, chunkTimes []time.Time, model string, hasOriginHeader bool) {
 	if resp.Error != nil {
 		t.Fatalf("✗ Streaming request failed: %v", resp.Error)
 	}
@@ -256,6 +291,9 @@ func validateStreamResponse(t *testing.T, resp *common.APIResponse, content *str
 
 	// Analyze chunk arrival time to detect if it's true streaming
 	analyzeStreamingTiming(t, chunkTimes, model)
+
+	// Validate CORS headers
+	validateCORSHeaders(t, resp, hasOriginHeader, "Streaming")
 
 	contentStr := strings.TrimSpace(content.String())
 	t.Logf("✓ Streaming Model %s: %d chunks", model, streamCount)
@@ -470,6 +508,50 @@ func testContentTypeForModel(t *testing.T, client *common.Client, model string, 
 			t.Logf("✓ Content-Length header: %s", contentLength)
 		}
 	})
+}
+
+// validateCORSHeaders validates CORS headers in API response
+func validateCORSHeaders(t *testing.T, resp *common.APIResponse, hasOriginHeader bool, testType string) {
+	// Validate Access-Control-Allow-Origin header
+	allowOrigin := resp.Headers.Get("Access-Control-Allow-Origin")
+	if allowOrigin == "" {
+		t.Errorf("✗ %s: Access-Control-Allow-Origin header is missing", testType)
+	} else if allowOrigin != "*" {
+		t.Errorf("✗ %s: Access-Control-Allow-Origin expected '*', got '%s'", testType, allowOrigin)
+	} else {
+		t.Logf("✓ %s: Access-Control-Allow-Origin is correct: %s", testType, allowOrigin)
+	}
+
+	// Check for duplicate values (e.g., "*, *")
+	allowOriginValues := resp.Headers.Values("Access-Control-Allow-Origin")
+	if len(allowOriginValues) > 1 {
+		t.Errorf("✗ %s: Multiple Access-Control-Allow-Origin headers found: %v", testType, allowOriginValues)
+	} else if len(allowOriginValues) == 1 && strings.Contains(allowOriginValues[0], ",") {
+		t.Errorf("✗ %s: Access-Control-Allow-Origin contains multiple values: %s", testType, allowOriginValues[0])
+	} else {
+		t.Logf("✓ %s: Access-Control-Allow-Origin has single value", testType)
+	}
+
+	// Log CORS headers for debugging when Origin header is present
+	if hasOriginHeader {
+		corsHeaders := []string{
+			"Access-Control-Allow-Origin",
+			"Access-Control-Allow-Methods",
+			"Access-Control-Allow-Headers",
+			"Access-Control-Allow-Credentials",
+			"Access-Control-Expose-Headers",
+			"Access-Control-Max-Age",
+		}
+
+		t.Logf("✓ %s CORS headers debug:", testType)
+		for _, headerName := range corsHeaders {
+			if values := resp.Headers.Values(headerName); len(values) > 0 {
+				for i, value := range values {
+					t.Logf("   %s[%d]: %s", headerName, i, value)
+				}
+			}
+		}
+	}
 }
 
 // truncateString truncates string to specified length

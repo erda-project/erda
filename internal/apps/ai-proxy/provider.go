@@ -186,7 +186,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) ServeAIProxyV2() {
-	p.HTTP.HandlePrefix("/", "*", p.HandleReverseProxyAPI(), mux.CORS)
+	// support OPTIONS method
+	p.HTTP.HandlePrefix("/", http.MethodOptions, nil, mux.CORS)
+	// `/` handle CORS by itself
+	p.HTTP.HandlePrefix("/", "*", p.HandleReverseProxyAPI())
 }
 
 func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {

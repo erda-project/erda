@@ -18,12 +18,14 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/labstack/echo"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-func handleAIProxyHeader(resp *http.Response) {
+func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
 	_handleRequestIdHeaders(resp)
@@ -31,6 +33,7 @@ func handleAIProxyHeader(resp *http.Response) {
 	_handleRequestThinkingTransformHeaders(resp)
 	_handleEnsureContentType(resp)
 	_handleContentLength(resp)
+	_handleCORS(resp)
 }
 
 // _handleModelHeaders handles model related header settings
@@ -98,4 +101,18 @@ func _handleEnsureContentType(resp *http.Response) {
 func _handleContentLength(resp *http.Response) {
 	// force chunked transfer, worry-free
 	resp.Header.Del("Content-Length")
+}
+
+func _handleCORS(resp *http.Response) {
+	h := resp.Header
+
+	// remove all CORS headers from upstream to avoid duplication
+	h.Del(echo.HeaderAccessControlAllowOrigin)
+	h.Del(echo.HeaderAccessControlAllowMethods)
+	h.Del(echo.HeaderAccessControlAllowHeaders)
+	h.Del(echo.HeaderAccessControlAllowCredentials)
+
+	// force enable CORS
+	h.Set(echo.HeaderVary, echo.HeaderOrigin)
+	h.Set(echo.HeaderAccessControlAllowOrigin, "*")
 }
