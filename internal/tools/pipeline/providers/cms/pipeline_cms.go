@@ -352,19 +352,19 @@ func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBa
 		}(config)
 	}
 	wait.Wait()
-	orderedConfigs := getOrderedCmsConfigs(newConfigs, cmsNsList)
+	orderedConfigs := getOrderedCmsConfigs(newConfigs, req.Namespaces)
 	return orderedConfigs, nil
 }
 
 // getOrderedCmsConfigs Sort by namespace
 // the final results are sorted by namespace
 // every namespace config list sort by creation time
-func getOrderedCmsConfigs(configs []*pb.PipelineCmsConfig, cmsNsList []db.PipelineCmsNs) []*pb.PipelineCmsConfig {
+func getOrderedCmsConfigs(configs []*pb.PipelineCmsConfig, orderedNamespaces []string) []*pb.PipelineCmsConfig {
 	var orderedConfigs []*pb.PipelineCmsConfig
-	for _, ns := range cmsNsList {
+	for _, ns := range orderedNamespaces {
 		var tmpConfigs []*pb.PipelineCmsConfig
 		for _, config := range configs {
-			if config.Ns.Ns == ns.Ns {
+			if config.Ns.Ns == ns {
 				tmpConfigs = append(tmpConfigs, config)
 			}
 		}
