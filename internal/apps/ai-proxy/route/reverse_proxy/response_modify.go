@@ -200,7 +200,8 @@ func errorStatusHandler(resp *http.Response) error {
 		"type": "llm-backend-error",
 	}
 
-	if resp.ContentLength > 0 && resp.Body != nil {
+	// Content-Length may be -1, so only check body
+	if resp.Body != nil {
 		respBodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			ctxhelper.MustGetLoggerBase(resp.Request.Context()).Warnf("failed to read resp body at error-status-handler: %v", err)
