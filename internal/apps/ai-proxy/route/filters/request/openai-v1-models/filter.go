@@ -57,7 +57,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.In.Context()
 	richClientHandler := ctxhelper.MustGetRichClientHandler(ctx).(*handler_rich_client.ClientHandler)
 	// try set clientId by ak
-	client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
+	_, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
 	if err != nil {
 		return http_error.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get client, err: %v", err))
 	}

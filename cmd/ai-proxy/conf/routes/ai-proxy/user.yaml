@@ -1,0 +1,5 @@
+routes:
+  - path: /api/ai-proxy/user/me
+    method: GET
+    request_filters:
+      - name: user-me

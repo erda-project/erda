@@ -18,10 +18,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -87,25 +89,33 @@ func (util *AKUtil) GetAkFromHTTPHeader(req any) (string, bool) {
 	return v, v != ""
 }
 
-func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (*clientpb.Client, error) {
+func CheckAdmin(ctx context.Context, req any, dao dao.DAO) (bool, error) {
+	ak, ok := New(dao).GetAkFromHeader(ctx, req)
+	if !ok || ak == "" {
+		return false, handlers.ErrAkNotFound
+	}
+	return ak == os.Getenv(vars.EnvAIProxyAdminAuthKey), nil
+}
+
+func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
 	ak, ok := New(dao).GetAkFromHeader(ctx, req)
 	if !ok {
-		return nil, handlers.ErrAkNotFound
+		return nil, nil, handlers.ErrAkNotFound
 	}
 	// check by token
 	if strings.HasPrefix(ak, client_token.TokenPrefix) {
-		client, err := New(dao).TokenToClient(ak)
+		clientToken, client, err := New(dao).TokenToClient(ak)
 		if err != nil {
-			return nil, handlers.HTTPError(err, http.StatusUnauthorized)
+			return nil, nil, handlers.HTTPError(err, http.StatusUnauthorized)
 		}
-		return client, nil
+		return clientToken, client, nil
 	}
 	// check by ak
 	client, err := New(dao).AkToClient(ak)
 	if err != nil {
-		return nil, handlers.HTTPError(err, http.StatusUnauthorized)
+		return nil, nil, handlers.HTTPError(err, http.StatusUnauthorized)
 	}
-	return client, nil
+	return nil, client, nil
 }
 
 func AutoCheckAndSetClientId(clientId string, req any, skipSet bool) error {

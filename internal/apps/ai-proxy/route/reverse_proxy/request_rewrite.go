@@ -25,6 +25,7 @@ import (
 
 	"github.com/labstack/echo"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/skeleton"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -38,6 +39,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 	return func(pr *httputil.ProxyRequest) {
 		var currentFilterName string
 		var brokenInErr error
+		defer audithelper.Flush(pr.In.Context())
 		defer func() {
 			if r := recover(); r != nil {
 				debug.PrintStack()

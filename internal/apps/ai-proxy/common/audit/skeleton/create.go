@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -70,5 +71,7 @@ func CreateSkeleton(in *http.Request) error {
 		ctxhelper.PutAuditID(in.Context(), newAudit.Id)
 		ctxhelper.PutAuditSink(in.Context(), types.New(newAudit.Id, ctxhelper.MustGetLoggerBase(in.Context())))
 	}
+	// add operation_id
+	audithelper.Note(in.Context(), "operation_id", in.Method+" "+in.URL.Path)
 	return nil
 }
