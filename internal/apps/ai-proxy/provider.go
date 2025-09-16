@@ -215,8 +215,6 @@ func (p *provider) registerAIProxyManageAPI() {
 }
 
 func (p *provider) registerMcpProxyManageAPI() {
-	if !p.Config.IsMcpProxy {
-		return
-	}
+	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
 }
