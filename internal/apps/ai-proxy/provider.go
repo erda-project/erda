@@ -18,7 +18,6 @@ import (
 	"context"
 	_ "embed"
 	"net/http"
-	"os"
 	"reflect"
 
 	"google.golang.org/grpc"
@@ -29,6 +28,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
+	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
@@ -58,7 +59,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
@@ -84,15 +84,21 @@ var (
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 				// check admin key first
-				adminKey := vars.TrimBearer(apis.GetHeader(ctx, httperrorutil.HeaderKeyAuthorization))
-				if len(adminKey) > 0 && adminKey == os.Getenv(vars.EnvAIProxyAdminAuthKey) {
+				isAdmin, err := akutil.CheckAdmin(ctx, req, dao)
+				if err != nil {
+					return nil, err
+				}
+				if isAdmin {
 					ctxhelper.PutIsAdmin(ctx, true)
 					return h(ctx, req)
 				}
 				// try set clientId by ak
-				client, err := akutil.CheckAkOrToken(ctx, req, dao)
+				clientToken, client, err := akutil.CheckAkOrToken(ctx, req, dao)
 				if err != nil {
 					return nil, err
+				}
+				if clientToken != nil {
+					ctxhelper.PutClientToken(ctx, clientToken)
 				}
 				if client != nil {
 					ctxhelper.PutClient(ctx, client)
@@ -174,6 +180,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
 	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm, trySetLang())
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
+	auditpb.RegisterAuditServiceImp(p, &handler_audit.AuditHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckAuditPerm)
 
 	// initialize cache manager
 	p.cacheManager = cache.NewCacheManager(p.Dao, p.L)

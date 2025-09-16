@@ -16,19 +16,68 @@ package handler_audit
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/pkg/desensitize"
 )
 
 type AuditHandler struct {
 	DAO dao.DAO
 }
 
-func (a *AuditHandler) Get(ctx context.Context, req *pb.AuditGetRequest) (*pb.Audit, error) {
-	return a.DAO.AuditClient().Get(ctx, req)
+func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (*pb.AuditPagingResponse, error) {
+	isAdmin, err := checkAndFillAuth(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireXRequestIdForNonAdmin(ctx, req); err != nil {
+		return nil, err
+	}
+
+	pagingResult, err := a.DAO.AuditClient().Paging(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// desensitize
+	if !isAdmin {
+		for _, audit := range pagingResult.List {
+			audit.AuthKey = ""
+			audit.ActualRequestBody = ""
+			audit.Metadata = nil
+			audit.Username = desensitize.Name(audit.Username)
+			audit.Email = desensitize.Email(audit.Email)
+		}
+	}
+	return pagingResult, nil
 }
 
-func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (*pb.AuditPagingResponse, error) {
-	return a.DAO.AuditClient().Paging(ctx, req)
+// checkAndFillAuth checks admin or client identity and fills req.AuthKey for non-admin callers.
+// It also enforces non-admin callers to provide an XRequestId to narrow down search scope.
+// Returns whether the caller is admin.
+func checkAndFillAuth(ctx context.Context, req *pb.AuditPagingRequest) (bool, error) {
+	isAdmin := ctxhelper.MustGetIsAdmin(ctx)
+	if !isAdmin {
+		if clientToken, ok := ctxhelper.GetClientToken(ctx); ok {
+			// prefer client token
+			req.AuthKey = clientToken.Token
+		} else {
+			client := ctxhelper.MustGetClient(ctx)
+			req.AuthKey = client.AccessKeyId
+		}
+	}
+	return isAdmin, nil
+}
+
+// requireXRequestIdForNonAdmin enforces that non-admin calls provide x_request_id to narrow down the search scope.
+func requireXRequestIdForNonAdmin(ctx context.Context, req *pb.AuditPagingRequest) error {
+	if !ctxhelper.MustGetIsAdmin(ctx) {
+		if req.XRequestId == "" {
+			return fmt.Errorf("missing query param: x_request_id")
+		}
+	}
+	return nil
 }

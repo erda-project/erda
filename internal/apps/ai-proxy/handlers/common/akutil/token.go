@@ -22,23 +22,24 @@ import (
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 )
 
-func (util *AKUtil) TokenToClient(token string) (*clientpb.Client, error) {
+func (util *AKUtil) TokenToClient(token string) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
 	pagingResp, err := util.Dao.ClientTokenClient().Paging(context.Background(), &clienttokenpb.ClientTokenPagingRequest{
 		PageSize: 1,
 		PageNum:  1,
 		Token:    token,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if pagingResp.Total == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	if pagingResp.Total > 1 {
-		return nil, fmt.Errorf("multiple clients found by token: %s", token)
+		return nil, nil, fmt.Errorf("multiple clients found by token: %s", token)
 	}
 	clientToken := pagingResp.List[0]
-	return util.Dao.ClientClient().Get(context.Background(), &clientpb.ClientGetRequest{
+	client, err := util.Dao.ClientClient().Get(context.Background(), &clientpb.ClientGetRequest{
 		ClientId: clientToken.ClientId,
 	})
+	return clientToken, client, err
 }

@@ -10,14 +10,9 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/http.proto";
 
 service AuditService {
-    rpc Get(AuditGetRequest) returns (Audit) {
-        option(google.api.http) = {
-            get: "/api/ai-proxy/audits/{auditId}"
-        };
-    }
     rpc Paging(AuditPagingRequest) returns (AuditPagingResponse) {
         option(google.api.http) = {
-            get: "/api/ai-proxy/audits"
+            get: "/api/ai-proxy/audits?x_request_id={xRequestId}&auth_key={authKey}"
         };
     }
 }
@@ -79,16 +74,12 @@ message AuditCreateRequestWhenReceived {
     string bizSource = 17;
 }
 
-message AuditGetRequest {
-    string auditId = 1 [(validate.rules).string = {len: 36}];
-}
-
 message AuditPagingRequest {
     int64 pageNum = 1;
     int64 pageSize = 2;
 
-    repeated string ids = 3 [(validate.rules).repeated.items.string = {len: 36}];
-    string source = 4;
+    string authKey = 3 [(validate.rules).string = {min_len: 32, max_len:36, ignore_empty: true}];
+    string xRequestId = 4 [(validate.rules).string = {min_len: 0, max_len: 64}];
 }
 
 message AuditPagingResponse {

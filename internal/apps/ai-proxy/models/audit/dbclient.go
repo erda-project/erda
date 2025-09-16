@@ -32,20 +32,20 @@ type DBClient struct {
 	DB *gorm.DB
 }
 
-func (dbClient *DBClient) Get(ctx context.Context, req *pb.AuditGetRequest) (*pb.Audit, error) {
-	c := &Audit{BaseModel: common.BaseModelWithID(req.AuditId)}
-	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
-		return nil, err
-	}
-	return c.ToProtobuf(), nil
-}
-
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest) (*pb.AuditPagingResponse, error) {
-	c := &Audit{BizSource: req.Source}
-	sql := dbClient.DB.Model(c).Where(c)
-	if len(req.Ids) > 0 {
-		sql = sql.Where("id IN (?)", req.Ids)
+	c := &Audit{}
+	// auth_key
+	if req.AuthKey != "" {
+		c.AuthKey = req.AuthKey
 	}
+	// x-request-id
+	if req.XRequestId != "" {
+		c.XRequestID = req.XRequestId
+	}
+
+	sql := dbClient.DB.Model(c)
+	sql = sql.Where(c).Unscoped()
+
 	var (
 		total int64
 		list  Audits
@@ -56,8 +56,14 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest
 	if req.PageSize == 0 {
 		req.PageSize = 10
 	}
+	if req.PageSize > 20 {
+		req.PageSize = 20
+	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	sql = sql.Count(&total)
+	// order by
+	sql = sql.Order("created_at DESC")
+	err := sql.Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

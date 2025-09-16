@@ -87,4 +87,5 @@ type (
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)
 var KeysWithCustomMustGet = map[any]bool{
 	mapKeyIsStream{}: true,
+	mapKeyIsAdmin{}:  true,
 }

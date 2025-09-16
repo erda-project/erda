@@ -22,7 +22,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 
-	temp_assets "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/temp-assets"
+	temp_assets "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/ai-proxy/temp-assets"
 	"github.com/erda-project/erda/pkg/numeral"
 )
 
