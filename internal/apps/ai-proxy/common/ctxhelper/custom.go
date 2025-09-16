@@ -18,9 +18,15 @@ import (
 	"context"
 )
 
-// MustGetIsStream retrieves IsStream from context, panics if not found
+// MustGetIsStream retrieves IsStream from context
 func MustGetIsStream(ctx context.Context) bool {
 	value, ok := GetIsStream(ctx)
+	return ok && value
+}
+
+// MustGetIsAdmin retrieves IsAdmin from context
+func MustGetIsAdmin(ctx context.Context) bool {
+	value, ok := GetIsAdmin(ctx)
 	return ok && value
 }
 

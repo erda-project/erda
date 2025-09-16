@@ -38,7 +38,7 @@ func (t *RequestFilterGeneratedResponseTransport) RoundTrip(req *http.Request) (
 		return t.Inner.RoundTrip(req)
 	}
 	if resp, ok := ctxhelper.GetRequestFilterGeneratedResponse(req.Context()); ok {
-		// Update request to latest ProxyRequest.Out
+		// update request to latest ProxyRequest.Out
 		resp.Request = req
 		return resp, nil
 	}
