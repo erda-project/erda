@@ -44,15 +44,16 @@ type cacheManager struct {
 }
 
 // NewCacheManager creates a new cache manager instance
-func NewCacheManager(dao dao.DAO, logger logs.Logger) cachetypes.Manager {
+func NewCacheManager(dao dao.DAO, logger logs.Logger, isMcpProxy bool) cachetypes.Manager {
 	config := loadConfig()
 	manager := &cacheManager{
-		items: map[cachetypes.ItemType]cachetypes.CacheItem{
-			cachetypes.ItemTypeModel:    newModelCacheItem(dao, config),
-			cachetypes.ItemTypeProvider: newProviderCacheItem(dao, config),
-		},
+		items:  map[cachetypes.ItemType]cachetypes.CacheItem{},
 		config: config,
 		logger: logger,
+	}
+	if !isMcpProxy {
+		manager.items[cachetypes.ItemTypeModel] = newModelCacheItem(dao, config)
+		manager.items[cachetypes.ItemTypeProvider] = newProviderCacheItem(dao, config)
 	}
 
 	// start background refresh goroutine only if cache is enabled
