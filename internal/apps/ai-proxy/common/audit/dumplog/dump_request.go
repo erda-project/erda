@@ -33,9 +33,9 @@ func DumpRequestIn(in *http.Request) {
 	}
 
 	if shouldDumpBody {
-		ctxhelper.MustGetLoggerBase(in.Context()).Infof("dump proxy request in:\n%s", string(dumpBytesIn))
+		ctxhelper.MustGetLoggerBase(in.Context()).Debugf("dump proxy request in:\n%s", string(dumpBytesIn))
 	} else {
-		ctxhelper.MustGetLoggerBase(in.Context()).Infof("dump proxy request in (body omitted due to binary content-type: %s):\n%s", contentType, string(dumpBytesIn))
+		ctxhelper.MustGetLoggerBase(in.Context()).Debugf("dump proxy request in (body omitted due to binary content-type: %s):\n%s", contentType, string(dumpBytesIn))
 	}
 
 	// save to sink
@@ -48,14 +48,14 @@ func DumpRequestOut(out *http.Request) {
 
 	dumpBytesOut, err := httputil.DumpRequestOut(out, shouldDumpBody)
 	if err != nil {
-		ctxhelper.MustGetLoggerBase(out.Context()).Warnf("failed to dump request out, err: %v", err)
+		ctxhelper.MustGetLoggerBase(out.Context()).Debugf("failed to dump request out, err: %v", err)
 		return
 	}
 
 	if shouldDumpBody {
-		ctxhelper.MustGetLoggerBase(out.Context()).Infof("dump proxy request out:\n%s", dumpBytesOut)
+		ctxhelper.MustGetLoggerBase(out.Context()).Debugf("dump proxy request out:\n%s", dumpBytesOut)
 	} else {
-		ctxhelper.MustGetLoggerBase(out.Context()).Infof("dump proxy request out (body omitted due to binary content-type: %s):\n%s", contentType, dumpBytesOut)
+		ctxhelper.MustGetLoggerBase(out.Context()).Debugf("dump proxy request out (body omitted due to binary content-type: %s):\n%s", contentType, dumpBytesOut)
 	}
 
 	// save to sink
