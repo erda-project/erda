@@ -25,10 +25,10 @@ func IsBinaryContentType(contentType string) bool {
 		return false
 	}
 
-	// Parse content-type, remove charset and other parameters
+	// parse content-type, remove charset and other parameters
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		// If parsing fails, use the first part of original value (remove content after semicolon)
+		// if parsing fails, use the first part of original value (remove content after semicolon)
 		if idx := strings.Index(contentType, ";"); idx != -1 {
 			mediaType = strings.TrimSpace(contentType[:idx])
 		} else {
@@ -38,7 +38,7 @@ func IsBinaryContentType(contentType string) bool {
 
 	mediaType = strings.ToLower(mediaType)
 
-	// Explicit text types - always dump body
+	// explicit text types - always dump body
 	textTypes := []string{
 		"text/",
 		"application/json",
@@ -58,34 +58,8 @@ func IsBinaryContentType(contentType string) bool {
 		}
 	}
 
-	// Explicit binary types - don't dump body
-	binaryTypes := []string{
-		"audio/",
-		"video/",
-		"image/",
-		"application/octet-stream",
-		"application/pdf",
-		"application/zip",
-		"application/gzip",
-		"application/x-tar",
-		"application/x-rar-compressed",
-		"application/x-7z-compressed",
-		"application/msword",
-		"application/vnd.ms-excel",
-		"application/vnd.ms-powerpoint",
-		"application/vnd.openxmlformats-officedocument",
-		"application/x-binary",
-		"multipart/form-data", // Usually contains binary files
-	}
-
-	for _, binaryType := range binaryTypes {
-		if strings.HasPrefix(mediaType, binaryType) {
-			return true
-		}
-	}
-
-	// Default case: treat unknown types as text (maintain backward compatibility)
-	return false
+	// default case: treat unknown types as binary
+	return true
 }
 
 // ShouldDumpBody determines whether to dump body based on content-type

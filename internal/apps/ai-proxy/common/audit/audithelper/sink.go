@@ -29,6 +29,14 @@ func Note(ctx context.Context, k string, v any) {
 	sink.Note(k, v)
 }
 
+func NoteAppend(ctx context.Context, k string, v any) {
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok || sink == nil {
+		return
+	}
+	sink.NoteAppend(k, v)
+}
+
 func Flush(ctx context.Context) {
 	sink, ok := ctxhelper.GetAuditSink(ctx)
 	if !ok || sink == nil {

@@ -94,7 +94,6 @@ func (dbClient *DBClient) CreateWhenReceived(ctx context.Context, req *pb.AuditC
 	meta := metadata.AuditMetadata{
 		Public: metadata.AuditMetadataPublic{
 			RequestContentType: req.RequestContentType,
-			RequestHeader:      req.RequestHeader,
 		},
 		Secret: metadata.AuditMetadataSecret{
 			IdentityPhoneNumber: req.IdentityPhoneNumber,

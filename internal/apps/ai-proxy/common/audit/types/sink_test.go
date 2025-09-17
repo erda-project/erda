@@ -16,6 +16,7 @@ package types
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
@@ -107,5 +108,123 @@ func TestSnapshotIsolation(t *testing.T) {
 	s.Flush(context.Background(), mw)
 	if got := mw.last.Notes["k"]; got != "v" {
 		t.Fatalf("snapshot should be a copy; got %v", got)
+	}
+}
+
+
+func TestNoteAppendBehavior(t *testing.T) {
+	s := New("aid", logrusx.New())
+
+	// first append: key not exist => set to val directly
+	s.NoteAppend("arr.key", "v1")
+	if got := s.Snapshot()["arr.key"]; got != "v1" {
+		t.Fatalf("first NoteAppend should set to val, got %v", got)
+	}
+
+	// second append on string: concatenate
+	s.NoteAppend("arr.key", "v2")
+	if got := s.Snapshot()["arr.key"]; got != "v1v2" {
+		t.Fatalf("second NoteAppend on string should concat, got %v", got)
+	}
+
+	// third append on string: still concatenate
+	s.NoteAppend("arr.key", "v3")
+	if got := s.Snapshot()["arr.key"]; got != "v1v2v3" {
+		t.Fatalf("third NoteAppend on string should concat, got %v", got)
+	}
+}
+
+func TestNoteAppendInvalidKeys(t *testing.T) {
+	s := New("aid", logrusx.New())
+
+	before := len(s.Snapshot())
+	// empty key: should be ignored (no panic)
+	s.NoteAppend("", 1)
+	after := len(s.Snapshot())
+	if after != before {
+		t.Fatalf("empty key should be ignored, snapshot size changed: %d -> %d", before, after)
+	}
+
+	// invalid chars: contains space
+	s.NoteAppend("bad key", 2)
+	if len(s.Snapshot()) != before {
+		t.Fatalf("invalid key should be ignored, snapshot size changed")
+	}
+}
+
+func TestNoteAppendSliceAnyBulk(t *testing.T) {
+	s := New("aid", logrusx.New())
+	// preset []any
+	s.Note("k", []any{"v1"})
+	s.NoteAppend("k", "v2")
+	got := s.Snapshot()["k"]
+	slice, ok := got.([]any)
+	if !ok {
+		t.Fatalf("expected []any after append, got %T: %v", got, got)
+	}
+	if !reflect.DeepEqual(slice, []any{"v1", "v2"}) {
+		t.Fatalf("want [v1 v2], got %v", slice)
+	}
+	// appending []any value should append as a single element (no flattening)
+	s.NoteAppend("k", []any{"v3", "v4"})
+	got = s.Snapshot()["k"]
+	slice = got.([]any)
+	if len(slice) != 3 {
+		t.Fatalf("want len 3, got %d: %v", len(slice), slice)
+	}
+	if slice[0] != "v1" || slice[1] != "v2" {
+		t.Fatalf("unexpected prefix: %v", slice)
+	}
+	if !reflect.DeepEqual(slice[2], []any{"v3", "v4"}) {
+		t.Fatalf("the third element should be []any{\"v3\",\"v4\"}, got %v", slice[2])
+	}
+}
+
+func TestNoteAppendSliceString_DefaultToAny(t *testing.T) {
+	s := New("aid", logrusx.New())
+	// preset []string
+	s.Note("k", []string{"a"})
+	s.NoteAppend("k", "b")
+	got := s.Snapshot()["k"]
+	anySlice, ok := got.([]any)
+	if !ok {
+		t.Fatalf("expected []any after appending to []string, got %T: %v", got, got)
+	}
+	if len(anySlice) != 2 || !reflect.DeepEqual(anySlice[0], []string{"a"}) || anySlice[1] != "b" {
+		t.Fatalf("want [ [a] b ], got %v", anySlice)
+	}
+	// append []string next; since current is []any, v is appended as one element
+	s.NoteAppend("k", []string{"c", "d"})
+	got = s.Snapshot()["k"]
+	anySlice, ok = got.([]any)
+	if !ok {
+		t.Fatalf("expected []any, got %T: %v", got, got)
+	}
+	if len(anySlice) != 3 || !reflect.DeepEqual(anySlice[0], []string{"a"}) || anySlice[1] != "b" || !reflect.DeepEqual(anySlice[2], []string{"c", "d"}) {
+		t.Fatalf("want [ [a] b [c d] ], got %v", anySlice)
+	}
+	// append mixed type -> simply appended into []any
+	s.NoteAppend("k", 123)
+	got = s.Snapshot()["k"]
+	anySlice, ok = got.([]any)
+	if !ok {
+		t.Fatalf("expected []any, got %T: %v", got, got)
+	}
+	if len(anySlice) != 4 || !reflect.DeepEqual(anySlice[0], []string{"a"}) || anySlice[1] != "b" || !reflect.DeepEqual(anySlice[2], []string{"c", "d"}) || anySlice[3] != 123 {
+		t.Fatalf("unexpected slice: %v", anySlice)
+	}
+}
+
+func TestNoteAppendBytes_Simple(t *testing.T) {
+	s := New("aid", logrusx.New())
+	s.Note("kb", []byte("ab"))
+	s.NoteAppend("kb", []byte("cd"))
+	got := s.Snapshot()["kb"]
+	bs, ok := got.([]byte)
+	if !ok {
+		t.Fatalf("expected []byte, got %T: %v", got, got)
+	}
+	if string(bs) != "abcd" {
+		t.Fatalf("want abcd, got %q", string(bs))
 	}
 }
