@@ -46,7 +46,7 @@ func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (
 	if !isAdmin {
 		for _, audit := range pagingResult.List {
 			audit.AuthKey = ""
-			audit.ActualRequestBody = ""
+			audit.ActualRequestBody = "[omitted due to sensitive data]"
 			audit.Metadata = nil
 			audit.Username = desensitize.Name(audit.Username)
 			audit.Email = desensitize.Email(audit.Email)

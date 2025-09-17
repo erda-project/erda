@@ -17,6 +17,7 @@ package dumplog
 import (
 	"net/http"
 	"net/http/httputil"
+	"unicode/utf8"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -32,7 +33,7 @@ func DumpResponseHeadersIn(resp *http.Response) {
 	ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response headers in:\n%s", string(dumpBytes))
 	// collect actual llm response info
 	audithelper.Note(resp.Request.Context(), "status", resp.StatusCode)
-	audithelper.Note(resp.Request.Context(), "actual_response_header", resp.Header.Clone())
+	audithelper.Note(resp.Request.Context(), "actual_response_body", string(dumpBytes))
 	audithelper.Note(resp.Request.Context(), "actual_response_content_type", resp.Header.Get(httperrorutil.HeaderKeyContentType))
 }
 
@@ -44,19 +45,25 @@ func DumpResponseHeadersOut(resp *http.Response) {
 	}
 	ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response headers out:\n%s", string(dumpBytes))
 	// collect handled response info
-	audithelper.Note(resp.Request.Context(), "response_header", resp.Header.Clone())
+	audithelper.Note(resp.Request.Context(), "response_body", string(dumpBytes))
 	audithelper.Note(resp.Request.Context(), "response_content_type", resp.Header.Get(httperrorutil.HeaderKeyContentType))
 }
 
-func DumpResponseBodyChunk(resp *http.Response, chunk []byte, index int64) {
+func DumpResponseBodyChunk(resp *http.Response, chunk []byte, index int64) []byte {
 	contentType := resp.Header.Get("Content-Type")
 	shouldDumpBody := ShouldDumpBody(contentType)
 
+	// check body is valid utf-8
+	if !utf8.Valid(chunk) {
+		shouldDumpBody = false
+	}
+
 	if shouldDumpBody {
 		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response body chunk (index=%d):\n%s", index, string(chunk))
+		return chunk
 	} else {
-		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response body chunk (index=%d): [%d bytes omitted due to binary content-type: %s]",
-			index, len(chunk), contentType)
+		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("dump proxy response body chunk (index=%d): [%d bytes omitted due to binary content]", index, len(chunk))
+		return []byte("[omitted binary chunk]\n")
 	}
 }
 

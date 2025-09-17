@@ -26,13 +26,10 @@ type (
 		RequestContentType      string `json:"request.content_type,omitempty"`
 		ActualRequestURL        string `json:"actual.request.url,omitempty"`
 		RequestFunctionCallName string `json:"request.function_call.name,omitempty"`
-		RequestHeader           string `json:"request.headers,omitempty"`
-		ActualRequestHeader     string `json:"actual.request.headers,omitempty"`
 
 		ResponseContentType      string `json:"response.content_type,omitempty"`
 		ResponseFunctionCallName string `json:"response.function_call.name,omitempty"`
 		ResponseStreamDoneAt     string `json:"response.stream.done_at,omitempty"`
-		ResponseHeader           string `json:"response.header,omitempty"`
 
 		TimeCost string `json:"time_cost,omitempty"`
 

@@ -35,6 +35,9 @@ type Sink interface {
 	// It is a no-op if the key already exists or NoteOnce was called earlier.
 	// Returns true if the key was set, false if it already existed.
 	NoteOnce(key string, val any) bool
+	// NoteAppend appends val to the existing value of key.
+	// If the key doesn't exist, it is set to val.
+	NoteAppend(key string, val any)
 	// Inc increments a numeric key by delta and returns the new value.
 	// If the key doesn't exist or isn't numeric, it starts from 0.
 	Inc(key string, delta int64) int64
@@ -74,27 +77,17 @@ var (
 )
 
 func (s *sink) Note(k string, v any) {
-	if k == "" {
-		s.logger.Warnf("note key is empty, ignoring")
-		return
-	}
-	if !keyRe.MatchString(k) {
-		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
+	if !s.validKey(k) {
 		return
 	}
 	s.notes[k] = v
 }
 
 func (s *sink) NoteOnce(k string, v any) bool {
-	if k == "" {
-		s.logger.Warnf("note key is empty, ignoring")
+	if !s.validKey(k) {
 		return false
 	}
-	if !keyRe.MatchString(k) {
-		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
-		return false
-	}
-	// If already set (by Note or previous NoteOnce), do nothing.
+	// if already set (by Note or previous NoteOnce), do nothing.
 	if _, exists := s.notes[k]; exists {
 		return false
 	}
@@ -106,13 +99,32 @@ func (s *sink) NoteOnce(k string, v any) bool {
 	return true
 }
 
-func (s *sink) Inc(k string, d int64) int64 {
-	if k == "" {
-		s.logger.Warnf("note key is empty, ignoring")
-		return 0
+func (s *sink) NoteAppend(k string, v any) {
+	if !s.validKey(k) {
+		return
 	}
-	if !keyRe.MatchString(k) {
-		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
+	// get current value
+	cur, exists := s.notes[k]
+	if !exists {
+		// If key doesn't exist, set to val directly per contract
+		s.notes[k] = v
+		return
+	}
+	// append
+	switch cur := cur.(type) {
+	case []any:
+		s.notes[k] = append(cur, v)
+	case []byte:
+		s.notes[k] = append(cur, v.([]byte)...)
+	case string:
+		s.notes[k] = cur + v.(string)
+	default:
+		s.notes[k] = []any{cur, v}
+	}
+}
+
+func (s *sink) Inc(k string, d int64) int64 {
+	if !s.validKey(k) {
 		return 0
 	}
 	var cur int64
@@ -144,4 +156,16 @@ func (s *sink) Flush(ctx context.Context, w Writer) {
 		AuditID: s.auditID,
 		Notes:   s.Snapshot(),
 	})
+}
+
+func (s *sink) validKey(k string) bool {
+	if k == "" {
+		s.logger.Warnf("note key is empty, ignoring")
+		return false
+	}
+	if !keyRe.MatchString(k) {
+		s.logger.Warnf("note key invalid: %s, allowed [a-zA-Z0-9_.-], 1..128", k)
+		return false
+	}
+	return true
 }

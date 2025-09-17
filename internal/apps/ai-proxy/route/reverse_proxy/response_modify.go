@@ -129,6 +129,24 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 
 	defer func() { _ = upstream.Close() }()
 
+	var (
+		wholeReceivedBody []byte
+		wholeHandledBody  []byte
+	)
+
+	const bodyLimitBytes = 1024 * 32 // 32K
+
+	defer func() {
+		if len(wholeReceivedBody) > bodyLimitBytes {
+			wholeReceivedBody = []byte(string(wholeReceivedBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeReceivedBody)))
+		}
+		if len(wholeHandledBody) > bodyLimitBytes {
+			wholeHandledBody = []byte(string(wholeHandledBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeHandledBody)))
+		}
+		audithelper.NoteAppend(resp.Request.Context(), "actual_response_body", string(wholeReceivedBody))
+		audithelper.NoteAppend(resp.Request.Context(), "response_body", string(wholeHandledBody))
+	}()
+
 	var chunkIndex int64 = -1
 	for {
 		chunkIndex++
@@ -141,7 +159,8 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		if len(chunk) > 0 {
 			out := chunk
 			// 3.2 same chunk flows through all Modifiers in sequence
-			dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			dumpReceivedOut := dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			wholeReceivedBody = append(wholeReceivedBody, dumpReceivedOut...)
 			for _, filter := range filters {
 				currentFilterName = filter.Name
 				m := filter.Instance
@@ -157,7 +176,8 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 				}
 			}
 			currentFilterName = ""
-			dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			dumpHandledOut := dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			wholeHandledBody = append(wholeHandledBody, dumpHandledOut...)
 			if len(out) > 0 {
 				if _, err := pw.Write(out); err != nil {
 					// Downstream disconnected
@@ -178,6 +198,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 					logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
 					out, _ := m.OnComplete(resp)
 					if len(out) > 0 {
+						wholeHandledBody = append(wholeHandledBody, out...)
 						_, _ = pw.Write(out)
 					}
 				}
