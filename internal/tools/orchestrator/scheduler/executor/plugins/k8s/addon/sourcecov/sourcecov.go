@@ -39,7 +39,6 @@ import (
 type SourcecovOperator struct {
 	k8s        addon.K8SUtil
 	client     *httpclient.HTTPClient
-	oc         addon.OverCommitUtil
 	ns         addon.NamespaceUtil
 	overcommit addon.OverCommitUtil
 }
@@ -284,11 +283,11 @@ func (s *SourcecovOperator) Update(i interface{}) error {
 	return nil
 }
 
-func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, oc addon.OverCommitUtil, ns addon.NamespaceUtil) *SourcecovOperator {
+func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, overcommit addon.OverCommitUtil, ns addon.NamespaceUtil) *SourcecovOperator {
 	return &SourcecovOperator{
-		k8s:    k8s,
-		client: client,
-		oc:     oc,
-		ns:     ns,
+		k8s:        k8s,
+		client:     client,
+		overcommit: overcommit,
+		ns:         ns,
 	}
 }
