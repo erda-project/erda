@@ -47,9 +47,20 @@ func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (
 		for _, audit := range pagingResult.List {
 			audit.AuthKey = ""
 			audit.ActualRequestBody = "[omitted due to sensitive data]"
-			audit.Metadata = nil
 			audit.Username = desensitize.Name(audit.Username)
 			audit.Email = desensitize.Email(audit.Email)
+			// filter metadata
+			if audit.Metadata != nil {
+				for k := range audit.Metadata.Public {
+					switch k {
+					case "request_begin_at":
+					case "response_chunk_begin_at", "response_chunk_done_at":
+					default:
+						delete(audit.Metadata.Public, k)
+					}
+				}
+				audit.Metadata.Secret = nil
+			}
 		}
 	}
 	return pagingResult, nil

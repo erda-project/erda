@@ -22,6 +22,7 @@ import (
 	"net/http/httputil"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo"
 
@@ -39,7 +40,14 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 	return func(pr *httputil.ProxyRequest) {
 		var currentFilterName string
 		var brokenInErr error
-		defer audithelper.Flush(pr.In.Context())
+
+		// record accurate request time before audit created
+		requestBeginAt := time.Now()
+		defer func() {
+			audithelper.Note(pr.In.Context(), "request_begin_at", requestBeginAt)
+			audithelper.Flush(pr.In.Context())
+		}()
+
 		defer func() {
 			if r := recover(); r != nil {
 				debug.PrintStack()

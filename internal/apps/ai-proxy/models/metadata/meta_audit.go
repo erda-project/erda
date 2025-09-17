@@ -29,7 +29,6 @@ type (
 
 		ResponseContentType      string `json:"response.content_type,omitempty"`
 		ResponseFunctionCallName string `json:"response.function_call.name,omitempty"`
-		ResponseStreamDoneAt     string `json:"response.stream.done_at,omitempty"`
 
 		TimeCost string `json:"time_cost,omitempty"`
 

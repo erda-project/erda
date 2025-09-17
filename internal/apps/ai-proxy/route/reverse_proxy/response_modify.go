@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime/debug"
+	"time"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
@@ -61,6 +62,9 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 			// force make ReverseProxy failed and handle error at ErrorHandler
 			return
 		}()
+
+		// audit response begin
+		audithelper.Note(resp.Request.Context(), "response_at", time.Now()) // table field
 
 		// handle error status firstly
 		if _err = errorStatusHandler(resp); _err != nil {
@@ -136,6 +140,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 
 	const bodyLimitBytes = 1024 * 32 // 32K
 
+	// audit response body
 	defer func() {
 		if len(wholeReceivedBody) > bodyLimitBytes {
 			wholeReceivedBody = []byte(string(wholeReceivedBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeReceivedBody)))
@@ -147,10 +152,22 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		audithelper.NoteAppend(resp.Request.Context(), "response_body", string(wholeHandledBody))
 	}()
 
+	// audit response time
+	var responseChunkBeginAt time.Time
+	defer func() {
+		responseChunkDoneAt := time.Now()
+		audithelper.Note(resp.Request.Context(), "response_chunk_done_at", responseChunkDoneAt)
+	}()
+
 	var chunkIndex int64 = -1
 	for {
 		chunkIndex++
 		chunk, rerr := splitter.NextChunk(upstream)
+		// begin response here
+		if responseChunkBeginAt.IsZero() {
+			responseChunkBeginAt = time.Now()
+			audithelper.Note(resp.Request.Context(), "response_chunk_begin_at", responseChunkBeginAt) // table metadata
+		}
 		if len(chunk) == 0 && rerr == nil {
 			// indicates splitter violated contract, avoid infinite loop
 			writeAndCloseWithErr(resp, pw, errors.New("splitter returned empty chunk without error"))
