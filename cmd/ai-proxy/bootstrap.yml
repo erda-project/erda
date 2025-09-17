@@ -7,6 +7,7 @@ grpc-server@ai:
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
+  is_mcp_proxy: false
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
