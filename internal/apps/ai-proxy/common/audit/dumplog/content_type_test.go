@@ -52,8 +52,8 @@ func TestIsBinaryContentType(t *testing.T) {
 
 		// Edge cases
 		{"", false, "empty content type"},
-		{"unknown/type", false, "unknown type - default to text"},
-		{"application/unknown", false, "unknown application type"},
+		{"unknown/type", true, "unknown type - default to binary"},
+		{"application/unknown", true, "unknown application type"},
 		{"AUDIO/MPEG", true, "uppercase audio"},
 		{"Audio/Mp3", true, "mixed case audio"},
 	}

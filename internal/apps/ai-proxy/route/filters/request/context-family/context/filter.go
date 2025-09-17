@@ -154,7 +154,6 @@ func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
 		audithelper.Note(ctx, "session_id", session.Id)
 	}
 	audithelper.Note(ctx, "source", vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource))
-	audithelper.Note(ctx, "operation_id", pr.Out.Method+" "+pr.Out.URL.Path)
 	userInfo := getUserInfoFromClientToken(pr)
 	for k, v := range userInfo {
 		audithelper.Note(ctx, k, v)

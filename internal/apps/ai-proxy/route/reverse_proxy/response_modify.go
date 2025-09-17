@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime/debug"
+	"time"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
@@ -61,6 +62,9 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 			// force make ReverseProxy failed and handle error at ErrorHandler
 			return
 		}()
+
+		// audit response begin
+		audithelper.Note(resp.Request.Context(), "response_at", time.Now()) // table field
 
 		// handle error status firstly
 		if _err = errorStatusHandler(resp); _err != nil {
@@ -129,10 +133,41 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 
 	defer func() { _ = upstream.Close() }()
 
+	var (
+		wholeReceivedBody []byte
+		wholeHandledBody  []byte
+	)
+
+	const bodyLimitBytes = 1024 * 32 // 32K
+
+	// audit response body
+	defer func() {
+		if len(wholeReceivedBody) > bodyLimitBytes {
+			wholeReceivedBody = []byte(string(wholeReceivedBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeReceivedBody)))
+		}
+		if len(wholeHandledBody) > bodyLimitBytes {
+			wholeHandledBody = []byte(string(wholeHandledBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeHandledBody)))
+		}
+		audithelper.NoteAppend(resp.Request.Context(), "actual_response_body", string(wholeReceivedBody))
+		audithelper.NoteAppend(resp.Request.Context(), "response_body", string(wholeHandledBody))
+	}()
+
+	// audit response time
+	var responseChunkBeginAt time.Time
+	defer func() {
+		responseChunkDoneAt := time.Now()
+		audithelper.Note(resp.Request.Context(), "response_chunk_done_at", responseChunkDoneAt)
+	}()
+
 	var chunkIndex int64 = -1
 	for {
 		chunkIndex++
 		chunk, rerr := splitter.NextChunk(upstream)
+		// begin response here
+		if responseChunkBeginAt.IsZero() {
+			responseChunkBeginAt = time.Now()
+			audithelper.Note(resp.Request.Context(), "response_chunk_begin_at", responseChunkBeginAt) // table metadata
+		}
 		if len(chunk) == 0 && rerr == nil {
 			// indicates splitter violated contract, avoid infinite loop
 			writeAndCloseWithErr(resp, pw, errors.New("splitter returned empty chunk without error"))
@@ -141,7 +176,8 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		if len(chunk) > 0 {
 			out := chunk
 			// 3.2 same chunk flows through all Modifiers in sequence
-			dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			dumpReceivedOut := dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			wholeReceivedBody = append(wholeReceivedBody, dumpReceivedOut...)
 			for _, filter := range filters {
 				currentFilterName = filter.Name
 				m := filter.Instance
@@ -157,7 +193,8 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 				}
 			}
 			currentFilterName = ""
-			dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			dumpHandledOut := dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
+			wholeHandledBody = append(wholeHandledBody, dumpHandledOut...)
 			if len(out) > 0 {
 				if _, err := pw.Write(out); err != nil {
 					// Downstream disconnected
@@ -178,6 +215,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 					logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
 					out, _ := m.OnComplete(resp)
 					if len(out) > 0 {
+						wholeHandledBody = append(wholeHandledBody, out...)
 						_, _ = pw.Write(out)
 					}
 				}
