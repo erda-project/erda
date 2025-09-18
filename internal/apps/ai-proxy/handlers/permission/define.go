@@ -21,10 +21,10 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/auth"
 	"github.com/erda-project/erda/internal/pkg/audit"
 )
 

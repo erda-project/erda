@@ -66,7 +66,7 @@ func (f *BodySizeLimit) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		bodyBufferLen = pr.In.ContentLength
 	}
 	if bodyBufferLen > f.MaxSize {
-		return http_error.NewHTTPError(http.StatusBadRequest, string(f.Message))
+		return http_error.NewHTTPError(pr.In.Context(), http.StatusBadRequest, string(f.Message))
 	}
 	return nil
 }

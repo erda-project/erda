@@ -55,7 +55,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 			matchedRoute = matched.(*router_define.Route)
 		}
 		if matchedRoute == nil {
-			httperror.NewHTTPError(http.StatusNotFound, "no matched route").WriteJSONHTTPError(w)
+			httperror.NewHTTPError(r.Context(), http.StatusNotFound, "no matched route").WriteJSONHTTPError(w)
 			return
 		}
 
@@ -64,12 +64,12 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		for _, filterConfig := range matchedRoute.RequestFilters {
 			creator, ok := filter_define.FilterFactory.RequestFilters[filterConfig.Name]
 			if !ok {
-				httperror.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("request filter %s not found", filterConfig.Name)).WriteJSONHTTPError(w)
+				httperror.NewHTTPError(r.Context(), http.StatusInternalServerError, fmt.Sprintf("request filter %s not found", filterConfig.Name)).WriteJSONHTTPError(w)
 				return
 			}
 			fc, err := filterConfig.GetConfigAsRawMessage()
 			if err != nil {
-				httperror.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to convert config for filter %s: %v", filterConfig.Name, err)).WriteJSONHTTPError(w)
+				httperror.NewHTTPError(r.Context(), http.StatusInternalServerError, fmt.Sprintf("failed to convert config for filter %s: %v", filterConfig.Name, err)).WriteJSONHTTPError(w)
 				return
 			}
 			f := creator(filterConfig.Name, fc)
@@ -79,12 +79,12 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		for _, filterConfig := range matchedRoute.ResponseFilters {
 			creator, ok := filter_define.FilterFactory.ResponseFilters[filterConfig.Name]
 			if !ok {
-				httperror.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("response filter %s not found", filterConfig.Name)).WriteJSONHTTPError(w)
+				httperror.NewHTTPError(r.Context(), http.StatusInternalServerError, fmt.Sprintf("response filter %s not found", filterConfig.Name)).WriteJSONHTTPError(w)
 				return
 			}
 			fc, err := filterConfig.GetConfigAsRawMessage()
 			if err != nil {
-				httperror.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to convert config for filter %s: %v", filterConfig.Name, err)).WriteJSONHTTPError(w)
+				httperror.NewHTTPError(r.Context(), http.StatusInternalServerError, fmt.Sprintf("failed to convert config for filter %s: %v", filterConfig.Name, err)).WriteJSONHTTPError(w)
 				return
 			}
 			f := creator(filterConfig.Name, fc)

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -28,6 +29,7 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		// sink audit when error
 		defer func() {
+			audithelper.NoteOnce(r.Context(), "response_chunk_done_at", time.Now())
 			audithelper.Flush(r.Context())
 		}()
 
@@ -69,7 +71,7 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 			httpError.WriteJSONHTTPError(w)
 			return
 		default:
-			httperror.NewHTTPError(defaultStatus, err.Error()).WriteJSONHTTPError(w)
+			httperror.NewHTTPError(r.Context(), defaultStatus, err.Error()).WriteJSONHTTPError(w)
 			return
 		}
 	}
