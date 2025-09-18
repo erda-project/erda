@@ -64,7 +64,7 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 		}()
 
 		// audit response begin
-		audithelper.Note(resp.Request.Context(), "response_at", time.Now()) // table field
+		audithelper.NoteOnce(resp.Request.Context(), "response_at", time.Now()) // table field
 
 		// handle error status firstly
 		if _err = errorStatusHandler(resp); _err != nil {
@@ -83,7 +83,8 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 		}
 		// wrap as auto-decompressing splitter
 		autoDecompressSplitter := set_resp_body_chunk_splitter.NewDecompressingChunkSplitter(splitter, resp)
-		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Infof("splitter: %s", reflect.TypeOf(splitter))
+		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Debugf("splitter: %s", reflect.TypeOf(splitter))
+		audithelper.NoteOnce(resp.Request.Context(), "response_body_splitter", reflect.TypeOf(splitter).String())
 
 		// ---------------------------------------------------------------------
 		// 2) let all Modifiers run OnHeaders first
@@ -156,7 +157,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 	var responseChunkBeginAt time.Time
 	defer func() {
 		responseChunkDoneAt := time.Now()
-		audithelper.Note(resp.Request.Context(), "response_chunk_done_at", responseChunkDoneAt)
+		audithelper.NoteOnce(resp.Request.Context(), "response_chunk_done_at", responseChunkDoneAt)
 	}()
 
 	var chunkIndex int64 = -1
@@ -166,7 +167,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		// begin response here
 		if responseChunkBeginAt.IsZero() {
 			responseChunkBeginAt = time.Now()
-			audithelper.Note(resp.Request.Context(), "response_chunk_begin_at", responseChunkBeginAt) // table metadata
+			audithelper.NoteOnce(resp.Request.Context(), "response_chunk_begin_at", responseChunkBeginAt) // table metadata
 		}
 		if len(chunk) == 0 && rerr == nil {
 			// indicates splitter violated contract, avoid infinite loop
@@ -255,6 +256,7 @@ func errorStatusHandler(resp *http.Response) error {
 	}
 
 	httpErr := httperror.NewHTTPErrorWithCtx(
+		resp.Request.Context(),
 		resp.StatusCode,
 		"LLM Backend Error",
 		errCtx,

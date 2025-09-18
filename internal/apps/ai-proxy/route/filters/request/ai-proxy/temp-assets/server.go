@@ -62,7 +62,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	pathMatcher := ctxhelper.MustGetPathMatcher(ctx)
 	uuid := pathMatcher.Values["uuid"]
 	if uuid == "" {
-		return http_error.NewHTTPError(http.StatusBadRequest, "missing uuid in path")
+		return http_error.NewHTTPError(ctx, http.StatusBadRequest, "missing uuid in path")
 	}
 
 	assetsMap["1234"] = "/Users/sfwn/Downloads/tg_image_83647306.png"

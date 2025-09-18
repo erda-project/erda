@@ -15,16 +15,21 @@
 package http_error
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 )
 
 type HTTPError struct {
-	StatusCode  int            `json:"-"`
-	Message     string         `json:"message"`
-	ErrorCtx    map[string]any `json:"error,omitempty"`
-	AIProxyMeta map[string]any `json:"ai_proxy_meta,omitempty"`
+	Ctx         context.Context `json:"-"`
+	StatusCode  int             `json:"-"`
+	Message     string          `json:"message"`
+	ErrorCtx    map[string]any  `json:"error,omitempty"`
+	AIProxyMeta map[string]any  `json:"ai_proxy_meta,omitempty"`
 }
 
 func (he *HTTPError) Error() string {
@@ -35,20 +40,26 @@ func (he *HTTPError) Error() string {
 func (he *HTTPError) WriteJSONHTTPError(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(he.StatusCode)
-	encoder := json.NewEncoder(w)
+	var body bytes.Buffer
+	encoder := json.NewEncoder(&body)
 	encoder.SetEscapeHTML(false)
 	_ = encoder.Encode(&he)
+	_, _ = w.Write(body.Bytes())
+	audithelper.Note(he.Ctx, "status", he.StatusCode)
+	audithelper.Note(he.Ctx, "response_body", body.String())
 }
 
-func NewHTTPError(statusCode int, message string) *HTTPError {
+func NewHTTPError(ctx context.Context, statusCode int, message string) *HTTPError {
 	return &HTTPError{
+		Ctx:        ctx,
 		StatusCode: statusCode,
 		Message:    message,
 	}
 }
 
-func NewHTTPErrorWithCtx(statusCode int, message string, errCtx map[string]any) *HTTPError {
+func NewHTTPErrorWithCtx(ctx context.Context, statusCode int, message string, errCtx map[string]any) *HTTPError {
 	return &HTTPError{
+		Ctx:        ctx,
 		StatusCode: statusCode,
 		Message:    message,
 		ErrorCtx:   errCtx,

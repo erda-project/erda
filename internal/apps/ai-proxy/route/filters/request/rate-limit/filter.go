@@ -89,7 +89,7 @@ func (f *RateLimiter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	if !limiter.Allow() {
 		err := fmt.Errorf("too many requests for token rate limit, token: %s", token)
 		l.Warn(err)
-		return http_error.NewHTTPError(http.StatusTooManyRequests, "too many requests for token rate limit")
+		return http_error.NewHTTPError(ctx, http.StatusTooManyRequests, "too many requests for token rate limit")
 	}
 	l.Debugf("pass token rate limit, token: %s", token)
 

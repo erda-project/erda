@@ -23,8 +23,8 @@ import (
 	"strconv"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
@@ -53,14 +53,14 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// check admin key first
 	isAdmin, err := akutil.CheckAdmin(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
 	if err != nil {
-		return http_error.NewHTTPError(http.StatusUnauthorized, err.Error())
+		return http_error.NewHTTPError(ctx, http.StatusUnauthorized, err.Error())
 	}
 	me.IsAdmin = isAdmin
 	if !isAdmin {
 		// check client info
 		clientToken, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
 		if err != nil {
-			return http_error.NewHTTPError(http.StatusUnauthorized, err.Error())
+			return http_error.NewHTTPError(ctx, http.StatusUnauthorized, err.Error())
 		}
 		me.IsClientToken = clientToken != nil
 		me.IsClient = clientToken == nil && client != nil
@@ -75,7 +75,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 
 	meBytes, err := json.Marshal(me)
 	if err != nil {
-		return http_error.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, err.Error())
 	}
 
 	// construct response

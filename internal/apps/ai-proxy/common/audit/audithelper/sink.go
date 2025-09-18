@@ -37,6 +37,14 @@ func NoteAppend(ctx context.Context, k string, v any) {
 	sink.NoteAppend(k, v)
 }
 
+func NoteOnce(ctx context.Context, k string, v any) {
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok || sink == nil {
+		return
+	}
+	_ = sink.NoteOnce(k, v)
+}
+
 func Flush(ctx context.Context) {
 	sink, ok := ctxhelper.GetAuditSink(ctx)
 	if !ok || sink == nil {

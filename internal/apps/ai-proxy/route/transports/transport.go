@@ -90,7 +90,7 @@ func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, err
 	// skip gen curl when host & scheme is set to empty manually at Rewriter
 	if !(req.URL.Host == "" && req.URL.Scheme == "") {
 		logger := ctxhelper.MustGetLoggerBase(req.Context())
-		logger.Sub(reflect.TypeOf(t).String()).Infof("generated cURL command:\n\t" + GenCurl(req))
+		logger.Sub(reflect.TypeOf(t).String()).Debugf("generated cURL command:\n\t" + GenCurl(req))
 	}
 	return t.Inner.RoundTrip(req)
 }
