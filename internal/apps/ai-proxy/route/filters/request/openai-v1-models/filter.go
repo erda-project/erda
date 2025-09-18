@@ -25,8 +25,8 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
@@ -59,20 +59,20 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// try set clientId by ak
 	_, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
 	if err != nil {
-		return http_error.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get client, err: %v", err))
+		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to get client, err: %v", err))
 	}
 	if client == nil {
-		return http_error.NewHTTPError(http.StatusUnauthorized, "Client not found")
+		return http_error.NewHTTPError(ctx, http.StatusUnauthorized, "Client not found")
 	}
 	ctxhelper.PutClient(ctx, client)
 	ctxhelper.PutClientId(ctx, client.Id)
 
 	richClient, err := richClientHandler.GetByAccessKeyId(ctx, &richclientpb.GetByClientAccessKeyIdRequest{AccessKeyId: client.AccessKeyId})
 	if err != nil {
-		return http_error.NewHTTPError(http.StatusInternalServerError, "Failed to get rich client")
+		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, "Failed to get rich client")
 	}
 	if richClient == nil {
-		return http_error.NewHTTPError(http.StatusUnauthorized, "Client not found")
+		return http_error.NewHTTPError(ctx, http.StatusUnauthorized, "Client not found")
 	}
 	// convert to openai /v1/models response, see: https://platform.openai.com/docs/api-reference/models/list
 	var oaiFormatModels []ExtendedOpenAIModelForList
@@ -90,7 +90,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// construct filter-generated response
 	responseBodyBytes, err := json.Marshal(&ModelListResponse{Data: oaiFormatModels})
 	if err != nil {
-		return http_error.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body, err: %v", err))
+		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body, err: %v", err))
 	}
 
 	resp := &http.Response{
