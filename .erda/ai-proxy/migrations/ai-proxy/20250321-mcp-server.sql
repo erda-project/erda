@@ -11,6 +11,8 @@ CREATE TABLE `ai_proxy_mcp_server`
     `server_config`      TEXT NULL COMMENT 'Server 配置信息',
     `is_published`       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否发布',
     `is_default_version` TINYINT(1)   DEFAULT 0 COMMENT '是否默认版本',
+    `scope_type`         VARCHAR(64)  NOT NULL DEFAULT 'org',
+    `scope_id`           VARCHAR(64)  NOT NULL DEFAULT '',
     `created_at`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE (`name`, `version`),

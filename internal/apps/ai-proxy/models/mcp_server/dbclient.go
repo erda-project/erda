@@ -49,6 +49,12 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		transportType = "sse"
 	}
 
+	orgId := "0"
+
+	if req.OrgId != nil {
+		orgId = *req.OrgId
+	}
+
 	rawConfig, err := mcpServerConfig.MarshalJSON()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal mcp server config: %v", err)
@@ -73,6 +79,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				ServerConfig:     req.ServerConfig,
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
 				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
+				ScopeType:        "org",
+				ScopeId:          orgId,
 			}
 			// create new server
 			if err = tx.Create(&dbServer).Error; err != nil {
