@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/pkg/http/customhttp"
 	"io"
 	"net/http"
 	"net/http/httputil"
@@ -33,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/mcp-server-request/request"
 	setrespbodychunksplitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 const Name = "mcp-server-request"

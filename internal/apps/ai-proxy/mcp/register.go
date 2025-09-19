@@ -18,20 +18,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/aws/smithy-go/ptr"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/http/customhttp"
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"io"
 	corev1 "k8s.io/api/core/v1"
-	"net/http"
+
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 type Register struct {

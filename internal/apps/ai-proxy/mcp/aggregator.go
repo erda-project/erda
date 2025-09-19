@@ -18,11 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/k8sclient/config"
+	"sync"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/proto"
 	v1 "k8s.io/api/core/v1"
@@ -30,8 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sync"
-	"time"
+
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
 type ClusterController struct {
