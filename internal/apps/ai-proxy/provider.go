@@ -17,10 +17,13 @@ package ai_proxy
 import (
 	"context"
 	_ "embed"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 	"net/http"
 	"reflect"
-
-	"google.golang.org/grpc"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -132,6 +135,8 @@ type provider struct {
 	HTTP           mux.Mux                              `autowired:"gorilla-mux@ai"`
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
 	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
+	Election       election.Interface                   `autowired:"etcd-election"`
+	ClusterSvc     clusterpb.ClusterServiceServer       `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
 
 	richClientHandler *handler_rich_client.ClientHandler
@@ -217,4 +222,28 @@ func (p *provider) registerAIProxyManageAPI() {
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
+
+	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	// reverse proxy to AI provider's server
+	p.ServeAIProxyV2()
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	p.Election.OnLeader(func(ctx context.Context) {
+		handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
+
+		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler)
+		if err := aggregator.Start(ctx); err != nil {
+			logrus.Error(err)
+			panic(err)
+		}
+		//err := aggregator.Init()
+		//if err != nil {
+		//	panic(err)
+		//}
+		//rutil.ContinueWorking(ctx, p.L, func(ctx context.Context) rutil.WaitDuration {
+		//	return rutil.ContinueWorkingWithCustomInterval(time.Minute * 10)
+		//})
+	})
+	return nil
 }
