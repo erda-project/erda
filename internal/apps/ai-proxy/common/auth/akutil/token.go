@@ -17,9 +17,13 @@ package akutil
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+	"time"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 )
 
 func (util *AKUtil) TokenToClient(token string) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
@@ -32,14 +36,36 @@ func (util *AKUtil) TokenToClient(token string) (*clienttokenpb.ClientToken, *cl
 		return nil, nil, err
 	}
 	if pagingResp.Total == 0 {
-		return nil, nil, nil
+		return nil, nil, fmt.Errorf("invalid token")
 	}
 	if pagingResp.Total > 1 {
-		return nil, nil, fmt.Errorf("multiple clients found by token: %s", token)
+		return nil, nil, fmt.Errorf("multiple tokens found")
 	}
 	clientToken := pagingResp.List[0]
+	if isTokenExpired(clientToken) {
+		return nil, nil, handlers.ErrTokenExpired
+	}
 	client, err := util.Dao.ClientClient().Get(context.Background(), &clientpb.ClientGetRequest{
 		ClientId: clientToken.ClientId,
 	})
 	return clientToken, client, err
+}
+
+const EnvKeyEnableTokenExpireCheck = "ENABLE_TOKEN_EXPIRE_CHECK"
+
+func isTokenExpired(token *clienttokenpb.ClientToken) bool {
+	// only enable expire check when env is set to true
+	v := os.Getenv(EnvKeyEnableTokenExpireCheck)
+	if v == "" || strings.ToLower(v) != "true" {
+		return false
+	}
+	if token == nil {
+		return true
+	}
+	if token.ExpireAt == nil {
+		return false
+	}
+	expireAt := token.ExpireAt.AsTime()
+	// consider tokens with an expiration that is not in the future as expired
+	return expireAt.Before(time.Now())
 }
