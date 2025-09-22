@@ -300,13 +300,13 @@ func DialTLS(addr string, insecureSkipVerify bool) (*smtp.Client, error) {
 	return smtp.NewClient(conn, host)
 }
 
-func SendMailWithoutTLS(host string, auth smtp.Auth, smtpUser string, mailsAddrs []string, verify bool, msg []byte) error {
+func SendMailWithoutTLS(host string, auth smtp.Auth, smtpUser string, mailsAddrs []string, skipVerify bool, msg []byte) error {
 	dial, err := smtp.Dial(host)
 	if err != nil {
 		return err
 	}
 	defer dial.Close()
-	if err = dial.StartTLS(&tls.Config{InsecureSkipVerify: verify}); err != nil {
+	if err = dial.StartTLS(&tls.Config{InsecureSkipVerify: skipVerify}); err != nil {
 		return err
 	}
 
