@@ -42,6 +42,10 @@ type DBClient struct {
 }
 
 func (dbClient *DBClient) Create(ctx context.Context, req *pb.ClientTokenCreateRequest) (*pb.ClientToken, error) {
+	// set default expire option
+	if req.ExpireInHours == 0 {
+		req.ExpireInHours = defaultExpireInHours
+	}
 	// query first
 	if req.CreateOrGet {
 		pagingResp, err := dbClient.Paging(ctx, &pb.ClientTokenPagingRequest{
@@ -54,21 +58,16 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ClientTokenCreateR
 			return nil, fmt.Errorf("failed to paging token, clientId: %s, userId: %s, err: %v", req.ClientId, req.UserId, err)
 		}
 		if pagingResp.Total == 1 { // already exist, return directly
-			if req.Metadata != nil { // do update
-				return dbClient.Update(ctx, &pb.ClientTokenUpdateRequest{
-					ClientId: req.ClientId,
-					Token:    pagingResp.List[0].Token,
-					Metadata: req.Metadata,
-				})
-			}
-			return pagingResp.List[0], nil
+			// do update to auto-renewal token
+			return dbClient.Update(ctx, &pb.ClientTokenUpdateRequest{
+				ClientId:      req.ClientId,
+				Token:         pagingResp.List[0].Token,
+				Metadata:      req.Metadata,
+				ExpireInHours: req.ExpireInHours,
+			})
 		}
 	}
 	// do create
-	// set default expire option
-	if req.ExpireInHours == 0 {
-		req.ExpireInHours = defaultExpireInHours
-	}
 	c := &ClientToken{
 		ClientID:  req.ClientId,
 		UserID:    req.UserId,
