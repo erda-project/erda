@@ -341,6 +341,6 @@ func SendMailWithoutTLS(host string, auth smtp.Auth, smtpUser string, mailsAddrs
 		return err
 	}
 
-	defer dial.Quit()
+	dial.Quit()
 	return nil
 }
