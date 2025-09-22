@@ -230,6 +230,10 @@ func SMTPInsecureSkipVerify() string {
 	return os.Getenv("DICE_EMAIL_INSECURE_SKIP_VERIFY")
 }
 
+func SMTPDisableAuth() string {
+	return os.Getenv("DICE_EMAIL_DISABLE_AUTH")
+}
+
 func AliyunAccessKeyID() string {
 	return os.Getenv("ALIYUN_ACCESS_KEY_ID")
 }

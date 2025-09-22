@@ -86,7 +86,7 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy(), messenger)
 	mboxS := mbox.New(bundle.New(bundle.WithErdaServer()), messenger)
 	emailS := emailsubscriber.New(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
-		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS, messenger, org)
+		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), conf.SMTPDisableAuth(), bundleS, messenger, org)
 	smsS := smssubscriber.New(
 		conf.AliyunAccessKeyID(),
 		conf.AliyunAccessKeySecret(),

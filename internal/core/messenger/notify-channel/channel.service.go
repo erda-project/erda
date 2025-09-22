@@ -72,16 +72,22 @@ func (s notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.C
 	if err != nil {
 		return nil, err
 	}
-	encryptSecret, err := s.p.bdl.KMSEncrypt(apistructs.KMSEncryptRequest{
-		EncryptRequest: kmstypes.EncryptRequest{
-			KeyID:           kmsKey.KeyMetadata.KeyID,
-			PlaintextBase64: base64.StdEncoding.EncodeToString([]byte(req.Config["need_kms_data"].GetStringValue())),
-		},
-	})
-	if err != nil {
-		return nil, err
+
+	req.Config[c["need_kms_key"].GetStringValue()] = structpb.NewStringValue("")
+
+	if req.Config["need_kms_data"].GetStringValue() != "" {
+		encryptSecret, err := s.p.bdl.KMSEncrypt(apistructs.KMSEncryptRequest{
+			EncryptRequest: kmstypes.EncryptRequest{
+				KeyID:           kmsKey.KeyMetadata.KeyID,
+				PlaintextBase64: base64.StdEncoding.EncodeToString([]byte(req.Config["need_kms_data"].GetStringValue())),
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		req.Config[c["need_kms_key"].GetStringValue()] = structpb.NewStringValue(encryptSecret.CiphertextBase64)
 	}
-	req.Config[c["need_kms_key"].GetStringValue()] = structpb.NewStringValue(encryptSecret.CiphertextBase64)
+
 	delete(req.Config, "need_kms_key")
 	delete(req.Config, "need_kms_data")
 	ch, err := s.NotifyChannelDB.GetByName(req.Name)
