@@ -52,6 +52,7 @@ type NotifyChannelConfig struct {
 	SMTPPort        int64  `json:"smtpPort"`
 	SMTPIsSSL       bool   `json:"smtpIsSsl"`
 	VMSTtsCode      string `json:"vmsTtsCode"`
+	DisableAuth     bool   `json:"disableAuth,omitempty"`
 }
 
 type NotifyChannelType string

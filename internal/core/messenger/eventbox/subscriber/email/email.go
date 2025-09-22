@@ -52,6 +52,7 @@ type MailSubscriber struct {
 	bundle             *bundle.Bundle
 	messenger          pb.NotifyServiceServer
 	org                org.Interface
+	disableAuth        bool
 }
 
 type MailSubscriberInfo struct {
@@ -89,7 +90,7 @@ func NewMailSubscriberInfo(host, port, user, password, displayUser, isSSLStr, in
 	return subscriber
 }
 
-func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer, org org.Interface) subscriber.Subscriber {
+func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, disableAuth string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer, org org.Interface) subscriber.Subscriber {
 	subscriber := &MailSubscriber{
 		host:        host,
 		port:        port,
@@ -105,6 +106,8 @@ func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify s
 	subscriber.isSSL = isSSL
 	isInsecureSkipVerify, _ := strconv.ParseBool(insecureSkipVerify)
 	subscriber.insecureSkipVerify = isInsecureSkipVerify
+	auth, _ := strconv.ParseBool(disableAuth)
+	subscriber.disableAuth = auth
 	return subscriber
 }
 func (d *MailSubscriber) IsSSL() bool {
@@ -165,6 +168,7 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 	smtpHost := d.host
 	smtpPort := d.port
 	isSSL := d.IsSSL()
+	disabelAuth := d.disableAuth
 	var err error
 	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mailData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_EMAIL)
 	if err != nil {
@@ -177,6 +181,7 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpHost = notifyChannel.Config.SMTPHost
 		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
 		isSSL = notifyChannel.Config.SMTPIsSSL
+		disabelAuth = notifyChannel.Config.DisableAuth
 	} else {
 		orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
 			&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(mailData.OrgID, 10)})
@@ -227,11 +232,20 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 	}
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
-	if isSSL {
-		err = SendMailUsingTLS(fmt.Sprintf("%s:%s", smtpHost, smtpPort), auth, smtpUser, mailsAddrs, d.insecureSkipVerify, msg.Bytes())
-	} else {
-		err = smtp.SendMail(fmt.Sprintf("%s:%s", smtpHost, smtpPort), auth, smtpUser, mailsAddrs, msg.Bytes())
+
+	if disabelAuth {
+		auth = nil
 	}
+
+	smtpAddress := fmt.Sprintf("%s:%s", smtpHost, smtpPort)
+
+	if isSSL {
+		err = SendMailUsingTLS(smtpAddress, auth, smtpUser, mailsAddrs, d.insecureSkipVerify, msg.Bytes())
+	} else {
+		err = SendMailWithoutTLS(smtpAddress, auth, smtpUser, mailsAddrs, d.insecureSkipVerify, msg.Bytes())
+	}
+	logrus.Infof("Send email smtp: %s, from: %s, to: %v, isSSL: %v, disableAuth: %v", smtpAddress, smtpUser, mailsAddrs, isSSL, disabelAuth)
+
 	return err
 }
 
@@ -284,4 +298,49 @@ func DialTLS(addr string, insecureSkipVerify bool) (*smtp.Client, error) {
 	//分解主机端口字符串
 	host, _, _ := net.SplitHostPort(addr)
 	return smtp.NewClient(conn, host)
+}
+
+func SendMailWithoutTLS(host string, auth smtp.Auth, smtpUser string, mailsAddrs []string, verify bool, msg []byte) error {
+	dial, err := smtp.Dial(host)
+	if err != nil {
+		return err
+	}
+	defer dial.Close()
+	if err = dial.StartTLS(&tls.Config{InsecureSkipVerify: verify}); err != nil {
+		return err
+	}
+
+	if auth != nil {
+		if ok, _ := dial.Extension("AUTH"); ok {
+			if err = dial.Auth(auth); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = dial.Mail(smtpUser); err != nil {
+		return err
+	}
+
+	for _, addr := range mailsAddrs {
+		if err = dial.Rcpt(addr); err != nil {
+			return err
+		}
+	}
+
+	wc, err := dial.Data()
+	if err != nil {
+		return err
+	}
+	_, err = wc.Write(msg)
+	if err != nil {
+		return err
+	}
+	err = wc.Close()
+	if err != nil {
+		return err
+	}
+
+	defer dial.Quit()
+	return nil
 }
