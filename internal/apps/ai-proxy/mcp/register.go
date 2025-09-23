@@ -46,7 +46,7 @@ func NewRegister(handler *handler_mcp_server.MCPHandler) *Register {
 	}
 }
 
-func (r *Register) register(ctx context.Context, svc *corev1.Service, pod corev1.Pod, clusterName string) error {
+func (r *Register) register(ctx context.Context, svc *corev1.Service, pod *corev1.Pod, clusterName string) error {
 	name, ok := svc.Labels[vars.LabelMcpErdaCloudName]
 	if !ok {
 		return errors.New("service label mcp.erda.cloud/name not found")

@@ -237,13 +237,6 @@ func (p *provider) Run(ctx context.Context) error {
 			logrus.Error(err)
 			panic(err)
 		}
-		//err := aggregator.Init()
-		//if err != nil {
-		//	panic(err)
-		//}
-		//rutil.ContinueWorking(ctx, p.L, func(ctx context.Context) rutil.WaitDuration {
-		//	return rutil.ContinueWorkingWithCustomInterval(time.Minute * 10)
-		//})
 	})
 	return nil
 }
