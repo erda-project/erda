@@ -57,6 +57,8 @@ func (m *MCPServer) ToProtobuf() (*pb.MCPServer, error) {
 		ServerConfig:     m.ServerConfig,
 		IsPublished:      m.IsPublished,
 		IsDefaultVersion: m.IsDefaultVersion,
+		ScopeType:        m.ScopeType,
+		ScopeId:          m.ScopeId,
 	}, nil
 }
 

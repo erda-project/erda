@@ -20,6 +20,8 @@ message MCPServer {
   repeated MCPServerTool tools = 9;
   bool isDefaultVersion = 10;
   bool isPublished = 11;
+  string scopeType = 12;
+  string scopeId = 13;
 }
 
 message MCPServerConfig {
