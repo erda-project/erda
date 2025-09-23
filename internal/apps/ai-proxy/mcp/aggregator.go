@@ -16,7 +16,6 @@ package mcp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -159,23 +158,37 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 			svc.Namespace, event.Type, svc.Name, svc.Spec.ClusterIP)
 
 		selector := labels.SelectorFromSet(svc.Spec.Selector).String()
+		go a.watchPods(ctx, selector, clientset, clusterName, svc)
+	}
+	return nil
+}
 
-		pods, err := clientset.CoreV1().Pods(svc.Namespace).List(ctx, metav1.ListOptions{
-			LabelSelector: selector,
-		})
-		if err != nil {
-			return err
+func (a *Aggregator) watchPods(ctx context.Context, selector string, clientset *kubernetes.Clientset, clusterName string, svc *v1.Service) {
+	logrus.Infof("watch pods: %s with service %v", selector, svc.Name)
+	pods, err := clientset.CoreV1().Pods(svc.Namespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		logrus.Errorf("list pods failed: %v", err)
+	}
+
+	for event := range pods.ResultChan() {
+		pod, ok := event.Object.(*v1.Pod)
+		if !ok {
+			logrus.Errorf("event object is not a pod: %+v", event.Object)
+			continue
 		}
 
-		if len(pods.Items) == 0 {
-			return errors.New("no available pods")
+		if pod.Status.Phase != v1.PodRunning {
+			logrus.Errorf("pod is not running: %s", pod.Status.Phase)
+			continue
 		}
 
-		err = a.register.register(ctx, svc, pods.Items[0], clusterName)
+		err = a.register.register(ctx, svc, pod, clusterName)
 		if err != nil {
 			logrus.Errorf("register service failed: %v", err)
 			continue
 		}
+		logrus.Infof("register mcp server success: %s", pod.Name)
 	}
-	return nil
 }
