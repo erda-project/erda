@@ -347,6 +347,7 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 			Depends:          service.DependsOn,
 			Env:              service.Envs,
 			Labels:           service.Labels,
+			Annotations:      service.Annotations,
 			Selectors:        service.Deployments.Selectors,
 			WorkLoad:         service.Deployments.Workload,
 			DeploymentLabels: service.Deployments.Labels,

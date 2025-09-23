@@ -25,6 +25,11 @@ import (
 )
 
 const (
+	MCPLabelPrefix             = "mcp.erda.cloud"
+	LabelMcpErdaCloudComponent = "mcp.erda.cloud/component"
+)
+
+const (
 	// to be deprecated.
 	// ADDON_GROUPS -> SERVICE_GROUPS
 	// ADDON_GROUP_ID -> SERVICE_GROUP_ID
