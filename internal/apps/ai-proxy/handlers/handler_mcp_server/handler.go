@@ -18,10 +18,13 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
+	cmspb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
@@ -50,14 +53,36 @@ func (m *MCPHandler) Delete(ctx context.Context, req *pb.MCPServerDeleteRequest)
 }
 
 func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionRequest) (*pb.MCPServerVersionResponse, error) {
-	total, servers, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
-		PageNum:            int(req.PageNum),
-		PageSize:           int(req.PageSize),
-		Name:               req.Name,
-		IncludeUnpublished: req.IncludeUnpublished,
+	var servers []*pb.MCPServer
+	var total int64
+
+	clientId, ok := ctxhelper.GetClientId(ctx)
+	if !ok {
+		return nil, errors.New("clientId not found")
+	}
+
+	scopes, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
+		ClientId: clientId,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	for scopeType, scope := range scopes.Scope {
+		count, temp, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
+			PageNum:            int(req.PageNum),
+			PageSize:           int(req.PageSize),
+			Name:               req.Name,
+			IncludeUnpublished: req.IncludeUnpublished,
+			ScopeIds:           scope.Ids,
+			ScopeType:          scopeType,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		total += count
+		servers = append(servers, temp...)
 	}
 
 	if !req.UseRawEndpoint {
@@ -85,8 +110,24 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 }
 
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
+	clientId, ok := ctxhelper.GetClientId(ctx)
+	if !ok {
+		return nil, errors.New("clientId not found")
+	}
+
+	scope, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
+		ClientId: clientId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
 	mcpServer := resp.GetData()
+
+	if !slices.Contains(scope.Scope[mcpServer.ScopeType].Ids, mcpServer.ScopeId) {
+		return nil, errors.New("no permission to access")
+	}
 
 	if !req.UseRawEndpoint {
 		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
@@ -99,13 +140,35 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 }
 
 func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*pb.MCPServerListResponse, error) {
-	total, servers, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
-		IncludeUnpublished: req.IncludeUnpublished,
-		PageNum:            int(req.PageNum),
-		PageSize:           int(req.PageSize),
+	var servers []*pb.MCPServer
+	var total int64
+
+	clientId, ok := ctxhelper.GetClientId(ctx)
+	if !ok {
+		return nil, errors.New("clientId not found")
+	}
+
+	scopes, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
+		ClientId: clientId,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	for scopeType, scope := range scopes.Scope {
+		count, temp, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
+			IncludeUnpublished: req.IncludeUnpublished,
+			PageNum:            int(req.PageNum),
+			PageSize:           int(req.PageSize),
+			ScopeIds:           scope.Ids,
+			ScopeType:          scopeType,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		total += count
+		servers = append(servers, temp...)
 	}
 
 	if !req.UseRawEndpoint {
