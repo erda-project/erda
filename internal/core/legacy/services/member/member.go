@@ -222,7 +222,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 			parentIDMap[targetScopeID] = parentID
 			// 创建成员
 			if len(members) == 0 {
-				orgID, projectID, applicationID := m.getIDs(req, targetScopeID)
+				orgID, projectID, applicationID := m.getIDs(targetScopeType, targetScopeID)
 				// create PAT when user is invited to org.
 				// TODO: After we expose PAT management on UI, this can be removed.
 				if req.Scope.Type == apistructs.OrgScope {
@@ -239,7 +239,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 				member := &model.Member{
 					ScopeType:     targetScopeType,
 					ScopeID:       targetScopeID,
-					ScopeName:     m.db.GetScopeNameByScope(req.Scope.Type, targetScopeID),
+					ScopeName:     m.db.GetScopeNameByScope(targetScopeType, targetScopeID),
 					ParentID:      parentID,
 					UserID:        user.ID,
 					Email:         user.Email,
@@ -745,8 +745,8 @@ func (m *Member) CheckPermission(userID string, scopeType apistructs.ScopeType, 
 }
 
 // 获取orgID, projectID, applicationID
-func (m *Member) getIDs(req apistructs.MemberAddRequest, scopeID int64) (orgID, projectID, applicationID int64) {
-	switch req.Scope.Type {
+func (m *Member) getIDs(scopeType apistructs.ScopeType, scopeID int64) (orgID, projectID, applicationID int64) {
+	switch scopeType {
 	case apistructs.OrgScope:
 		orgID = scopeID
 	case apistructs.ProjectScope:
