@@ -77,6 +77,7 @@ func Test_newService(t *testing.T) {
 						"app":                    "fake-service",
 						"mcp.erda.cloud/name":    "fake-service",
 						"mcp.erda.cloud/version": "1.0.0",
+						"DICE_ORG_ID":            "6",
 					},
 					Annotations: map[string]string{
 						"mcp.erda.cloud/description": "This is a fake mcp server",
@@ -98,11 +99,13 @@ func Test_newService(t *testing.T) {
 					Name:      "fake-service",
 					Namespace: apiv1.NamespaceDefault,
 					Labels: map[string]string{
-						"app":                      "fake-service",
-						"svc":                      "fake-service.default.svc.cluster.local",
-						"mcp.erda.cloud/component": "mcp-server",
-						"mcp.erda.cloud/name":      "fake-service",
-						"mcp.erda.cloud/version":   "1.0.0",
+						"app":                       "fake-service",
+						"svc":                       "fake-service.default.svc.cluster.local",
+						"mcp.erda.cloud/component":  "mcp-server",
+						"mcp.erda.cloud/name":       "fake-service",
+						"mcp.erda.cloud/version":    "1.0.0",
+						"mcp.erda.cloud/scope-type": "org",
+						"mcp.erda.cloud/scope-id":   "6",
 					},
 					Annotations: map[string]string{
 						"mcp.erda.cloud/description": "This is a fake mcp server",

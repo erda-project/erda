@@ -188,6 +188,12 @@ func setMCPServiceLabelsAndAnnotations(k8sService *apiv1.Service, service *apist
 				}
 			}
 		}
+
+		// set mcp scope id
+		if orgId, ok := service.Labels[types.LabelDiceOrgId]; ok {
+			k8sService.Labels[types.LabelMcpErdaCloudScopeType] = "org"
+			k8sService.Labels[types.LabelMcpErdaCloudScopeId] = orgId
+		}
 	}
 
 	if service.Annotations != nil {
