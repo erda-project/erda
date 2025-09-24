@@ -133,7 +133,7 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 		},
 	}
 
-	//setMCPServiceLabelsAndAnnotations(k8sService, service)
+	setMCPServiceLabelsAndAnnotations(k8sService, service)
 	setServiceLabelSelector(k8sService, selectors)
 	if selectors == nil {
 		k8sService.Labels = map[string]string{
