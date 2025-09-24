@@ -133,7 +133,7 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 		},
 	}
 
-	setMCPServiceLabelsAndAnnotations(k8sService, service)
+	setMCPServiceLabelsAndAnnotations(k8sService, service, selectors)
 	setServiceLabelSelector(k8sService, selectors)
 	if selectors == nil {
 		k8sService.Labels = map[string]string{
@@ -169,7 +169,12 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 	return k8sService
 }
 
-func setMCPServiceLabelsAndAnnotations(k8sService *apiv1.Service, service *apistructs.Service) {
+func setMCPServiceLabelsAndAnnotations(k8sService *apiv1.Service, service *apistructs.Service, selectors map[string]string) {
+	// not project service, skip set mcp labels
+	if selectors == nil || selectors[LabelServiceGroupID] == "" {
+		return
+	}
+
 	var isMCP = false
 
 	if service.Labels != nil {
@@ -388,7 +393,7 @@ func (k *Kubernetes) UpdateK8sService(k8sService *apiv1.Service, service *apistr
 		newPorts = append(newPorts, port)
 	}
 
-	setMCPServiceLabelsAndAnnotations(k8sService, service)
+	setMCPServiceLabelsAndAnnotations(k8sService, service, nil)
 	setServiceLabelSelector(k8sService, selectors)
 	k8sService.Spec.Ports = newPorts
 
