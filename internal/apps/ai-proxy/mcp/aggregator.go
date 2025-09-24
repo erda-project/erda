@@ -22,7 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/proto"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -150,7 +151,7 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 	}
 
 	for event := range watcher.ResultChan() {
-		svc, ok := event.Object.(*v1.Service)
+		svc, ok := event.Object.(*corev1.Service)
 		if !ok {
 			logrus.Errorf("event object is not a service: %+v", event.Object)
 			continue
@@ -158,38 +159,53 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 		fmt.Printf("[%s] Type: %s, Service: %s, ClusterIP: %s\n",
 			svc.Namespace, event.Type, svc.Name, svc.Spec.ClusterIP)
 
-		selector := labels.SelectorFromSet(svc.Spec.Selector).String()
-		go a.watchPods(ctx, selector, clientset, clusterName, svc)
+		go a.watchEndpointSlices(ctx, clientset, clusterName, svc)
 	}
 	return nil
 }
 
-func (a *Aggregator) watchPods(ctx context.Context, selector string, clientset *kubernetes.Clientset, clusterName string, svc *v1.Service) {
+func (a *Aggregator) watchEndpointSlices(ctx context.Context, clientset *kubernetes.Clientset, clusterName string, svc *corev1.Service) {
+	selector := labels.SelectorFromSet(svc.Spec.Selector).String()
+
 	logrus.Infof("watch pods: %s with service %v", selector, svc.Name)
-	pods, err := clientset.CoreV1().Pods(svc.Namespace).Watch(ctx, metav1.ListOptions{
+	watcher, err := clientset.DiscoveryV1().EndpointSlices(svc.Namespace).Watch(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
-		logrus.Errorf("list pods failed: %v", err)
+		logrus.Errorf("list endpoint slice failed: %v", err)
+		return
 	}
 
-	for event := range pods.ResultChan() {
-		pod, ok := event.Object.(*v1.Pod)
-		if !ok {
-			logrus.Errorf("event object is not a pod: %+v", event.Object)
-			continue
-		}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-watcher.ResultChan():
+			eps, ok := event.Object.(*discoveryv1.EndpointSlice)
+			if !ok {
+				logrus.Errorf("event object is not a pod: %+v", event.Object)
+				continue
+			}
 
-		if pod.Status.Phase != v1.PodRunning {
-			logrus.Errorf("pod is not running: %s", pod.Status.Phase)
-			continue
-		}
+			// All endpoints must be in the ready state before registration proceeds.
+			var ready = true
+			for _, endpoint := range eps.Endpoints {
+				if endpoint.Conditions.Ready != nil {
+					ready = ready && *endpoint.Conditions.Ready
+				}
+			}
 
-		err = a.register.register(ctx, svc, pod, clusterName)
-		if err != nil {
-			logrus.Errorf("register service failed: %v", err)
-			continue
+			if !ready {
+				logrus.Infof("not all endpoints are ready yet")
+				continue
+			}
+
+			err = a.register.register(ctx, svc, clusterName)
+			if err != nil {
+				logrus.Errorf("register service failed: %v", err)
+				continue
+			}
+			logrus.Infof("register mcp server success, service: %s, namespace: %s", svc.Name, svc.Namespace)
 		}
-		logrus.Infof("register mcp server success: %s", pod.Name)
 	}
 }

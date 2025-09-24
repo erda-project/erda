@@ -19,13 +19,15 @@ const (
 )
 
 const (
-	LabelMcpErdaCloudComponent     = "mcp.erda.cloud/component"
-	LabelMcpErdaCloudName          = "mcp.erda.cloud/name"
-	LabelMcpErdaCloudVersion       = "mcp.erda.cloud/version"
-	LabelMcpErdaCloudIsPublished   = "mcp.erda.cloud/is-published"
-	LabelMcpErdaCloudIsDefault     = "mcp.erda.cloud/is-default"
-	LabelMcpErdaCloudTransportType = "mcp.erda.cloud/transport-type"
-	LabelMcpErdaCloudServicePort   = "mcp.erda.cloud/service-port"
+	LabelMcpErdaCloudComponent        = "mcp.erda.cloud/component"
+	LabelMcpErdaCloudName             = "mcp.erda.cloud/name"
+	LabelMcpErdaCloudVersion          = "mcp.erda.cloud/version"
+	LabelMcpErdaCloudIsPublished      = "mcp.erda.cloud/is-published"
+	LabelMcpErdaCloudIsDefault        = "mcp.erda.cloud/is-default"
+	LabelMcpErdaCloudTransportType    = "mcp.erda.cloud/transport-type"
+	LabelMcpErdaCloudServicePort      = "mcp.erda.cloud/service-port"
+	LabelMcpErdaCloudServiceScopeType = "mcp.erda.cloud/scope-type"
+	LabelMcpErdaCloudServiceScopeId   = "mcp.erda.cloud/scope-id"
 )
 
 const (
