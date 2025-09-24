@@ -11,11 +11,16 @@ CREATE TABLE `ai_proxy_mcp_server`
     `server_config`      TEXT NULL COMMENT 'Server 配置信息',
     `is_published`       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否发布',
     `is_default_version` TINYINT(1)   DEFAULT 0 COMMENT '是否默认版本',
-    `scope_type`         VARCHAR(64)  NOT NULL DEFAULT 'org',
-    `scope_id`           VARCHAR(64)  NOT NULL DEFAULT '',
     `created_at`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE (`name`, `version`),
     PRIMARY KEY (`id`),
     INDEX                `idx_is_published` (`is_published`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MCP 服务列表';
+
+ALTER TABLE `ai_proxy_mcp_server` DROP INDEX `name`;
+
+ALTER TABLE `ai_proxy_mcp_server`
+    ADD COLUMN `scope_type` VARCHAR(64) NOT NULL DEFAULT 'org' COMMENT '作用域类型',
+    ADD COLUMN `scope_id`   VARCHAR(64) NOT NULL DEFAULT '0' COMMENT '作用域 ID',
+    ADD INDEX `idx_name_version_scope` (`name`, `version`, `scope_type`, `scope_id`);

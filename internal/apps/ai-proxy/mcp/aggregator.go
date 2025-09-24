@@ -30,6 +30,7 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
@@ -142,7 +143,7 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 		return err
 	}
 	watcher, err := clientset.CoreV1().Services("").Watch(ctx, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/component=mcp-server",
+		LabelSelector: fmt.Sprintf("%s=mcp-server", vars.LabelMcpErdaCloudComponent),
 	})
 	if err != nil {
 		return err
