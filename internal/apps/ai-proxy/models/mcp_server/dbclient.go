@@ -51,10 +51,13 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		transportType = "sse"
 	}
 
-	orgId := "0"
-
-	if req.OrgId != nil {
-		orgId = *req.OrgId
+	scopeId := "0"
+	if req.ScopeId != nil {
+		scopeId = *req.ScopeId
+	}
+	scopeType := "org"
+	if req.ScopeType != nil {
+		scopeType = *req.ScopeType
 	}
 
 	rawConfig, err := mcpServerConfig.MarshalJSON()
@@ -81,8 +84,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				ServerConfig:     req.ServerConfig,
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
 				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
-				ScopeType:        "org",
-				ScopeId:          orgId,
+				ScopeType:        scopeType,
+				ScopeId:          scopeId,
 			}
 			// create new server
 			if err = tx.Create(&dbServer).Error; err != nil {

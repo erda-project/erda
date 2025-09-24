@@ -21,7 +21,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/aws/smithy-go/ptr"
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -46,7 +45,7 @@ func NewRegister(handler *handler_mcp_server.MCPHandler) *Register {
 	}
 }
 
-func (r *Register) register(ctx context.Context, svc *corev1.Service, pod *corev1.Pod, clusterName string) error {
+func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterName string) error {
 	name, ok := svc.Labels[vars.LabelMcpErdaCloudName]
 	if !ok {
 		return errors.New("service label mcp.erda.cloud/name not found")
@@ -87,9 +86,14 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, pod *corev
 
 	uri, ok := svc.Annotations[vars.AnnotationMcpErdaCloudConnectUri]
 
-	orgId := pod.Labels[vars.LabelDiceOrg]
-	if orgId == "" {
-		orgId = "0"
+	scopeId := svc.Labels[vars.LabelMcpErdaCloudServiceScopeId]
+	if scopeId == "" {
+		scopeId = "0"
+	}
+
+	scopeType := svc.Labels[vars.LabelMcpErdaCloudServiceScopeType]
+	if scopeType == "" {
+		scopeType = "org"
 	}
 
 	svcHost := fmt.Sprintf("%s.%s.svc.cluster.local:%s", svc.Name, svc.Namespace, port)
@@ -122,7 +126,8 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, pod *corev
 		Description:      description,
 		Tools:            tools,
 		Endpoint:         url,
-		OrgId:            ptr.String(orgId),
+		ScopeType:        &scopeType,
+		ScopeId:          &scopeId,
 		ServerConfig:     serverConfig,
 	}
 	_, err = r.handler.Register(ctx, req)

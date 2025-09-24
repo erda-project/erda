@@ -150,9 +150,10 @@ message MCPServerRegisterRequest {
   string transport_type = 6;
   string serverConfig = 7;
   repeated MCPServerTool tools = 8;
-  optional string orgId = 9;
-  google.protobuf.BoolValue isDefaultVersion = 10;
-  google.protobuf.BoolValue isPublished = 11;
+  optional string scopeType = 9;
+  optional string scopeId = 10;
+  google.protobuf.BoolValue isDefaultVersion = 11;
+  google.protobuf.BoolValue isPublished = 12;
 }
 
 message MCPServerRegisterResponse {
