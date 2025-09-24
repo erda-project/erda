@@ -241,10 +241,12 @@ func errorStatusHandler(resp *http.Response) error {
 
 	// Content-Length may be -1, so only check body
 	if resp.Body != nil {
-		respBodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
+		wholeStreamSplitter := set_resp_body_chunk_splitter.WholeStreamSplitter{}
+		autoDecompressSplitter := set_resp_body_chunk_splitter.NewDecompressingChunkSplitter(wholeStreamSplitter, resp)
+		respBodyBytes, err := autoDecompressSplitter.NextChunk(resp.Body)
+		if err != nil && err != io.EOF {
 			ctxhelper.MustGetLoggerBase(resp.Request.Context()).Warnf("failed to read resp body at error-status-handler: %v", err)
-		} else {
+		} else if len(respBodyBytes) > 0 {
 			// try to parse backend response as JSON, if so preserve it
 			var jsonResp interface{}
 			if json.Unmarshal(respBodyBytes, &jsonResp) == nil {
@@ -252,6 +254,7 @@ func errorStatusHandler(resp *http.Response) error {
 			} else {
 				errCtx["raw_llm_backend_response"] = string(respBodyBytes)
 			}
+			audithelper.Note(resp.Request.Context(), "actual_response_body", string(respBodyBytes))
 		}
 	}
 
@@ -262,7 +265,13 @@ func errorStatusHandler(resp *http.Response) error {
 		errCtx,
 	)
 	httpErr.AIProxyMeta = map[string]any{
-		vars.XAIProxyModel:           ctxhelper.MustGetModel(resp.Request.Context()).Name,
+		vars.XAIProxyModel: func() string {
+			model, _ := ctxhelper.GetModel(resp.Request.Context())
+			if model != nil {
+				return model.Name
+			}
+			return ""
+		}(),
 		vars.XRequestId:              ctxhelper.MustGetRequestID(resp.Request.Context()),
 		vars.XAIProxyGeneratedCallId: ctxhelper.MustGetGeneratedCallID(resp.Request.Context()),
 	}

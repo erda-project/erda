@@ -73,5 +73,7 @@ func CreateSkeleton(in *http.Request) error {
 	}
 	// add operation_id
 	audithelper.Note(in.Context(), "operation_id", in.Method+" "+in.URL.Path)
+	// add x-ai-proxy-generated-call-id
+	audithelper.Note(in.Context(), "x_ai_proxy_generated_call_id", ctxhelper.MustGetGeneratedCallID(in.Context()))
 	return nil
 }
