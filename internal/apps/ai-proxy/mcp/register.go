@@ -85,7 +85,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, pod *corev
 		description = ""
 	}
 
-	uri, ok := svc.Annotations[vars.AnnotationMcpErdaCloudConnectUrl]
+	uri, ok := svc.Annotations[vars.AnnotationMcpErdaCloudConnectUri]
 
 	orgId := pod.Labels[vars.LabelDiceOrg]
 	if orgId == "" {

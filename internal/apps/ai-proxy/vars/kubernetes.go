@@ -15,11 +15,11 @@
 package vars
 
 const (
-	LabelAppKubernetesComponent = "app.kubernetes.io/component"
-	LabelAppKubernetesName      = "app.kubernetes.io/name"
+	LabelAppKubernetesName = "app.kubernetes.io/name"
 )
 
 const (
+	LabelMcpErdaCloudComponent     = "mcp.erda.cloud/component"
 	LabelMcpErdaCloudName          = "mcp.erda.cloud/name"
 	LabelMcpErdaCloudVersion       = "mcp.erda.cloud/version"
 	LabelMcpErdaCloudIsPublished   = "mcp.erda.cloud/is-published"
@@ -30,7 +30,7 @@ const (
 
 const (
 	AnnotationMcpErdaCloudDescription = "mcp.erda.cloud/description"
-	AnnotationMcpErdaCloudConnectUrl  = "mcp.erda.cloud/connect-url"
+	AnnotationMcpErdaCloudConnectUri  = "mcp.erda.cloud/connect-uri"
 )
 
 const (
