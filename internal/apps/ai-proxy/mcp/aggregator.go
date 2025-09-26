@@ -20,7 +20,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -53,15 +53,17 @@ type Aggregator struct {
 	lock       sync.Mutex
 
 	register *Register
+	logger   logs.Logger
 }
 
-func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler) *Aggregator {
+func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger) *Aggregator {
 	a := &Aggregator{
 		ClusterSvc: svc,
 		clusters:   make(map[string]*ClusterController),
 		handles:    make(chan *ClusterController, 10),
 		lock:       sync.Mutex{},
-		register:   NewRegister(handler),
+		register:   NewRegister(handler, logger),
+		logger:     logger,
 	}
 	go a.syncRestConfig(ctx)
 	return a
@@ -78,12 +80,12 @@ func (a *Aggregator) syncRestConfig(ctx context.Context) {
 			OrgID:       0,
 		})
 		if err != nil {
-			logrus.Error("Failed to get cluster info", err)
+			a.logger.Error("Failed to get cluster info", err)
 			return
 		}
 
 		for _, info := range cluster.Data {
-			logrus.Infof("get cluster info: %+v", info.Name)
+			a.logger.Infof("get cluster info: %+v", info.Name)
 			control := ClusterController{
 				info: info,
 			}
@@ -117,10 +119,14 @@ func (a *Aggregator) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case handle := <-a.handles:
-			logrus.Infof("load cluster: %+v", handle == nil)
+			if handle == nil {
+				a.logger.Warnf("cluster handler is nil")
+				continue
+			}
+			a.logger.Infof("load cluster: %+v", handle.info.Name)
 			restConfig, err := config.ParseManageConfigPb(handle.info.Name, handle.info.ManageConfig)
 			if err != nil {
-				logrus.Error(err)
+				a.logger.Error(err)
 				continue
 			}
 			ctx, cancelFunc := context.WithCancel(ctx)
@@ -128,7 +134,7 @@ func (a *Aggregator) Start(ctx context.Context) error {
 			go func() {
 				// if running error, delete cluster info, retry in next sync
 				if err = a.run(ctx, restConfig, handle.info.Name); err != nil {
-					logrus.Errorf("run cluster failed: %v", err)
+					a.logger.Errorf("run cluster failed: %v", err)
 					a.lock.Lock()
 					delete(a.clusters, handle.info.Name)
 					a.lock.Unlock()
@@ -153,10 +159,10 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 	for event := range watcher.ResultChan() {
 		svc, ok := event.Object.(*corev1.Service)
 		if !ok {
-			logrus.Errorf("event object is not a service: %+v", event.Object)
+			a.logger.Errorf("event object is not a service: %+v", event.Object)
 			continue
 		}
-		fmt.Printf("[%s] Type: %s, Service: %s, ClusterIP: %s\n",
+		a.logger.Infof("[%s] Type: %s, Service: %s, ClusterIP: %s\n",
 			svc.Namespace, event.Type, svc.Name, svc.Spec.ClusterIP)
 
 		go a.watchEndpointSlices(ctx, clientset, clusterName, svc)
@@ -167,12 +173,12 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 func (a *Aggregator) watchEndpointSlices(ctx context.Context, clientset *kubernetes.Clientset, clusterName string, svc *corev1.Service) {
 	selector := labels.SelectorFromSet(svc.Spec.Selector).String()
 
-	logrus.Infof("watch pods: %s with service %v", selector, svc.Name)
+	a.logger.Infof("watch EndpointSlices: %s with service %v", selector, svc.Name)
 	watcher, err := clientset.DiscoveryV1().EndpointSlices(svc.Namespace).Watch(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
-		logrus.Errorf("list endpoint slice failed: %v", err)
+		a.logger.Errorf("list endpoint slice failed: %v", err)
 		return
 	}
 
@@ -183,8 +189,8 @@ func (a *Aggregator) watchEndpointSlices(ctx context.Context, clientset *kuberne
 		case event := <-watcher.ResultChan():
 			eps, ok := event.Object.(*discoveryv1.EndpointSlice)
 			if !ok {
-				logrus.Errorf("event object is not a pod: %+v", event.Object)
-				continue
+				a.logger.Errorf("event object is not a EndpointSlice: %+v in cluster: %s", event.Object, clusterName)
+				return
 			}
 
 			// All endpoints must be in the ready state before registration proceeds.
@@ -196,16 +202,18 @@ func (a *Aggregator) watchEndpointSlices(ctx context.Context, clientset *kuberne
 			}
 
 			if !ready {
-				logrus.Infof("not all endpoints are ready yet")
+				a.logger.Infof("not all endpoints are ready yet")
 				continue
 			}
 
+			a.logger.Infof("%s all endpoints ready", eps.Name)
+
 			err = a.register.register(ctx, svc, clusterName)
 			if err != nil {
-				logrus.Errorf("register service failed: %v", err)
+				a.logger.Errorf("register service failed: %v", err)
 				continue
 			}
-			logrus.Infof("register mcp server success, service: %s, namespace: %s", svc.Name, svc.Namespace)
+			a.logger.Infof("register mcp server success, service: %s, namespace: %s", svc.Name, svc.Namespace)
 		}
 	}
 }

@@ -24,11 +24,11 @@ import (
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -37,11 +37,13 @@ import (
 
 type Register struct {
 	handler *handler_mcp_server.MCPHandler
+	logger  logs.Logger
 }
 
-func NewRegister(handler *handler_mcp_server.MCPHandler) *Register {
+func NewRegister(handler *handler_mcp_server.MCPHandler, logger logs.Logger) *Register {
 	return &Register{
 		handler: handler,
+		logger:  logger,
 	}
 }
 
@@ -105,7 +107,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 		return err
 	}
 
-	logrus.Infof("inetUrl: %s, headers: %v", inetUrl, headers)
+	r.logger.Infof("inetUrl: %s, headers: %v", inetUrl, headers)
 
 	tools, err := r.listTools(ctx, transportType, inetUrl, headers)
 	if err != nil {
@@ -182,12 +184,12 @@ func (r *Register) listTools(ctx context.Context, transportType string, url stri
 		for key, value := range tool.InputSchema.Properties {
 			m, ok := value.(map[string]any)
 			if !ok {
-				logrus.Errorf("invalid input schema type: %s", tool.InputSchema.Type)
+				r.logger.Errorf("invalid input schema type: %s", tool.InputSchema.Type)
 				continue
 			}
 			newStruct, err := structpb.NewStruct(m)
 			if err != nil {
-				logrus.Errorf("structpb.NewStruct failed: %v", err)
+				r.logger.Errorf("structpb.NewStruct failed: %v", err)
 				continue
 			}
 			properties[key] = newStruct
@@ -219,7 +221,7 @@ func (r *Register) requestServerInfo(clusterName string, host string) (string, e
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		logrus.Infof("haven't set any server config")
+		r.logger.Infof("haven't set any server config")
 		return "", nil
 	}
 	all, err := io.ReadAll(response.Body)
@@ -241,20 +243,19 @@ func removeAnyOf(tools *mcp.ListToolsResult) {
 func ProcessAnyOf(obj interface{}) {
 	switch v := obj.(type) {
 	case map[string]interface{}:
-		// 如果存在 anyOf
+		// if exist `anyOf`
 		if anyOf, ok := v["anyOf"]; ok {
 			if list, ok := anyOf.([]interface{}); ok && len(list) > 0 {
 				if first, ok := list[0].(map[string]interface{}); ok {
-					// 移除 anyOf
+					// remove anyOf
 					delete(v, "anyOf")
-					// 替换为第一个对象的内容
+					// replace the first item
 					for k, val := range first {
 						v[k] = val
 					}
 				}
 			}
 		}
-		// 递归处理 map 中的所有值
 		for _, val := range v {
 			ProcessAnyOf(val)
 		}
