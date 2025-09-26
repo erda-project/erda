@@ -37,6 +37,8 @@ type ListOptions struct {
 	PageSize           int
 	Name               string
 	IncludeUnpublished bool
+	ScopeIds           []string
+	ScopeType          string
 }
 
 func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegisterRequest) (*pb.MCPServerRegisterResponse, error) {
@@ -47,6 +49,15 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 	transportType := req.TransportType
 	if transportType == "" {
 		transportType = "sse"
+	}
+
+	scopeId := "0"
+	if req.ScopeId != nil {
+		scopeId = *req.ScopeId
+	}
+	scopeType := "org"
+	if req.ScopeType != nil {
+		scopeType = *req.ScopeType
 	}
 
 	rawConfig, err := mcpServerConfig.MarshalJSON()
@@ -73,6 +84,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				ServerConfig:     req.ServerConfig,
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
 				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
+				ScopeType:        scopeType,
+				ScopeId:          scopeId,
 			}
 			// create new server
 			if err = tx.Create(&dbServer).Error; err != nil {
@@ -228,6 +241,9 @@ func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb
 	if !options.IncludeUnpublished {
 		tx = tx.Where("is_published = ?", true)
 	}
+
+	tx = tx.Where("scope_type = ?", options.ScopeType)
+	tx = tx.Where("scope_id in (?)", options.ScopeIds)
 
 	offset := (options.PageNum - 1) * options.PageSize
 	err := tx.Order("created_at DESC").Limit(options.PageSize).Offset(offset).Find(&list).Error

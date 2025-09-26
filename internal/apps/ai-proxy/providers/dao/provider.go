@@ -15,6 +15,7 @@
 package dao
 
 import (
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_mcp_relation"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -69,6 +70,7 @@ type DAO interface {
 	AuditClient() *audit.DBClient
 	MCPServerClient() *mcp_server.DBClient
 	I18nClient() *i18n.DBClient
+	ClientMCPRelationClient() *client_mcp_relation.DBClient
 }
 
 type provider struct {
@@ -125,4 +127,8 @@ func (p *provider) MCPServerClient() *mcp_server.DBClient {
 
 func (p *provider) I18nClient() *i18n.DBClient {
 	return &i18n.DBClient{DB: p.DB}
+}
+
+func (p *provider) ClientMCPRelationClient() *client_mcp_relation.DBClient {
+	return &client_mcp_relation.DBClient{DB: p.DB}
 }

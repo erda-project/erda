@@ -108,6 +108,29 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	return request, nil
 }
 
+func ParseInetUrl(url string) (string, map[string]string, error) {
+	if !strings.HasPrefix(url, "inet://") {
+		return "", nil, errors.Wrapf(ErrInvalidAddr, "addr:%s", url)
+	}
+	portalHost, portalDest, portalUrl, _, err := parseInetUrl(url)
+	if err != nil {
+		return "", nil, err
+	}
+
+	clusterManagerEndpoint, ok := ipCache.LoadWithUpdateSync(portalHost)
+	if !ok {
+		logrus.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
+		return "", nil, errors.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
+	}
+
+	url = fmt.Sprintf("http://%s/%s", clusterManagerEndpoint, portalUrl)
+
+	return url, map[string]string{
+		portalHostHeader: portalHost,
+		portalDestHeader: portalDest,
+	}, nil
+}
+
 func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "NetPortal NewRequest")
 	log.Debug("start querying clusterManager IP in netPortal NewRequest...")

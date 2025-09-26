@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.client_mcp_relation;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "apps/aiproxy/model/model.proto";
+import "common/http.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+service ClientMcpRelationService {
+    rpc Allocate(AllocateRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/clients/{clientId}/actions/allocate-mcps"
+        };
+    }
+
+    rpc UnAllocate(AllocateRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/clients/{clientId}/actions/unallocate-mcps"
+        };
+    }
+
+    rpc ListClientMCPScope(ListClientMCPScopeRequest) returns (ListAllocatedMCPScopeResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients/{clientId}/actions/list-mcp-scope"
+        };
+    }
+}
+
+message ClientMcpRelation {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string clientId = 5;
+    string scopeType = 6;
+    string scopeId = 7;
+}
+
+message AllocateRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string scopeType = 2;
+    repeated string scopeIds = 3;
+}
+
+message Scope {
+    string scopeType = 1;
+    repeated string scopeIds = 3;
+}
+
+message ScopeIdList {
+    repeated string ids = 1;
+}
+
+message ListAllocatedMCPScopeResponse {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    map<string, ScopeIdList> scope = 2;
+}
+
+message ListClientMCPScopeRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+}

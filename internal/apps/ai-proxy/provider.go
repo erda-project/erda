@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
@@ -39,6 +41,7 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
@@ -57,6 +60,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -132,6 +136,8 @@ type provider struct {
 	HTTP           mux.Mux                              `autowired:"gorilla-mux@ai"`
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
 	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
+	Election       election.Interface                   `autowired:"etcd-election"`
+	ClusterSvc     clusterpb.ClusterServiceServer       `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
 
 	richClientHandler *handler_rich_client.ClientHandler
@@ -217,4 +223,24 @@ func (p *provider) registerAIProxyManageAPI() {
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
+
+	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	// reverse proxy to AI provider's server
+	p.ServeAIProxyV2()
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	if !p.Config.IsMcpProxy {
+		return nil
+	}
+	p.Election.OnLeader(func(ctx context.Context) {
+		handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
+
+		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.SyncClusterConfigInterval)
+		if err := aggregator.Start(ctx); err != nil {
+			logrus.Error(err)
+			panic(err)
+		}
+	})
+	return nil
 }
