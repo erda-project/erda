@@ -9,6 +9,6 @@
     }
   ],
   "max_tokens": 100,
-  "temperature": 0.0,
-  "stream": false
+  "temperature": 1,
+  "stream": true
 }
