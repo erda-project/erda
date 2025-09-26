@@ -1,0 +1,52 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package service_provider
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types/common_types_util"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders"
+	mp "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders/impl/model-publisher"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
+)
+
+// BailianThinkingEncoder handles Aliyun Bailian (DashScope) provider-specific thinking payloads.
+type BailianThinkingEncoder struct {
+	delegate mp.QwenThinkingEncoder
+}
+
+func (e *BailianThinkingEncoder) CanEncode(ctx context.Context) bool {
+	provider := ctxhelper.MustGetModelProvider(ctx)
+	return strings.EqualFold(common_types_util.GetServiceProviderType(provider), common_types.ServiceProviderTypeAliyunBailian.String())
+}
+
+func (e *BailianThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
+	return e.delegate.Encode(ctx, ct)
+}
+
+func (e *BailianThinkingEncoder) GetPriority() int {
+	return 0 // ensure provider-specific logic wins over publisher-based defaults
+}
+
+func (e *BailianThinkingEncoder) GetName() string {
+	return fmt.Sprintf("service_provider: %s", common_types.ServiceProviderTypeAliyunBailian.String())
+}
+
+var _ encoders.CommonThinkingEncoder = (*BailianThinkingEncoder)(nil)

@@ -12,36 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package impl
+package model_publisher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
-// OpenAIResponsesThinkingEncoder handles OpenAI Responses API thinking encoding
-type OpenAIResponsesThinkingEncoder struct{}
+// OpenAIChatThinkingEncoder handles OpenAI Chat API thinking encoding
+type OpenAIChatThinkingEncoder struct{}
 
-func (e *OpenAIResponsesThinkingEncoder) CanEncode(ctx context.Context) bool {
+func (e *OpenAIChatThinkingEncoder) CanEncode(ctx context.Context) bool {
 	model := ctxhelper.MustGetModel(ctx)
 	pathMatcher := ctxhelper.MustGetPathMatcher(ctx)
 
-	return strings.EqualFold(model.Publisher, string(types.ModelPublisherOpenAI)) &&
-		pathMatcher.Match(common.RequestPathPrefixV1Responses)
+	return strings.EqualFold(model.Publisher, string(common_types.ModelPublisherOpenAI)) &&
+		pathMatcher.Match(common.RequestPathPrefixV1ChatCompletions)
 }
 
-func (e *OpenAIResponsesThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
+func (e *OpenAIChatThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
 	if ct.MustGetMode() != types.ModeOn {
 		return nil, nil
 	}
-
-	reasoningObj := map[string]any{"summary": "auto"}
-	appendBodyMap := map[string]any{types.FieldReasoning: reasoningObj}
 
 	suitableEffort := types.EffortMedium
 	// get from effort if provided
@@ -56,16 +55,16 @@ func (e *OpenAIResponsesThinkingEncoder) Encode(ctx context.Context, ct types.Co
 	}
 
 RESULT:
-	reasoningObj[types.FieldEffort] = suitableEffort
-	return appendBodyMap, nil
+	return map[string]any{types.FieldReasoningEffort: suitableEffort}, nil
+
 }
 
-func (e *OpenAIResponsesThinkingEncoder) GetPriority() int {
-	return 4 // lower priority than chat encoder
+func (e *OpenAIChatThinkingEncoder) GetPriority() int {
+	return 3 // lower priority than single-provider encoders
 }
 
-func (e *OpenAIResponsesThinkingEncoder) GetName() string {
-	return "openai_responses"
+func (e *OpenAIChatThinkingEncoder) GetName() string {
+	return fmt.Sprintf("model_publisher: %s_chat", common_types.ModelPublisherOpenAI)
 }
 
-var _ encoders.CommonThinkingEncoder = (*OpenAIResponsesThinkingEncoder)(nil)
+var _ encoders.CommonThinkingEncoder = (*OpenAIChatThinkingEncoder)(nil)
