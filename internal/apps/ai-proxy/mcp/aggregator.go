@@ -54,9 +54,11 @@ type Aggregator struct {
 
 	register *Register
 	logger   logs.Logger
+
+	interval time.Duration
 }
 
-func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger) *Aggregator {
+func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration) *Aggregator {
 	a := &Aggregator{
 		ClusterSvc: svc,
 		clusters:   make(map[string]*ClusterController),
@@ -64,13 +66,16 @@ func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, hand
 		lock:       sync.Mutex{},
 		register:   NewRegister(handler, logger),
 		logger:     logger,
+		interval:   interval,
 	}
 	go a.syncRestConfig(ctx)
 	return a
 }
 
 func (a *Aggregator) syncRestConfig(ctx context.Context) {
-	ticker := time.NewTicker(10 * time.Minute)
+	a.logger.Infof("start sync rest config, interval: %v", a.interval)
+
+	ticker := time.NewTicker(a.interval)
 
 	for {
 		c := apis.WithInternalClientContext(ctx, discover.SvcAIProxy)

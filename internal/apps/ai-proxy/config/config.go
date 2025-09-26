@@ -17,6 +17,7 @@ package config
 import (
 	"embed"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -29,6 +30,8 @@ type Config struct {
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
 
 	IsMcpProxy bool `file:"is_mcp_proxy" env:"IS_MCP_PROXY"`
+
+	SyncClusterConfigInterval time.Duration `file:"sync_cluster_config_interval" default:"10m" env:"SYNC_CLUSTER_CONFIG_INTERVAL"`
 
 	EmbedRoutesFS embed.FS
 }
