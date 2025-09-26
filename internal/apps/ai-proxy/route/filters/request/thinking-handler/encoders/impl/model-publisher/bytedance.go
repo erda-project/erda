@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package impl
+package model_publisher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
@@ -28,7 +30,7 @@ type BytedanceThinkingEncoder struct{}
 
 func (e *BytedanceThinkingEncoder) CanEncode(ctx context.Context) bool {
 	model := ctxhelper.MustGetModel(ctx)
-	return strings.EqualFold(model.Publisher, string(types.ModelPublisherBytedance))
+	return strings.EqualFold(model.Publisher, string(common_types.ModelPublisherBytedance))
 }
 
 func (e *BytedanceThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
@@ -52,7 +54,7 @@ func (e *BytedanceThinkingEncoder) GetPriority() int {
 }
 
 func (e *BytedanceThinkingEncoder) GetName() string {
-	return "bytedance"
+	return fmt.Sprintf("model_publisher: %s", common_types.ModelPublisherBytedance)
 }
 
 var _ encoders.CommonThinkingEncoder = (*BytedanceThinkingEncoder)(nil)

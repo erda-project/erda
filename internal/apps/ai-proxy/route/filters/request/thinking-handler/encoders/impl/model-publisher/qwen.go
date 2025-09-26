@@ -12,35 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package impl
+package model_publisher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
-// AnthropicThinkingEncoder handles Anthropic thinking encoding
-type AnthropicThinkingEncoder struct{}
+// QwenThinkingEncoder handles Qwen thinking encoding
+type QwenThinkingEncoder struct{}
 
-func (e *AnthropicThinkingEncoder) CanEncode(ctx context.Context) bool {
+func (e *QwenThinkingEncoder) CanEncode(ctx context.Context) bool {
 	model := ctxhelper.MustGetModel(ctx)
-	return strings.EqualFold(model.Publisher, string(types.ModelPublisherAnthropic))
+	return strings.EqualFold(model.Publisher, string(common_types.ModelPublisherQwen))
 }
 
-func (e *AnthropicThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
-	thinkingObj := make(map[string]any)
-	appendBodyMap := map[string]any{types.FieldThinking: thinkingObj}
-
-	// treat auto as off
+func (e *QwenThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
 	if ct.MustGetMode() != types.ModeOn {
-		thinkingObj[types.FieldType] = "disabled"
-		return appendBodyMap, nil
+		return nil, nil
 	}
 
-	thinkingObj[types.FieldType] = "enabled"
+	appendBodyMap := map[string]any{
+		types.FieldEnableThinking: true,
+	}
 
 	// calculate suitable budget
 	suitableBudget := 1024 // minimum budget for Anthropic
@@ -51,19 +51,30 @@ func (e *AnthropicThinkingEncoder) Encode(ctx context.Context, ct types.CommonTh
 	}
 	// get from effort if provided
 	if ct.Effort != nil {
-		suitableBudget = types.MapEffortToBudgetTokens(*ct.Effort)
+		switch *ct.Effort {
+		case types.EffortMinimal:
+			suitableBudget = 1024
+		case types.EffortLow:
+			suitableBudget = 2048
+		case types.EffortMedium:
+			suitableBudget = 4096
+		case types.EffortHigh:
+			suitableBudget = 8192
+		}
 		goto RESULT
 	}
-	// no suitable budget found, use default 1024
+
 RESULT:
-	thinkingObj[types.FieldBudgetTokens] = suitableBudget
+	appendBodyMap[types.FieldThinkingBudget] = suitableBudget
 	return appendBodyMap, nil
 }
 
-func (e *AnthropicThinkingEncoder) GetPriority() int {
-	return 1 // high priority for anthropic
+func (e *QwenThinkingEncoder) GetPriority() int {
+	return 2 // medium priority
 }
 
-func (e *AnthropicThinkingEncoder) GetName() string {
-	return "anthropic"
+func (e *QwenThinkingEncoder) GetName() string {
+	return fmt.Sprintf("model_publisher: %s", common_types.ModelPublisherQwen)
 }
+
+var _ encoders.CommonThinkingEncoder = (*QwenThinkingEncoder)(nil)
