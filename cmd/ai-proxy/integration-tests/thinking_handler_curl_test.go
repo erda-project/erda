@@ -46,51 +46,55 @@ type AuditRecord struct {
 func TestThinkingHandlerCurl(t *testing.T) {
 	testCasesDir := "curl_tests/thinking"
 	cfg := config.Get()
-	
+
 	// get thinking models from config
 	if len(cfg.ThinkingModels) == 0 {
 		t.Skip("No THINKING_MODELS configured - please set THINKING_MODELS in .env")
 	}
-	
+
 	err := filepath.Walk(testCasesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// skip directories and non-json files
 		if info.IsDir() || !strings.HasSuffix(info.Name(), ".json") {
 			return nil
 		}
-		
+
 		// extract thinking mode from filename
 		filename := strings.TrimSuffix(info.Name(), ".json")
 		if !strings.HasPrefix(filename, "bytedance_style_thinking_") {
 			t.Logf("Skipping file with unexpected name format: %s", info.Name())
 			return nil
 		}
-		
+
 		thinkingMode := strings.TrimPrefix(filename, "bytedance_style_thinking_")
 		if thinkingMode != "auto" && thinkingMode != "enabled" && thinkingMode != "disabled" {
 			t.Logf("Skipping file with unknown thinking mode: %s", thinkingMode)
 			return nil
 		}
-		
+		if thinkingMode == "auto" {
+			t.Logf("Skipping auto thinking mode test case: %s", info.Name())
+			return nil
+		}
+
 		// run test for each target model
 		for _, targetModel := range cfg.ThinkingModels {
 			testName := fmt.Sprintf("%s_to_%s", filename, strings.ReplaceAll(targetModel, "/", "_"))
-			
+
 			t.Run(testName, func(t *testing.T) {
 				runCurlTestCase(t, path, &TestInfo{
-					InputFormat:    filename,
-					TargetModel:    targetModel,
-					ThinkingMode:   thinkingMode,
+					InputFormat:  filename,
+					TargetModel:  targetModel,
+					ThinkingMode: thinkingMode,
 				})
 			})
 		}
-		
+
 		return nil
 	})
-	
+
 	if err != nil {
 		t.Fatalf("Failed to walk test cases directory: %v", err)
 	}
@@ -108,27 +112,49 @@ func runCurlTestCase(t *testing.T, testFilePath string, testInfo *TestInfo) {
 	// read test case JSON file
 	testData, err := os.ReadFile(testFilePath)
 	require.NoError(t, err, "Failed to read test file: %s", testFilePath)
-	
+
 	var requestBody map[string]any
 	err = json.Unmarshal(testData, &requestBody)
 	require.NoError(t, err, "Failed to parse test JSON: %s", testFilePath)
-	
+
+	// force streaming mode to ensure reasoning content is returned in chunks
+	requestBody["stream"] = true
+
 	// create HTTP client to real AI Proxy instance
 	client := common.NewClient()
 	ctx := context.Background()
-	
+
 	// add test headers to specify target model
 	headers := map[string]string{
 		"X-AI-Proxy-Model": testInfo.TargetModel, // use full publisher/model format
 	}
-	
+
 	// send request to real AI Proxy
 	endpoint := "/v1/chat/completions"
-	resp := client.PostJSONWithHeaders(ctx, endpoint, requestBody, headers)
-	
+	var chunkBuilder strings.Builder
+	resp := client.PostJSONStreamWithHeaders(ctx, endpoint, requestBody, headers, func(data []byte) error {
+		if chunkBuilder.Len() > 0 {
+			chunkBuilder.WriteByte('\n')
+		}
+		chunkBuilder.Write(data)
+		return nil
+	})
+
 	// log request details for debugging
 	t.Logf("Sending request to %s with model=%s", endpoint, testInfo.TargetModel)
-	
+
+	bodyStr := chunkBuilder.String()
+	require.NoError(t, resp.Error, "request failed: status=%d body=%s streamed=%s", resp.StatusCode, string(resp.Body), bodyStr)
+	require.Truef(t, resp.IsSuccess(), "unexpected status code: %d, body: %s streamed=%s", resp.StatusCode, string(resp.Body), bodyStr)
+	if strings.Contains(strings.ToLower(testInfo.TargetModel), "bytedance") {
+		switch testInfo.ThinkingMode {
+		case "enabled":
+			require.Containsf(t, bodyStr, "reasoning_content", "expected reasoning content in response body for model %s with thinking mode %s", testInfo.TargetModel, testInfo.ThinkingMode)
+		case "disabled":
+			require.NotContainsf(t, bodyStr, "reasoning_content", "unexpected reasoning content in response body for model %s when thinking is disabled", testInfo.TargetModel)
+		}
+	}
+
 	// verify response model header matches what we requested
 	responseModel := resp.Headers.Get("X-AI-Proxy-Model")
 	if responseModel != "" {
@@ -137,28 +163,29 @@ func runCurlTestCase(t *testing.T, testFilePath string, testInfo *TestInfo) {
 	} else {
 		t.Logf("No X-AI-Proxy-Model header in response")
 	}
-	
+
 	// verify audit header contains thinking transformation
 	auditHeader := resp.Headers.Get(XAIProxyRequestThinkingTransform)
 	if auditHeader != "" {
 		verifyAuditTransformation(t, auditHeader, testInfo)
-		t.Logf("✓ Test passed: %s -> %s (mode: %s)", 
+		t.Logf("✓ Test passed: %s -> %s (mode: %s)",
 			testInfo.InputFormat, testInfo.TargetModel, testInfo.ThinkingMode)
 	} else {
 		t.Logf("No audit header found for test: %s - thinking-handler may not be processing this request", testFilePath)
-		
+
 		// log response details for debugging
 		if resp.Error != nil {
 			t.Logf("Response error: %v", resp.Error)
 		}
 		t.Logf("Response status: %d", resp.StatusCode)
+		t.Logf("Streamed body: %s", bodyStr)
 		t.Logf("Response headers with X-AI-Proxy prefix:")
 		for k, v := range resp.Headers {
 			if strings.HasPrefix(k, "X-AI-Proxy") || strings.HasPrefix(k, "X-Ai-Proxy") {
 				t.Logf("  %s: %s", k, strings.Join(v, ","))
 			}
 		}
-		
+
 		// for now, don't fail the test - this allows us to debug the real AI Proxy setup
 		t.Logf("SKIP: No audit transformation detected")
 	}
@@ -176,24 +203,24 @@ func verifyAuditTransformation(t *testing.T, auditHeader string, testInfo *TestI
 		require.NoError(t, err, "Failed to parse audit header as single object")
 		auditRecords = []AuditRecord{singleRecord}
 	}
-	
+
 	// find thinking record (should be the first/only one for thinking transform header)
 	require.Len(t, auditRecords, 1, "Expected single audit record in thinking transform header")
 	thinkingRecord := &auditRecords[0]
-	
+
 	// verify From field contains thinking
 	assert.Contains(t, thinkingRecord.From, "thinking", "Audit 'From' should contain thinking field")
-	
+
 	// log the actual transformation for debugging
 	t.Logf("Thinking transformation detected: from=%+v, to=%+v", thinkingRecord.From, thinkingRecord.To)
-	
+
 	// check if transformation occurred (to field is not null/empty)
 	if thinkingRecord.To == nil || len(thinkingRecord.To) == 0 {
 		t.Logf("⚠ No transformation applied - 'to' field is null or empty")
 		// this might be expected behavior for some cases, but let's log it
 		return
 	}
-	
+
 	// verify To field based on target model publisher
 	publisher := strings.Split(testInfo.TargetModel, "/")[0]
 	switch publisher {
@@ -221,6 +248,6 @@ func verifyAuditTransformation(t *testing.T, auditHeader string, testInfo *TestI
 	default:
 		t.Logf("Unknown publisher %s, conversion result: %+v", publisher, thinkingRecord.To)
 	}
-	
+
 	t.Logf("✓ Audit verification passed: %+v", thinkingRecord.To)
 }

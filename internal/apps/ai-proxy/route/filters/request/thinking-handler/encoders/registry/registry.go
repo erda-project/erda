@@ -20,7 +20,8 @@ import (
 	"sort"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders/impl"
+	mp "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders/impl/model-publisher"
+	sp "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders/impl/service-provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
@@ -32,11 +33,15 @@ type Registry struct {
 // NewRegistry creates a new registry with default encoders
 func NewRegistry() *Registry {
 	encoderList := []encoders.CommonThinkingEncoder{
-		&impl.AnthropicThinkingEncoder{},
-		&impl.QwenThinkingEncoder{},
-		&impl.OpenAIChatThinkingEncoder{},
-		&impl.OpenAIResponsesThinkingEncoder{},
-		&impl.BytedanceThinkingEncoder{},
+		// service provider
+		&sp.VolcengineThinkingEncoder{},
+		&sp.BailianThinkingEncoder{},
+		// model publisher
+		&mp.AnthropicThinkingEncoder{},
+		&mp.QwenThinkingEncoder{},
+		&mp.OpenAIChatThinkingEncoder{},
+		&mp.OpenAIResponsesThinkingEncoder{},
+		&mp.BytedanceThinkingEncoder{},
 	}
 
 	// sort by priority (lower number = higher priority)

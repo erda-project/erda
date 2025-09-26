@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package impl
+package model_publisher
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(4096),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 4096,
 			},
 		},
@@ -62,7 +62,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(512),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 1024, // uses default minimum
 			},
 		},
@@ -73,7 +73,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortMinimal),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 1024,
 			},
 		},
@@ -84,7 +84,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortLow),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 2048,
 			},
 		},
@@ -95,7 +95,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortMedium),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 4096,
 			},
 		},
@@ -106,7 +106,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortHigh),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 8192,
 			},
 		},
@@ -116,7 +116,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				Mode: types.ModePtr(types.ModeOn),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 1024,
 			},
 		},
@@ -128,7 +128,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(2048),                      // budget should win
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 2048,
 			},
 		},
@@ -138,7 +138,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortMedium),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 4096,
 			},
 		},
@@ -148,7 +148,7 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(3000),
 			},
 			expected: map[string]any{
-				types.FieldEnableThinking:  true,
+				types.FieldEnableThinking: true,
 				types.FieldThinkingBudget: 3000,
 			},
 		},
@@ -165,4 +165,3 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 		})
 	}
 }
-

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package impl
+package model_publisher
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
-func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
+func TestOpenAIChatThinkingEncoder_Encode(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    types.CommonThinking
@@ -51,10 +51,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortMinimal),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortMinimal,
-				},
+				types.FieldReasoningEffort: types.EffortMinimal,
 			},
 		},
 		{
@@ -64,10 +61,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortLow),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortLow,
-				},
+				types.FieldReasoningEffort: types.EffortLow,
 			},
 		},
 		{
@@ -77,10 +71,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortMedium),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortMedium,
-				},
+				types.FieldReasoningEffort: types.EffortMedium,
 			},
 		},
 		{
@@ -90,10 +81,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortHigh),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortHigh,
-				},
+				types.FieldReasoningEffort: types.EffortHigh,
 			},
 		},
 		{
@@ -103,10 +91,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(512),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortMinimal,
-				},
+				types.FieldReasoningEffort: types.EffortMinimal,
 			},
 		},
 		{
@@ -116,10 +101,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(1500),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortLow,
-				},
+				types.FieldReasoningEffort: types.EffortLow,
 			},
 		},
 		{
@@ -129,10 +111,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(3000),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortMedium,
-				},
+				types.FieldReasoningEffort: types.EffortMedium,
 			},
 		},
 		{
@@ -142,10 +121,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(8192),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortHigh,
-				},
+				types.FieldReasoningEffort: types.EffortHigh,
 			},
 		},
 		{
@@ -155,10 +131,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(0),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortMedium,
-				},
+				types.FieldReasoningEffort: types.EffortMedium,
 			},
 		},
 		{
@@ -167,10 +140,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				Mode: types.ModePtr(types.ModeOn),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortMedium,
-				},
+				types.FieldReasoningEffort: types.EffortMedium,
 			},
 		},
 		{
@@ -181,10 +151,7 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				BudgetTokens: intPtr(8192), // would map to high, but effort should win
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortLow,
-				},
+				types.FieldReasoningEffort: types.EffortLow,
 			},
 		},
 		{
@@ -193,15 +160,12 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 				Effort: types.EffortPtr(types.EffortHigh),
 			},
 			expected: map[string]any{
-				types.FieldReasoning: map[string]any{
-					"summary":         "auto",
-					types.FieldEffort: types.EffortHigh,
-				},
+				types.FieldReasoningEffort: types.EffortHigh,
 			},
 		},
 	}
 
-	encoder := &OpenAIResponsesThinkingEncoder{}
+	encoder := &OpenAIChatThinkingEncoder{}
 	ctx := context.Background()
 
 	for _, tt := range tests {
@@ -212,4 +176,3 @@ func TestOpenAIResponsesThinkingEncoder_Encode(t *testing.T) {
 		})
 	}
 }
-

@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package common_types_util
 
-type ModelPublisher string
-
-var (
-	ModelPublisherOpenAI    ModelPublisher = "openai"
-	ModelPublisherAnthropic ModelPublisher = "anthropic"
-	ModelPublisherQwen      ModelPublisher = "qwen"
-	ModelPublisherBytedance ModelPublisher = "bytedance" // Doubao
+import (
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 )
+
+const metaKeyServiceProviderType = "service_provider_type"
+
+func GetServiceProviderType(p *modelproviderpb.ModelProvider) string {
+	return p.GetMetadata().GetPublic()[metaKeyServiceProviderType].GetStringValue()
+}
