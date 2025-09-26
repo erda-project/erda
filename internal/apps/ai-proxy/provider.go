@@ -235,7 +235,7 @@ func (p *provider) Run(ctx context.Context) error {
 	p.Election.OnLeader(func(ctx context.Context) {
 		handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
 
-		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L)
+		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.SyncClusterConfigInterval)
 		if err := aggregator.Start(ctx); err != nil {
 			logrus.Error(err)
 			panic(err)

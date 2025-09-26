@@ -17,6 +17,7 @@ package config
 import (
 	"embed"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -26,6 +27,8 @@ type Config struct {
 	LogLevel    logrus.Level `json:"-" yaml:"-"`
 
 	SelfURL string `file:"self_url" env:"SELF_URL" required:"true"`
+
+	SyncClusterConfigInterval time.Duration `file:"sync_cluster_config_interval" default:"10m" env:"SYNC_CLUSTER_CONFIG_INTERVAL"`
 
 	EmbedRoutesFS embed.FS
 }
