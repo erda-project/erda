@@ -24,6 +24,7 @@ import (
 
 	cmspb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -56,19 +57,28 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 	var servers []*pb.MCPServer
 	var total int64
 
-	clientId, ok := ctxhelper.GetClientId(ctx)
-	if !ok {
-		return nil, errors.New("clientId not found")
+	var scopes = make(map[string]*cmspb.ScopeIdList)
+
+	if !auth.IsAdmin(ctx) {
+		clientId, ok := ctxhelper.GetClientId(ctx)
+		if !ok {
+			return nil, errors.New("clientId not found")
+		}
+
+		result, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
+			ClientId: clientId,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		scopes = result.Scope
+
+	} else {
+		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
 
-	scopes, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
-		ClientId: clientId,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for scopeType, scope := range scopes.Scope {
+	for scopeType, scope := range scopes {
 		count, temp, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
 			PageNum:            int(req.PageNum),
 			PageSize:           int(req.PageSize),
@@ -110,22 +120,31 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 }
 
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
-	clientId, ok := ctxhelper.GetClientId(ctx)
-	if !ok {
-		return nil, errors.New("clientId not found")
-	}
+	var scopes = make(map[string]*cmspb.ScopeIdList)
 
-	scope, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
-		ClientId: clientId,
-	})
-	if err != nil {
-		return nil, err
+	if !auth.IsAdmin(ctx) {
+		clientId, ok := ctxhelper.GetClientId(ctx)
+		if !ok {
+			return nil, errors.New("clientId not found")
+		}
+
+		result, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
+			ClientId: clientId,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		scopes = result.Scope
+
+	} else {
+		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
 
 	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
 	mcpServer := resp.GetData()
 
-	if !slices.Contains(scope.Scope[mcpServer.ScopeType].Ids, mcpServer.ScopeId) {
+	if scopes["*"] == nil && !slices.Contains(scopes[mcpServer.ScopeType].Ids, mcpServer.ScopeId) {
 		return nil, errors.New("no permission to access")
 	}
 
@@ -143,19 +162,28 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 	var servers []*pb.MCPServer
 	var total int64
 
-	clientId, ok := ctxhelper.GetClientId(ctx)
-	if !ok {
-		return nil, errors.New("clientId not found")
+	var scopes = make(map[string]*cmspb.ScopeIdList)
+
+	if !auth.IsAdmin(ctx) {
+		clientId, ok := ctxhelper.GetClientId(ctx)
+		if !ok {
+			return nil, errors.New("clientId not found")
+		}
+
+		result, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
+			ClientId: clientId,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		scopes = result.Scope
+
+	} else {
+		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
 
-	scopes, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
-		ClientId: clientId,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for scopeType, scope := range scopes.Scope {
+	for scopeType, scope := range scopes {
 		count, temp, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
 			IncludeUnpublished: req.IncludeUnpublished,
 			PageNum:            int(req.PageNum),

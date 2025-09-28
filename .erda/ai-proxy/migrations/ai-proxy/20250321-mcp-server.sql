@@ -17,10 +17,3 @@ CREATE TABLE `ai_proxy_mcp_server`
     PRIMARY KEY (`id`),
     INDEX                `idx_is_published` (`is_published`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MCP 服务列表';
-
-ALTER TABLE `ai_proxy_mcp_server` DROP INDEX `name`;
-
-ALTER TABLE `ai_proxy_mcp_server`
-    ADD COLUMN `scope_type` VARCHAR(64) NOT NULL DEFAULT 'org' COMMENT '作用域类型',
-    ADD COLUMN `scope_id`   VARCHAR(64) NOT NULL DEFAULT '0' COMMENT '作用域 ID',
-    ADD INDEX `idx_name_version_scope` (`name`, `version`, `scope_type`, `scope_id`);

@@ -28,6 +28,7 @@ type Config struct {
 
 	SelfURL string `file:"self_url" env:"SELF_URL" required:"true"`
 
+	McpClusters               string        `file:"mcp_clusters" default:"" env:"MCP_CLUSTERS"`
 	SyncClusterConfigInterval time.Duration `file:"sync_cluster_config_interval" default:"10m" env:"SYNC_CLUSTER_CONFIG_INTERVAL"`
 
 	EmbedRoutesFS embed.FS

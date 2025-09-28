@@ -242,8 +242,10 @@ func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb
 		tx = tx.Where("is_published = ?", true)
 	}
 
-	tx = tx.Where("scope_type = ?", options.ScopeType)
-	tx = tx.Where("scope_id in (?)", options.ScopeIds)
+	if options.ScopeType != "*" {
+		tx = tx.Where("scope_type = ?", options.ScopeType)
+		tx = tx.Where("scope_id in (?)", options.ScopeIds)
+	}
 
 	offset := (options.PageNum - 1) * options.PageSize
 	err := tx.Order("created_at DESC").Limit(options.PageSize).Offset(offset).Find(&list).Error

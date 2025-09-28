@@ -20,10 +20,12 @@ import (
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 	"net/http"
 	"reflect"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -60,6 +62,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -235,7 +238,10 @@ func (p *provider) Run(ctx context.Context) error {
 	p.Election.OnLeader(func(ctx context.Context) {
 		handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
 
-		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.SyncClusterConfigInterval)
+		clusters := strings.Split(p.Config.McpClusters, ",")
+		logrus.Infof("listen mcp cluster list: %v", clusters)
+
+		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.SyncClusterConfigInterval, clusters)
 		if err := aggregator.Start(ctx); err != nil {
 			logrus.Error(err)
 			panic(err)

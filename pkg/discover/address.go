@@ -80,6 +80,7 @@ const (
 	SvcAdmin          = "admin"
 	SvcGallery        = "gallery"
 	SvcAIProxy        = "ai-proxy"
+	SvcMCPProxy       = "mcp-proxy"
 )
 
 var ServicesEnvKeys = map[string]string{
