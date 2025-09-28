@@ -39,6 +39,11 @@ const Name = "mcp-server-request"
 
 const TerminusRequestIdHeader = "Terminus-Request-Id"
 
+const (
+	portalHostHeader = "X-Portal-Host"
+	portalDestHeader = "X-Portal-Dest"
+)
+
 var (
 	_ filter_define.ProxyRequestRewriter = (*Filter)(nil)
 )
@@ -112,10 +117,11 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	endpoint := fmt.Sprintf("%s:%s", parsedEndpoint.Host, parsedEndpoint.Port)
 
 	ctxhelper.PutMcpInfo(ctx, ctxhelper.McpInfo{
-		Name:    name,
-		Version: version,
-		Host:    endpoint,
-		Scheme:  parsedEndpoint.Scheme,
+		Name:        name,
+		Version:     version,
+		Host:        endpoint,
+		Scheme:      parsedEndpoint.Scheme,
+		ClusterName: headers[portalHostHeader],
 	})
 
 	req.Host = endpoint
@@ -123,9 +129,9 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	req.URL.Host = endpoint
 	req.URL.Path = parsedEndpoint.Path
 	req.Header.Set("Host", parsedEndpoint.Host)
-	for header, value := range headers {
-		req.Header.Set(header, value)
-	}
+	//for header, value := range headers {
+	//	req.Header.Set(header, value)
+	//}
 	return nil
 }
 
@@ -172,6 +178,14 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 		return err
 	}
 
+	ctxhelper.PutMcpInfo(ctx, ctxhelper.McpInfo{
+		Name:        name,
+		Version:     tag,
+		Host:        ep,
+		Scheme:      parsedEndpoint.Scheme,
+		ClusterName: headers[portalHostHeader],
+	})
+
 	logger.Infof("request body %s", string(raw))
 
 	reader := bytes.NewReader(raw)
@@ -183,9 +197,9 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	req.URL.Scheme = parsedEndpoint.Scheme
 	req.URL.Host = parsedEndpoint.Host
 	req.URL.Path = messagePath
-	for header, value := range headers {
-		req.Header.Set(header, value)
-	}
+	//for header, value := range headers {
+	//	req.Header.Set(header, value)
+	//}
 
 	return nil
 }
