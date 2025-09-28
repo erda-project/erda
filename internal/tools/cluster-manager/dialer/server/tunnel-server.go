@@ -293,9 +293,10 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	}
 
 	// if the request is event-stream, should keep connection without timeout
-	if req.Header.Get("Accept") == "text/event-stream" {
-		timeout = 0
-	}
+	//accept := req.Header.Get("Accept")
+	//if strings.Contains(accept, "text/event-stream") || accept == "*/*" {
+	//	timeout = 0
+	//}
 
 	client := getClusterClient(server, clusterKey, timeout)
 	id := atomic.AddInt64(&counter, 1)

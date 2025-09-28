@@ -96,14 +96,14 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		ctxhelper.PutPathMatcher(ctx, matchedRoute.GetPathMatcher())
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
-		// reverse proxy
 		proxy := httputil.ReverseProxy{
 			Rewrite: reverse_proxy.MyRewrite(w, requestFilters),
-			Transport: &transports.RequestFilterGeneratedResponseTransport{
-				Inner: &transports.CurlPrinterTransport{
-					Inner: &transports.TimerTransport{},
-				},
-			},
+			Transport: func() http.RoundTripper {
+				if p.Config.IsMcpProxy {
+					return transports.NewMcpTransport()
+				}
+				return transports.NewRequestFilterGeneratedResponseTransport(&transports.TimerTransport{})
+			}(),
 			FlushInterval:  -1,
 			ErrorLog:       nil,
 			BufferPool:     nil,

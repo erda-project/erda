@@ -21,6 +21,7 @@ type McpInfo struct {
 	Scheme         string
 	NeedTerminusId bool
 	Headers        map[string]string
+	ClusterName    string
 }
 
 type ReverseProxyFilterError struct {

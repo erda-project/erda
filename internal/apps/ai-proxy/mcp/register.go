@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/pkg/clusterdialer"
 	"io"
 	"net/http"
 
@@ -109,7 +110,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 
 	r.logger.Infof("inetUrl: %s, headers: %v", inetUrl, headers)
 
-	tools, err := r.listTools(ctx, transportType, inetUrl, headers)
+	tools, err := r.listTools(ctx, transportType, inetUrl, headers, clusterName)
 	if err != nil {
 		return err
 	}
@@ -136,17 +137,24 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 	return err
 }
 
-func (r *Register) listTools(ctx context.Context, transportType string, url string, headers map[string]string) ([]*pb.MCPServerTool, error) {
+func (r *Register) listTools(ctx context.Context, transportType string, url string, headers map[string]string, clusterName string) ([]*pb.MCPServerTool, error) {
 	var mcpClient *client.Client
 	var err error
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			DialContext: clusterdialer.DialContext(clusterName),
+		},
+	}
+
 	switch transportType {
 	case "sse":
-		mcpClient, err = client.NewSSEMCPClient(url, transport.WithHeaders(headers))
+		mcpClient, err = client.NewSSEMCPClient(url, transport.WithHTTPClient(httpClient), transport.WithHeaders(headers))
 		if err != nil {
 			return nil, err
 		}
 	case "streamable":
-		mcpClient, err = client.NewStreamableHttpClient(url, transport.WithHTTPHeaders(headers))
+		mcpClient, err = client.NewStreamableHttpClient(url, transport.WithHTTPBasicClient(httpClient), transport.WithHTTPHeaders(headers))
 		if err != nil {
 			return nil, err
 		}
