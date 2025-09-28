@@ -15,13 +15,13 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_mcp_relation"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_mcp_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/i18n"

@@ -15,10 +15,12 @@
 package transports
 
 import (
+	"net/http"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/pkg/clusterdialer"
-	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type McpTransport struct {
