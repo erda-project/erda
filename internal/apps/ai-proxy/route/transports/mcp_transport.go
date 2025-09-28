@@ -30,8 +30,10 @@ func (t *McpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return t.RoundTripper.RoundTrip(req)
 	}
 
-	logrus.Infof("with clusterdialer, cluster name: %s", info.ClusterName)
-	transport.DialContext = clusterdialer.DialContext(info.ClusterName)
+	if info.ClusterName != "" {
+		logrus.Infof("with clusterdialer, cluster name: %s", info.ClusterName)
+		transport.DialContext = clusterdialer.DialContext(info.ClusterName)
+	}
 
 	return transport.RoundTrip(req)
 }

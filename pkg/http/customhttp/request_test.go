@@ -116,22 +116,22 @@ func Test_parseInetUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPortalHost, gotPortalDest, gotPortalUrl, gotPortalArgs, err := parseInetUrl(tt.args.url)
+			gotPortalHost, gotPortalDest, gotPortalUrl, gotPortalArgs, err := ParseInetUrl(tt.args.url)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseInetUrl() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseInetUrl() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotPortalHost != tt.wantPortalHost {
-				t.Errorf("parseInetUrl() gotPortalHost = %v, want %v", gotPortalHost, tt.wantPortalHost)
+				t.Errorf("ParseInetUrl() gotPortalHost = %v, want %v", gotPortalHost, tt.wantPortalHost)
 			}
 			if gotPortalDest != tt.wantPortalDest {
-				t.Errorf("parseInetUrl() gotPortalDest = %v, want %v", gotPortalDest, tt.wantPortalDest)
+				t.Errorf("ParseInetUrl() gotPortalDest = %v, want %v", gotPortalDest, tt.wantPortalDest)
 			}
 			if gotPortalUrl != tt.wantPortalUrl {
-				t.Errorf("parseInetUrl() gotPortalUrl = %v, want %v", gotPortalUrl, tt.wantPortalUrl)
+				t.Errorf("ParseInetUrl() gotPortalUrl = %v, want %v", gotPortalUrl, tt.wantPortalUrl)
 			}
 			if !reflect.DeepEqual(gotPortalArgs, tt.wantPortalArgs) {
-				t.Errorf("parseInetUrl() gotPortalArgs = %v, want %v", gotPortalArgs, tt.wantPortalArgs)
+				t.Errorf("ParseInetUrl() gotPortalArgs = %v, want %v", gotPortalArgs, tt.wantPortalArgs)
 			}
 		})
 	}
@@ -194,7 +194,7 @@ func TestParseInetUrl(t *testing.T) {
 	})
 
 	for _, test := range tests {
-		url, headers, err := ParseInetUrl(test.url)
+		url, headers, err := ParseInetUrlAndHeaders(test.url)
 		if (err != nil) != test.wantErr {
 			t.Errorf("ParseInetUrl() error = %v, wantErr %v", err, test.wantErr)
 			return

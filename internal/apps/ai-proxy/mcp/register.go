@@ -103,7 +103,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 
 	url := fmt.Sprintf("inet://%s/%s%s", clusterName, svcHost, uri)
 
-	inetUrl, headers, err := customhttp.ParseInetUrl(url)
+	inetUrl, headers, err := customhttp.ParseInetUrlAndHeaders(url)
 	if err != nil {
 		return err
 	}
