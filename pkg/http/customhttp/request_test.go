@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/erda-project/erda/pkg/cache"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/discover"
 )
 

@@ -17,11 +17,13 @@ package client_mcp_relation
 import (
 	"context"
 	"fmt"
+
+	"gorm.io/gorm"
+
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
-	"gorm.io/gorm"
 )
 
 type DBClient struct {
