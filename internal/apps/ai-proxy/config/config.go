@@ -31,6 +31,7 @@ type Config struct {
 
 	IsMcpProxy bool `file:"is_mcp_proxy" env:"IS_MCP_PROXY"`
 
+	McpClusters               string        `file:"mcp_clusters" default:"" env:"MCP_CLUSTERS"`
 	SyncClusterConfigInterval time.Duration `file:"sync_cluster_config_interval" default:"10m" env:"SYNC_CLUSTER_CONFIG_INTERVAL"`
 
 	EmbedRoutesFS embed.FS

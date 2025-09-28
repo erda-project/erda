@@ -17,6 +17,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -58,7 +59,7 @@ type Aggregator struct {
 	interval time.Duration
 }
 
-func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration) *Aggregator {
+func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration, clusters []string) *Aggregator {
 	a := &Aggregator{
 		ClusterSvc: svc,
 		clusters:   make(map[string]*ClusterController),
@@ -68,17 +69,17 @@ func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, hand
 		logger:     logger,
 		interval:   interval,
 	}
-	go a.syncRestConfig(ctx)
+	go a.syncRestConfig(ctx, clusters)
 	return a
 }
 
-func (a *Aggregator) syncRestConfig(ctx context.Context) {
-	a.logger.Infof("start sync rest config, interval: %v", a.interval)
+func (a *Aggregator) syncRestConfig(ctx context.Context, clusters []string) {
+	a.logger.Infof("start sync rest config, interval: %v, clusters: %v", a.interval, clusters)
 
 	ticker := time.NewTicker(a.interval)
 
 	for {
-		c := apis.WithInternalClientContext(ctx, discover.SvcAIProxy)
+		c := apis.WithInternalClientContext(ctx, discover.SvcMCPProxy)
 
 		cluster, err := a.ClusterSvc.ListCluster(c, &clusterpb.ListClusterRequest{
 			ClusterType: "k8s",
@@ -90,6 +91,9 @@ func (a *Aggregator) syncRestConfig(ctx context.Context) {
 		}
 
 		for _, info := range cluster.Data {
+			if !slices.Contains(clusters, info.Name) {
+				continue
+			}
 			a.logger.Infof("get cluster info: %+v", info.Name)
 			control := ClusterController{
 				info: info,
