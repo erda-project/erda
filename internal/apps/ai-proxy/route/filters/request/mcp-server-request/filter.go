@@ -98,14 +98,16 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	server := resp.GetData()
 
 	var ep = server.Endpoint
-	var headers = map[string]string{}
+	var clusterName = ""
 
 	if strings.HasPrefix(server.Endpoint, "inet") {
-		ep, headers, err = customhttp.ParseInetUrl(server.Endpoint)
+		cluster, dest, portalUrl, _, err := customhttp.ParseInetUrl(server.Endpoint)
 		if err != nil {
 			logger.Errorf("parse inet url failed: %v", err)
 			return err
 		}
+		ep = fmt.Sprintf("http://%s/%s", dest, portalUrl)
+		clusterName = cluster
 	}
 
 	parsedEndpoint, err := parseEndpoint(ep)
@@ -121,7 +123,7 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 		Version:     version,
 		Host:        endpoint,
 		Scheme:      parsedEndpoint.Scheme,
-		ClusterName: headers[portalHostHeader],
+		ClusterName: clusterName,
 	})
 
 	req.Host = endpoint
@@ -129,9 +131,6 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	req.URL.Host = endpoint
 	req.URL.Path = parsedEndpoint.Path
 	req.Header.Set("Host", parsedEndpoint.Host)
-	//for header, value := range headers {
-	//	req.Header.Set(header, value)
-	//}
 	return nil
 }
 
@@ -149,14 +148,16 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	server := resp.GetData()
 
 	var ep = server.Endpoint
-	var headers = map[string]string{}
+	var clusterName = ""
 
 	if strings.HasPrefix(server.Endpoint, "inet") {
-		ep, headers, err = customhttp.ParseInetUrl(server.Endpoint)
+		cluster, dest, portalUrl, _, err := customhttp.ParseInetUrl(server.Endpoint)
 		if err != nil {
 			logger.Errorf("parse inet url failed: %v", err)
 			return err
 		}
+		ep = fmt.Sprintf("http://%s/%s", dest, portalUrl)
+		clusterName = cluster
 	}
 
 	parsedEndpoint, err := parseEndpoint(ep)
@@ -164,6 +165,8 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 		logger.Error("parse endpoint failed", err)
 		return err
 	}
+
+	endpoint := fmt.Sprintf("%s:%s", parsedEndpoint.Host, parsedEndpoint.Port)
 
 	logger.Infof("server info: %+v", parsedEndpoint)
 
@@ -181,9 +184,9 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	ctxhelper.PutMcpInfo(ctx, ctxhelper.McpInfo{
 		Name:        name,
 		Version:     tag,
-		Host:        ep,
+		Host:        endpoint,
 		Scheme:      parsedEndpoint.Scheme,
-		ClusterName: headers[portalHostHeader],
+		ClusterName: clusterName,
 	})
 
 	logger.Infof("request body %s", string(raw))
@@ -193,13 +196,10 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	req.Body = closer
 	req.ContentLength = int64(len(raw))
 
-	req.Host = parsedEndpoint.Host
+	req.Host = endpoint
 	req.URL.Scheme = parsedEndpoint.Scheme
-	req.URL.Host = parsedEndpoint.Host
+	req.URL.Host = endpoint
 	req.URL.Path = messagePath
-	//for header, value := range headers {
-	//	req.Header.Set(header, value)
-	//}
 
 	return nil
 }
