@@ -34,15 +34,12 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	proxyapis "github.com/erda-project/erda/internal/apps/ai-proxy/apis"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
@@ -69,35 +66,6 @@ var (
 		ConfigFunc:  func() interface{} { return new(config.Config) },
 		Types:       []reflect.Type{providerType},
 		Creator:     func() servicehub.Provider { return new(provider) },
-	}
-	trySetAuth = func(dao dao.DAO) transport.ServiceOption {
-		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
-			return func(ctx context.Context, req interface{}) (interface{}, error) {
-				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
-				// check admin key first
-				isAdmin, err := akutil.CheckAdmin(ctx, req, dao)
-				if err != nil {
-					return nil, err
-				}
-				if isAdmin {
-					ctxhelper.PutIsAdmin(ctx, true)
-					return h(ctx, req)
-				}
-				// try set clientId by ak
-				clientToken, client, err := akutil.CheckAkOrToken(ctx, req, dao)
-				if err != nil {
-					return nil, err
-				}
-				if clientToken != nil {
-					ctxhelper.PutClientToken(ctx, clientToken)
-				}
-				if client != nil {
-					ctxhelper.PutClient(ctx, client)
-					ctxhelper.PutClientId(ctx, client.Id)
-				}
-				return h(ctx, req)
-			}
-		})
 	}
 )
 
@@ -151,7 +119,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	proxyapis.RegisterMcpProxyManageAPI(p, p.Config.McpProxyPublicURL)
 
 	// initialize cache manager
-	p.cacheManager = cache.NewCacheManager(p.Dao, p.L, p.Config.IsMcpProxy)
+	p.cacheManager = cache.NewCacheManager(p.Dao, p.L, p.IsMcpProxy())
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	// reverse proxy to AI provider's server
@@ -169,7 +137,7 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	if !p.Config.IsMcpProxy {
+	if !p.IsMcpProxy() {
 		return nil
 	}
 

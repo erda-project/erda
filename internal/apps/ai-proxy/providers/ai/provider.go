@@ -104,7 +104,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	proxyapis.RegisterMcpProxyManageAPI(p, p.Config.McpProxyPublicURL)
 
 	// initialize cache manager
-	p.cacheManager = cache.NewCacheManager(p.Dao, p.L, p.Config.IsMcpProxy)
+	p.cacheManager = cache.NewCacheManager(p.Dao, p.L, p.IsMcpProxy())
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	// reverse proxy to AI provider's server
