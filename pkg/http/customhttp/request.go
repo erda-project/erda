@@ -47,7 +47,7 @@ const (
 	portalDestHeader = "X-Portal-Dest"
 )
 
-func parseInetUrl(url string) (portalHost string, portalDest string, portalUrl string, portalArgs map[string]string, err error) {
+func ParseInetUrl(url string) (portalHost string, portalDest string, portalUrl string, portalArgs map[string]string, err error) {
 	url = strings.TrimPrefix(url, "inet://")
 	url = strings.Replace(url, "//", "/", -1)
 	portalArgs = map[string]string{}
@@ -86,7 +86,7 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(url, "inet://") {
 		return http.NewRequest(method, url, body)
 	}
-	portalHost, portalDest, portalUrl, _, err := parseInetUrl(url)
+	portalHost, portalDest, portalUrl, _, err := ParseInetUrl(url)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +106,29 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	request.Header.Set(portalHostHeader, portalHost)
 	request.Header.Set(portalDestHeader, portalDest)
 	return request, nil
+}
+
+func ParseInetUrlAndHeaders(url string) (string, map[string]string, error) {
+	if !strings.HasPrefix(url, "inet://") {
+		return "", nil, errors.Wrapf(ErrInvalidAddr, "addr:%s", url)
+	}
+	portalHost, portalDest, portalUrl, _, err := ParseInetUrl(url)
+	if err != nil {
+		return "", nil, err
+	}
+
+	clusterManagerEndpoint, ok := ipCache.LoadWithUpdateSync(portalHost)
+	if !ok {
+		logrus.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
+		return "", nil, errors.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
+	}
+
+	url = fmt.Sprintf("http://%s/%s", clusterManagerEndpoint, portalUrl)
+
+	return url, map[string]string{
+		portalHostHeader: portalHost,
+		portalDestHeader: portalDest,
+	}, nil
 }
 
 func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {

@@ -17,9 +17,21 @@ package config
 import (
 	"embed"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+type DiceInfo struct {
+	LocalClusterName string `file:"local_cluster_name" env:"DICE_CLUSTER_NAME"`
+	Namespace        string `file:"namespace" env:"DICE_NAMESPACE"`
+}
+
+type McpScanConfig struct {
+	Enable                    bool          `file:"enable" env:"MCP_SCAN_ENABLE"`
+	McpClusters               string        `file:"mcp_clusters" default:"" env:"MCP_CLUSTERS"`
+	SyncClusterConfigInterval time.Duration `file:"sync_cluster_config_interval" default:"10m" env:"SYNC_CLUSTER_CONFIG_INTERVAL"`
+}
 
 type Config struct {
 	LogLevelStr string       `file:"log_level" default:"info" env:"LOG_LEVEL"`
@@ -28,7 +40,8 @@ type Config struct {
 	SelfURL           string `file:"self_url" env:"SELF_URL" required:"true"`
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
 
-	IsMcpProxy bool `file:"is_mcp_proxy" env:"IS_MCP_PROXY"`
+	McpScanConfig McpScanConfig `file:"mcp_scan_config"`
+	DiceInfo      DiceInfo      `file:"dice_info"`
 
 	EmbedRoutesFS embed.FS
 }

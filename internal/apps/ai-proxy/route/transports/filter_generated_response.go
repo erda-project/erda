@@ -27,6 +27,10 @@ type RequestFilterGeneratedResponseTransport struct {
 	Inner http.RoundTripper
 }
 
+func NewRequestFilterGeneratedResponseTransport(inner http.RoundTripper) http.RoundTripper {
+	return &RequestFilterGeneratedResponseTransport{Inner: inner}
+}
+
 const SchemeForFilterGeneratedResponse = "filter-generated-response"
 
 func (t *RequestFilterGeneratedResponseTransport) RoundTrip(req *http.Request) (*http.Response, error) {
