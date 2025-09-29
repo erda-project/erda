@@ -49,7 +49,7 @@ message AllocateRequest {
 
 message Scope {
     string scopeType = 1;
-    repeated string scopeIds = 3;
+    repeated string scopeIds = 2;
 }
 
 message ScopeIdList {
