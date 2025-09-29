@@ -12,25 +12,88 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai_proxy
+package apis
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
+	"github.com/erda-project/erda/pkg/common/apis"
+	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
+type Interface interface {
+	FindBestMatch(method, path string) router_define.RouteMatcher
+	GetDBClient() dao.DAO
+	GetRichClientHandler() *handler_rich_client.ClientHandler
+	SetRichClientHandler(*handler_rich_client.ClientHandler)
+	GetCacheManager() cachetypes.Manager
+	IsMcpProxy() bool
+}
+
+var (
+	trySetAuth = func(dao dao.DAO) transport.ServiceOption {
+		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
+				// check admin key first
+				isAdmin, err := akutil.CheckAdmin(ctx, req, dao)
+				if err != nil {
+					return nil, err
+				}
+				if isAdmin {
+					ctxhelper.PutIsAdmin(ctx, true)
+					return h(ctx, req)
+				}
+				// try set clientId by ak
+				clientToken, client, err := akutil.CheckAkOrToken(ctx, req, dao)
+				if err != nil {
+					return nil, err
+				}
+				if clientToken != nil {
+					ctxhelper.PutClientToken(ctx, clientToken)
+				}
+				if client != nil {
+					ctxhelper.PutClient(ctx, client)
+					ctxhelper.PutClientId(ctx, client.Id)
+				}
+				return h(ctx, req)
+			}
+		})
+	}
+	trySetLang = func() transport.ServiceOption {
+		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
+				lang := apis.GetHeader(ctx, httperrorutil.HeaderKeyAcceptLanguage)
+				if len(lang) > 0 {
+					ctxhelper.PutAccessLang(ctx, lang)
+				}
+				return h(ctx, req)
+			}
+		})
+	}
+)
+
+func ReverseProxyHandle[T Interface](p T) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		// inject context
 		ctx := ctxhelper.InitCtxMapIfNeed(r.Context())
 		r = r.WithContext(ctx)
@@ -49,7 +112,7 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		ctxhelper.PutGeneratedCallID(ctx, callID)
 
 		// find best matched route using priority algorithm
-		matched := p.Router.FindBestMatch(r.Method, r.URL.Path)
+		matched := p.FindBestMatch(r.Method, r.URL.Path)
 		var matchedRoute *router_define.Route
 		if matched != nil {
 			matchedRoute = matched.(*router_define.Route)
@@ -91,15 +154,15 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 			responseFilters = append(responseFilters, filter_define.FilterWithName[filter_define.ProxyResponseModifier]{Name: filterConfig.Name, Instance: f})
 		}
 
-		ctxhelper.PutDBClient(ctx, p.Dao)
-		ctxhelper.PutRichClientHandler(ctx, p.richClientHandler)
+		ctxhelper.PutDBClient(ctx, p.GetDBClient())
+		ctxhelper.PutRichClientHandler(ctx, p.GetRichClientHandler())
 		ctxhelper.PutPathMatcher(ctx, matchedRoute.GetPathMatcher())
-		ctxhelper.PutCacheManager(ctx, p.cacheManager)
+		ctxhelper.PutCacheManager(ctx, p.GetCacheManager())
 
 		proxy := httputil.ReverseProxy{
 			Rewrite: reverse_proxy.MyRewrite(w, requestFilters),
 			Transport: func() http.RoundTripper {
-				if p.Config.IsMcpProxy {
+				if p.IsMcpProxy() {
 					return transports.NewMcpTransport()
 				}
 				return transports.NewRequestFilterGeneratedResponseTransport(&transports.TimerTransport{})
