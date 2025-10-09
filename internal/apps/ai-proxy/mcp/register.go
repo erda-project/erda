@@ -240,6 +240,7 @@ func (r *Register) requestServerInfo(clusterName string, host string) (string, e
 	return string(all), nil
 }
 
+// set mcp published false
 func (r *Register) offline(ctx context.Context, svc *corev1.Service) error {
 	name, ok := svc.Labels[vars.LabelMcpErdaCloudName]
 	if !ok {

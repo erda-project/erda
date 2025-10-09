@@ -182,10 +182,12 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 		a.logger.Infof("[%s] Type: %s, Service: %s, ClusterIP: %s\n",
 			svc.Namespace, event.Type, svc.Name, svc.Spec.ClusterIP)
 
+		// if service is deleted, set mcp published to false
 		if event.Type == watch.Deleted {
 			if cancel, ok := a.endpointWatcher[key]; ok && cancel != nil {
 				cancel()
 			}
+			delete(a.endpointWatcher, key)
 			err = a.register.offline(ctx, svc)
 			if err != nil {
 				a.logger.Errorf("offline mcp server failed: %v", err)
