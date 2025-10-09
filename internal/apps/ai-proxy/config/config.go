@@ -40,6 +40,8 @@ type Config struct {
 	SelfURL           string `file:"self_url" env:"SELF_URL" required:"true"`
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
 
+	IsMcpProxy bool `file:"is_mcp_proxy" env:"IS_MCP_PROXY"`
+
 	McpScanConfig McpScanConfig `file:"mcp_scan_config"`
 	DiceInfo      DiceInfo      `file:"dice_info"`
 

@@ -18,6 +18,10 @@ import (
 	"embed"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	_ "github.com/erda-project/erda-infra/providers/etcd"
+	_ "github.com/erda-project/erda-infra/providers/redis"
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy" // import service hub dependencies
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy" // import service hub dependencies
 	"github.com/erda-project/erda/pkg/common"

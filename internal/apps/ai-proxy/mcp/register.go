@@ -105,7 +105,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 
 	endpoint := fmt.Sprintf("http://%s%s", svcHost, uri)
 
-	r.logger.Debugf("endpoint: %s, clusterName: %s, uri: %s", endpoint, clusterName, uri)
+	r.logger.Infof("endpoint: %s, clusterName: %s, uri: %s", endpoint, clusterName, uri)
 
 	tools, err := r.listTools(ctx, transportType, endpoint, clusterName)
 	if err != nil {
@@ -226,7 +226,7 @@ func (r *Register) requestServerInfo(clusterName string, host string) (string, e
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		r.logger.Warnf("haven't set any server config, url: %s", url)
+		r.logger.Infof("haven't set any server config")
 		return "", nil
 	}
 	all, err := io.ReadAll(response.Body)
