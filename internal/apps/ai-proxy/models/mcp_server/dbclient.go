@@ -111,6 +111,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		dbServer.Config = string(rawConfig)
 		dbServer.ServerConfig = req.ServerConfig
 		dbServer.IsPublished = req.IsPublished != nil && req.IsPublished.Value
+		dbServer.ScopeType = scopeType
+		dbServer.ScopeId = scopeId
 
 		// set current version to default.
 		if dbServer.IsDefaultVersion {
