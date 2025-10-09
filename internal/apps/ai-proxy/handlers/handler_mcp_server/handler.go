@@ -59,7 +59,7 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 
 	var scopes = make(map[string]*cmspb.ScopeIdList)
 
-	if !auth.IsAdmin(ctx) {
+	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
 		clientId, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
 			return nil, errors.New("clientId not found")
@@ -73,7 +73,8 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 		}
 
 		scopes = result.Scope
-
+		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{"0"}}
+		scopes["client"] = &cmspb.ScopeIdList{Ids: []string{clientId}}
 	} else {
 		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
@@ -122,7 +123,7 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
 	var scopes = make(map[string]*cmspb.ScopeIdList)
 
-	if !auth.IsAdmin(ctx) {
+	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
 		clientId, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
 			return nil, errors.New("clientId not found")
@@ -136,7 +137,8 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 		}
 
 		scopes = result.Scope
-
+		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{"0"}}
+		scopes["client"] = &cmspb.ScopeIdList{Ids: []string{clientId}}
 	} else {
 		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
@@ -164,7 +166,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 
 	var scopes = make(map[string]*cmspb.ScopeIdList)
 
-	if !auth.IsAdmin(ctx) {
+	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
 		clientId, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
 			return nil, errors.New("clientId not found")
@@ -178,7 +180,9 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		}
 
 		scopes = result.Scope
-
+		// add default scope
+		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{"0"}}
+		scopes["client"] = &cmspb.ScopeIdList{Ids: []string{clientId}}
 	} else {
 		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
 	}

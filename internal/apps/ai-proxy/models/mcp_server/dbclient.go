@@ -242,7 +242,7 @@ func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb
 		tx = tx.Where("is_published = ?", true)
 	}
 
-	if options.ScopeType != "*" {
+	if options.ScopeType != "*" || len(options.ScopeIds) != 0 {
 		tx = tx.Where("scope_type = ?", options.ScopeType)
 		tx = tx.Where("scope_id in (?)", options.ScopeIds)
 	}

@@ -26,6 +26,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -48,10 +49,12 @@ func (c *ClusterController) NeedUpdate(newInfo *clusterpb.ClusterInfo) bool {
 }
 
 type Aggregator struct {
-	ClusterSvc clusterpb.ClusterServiceServer
-	clusters   map[string]*ClusterController
-	handles    chan *ClusterController
-	lock       sync.Mutex
+	ClusterSvc      clusterpb.ClusterServiceServer
+	clusters        map[string]*ClusterController
+	handles         chan *ClusterController
+	lock            sync.Mutex
+	endpointWatcher map[string]context.CancelFunc
+	adminToken      string
 
 	register *Register
 	logger   logs.Logger
@@ -61,13 +64,14 @@ type Aggregator struct {
 
 func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration, clusters []string) *Aggregator {
 	a := &Aggregator{
-		ClusterSvc: svc,
-		clusters:   make(map[string]*ClusterController),
-		handles:    make(chan *ClusterController, 10),
-		lock:       sync.Mutex{},
-		register:   NewRegister(handler, logger),
-		logger:     logger,
-		interval:   interval,
+		ClusterSvc:      svc,
+		clusters:        make(map[string]*ClusterController),
+		handles:         make(chan *ClusterController, 10),
+		lock:            sync.Mutex{},
+		register:        NewRegister(handler, logger),
+		logger:          logger,
+		interval:        interval,
+		endpointWatcher: make(map[string]context.CancelFunc),
 	}
 	go a.syncRestConfig(ctx, clusters)
 	return a
@@ -165,18 +169,36 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 		return err
 	}
 
-	for event := range watcher.ResultChan() {
+	for {
+		event := <-watcher.ResultChan()
 		svc, ok := event.Object.(*corev1.Service)
 		if !ok {
 			a.logger.Errorf("event object is not a service: %+v", event.Object)
 			continue
 		}
+
+		key := fmt.Sprintf("%s-%s", svc.Namespace, labels.SelectorFromSet(svc.Spec.Selector).String())
+
 		a.logger.Infof("[%s] Type: %s, Service: %s, ClusterIP: %s\n",
 			svc.Namespace, event.Type, svc.Name, svc.Spec.ClusterIP)
 
-		go a.watchEndpointSlices(ctx, clientset, clusterName, svc)
+		if event.Type == watch.Deleted {
+			if cancel, ok := a.endpointWatcher[key]; ok && cancel != nil {
+				cancel()
+			}
+			err = a.register.offline(ctx, svc)
+			if err != nil {
+				a.logger.Errorf("offline mcp server failed: %v", err)
+			}
+			continue
+		}
+
+		ctx, cancelFunc := context.WithCancel(ctx)
+		if _, ok := a.endpointWatcher[key]; !ok {
+			a.endpointWatcher[key] = cancelFunc
+			go a.watchEndpointSlices(ctx, clientset, clusterName, svc)
+		}
 	}
-	return nil
 }
 
 func (a *Aggregator) watchEndpointSlices(ctx context.Context, clientset *kubernetes.Clientset, clusterName string, svc *corev1.Service) {
@@ -216,6 +238,8 @@ func (a *Aggregator) watchEndpointSlices(ctx context.Context, clientset *kuberne
 			}
 
 			a.logger.Infof("%s all endpoints ready", eps.Name)
+
+			time.Sleep(1 * time.Second)
 
 			err = a.register.register(ctx, svc, clusterName)
 			if err != nil {

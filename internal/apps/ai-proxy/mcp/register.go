@@ -33,6 +33,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/clusterdialer"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
@@ -96,7 +98,8 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 
 	scopeType := svc.Labels[vars.LabelMcpErdaCloudServiceScopeType]
 	if scopeType == "" {
-		scopeType = "org"
+		scopeType = "*"
+		scopeId = "0"
 	}
 
 	svcHost := fmt.Sprintf("%s.%s.svc.cluster.local:%s", svc.Name, svc.Namespace, port)
@@ -235,6 +238,43 @@ func (r *Register) requestServerInfo(clusterName string, host string) (string, e
 	}
 
 	return string(all), nil
+}
+
+func (r *Register) offline(ctx context.Context, svc *corev1.Service) error {
+	name, ok := svc.Labels[vars.LabelMcpErdaCloudName]
+	if !ok {
+		return errors.New("service label mcp.erda.cloud/name not found")
+	}
+	version, ok := svc.Labels[vars.LabelMcpErdaCloudVersion]
+	if !ok {
+		return errors.New("service label mcp.erda.cloud/version not found")
+	}
+
+	ctx = apis.WithInternalClientContext(ctx, discover.SvcMCPProxy)
+
+	mcpServer, err := r.handler.Get(ctx, &pb.MCPServerGetRequest{
+		Name:           name,
+		Version:        version,
+		UseRawEndpoint: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = r.handler.Update(ctx, &pb.MCPServerUpdateRequest{
+		Name:             name,
+		Version:          version,
+		Description:      mcpServer.Data.Description,
+		Instruction:      mcpServer.Data.Instruction,
+		IsDefaultVersion: wrapperspb.Bool(mcpServer.Data.IsDefaultVersion),
+		IsPublished:      wrapperspb.Bool(false),
+	})
+	if err != nil {
+		return err
+	}
+
+	r.logger.Infof("mcp server: %s, version: %v, is offline", name, version)
+	return nil
 }
 
 // removeAnyOf removes anyOf fields from tool schemas
