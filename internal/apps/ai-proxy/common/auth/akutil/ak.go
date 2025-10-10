@@ -102,6 +102,10 @@ func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (*clienttokenpb.C
 	if !ok {
 		return nil, nil, handlers.ErrAkNotFound
 	}
+	return GetClientId(ak, dao)
+}
+
+func GetClientId(ak string, dao dao.DAO) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
 	// check by token
 	if strings.HasPrefix(ak, client_token.TokenPrefix) {
 		clientToken, client, err := New(dao).TokenToClient(ak)

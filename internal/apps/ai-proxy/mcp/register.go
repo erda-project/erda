@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"io"
 	"net/http"
 
@@ -41,12 +43,14 @@ import (
 type Register struct {
 	handler *handler_mcp_server.MCPHandler
 	logger  logs.Logger
+	dao     dao.DAO
 }
 
-func NewRegister(handler *handler_mcp_server.MCPHandler, logger logs.Logger) *Register {
+func NewRegister(handler *handler_mcp_server.MCPHandler, logger logs.Logger, dao dao.DAO) *Register {
 	return &Register{
 		handler: handler,
 		logger:  logger,
+		dao:     dao,
 	}
 }
 
@@ -100,6 +104,17 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 	if scopeType == "" {
 		scopeType = "*"
 		scopeId = "0"
+	}
+
+	ak, ok := svc.Labels[vars.LabelMcpErdaCloudServiceAuthorization]
+	if ok {
+		scopeType = "client"
+		_, c, err := akutil.GetClientId(ak, r.dao)
+		if err != nil {
+			return err
+		}
+		scopeId = c.Id
+		r.logger.Infof("set client scope id with client id: %s", scopeId)
 	}
 
 	svcHost := fmt.Sprintf("%s.%s.svc.cluster.local:%s", svc.Name, svc.Namespace, port)

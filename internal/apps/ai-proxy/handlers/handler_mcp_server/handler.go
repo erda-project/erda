@@ -57,7 +57,7 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 	var servers []*pb.MCPServer
 	var total int64
 
-	var scopes = make(map[string]*cmspb.ScopeIdList)
+	var scopes = make([]mcp_server.Scope, 0)
 
 	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
 		clientId, ok := ctxhelper.GetClientId(ctx)
@@ -72,28 +72,42 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 			return nil, err
 		}
 
-		scopes = result.Scope
-		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{"0"}}
-		scopes["client"] = &cmspb.ScopeIdList{Ids: []string{clientId}}
-	} else {
-		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
-	}
-
-	for scopeType, scope := range scopes {
-		count, temp, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
-			PageNum:            int(req.PageNum),
-			PageSize:           int(req.PageSize),
-			Name:               req.Name,
-			IncludeUnpublished: req.IncludeUnpublished,
-			ScopeIds:           scope.Ids,
-			ScopeType:          scopeType,
-		})
-		if err != nil {
-			return nil, err
+		for tpy, scopeIds := range result.Scope {
+			for _, id := range scopeIds.Ids {
+				scopes = append(scopes, mcp_server.Scope{
+					ScopeType: tpy,
+					ScopeId:   id,
+				})
+			}
 		}
 
-		total += count
-		servers = append(servers, temp...)
+		// add default scope
+		scopes = append(scopes, mcp_server.Scope{
+			ScopeType: "*",
+			ScopeId:   "0",
+		})
+
+		scopes = append(scopes, mcp_server.Scope{
+			ScopeType: "client",
+			ScopeId:   clientId,
+		})
+
+	} else {
+		scopes = append(scopes, mcp_server.Scope{
+			ScopeType: "*",
+			ScopeId:   "*",
+		})
+	}
+
+	total, servers, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
+		PageNum:            int(req.PageNum),
+		PageSize:           int(req.PageSize),
+		Name:               req.Name,
+		IncludeUnpublished: req.IncludeUnpublished,
+		Scopes:             scopes,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	if !req.UseRawEndpoint {
@@ -164,7 +178,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 	var servers []*pb.MCPServer
 	var total int64
 
-	var scopes = make(map[string]*cmspb.ScopeIdList)
+	var scopes = make([]mcp_server.Scope, 0)
 
 	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
 		clientId, ok := ctxhelper.GetClientId(ctx)
@@ -178,29 +192,41 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		if err != nil {
 			return nil, err
 		}
-
-		scopes = result.Scope
-		// add default scope
-		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{"0"}}
-		scopes["client"] = &cmspb.ScopeIdList{Ids: []string{clientId}}
-	} else {
-		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
-	}
-
-	for scopeType, scope := range scopes {
-		count, temp, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
-			IncludeUnpublished: req.IncludeUnpublished,
-			PageNum:            int(req.PageNum),
-			PageSize:           int(req.PageSize),
-			ScopeIds:           scope.Ids,
-			ScopeType:          scopeType,
-		})
-		if err != nil {
-			return nil, err
+		for tpy, scopeIds := range result.Scope {
+			for _, id := range scopeIds.Ids {
+				scopes = append(scopes, mcp_server.Scope{
+					ScopeType: tpy,
+					ScopeId:   id,
+				})
+			}
 		}
 
-		total += count
-		servers = append(servers, temp...)
+		// add default scope
+		scopes = append(scopes, mcp_server.Scope{
+			ScopeType: "*",
+			ScopeId:   "0",
+		})
+
+		scopes = append(scopes, mcp_server.Scope{
+			ScopeType: "client",
+			ScopeId:   clientId,
+		})
+
+	} else {
+		scopes = append(scopes, mcp_server.Scope{
+			ScopeType: "*",
+			ScopeId:   "*",
+		})
+	}
+
+	total, servers, err := m.DAO.MCPServerClient().List(ctx, &mcp_server.ListOptions{
+		IncludeUnpublished: req.IncludeUnpublished,
+		PageNum:            int(req.PageNum),
+		PageSize:           int(req.PageSize),
+		Scopes:             scopes,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	if !req.UseRawEndpoint {

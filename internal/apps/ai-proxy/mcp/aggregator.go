@@ -17,6 +17,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"slices"
 	"sync"
 	"time"
@@ -62,13 +63,13 @@ type Aggregator struct {
 	interval time.Duration
 }
 
-func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration, clusters []string) *Aggregator {
+func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration, clusters []string, dao dao.DAO) *Aggregator {
 	a := &Aggregator{
 		ClusterSvc:      svc,
 		clusters:        make(map[string]*ClusterController),
 		handles:         make(chan *ClusterController, 10),
 		lock:            sync.Mutex{},
-		register:        NewRegister(handler, logger),
+		register:        NewRegister(handler, logger, dao),
 		logger:          logger,
 		interval:        interval,
 		endpointWatcher: make(map[string]context.CancelFunc),
@@ -91,38 +92,40 @@ func (a *Aggregator) syncRestConfig(ctx context.Context, clusters []string) {
 		})
 		if err != nil {
 			a.logger.Error("Failed to get cluster info", err)
-			return
-		}
-
-		for _, info := range cluster.Data {
-			if !slices.Contains(clusters, info.Name) {
-				continue
-			}
-			a.logger.Infof("get cluster info: %+v", info.Name)
-			control := ClusterController{
-				info: info,
-			}
-
-			a.lock.Lock()
-			controller, ok := a.clusters[info.Name]
-			if !ok {
-				a.handles <- &control
-				a.clusters[info.Name] = &control
-			} else if controller != nil && controller.NeedUpdate(info) {
-				if controller.cancel != nil {
-					controller.cancel()
+		} else {
+			for _, info := range cluster.Data {
+				if !slices.Contains(clusters, info.Name) {
+					continue
 				}
-				a.handles <- &control
-				a.clusters[info.Name] = &control
+				a.logger.Infof("get cluster info: %+v", info.Name)
+				control := ClusterController{
+					info: info,
+				}
+
+				a.lock.Lock()
+				controller, ok := a.clusters[info.Name]
+				if !ok {
+					a.handles <- &control
+					a.clusters[info.Name] = &control
+				} else if controller != nil && controller.NeedUpdate(info) {
+					if controller.cancel != nil {
+						controller.cancel()
+					}
+					a.handles <- &control
+					a.clusters[info.Name] = &control
+				}
+				a.lock.Unlock()
+				a.logger.Infof("watch cluster info: %+v", info.Name)
 			}
-			a.lock.Unlock()
 		}
 
 		select {
 		case <-ctx.Done():
+			a.logger.Infof("stop sync cluster info")
 			return
 		case <-ticker.C:
 		}
+
 	}
 }
 
@@ -170,11 +173,15 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 	}
 
 	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
 		event := <-watcher.ResultChan()
 		svc, ok := event.Object.(*corev1.Service)
 		if !ok {
-			a.logger.Errorf("event object is not a service: %+v", event.Object)
-			continue
+			return fmt.Errorf("event object is not a service: %+v", event.Object)
 		}
 
 		key := fmt.Sprintf("%s-%s", svc.Namespace, labels.SelectorFromSet(svc.Spec.Selector).String())
@@ -195,8 +202,8 @@ func (a *Aggregator) run(ctx context.Context, conf *rest.Config, clusterName str
 			continue
 		}
 
-		ctx, cancelFunc := context.WithCancel(ctx)
 		if _, ok := a.endpointWatcher[key]; !ok {
+			ctx, cancelFunc := context.WithCancel(ctx)
 			a.endpointWatcher[key] = cancelFunc
 			go a.watchEndpointSlices(ctx, clientset, clusterName, svc)
 		}

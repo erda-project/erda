@@ -88,18 +88,24 @@ func (p *provider) registerMcpProxyManageAPI() {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return p.onLeader(ctx, func(ctx context.Context) {
-		handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
+	for {
+		err := p.onLeader(ctx, func(ctx context.Context) {
+			handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
 
-		clusters := strings.Split(p.Config.McpScanConfig.McpClusters, ",")
-		p.L.Infof("listen mcp cluster list: %v", clusters)
+			clusters := strings.Split(p.Config.McpScanConfig.McpClusters, ",")
+			p.L.Infof("listen mcp cluster list: %v", clusters)
 
-		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.McpScanConfig.SyncClusterConfigInterval, clusters)
-		if err := aggregator.Start(ctx); err != nil {
-			logrus.Error(err)
-			panic(err)
+			aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.McpScanConfig.SyncClusterConfigInterval, clusters, p.Dao)
+			if err := aggregator.Start(ctx); err != nil {
+				logrus.Error(err)
+				panic(err)
+			}
+		})
+		if err != nil {
+			p.L.Errorf("leader error: %v", err)
+			time.Sleep(10 * time.Second)
 		}
-	})
+	}
 }
 
 func (p *provider) onLeader(ctx context.Context, handle func(ctx context.Context)) error {
@@ -134,6 +140,8 @@ func (p *provider) onLeader(ctx context.Context, handle func(ctx context.Context
 		},
 	}
 
+	ctx, cancelFunc := context.WithCancel(ctx)
+
 	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock:          lock,
 		LeaseDuration: 15 * time.Second,
@@ -146,6 +154,7 @@ func (p *provider) onLeader(ctx context.Context, handle func(ctx context.Context
 			},
 			OnStoppedLeading: func() {
 				p.L.Info("stopping the mcp proxy leader")
+				cancelFunc()
 			},
 		},
 	})

@@ -32,13 +32,17 @@ type DBClient struct {
 	DB *gorm.DB
 }
 
+type Scope struct {
+	ScopeType string `json:"scopeType"`
+	ScopeId   string `json:"scopeId"`
+}
+
 type ListOptions struct {
 	PageNum            int
 	PageSize           int
 	Name               string
 	IncludeUnpublished bool
-	ScopeIds           []string
-	ScopeType          string
+	Scopes             []Scope
 }
 
 func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegisterRequest) (*pb.MCPServerRegisterResponse, error) {
@@ -55,7 +59,7 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 	if req.ScopeId != nil {
 		scopeId = *req.ScopeId
 	}
-	scopeType := "org"
+	scopeType := "*"
 	if req.ScopeType != nil {
 		scopeType = *req.ScopeType
 	}
@@ -244,9 +248,19 @@ func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb
 		tx = tx.Where("is_published = ?", true)
 	}
 
-	if options.ScopeType != "*" || len(options.ScopeIds) != 0 {
-		tx = tx.Where("scope_type = ?", options.ScopeType)
-		tx = tx.Where("scope_id in (?)", options.ScopeIds)
+	if len(options.Scopes) > 0 {
+		scopeQuery := tx
+		for i, scope := range options.Scopes {
+			if i == 0 {
+				if scope.ScopeId == "*" && scope.ScopeType == "*" {
+					break
+				}
+				scopeQuery = scopeQuery.Where("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
+			} else {
+				scopeQuery = scopeQuery.Or("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
+			}
+		}
+		tx = tx.Where(scopeQuery)
 	}
 
 	offset := (options.PageNum - 1) * options.PageSize
