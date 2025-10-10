@@ -15,6 +15,7 @@
 package mcp_proxy
 
 import (
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -44,7 +45,10 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.registerMcpProxyManageAPI()
 
-	p.ServeAIProxyV2(true)
+	// initialize cache manager
+	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, true))
+
+	p.ServeAIProxyV2()
 	return nil
 }
 

@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -46,7 +45,8 @@ type Interface interface {
 	transport.Register
 	GetRichClientHandler() *handler_rich_client.ClientHandler
 	SetRichClientHandler(*handler_rich_client.ClientHandler)
-	ServeAIProxyV2(bool)
+	ServeAIProxyV2()
+	SetCacheManager(cachetypes.Manager)
 }
 
 var (
@@ -153,7 +153,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-
+	p.ServeAIProxyV2()
 	return nil
 }
 
@@ -165,14 +165,15 @@ func (p *provider) SetRichClientHandler(handler *handler_rich_client.ClientHandl
 	p.richClientHandler = handler
 }
 
-func (p *provider) ServeAIProxyV2(isMcpProxy bool) {
-	// initialize cache manager
-	p.cacheManager = cache.NewCacheManager(p.Dao, p.L, isMcpProxy)
-
+func (p *provider) ServeAIProxyV2() {
 	// support OPTIONS method
 	p.HTTP.HandlePrefix("/", http.MethodOptions, nil, mux.CORS)
 	// `/` handle CORS by itself
 	p.HTTP.HandlePrefix("/", "*", p.HandleReverseProxyAPI())
+}
+
+func (p *provider) SetCacheManager(manager cachetypes.Manager) {
+	p.cacheManager = manager
 }
 
 func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {
