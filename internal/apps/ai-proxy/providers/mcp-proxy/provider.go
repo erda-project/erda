@@ -15,6 +15,8 @@
 package mcp_proxy
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
@@ -23,7 +25,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"reflect"
 )
 
 const Name = "erda.app.mcp-proxy"

@@ -15,6 +15,8 @@
 package ai_proxy
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
@@ -44,7 +46,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"reflect"
 )
 
 const Name = "erda.app.ai-proxy"
