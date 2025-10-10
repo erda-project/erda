@@ -54,14 +54,14 @@ var (
 )
 
 var (
-	name         = "erda.app.reverse-proxy"
-	providerType = reflect.TypeOf((*provider)(nil))
-	spec         = servicehub.Spec{
+	name          = "erda.app.reverse-proxy"
+	interfaceType = reflect.TypeOf((*Interface)(nil)).Elem()
+	spec          = servicehub.Spec{
 		Services:    []string{"erda.app.reverse-proxy"},
 		Summary:     "reverse-proxy server",
 		Description: "Reverse proxy service framework",
 		ConfigFunc:  func() interface{} { return new(config.Config) },
-		Types:       []reflect.Type{providerType},
+		Types:       []reflect.Type{interfaceType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
 	TrySetAuth = func(dao dao.DAO) transport.ServiceOption {
