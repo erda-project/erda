@@ -30,7 +30,10 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	tokenusagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
@@ -42,6 +45,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
@@ -61,14 +65,21 @@ type provider struct {
 	Dao    dao.DAO `autowired:"erda.apps.ai-proxy.dao"`
 
 	reverseproxy.Interface `autowired:"erda.app.reverse-proxy"`
+
+	cache cachetypes.Manager
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.registerAIProxyManageAPI()
-	p.registerMcpProxyManageAPI()
 
 	// initialize cache manager
-	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, false))
+	p.cache = cache.NewCacheManager(p.Dao, p.L, false)
+	p.SetCacheManager(p.cache)
+
+	// initialize token usage collector
+	token_usage.InitUsageCollector(p.Dao)
+
+	p.registerAIProxyManageAPI()
+	p.registerMcpProxyManageAPI()
 
 	return nil
 }
@@ -85,6 +96,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	i18npb.RegisterI18NServiceImp(p, &handler_i18n.I18nHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckI18nPerm)
 	richclientpb.RegisterRichClientServiceImp(p, &handler_rich_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
 	auditpb.RegisterAuditServiceImp(p, &handler_audit.AuditHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckAuditPerm)
+	tokenusagepb.RegisterTokenUsageServiceImp(p, &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckTokenUsagePerm, reverseproxy.TrySetLang())
 }
 
 func (p *provider) registerMcpProxyManageAPI() {

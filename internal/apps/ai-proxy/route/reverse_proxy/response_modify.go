@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
 	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
@@ -117,6 +118,8 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 	defer func() {
 		// sink audit
 		audithelper.Flush(resp.Request.Context())
+		// sink token usage
+		token_usage.Collect(resp)
 	}()
 
 	var currentFilterName string
@@ -139,16 +142,17 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		wholeHandledBody  []byte
 	)
 
-	const bodyLimitBytes = 1024 * 32 // 32K
+	const (
+		bodyHeadPersistBytes = 1024 * 30 // 30K
+		bodyTailPersistBytes = 1024 * 2  // 2K
+	)
 
 	// audit response body
 	defer func() {
-		if len(wholeReceivedBody) > bodyLimitBytes {
-			wholeReceivedBody = []byte(string(wholeReceivedBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeReceivedBody)))
-		}
-		if len(wholeHandledBody) > bodyLimitBytes {
-			wholeHandledBody = []byte(string(wholeHandledBody[:bodyLimitBytes]) + fmt.Sprintf(".....[omitted due to length: %d]", len(wholeHandledBody)))
-		}
+		// put before cut off
+		ctxhelper.PutReverseProxyWholeHandledResponseBodyStr(resp.Request.Context(), string(wholeHandledBody))
+		wholeReceivedBody = truncateBodyForAudit(wholeReceivedBody, bodyHeadPersistBytes, bodyTailPersistBytes)
+		wholeHandledBody = truncateBodyForAudit(wholeHandledBody, bodyHeadPersistBytes, bodyTailPersistBytes)
 		audithelper.NoteAppend(resp.Request.Context(), "actual_response_body", string(wholeReceivedBody))
 		audithelper.NoteAppend(resp.Request.Context(), "response_body", string(wholeHandledBody))
 	}()
@@ -286,4 +290,34 @@ func writeAndCloseWithErr(resp *http.Response, pw *io.PipeWriter, err error) {
 	_, _ = pw.Write([]byte(err.Error()))
 	_ = pw.CloseWithError(err)
 	audithelper.Note(resp.Request.Context(), "myResponseModify.error", err)
+}
+
+func truncateBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
+	if len(body) == 0 {
+		return body
+	}
+	if headLimit < 0 {
+		headLimit = 0
+	}
+	if tailLimit < 0 {
+		tailLimit = 0
+	}
+	if headLimit+tailLimit >= len(body) {
+		return body
+	}
+	if tailLimit > len(body) {
+		tailLimit = len(body)
+	}
+	if headLimit > len(body)-tailLimit {
+		headLimit = len(body) - tailLimit
+	}
+	omittedBytes := len(body) - headLimit - tailLimit
+	placeholder := []byte(fmt.Sprintf("...[omitted %d bytes]...", omittedBytes))
+	truncated := make([]byte, 0, headLimit+len(placeholder)+tailLimit)
+	truncated = append(truncated, body[:headLimit]...)
+	truncated = append(truncated, placeholder...)
+	if tailLimit > 0 {
+		truncated = append(truncated, body[len(body)-tailLimit:]...)
+	}
+	return truncated
 }

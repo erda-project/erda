@@ -61,14 +61,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 // Start .
 func (p *provider) Start() error {
 	go func() {
-		p.L.Infof("LitenAndServe %s", p.Config.Addr)
+		p.L.Infof("ListenAndServe %s", p.Config.Addr)
 		if err := (&http.Server{
 			Addr:              p.Config.Addr,
 			Handler:           p.Router,
 			ReadTimeout:       time.Second * 60,
 			ReadHeaderTimeout: time.Second * 60,
 		}).ListenAndServe(); err != nil {
-			p.L.Fatalf("failed to LitenAndServe %s: %v", err)
+			p.L.Fatalf("failed to ListenAndServe %s: %v", err)
 		}
 	}()
 	return nil

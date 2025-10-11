@@ -43,6 +43,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 
 		// record accurate request time before audit created
 		requestBeginAt := time.Now()
+		ctxhelper.PutRequestBeginAt(pr.In.Context(), requestBeginAt)
 		defer func() {
 			audithelper.Note(pr.In.Context(), "request_begin_at", requestBeginAt)
 			audithelper.Flush(pr.In.Context())
@@ -79,6 +80,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 			pr.Out.Body = io.NopCloser(bytes.NewReader(bytes.Clone(save)))
 		}
 
+		// store request out
 		inSnap, err := body_util.SafeCloneRequest(pr.In, body_util.MaxSample)
 		if err != nil {
 			brokenInErr = err
@@ -114,6 +116,14 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 		// only dump request out when no error
 		if brokenInErr == nil {
 			dumplog.DumpRequestOut(pr.Out)
+
+			// snapshot request out
+			outSnap, err := body_util.SafeCloneRequest(pr.Out, body_util.MaxSample)
+			if err != nil {
+				brokenInErr = err
+				panic(brokenInErr)
+			}
+			ctxhelper.PutReverseProxyRequestOutSnapshot(pr.Out.Context(), &outSnap)
 		}
 	}
 }

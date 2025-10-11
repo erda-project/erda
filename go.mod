@@ -40,7 +40,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
-	github.com/dlclark/regexp2 v1.4.0
+	github.com/dlclark/regexp2 v1.11.5
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/docker/spdystream v0.2.0
 	github.com/doug-martin/goqu/v9 v9.18.0
@@ -428,6 +428,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285 // indirect
 	github.com/tealeg/xlsx v1.0.5 // indirect
 	github.com/tebeka/strftime v0.1.5 // indirect
+	github.com/tiktoken-go/tokenizer v0.7.0
 	github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2 // indirect
 	github.com/tjfoc/gmsm v1.3.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

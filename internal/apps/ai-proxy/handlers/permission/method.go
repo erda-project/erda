@@ -26,6 +26,7 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 )
 
 var CheckClientPerm = CheckPermissions(
@@ -113,4 +114,9 @@ var CheckI18nPerm = CheckPermissions(
 
 var CheckAuditPerm = CheckPermissions(
 	&MethodPermission{Method: auditpb.AuditServiceServer.Paging, AdminOrAk: true},
+)
+
+var CheckTokenUsagePerm = CheckPermissions(
+	&MethodPermission{Method: usagepb.TokenUsageServiceServer.Paging, AdminOrAk: true},
+	&MethodPermission{Method: usagepb.TokenUsageServiceServer.Aggregate, AdminOrAk: true},
 )
