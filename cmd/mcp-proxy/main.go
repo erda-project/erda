@@ -19,8 +19,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy" // import service hub dependencies
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/mcp-proxy" // import service hub dependencies
 	"github.com/erda-project/erda/pkg/common"
 )
 

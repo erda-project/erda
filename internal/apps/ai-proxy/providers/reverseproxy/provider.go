@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai_proxy
+package reverseproxy
 
 import (
 	"context"
@@ -28,35 +28,12 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
-	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
-	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
-	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
-	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
-	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
-	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
-	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
-	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
-	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
-	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -64,22 +41,30 @@ import (
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
+type Interface interface {
+	transport.Register
+	GetRichClientHandler() *handler_rich_client.ClientHandler
+	SetRichClientHandler(*handler_rich_client.ClientHandler)
+	ServeAIProxyV2()
+	SetCacheManager(cachetypes.Manager)
+}
+
 var (
 	_ transport.Register = (*provider)(nil)
 )
 
 var (
-	name         = "erda.app.ai-proxy"
-	providerType = reflect.TypeOf((*provider)(nil))
-	spec         = servicehub.Spec{
-		Services:    []string{"erda.app.ai-proxy.Server"},
-		Summary:     "ai-proxy server",
-		Description: "Reverse proxy service between AI vendors and client applications, providing a cut-through for service access",
+	name          = "erda.app.reverse-proxy"
+	interfaceType = reflect.TypeOf((*Interface)(nil)).Elem()
+	spec          = servicehub.Spec{
+		Services:    []string{"erda.app.reverse-proxy"},
+		Summary:     "reverse-proxy server",
+		Description: "Reverse proxy service framework",
 		ConfigFunc:  func() interface{} { return new(config.Config) },
-		Types:       []reflect.Type{providerType},
+		Types:       []reflect.Type{interfaceType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
-	trySetAuth = func(dao dao.DAO) transport.ServiceOption {
+	TrySetAuth = func(dao dao.DAO) transport.ServiceOption {
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
@@ -108,7 +93,7 @@ var (
 			}
 		})
 	}
-	trySetLang = func() transport.ServiceOption {
+	TrySetLang = func() transport.ServiceOption {
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
@@ -167,18 +152,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}
 
-	// register gRPC and http handler
-	p.registerAIProxyManageAPI()
-	p.registerMcpProxyManageAPI()
-
-	// initialize cache manager
-	p.cacheManager = cache.NewCacheManager(p.Dao, p.L, p.Config.IsMcpProxy)
-
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	// reverse proxy to AI provider's server
 	p.ServeAIProxyV2()
-
 	return nil
+}
+
+func (p *provider) GetRichClientHandler() *handler_rich_client.ClientHandler {
+	return p.richClientHandler
+}
+
+func (p *provider) SetRichClientHandler(handler *handler_rich_client.ClientHandler) {
+	p.richClientHandler = handler
 }
 
 func (p *provider) ServeAIProxyV2() {
@@ -188,33 +172,14 @@ func (p *provider) ServeAIProxyV2() {
 	p.HTTP.HandlePrefix("/", "*", p.HandleReverseProxyAPI())
 }
 
+func (p *provider) SetCacheManager(manager cachetypes.Manager) {
+	p.cacheManager = manager
+}
+
 func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {
 	p.HTTP.Handle(path, method, http.HandlerFunc(h), mux.SetXRequestId, mux.CORS)
 }
 
 func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	p.GRPC.RegisterService(desc, impl)
-}
-
-func (p *provider) registerAIProxyManageAPI() {
-	if p.Config.IsMcpProxy {
-		return
-	}
-	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
-	clientpb.RegisterClientServiceImp(p, &handler_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientPerm)
-	modelproviderpb.RegisterModelProviderServiceImp(p, &handler_model_provider.ModelProviderHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckModelProviderPerm)
-	modelpb.RegisterModelServiceImp(p, &handler_model.ModelHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckModelPerm)
-	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
-	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
-	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
-	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
-	i18npb.RegisterI18NServiceImp(p, &handler_i18n.I18nHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckI18nPerm)
-	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
-	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm, trySetLang())
-	auditpb.RegisterAuditServiceImp(p, &handler_audit.AuditHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckAuditPerm)
-}
-
-func (p *provider) registerMcpProxyManageAPI() {
-	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
 }
