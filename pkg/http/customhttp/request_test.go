@@ -17,6 +17,9 @@ package customhttp
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/erda-project/erda/pkg/cache"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"os"
@@ -155,5 +158,48 @@ func TestQueryClusterManagerIP(t *testing.T) {
 	ip, _ := res.(string)
 	if ip != targetEndpoint {
 		t.Errorf("got IP: %s, want: %s", ip, targetEndpoint)
+	}
+}
+
+func TestParseInetUrl(t *testing.T) {
+	type TestCase struct {
+		url            string
+		wantErr        bool
+		wantPortalHost string
+		wantPortalDest string
+		wantPortalUrl  string
+	}
+
+	tests := []TestCase{
+		{
+			url:     "inet:/a/abc/123/qq?a=b",
+			wantErr: true,
+		},
+		{
+			url:            "inet://jicheng/demo.default.svc.cluster.local:8080/123/qq?a=b",
+			wantErr:        false,
+			wantPortalHost: "jicheng",
+			wantPortalDest: "demo.default.svc.cluster.local:8080",
+			wantPortalUrl:  "http://127.0.0.1:80/123/qq?a=b",
+		},
+		{
+			url:     "http://demo.default.svc.cluster.local:8080/hello",
+			wantErr: true,
+		},
+	}
+
+	gomonkey.ApplyMethod(reflect.TypeOf(ipCache), "LoadWithUpdateSync", func(ipCache *cache.Cache, key interface{}) (interface{}, bool) {
+		return "127.0.0.1:80", true
+	})
+
+	for _, test := range tests {
+		url, headers, err := ParseInetUrl(test.url)
+		if (err != nil) != test.wantErr {
+			t.Errorf("ParseInetUrl() error = %v, wantErr %v", err, test.wantErr)
+			return
+		}
+		assert.Equal(t, test.wantPortalUrl, url)
+		assert.Equal(t, test.wantPortalDest, headers[portalDestHeader])
+		assert.Equal(t, test.wantPortalHost, headers[portalHostHeader])
 	}
 }

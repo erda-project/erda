@@ -20,6 +20,7 @@ type McpInfo struct {
 	Host           string
 	Scheme         string
 	NeedTerminusId bool
+	Headers        map[string]string
 }
 
 type ReverseProxyFilterError struct {

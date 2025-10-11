@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 	"io"
 	"net/http"
 	"net/http/httputil"
@@ -91,7 +92,18 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	}
 	server := resp.GetData()
 
-	parsedEndpoint, err := parseEndpoint(server.Endpoint)
+	var ep = server.Endpoint
+	var headers = map[string]string{}
+
+	if strings.HasPrefix(server.Endpoint, "inet") {
+		ep, headers, err = customhttp.ParseInetUrl(server.Endpoint)
+		if err != nil {
+			logger.Errorf("parse inet url failed: %v", err)
+			return err
+		}
+	}
+
+	parsedEndpoint, err := parseEndpoint(ep)
 	if err != nil {
 		logger.Error("parse endpoint failed", err)
 		return err
@@ -111,6 +123,9 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	req.URL.Host = endpoint
 	req.URL.Path = parsedEndpoint.Path
 	req.Header.Set("Host", parsedEndpoint.Host)
+	for header, value := range headers {
+		req.Header.Set(header, value)
+	}
 	return nil
 }
 
@@ -127,7 +142,18 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	}
 	server := resp.GetData()
 
-	parsedEndpoint, err := parseEndpoint(server.Endpoint)
+	var ep = server.Endpoint
+	var headers = map[string]string{}
+
+	if strings.HasPrefix(server.Endpoint, "inet") {
+		ep, headers, err = customhttp.ParseInetUrl(server.Endpoint)
+		if err != nil {
+			logger.Errorf("parse inet url failed: %v", err)
+			return err
+		}
+	}
+
+	parsedEndpoint, err := parseEndpoint(ep)
 	if err != nil {
 		logger.Error("parse endpoint failed", err)
 		return err
@@ -157,6 +183,9 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	req.URL.Scheme = parsedEndpoint.Scheme
 	req.URL.Host = parsedEndpoint.Host
 	req.URL.Path = messagePath
+	for header, value := range headers {
+		req.Header.Set(header, value)
+	}
 
 	return nil
 }
