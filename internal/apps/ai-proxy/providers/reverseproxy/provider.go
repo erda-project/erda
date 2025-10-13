@@ -151,6 +151,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	p.ServeReverseProxyV2()
+
 	return nil
 }
 

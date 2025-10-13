@@ -4,12 +4,12 @@ gorilla-mux@ai:
 grpc-server@ai:
   addr: ":8082"
 
+erda.app.reverse-proxy:
+  log_level: ${LOG_LEVEL:info}
+
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
-
-erda.app.reverse-proxy:
-  log_level: ${LOG_LEVEL:info}
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
@@ -21,18 +21,3 @@ grpc-client@erda.core.openapi.dynamic_register:
   addr: ${ERDA_SERVER_GRPC_ADDR:erda-server:8096}
   block: false
 erda.core.openapi.dynamic_register-client: { }
-
-etcd-election:
-  root_path: "/erda/ai-proxy/mcp-server-loader"
-
-etcd:
-  endpoints: "${ETCD_ENDPOINTS:http://localhost:2379}"
-  tls:
-    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
-    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
-    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
-
-grpc-client@erda.core.clustermanager.cluster:
-  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
-  block: false
-erda.core.clustermanager.cluster-client: { }

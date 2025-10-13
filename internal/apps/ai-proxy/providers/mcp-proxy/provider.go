@@ -15,23 +15,51 @@
 package mcp_proxy
 
 import (
+	"context"
+	"os"
 	"reflect"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
+	k8sconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
 const Name = "erda.app.mcp-proxy"
 
+type DiceInfo struct {
+	LocalClusterName string `file:"local_cluster_name" env:"DICE_CLUSTER_NAME"`
+	Namespace        string `file:"namespace" env:"DICE_NAMESPACE"`
+}
+
+type McpScanConfig struct {
+	Enable                    bool          `file:"enable" env:"MCP_SCAN_ENABLE"`
+	McpClusters               string        `file:"mcp_clusters" default:"" env:"MCP_CLUSTERS"`
+	SyncClusterConfigInterval time.Duration `file:"sync_cluster_config_interval" default:"10m" env:"SYNC_CLUSTER_CONFIG_INTERVAL"`
+}
+
 type Config struct {
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
+
+	McpScanConfig McpScanConfig `file:"mcp_scan_config"`
+	DiceInfo      DiceInfo      `file:"dice_info"`
 }
 
 type provider struct {
@@ -39,6 +67,7 @@ type provider struct {
 	L      logs.Logger
 	Dao    dao.DAO `autowired:"erda.apps.ai-proxy.dao"`
 
+	ClusterSvc             clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService" optional:"true"`
 	reverseproxy.Interface `autowired:"erda.app.reverse-proxy"`
 }
 
@@ -54,6 +83,71 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.Dao), permission.CheckMCPPerm)
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	return p.onLeader(ctx, func(ctx context.Context) {
+		handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
+
+		clusters := strings.Split(p.Config.McpScanConfig.McpClusters, ",")
+		p.L.Infof("listen mcp cluster list: %v", clusters)
+
+		aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.McpScanConfig.SyncClusterConfigInterval, clusters)
+		if err := aggregator.Start(ctx); err != nil {
+			logrus.Error(err)
+			panic(err)
+		}
+	})
+}
+
+func (p *provider) onLeader(ctx context.Context, handle func(ctx context.Context)) error {
+	ctx = apis.WithInternalClientContext(ctx, discover.SvcMCPProxy)
+
+	cluster, err := p.ClusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{
+		IdOrName: p.Config.DiceInfo.LocalClusterName,
+	})
+	if err != nil {
+		return err
+	}
+
+	conf, err := k8sconfig.ParseManageConfigPb(cluster.Data.Name, cluster.Data.ManageConfig)
+	if err != nil {
+		return err
+	}
+
+	clientset, err := kubernetes.NewForConfig(conf)
+	if err != nil {
+		return err
+	}
+
+	id, _ := os.Hostname()
+	lock := &resourcelock.LeaseLock{
+		LeaseMeta: metav1.ObjectMeta{
+			Name:      "mcp-proxy-leader",
+			Namespace: p.Config.DiceInfo.Namespace,
+		},
+		Client: clientset.CoordinationV1(),
+		LockConfig: resourcelock.ResourceLockConfig{
+			Identity: id,
+		},
+	}
+
+	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+		Lock:          lock,
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
+		Callbacks: leaderelection.LeaderCallbacks{
+			OnStartedLeading: func(ctx context.Context) {
+				p.L.Info("I am the mcp proxy leader")
+				handle(ctx)
+			},
+			OnStoppedLeading: func() {
+				p.L.Info("stopping the mcp proxy leader")
+			},
+		},
+	})
+	return nil
 }
 
 func init() {
