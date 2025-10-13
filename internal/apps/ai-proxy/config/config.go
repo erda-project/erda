@@ -17,6 +17,7 @@ package config
 import (
 	"embed"
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 

@@ -17,7 +17,6 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"slices"
 	"sync"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"

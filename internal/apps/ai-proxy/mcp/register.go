@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"io"
 	"net/http"
 
@@ -32,7 +30,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/common/apis"
