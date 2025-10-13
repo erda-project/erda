@@ -17,7 +17,6 @@ package handler_mcp_server
 import (
 	"context"
 	"errors"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"regexp"
 	"slices"
 	"strconv"
@@ -29,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
