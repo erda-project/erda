@@ -105,6 +105,16 @@ func (p *provider) HandleMatch(match func(r *http.Request) bool, h http.Handler,
 	p.Router.MatcherFunc(func(req *http.Request, _ *mux.RouteMatch) bool { return match(req) }).Handler(h)
 }
 
+func (p *provider) HandleNotFound(h http.Handler, middles ...Middle) {
+	p.L.Infof("handle not found")
+	p.Router.NotFoundHandler = Wraps(h, middles...)
+}
+
+func (p *provider) HandleMethodNotAllowed(h http.Handler, middles ...Middle) {
+	p.L.Infof("handle method not allowed")
+	p.Router.MethodNotAllowedHandler = Wraps(h, middles...)
+}
+
 type Config struct {
 	Addr string `json:"addr" yaml:"addr"`
 }

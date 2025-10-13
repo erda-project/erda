@@ -48,7 +48,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// initialize cache manager
 	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, true))
 
-	p.ServeAIProxyV2()
 	return nil
 }
 

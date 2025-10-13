@@ -70,8 +70,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// initialize cache manager
 	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, false))
 
-	p.ServeAIProxyV2()
-
 	return nil
 }
 
@@ -85,8 +83,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckSessionPerm)
 	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientTokenPerm)
 	i18npb.RegisterI18NServiceImp(p, &handler_i18n.I18nHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckI18nPerm)
-	p.SetRichClientHandler(&handler_rich_client.ClientHandler{DAO: p.Dao})
-	richclientpb.RegisterRichClientServiceImp(p, p.GetRichClientHandler(), apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
+	richclientpb.RegisterRichClientServiceImp(p, &handler_rich_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
 	auditpb.RegisterAuditServiceImp(p, &handler_audit.AuditHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckAuditPerm)
 }
 
