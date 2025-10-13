@@ -22,4 +22,6 @@ type Mux interface {
 	Handle(path, method string, h http.Handler, middles ...Middle)
 	HandlePrefix(prefix, method string, h http.Handler, middles ...Middle)
 	HandleMatch(match func(r *http.Request) bool, h http.Handler, middles ...Middle)
+	HandleNotFound(h http.Handler, middles ...Middle)
+	HandleMethodNotAllowed(h http.Handler, middles ...Middle)
 }

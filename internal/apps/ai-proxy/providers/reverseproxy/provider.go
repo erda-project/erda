@@ -43,9 +43,6 @@ import (
 
 type Interface interface {
 	transport.Register
-	GetRichClientHandler() *handler_rich_client.ClientHandler
-	SetRichClientHandler(*handler_rich_client.ClientHandler)
-	ServeAIProxyV2()
 	SetCacheManager(cachetypes.Manager)
 }
 
@@ -153,23 +150,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	p.ServeAIProxyV2()
+	p.ServeReverseProxyV2()
 	return nil
 }
 
-func (p *provider) GetRichClientHandler() *handler_rich_client.ClientHandler {
-	return p.richClientHandler
-}
-
-func (p *provider) SetRichClientHandler(handler *handler_rich_client.ClientHandler) {
-	p.richClientHandler = handler
-}
-
-func (p *provider) ServeAIProxyV2() {
+func (p *provider) ServeReverseProxyV2() {
 	// support OPTIONS method
 	p.HTTP.HandlePrefix("/", http.MethodOptions, nil, mux.CORS)
-	// `/` handle CORS by itself
-	p.HTTP.HandlePrefix("/", "*", p.HandleReverseProxyAPI())
+	// fallback to reverse proxy when no route matches
+	fallback := p.HandleReverseProxyAPI()
+	p.HTTP.HandleNotFound(fallback)
+	p.HTTP.HandleMethodNotAllowed(fallback)
 }
 
 func (p *provider) SetCacheManager(manager cachetypes.Manager) {
