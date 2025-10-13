@@ -16,7 +16,6 @@ package mcp_proxy
 
 import (
 	"context"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"os"
 	"reflect"
 	"strings"
@@ -38,6 +37,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	k8sconfig "github.com/erda-project/erda/pkg/k8sclient/config"
