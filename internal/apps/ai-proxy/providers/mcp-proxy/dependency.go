@@ -16,5 +16,4 @@ package mcp_proxy
 
 import (
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 )
