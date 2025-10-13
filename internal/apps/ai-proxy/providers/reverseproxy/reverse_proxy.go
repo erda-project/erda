@@ -29,7 +29,15 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 )
 
-func (p *provider) HandleReverseProxyAPI(isMcpProxy bool) http.HandlerFunc {
+type OptionFunc func(*httputil.ReverseProxy)
+
+func WithTransport(transport http.RoundTripper) OptionFunc {
+	return func(proxy *httputil.ReverseProxy) {
+		proxy.Transport = transport
+	}
+}
+
+func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// inject context
@@ -98,19 +106,19 @@ func (p *provider) HandleReverseProxyAPI(isMcpProxy bool) http.HandlerFunc {
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
 		proxy := httputil.ReverseProxy{
-			Rewrite: reverse_proxy.MyRewrite(w, requestFilters),
-			Transport: func() http.RoundTripper {
-				if isMcpProxy {
-					return transports.NewMcpTransport()
-				}
-				return transports.NewRequestFilterGeneratedResponseTransport(&transports.TimerTransport{})
-			}(),
+			Rewrite:        reverse_proxy.MyRewrite(w, requestFilters),
+			Transport:      transports.NewRequestFilterGeneratedResponseTransport(&transports.TimerTransport{}),
 			FlushInterval:  -1,
 			ErrorLog:       nil,
 			BufferPool:     nil,
 			ModifyResponse: reverse_proxy.MyResponseModify(w, responseFilters),
 			ErrorHandler:   reverse_proxy.MyErrorHandler(),
 		}
+
+		for _, option := range options {
+			option(&proxy)
+		}
+
 		proxy.ServeHTTP(w, r)
 	}
 }

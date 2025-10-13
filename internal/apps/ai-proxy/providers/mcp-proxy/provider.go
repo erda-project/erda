@@ -16,6 +16,7 @@ package mcp_proxy
 
 import (
 	"context"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"os"
 	"reflect"
 	"strings"
@@ -77,6 +78,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// initialize cache manager
 	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, true))
 
+	p.ServeReverseProxyV2(reverseproxy.WithTransport(transports.NewMcpTransport()))
 	return nil
 }
 

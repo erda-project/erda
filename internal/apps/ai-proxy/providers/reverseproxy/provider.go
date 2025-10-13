@@ -44,6 +44,7 @@ import (
 type Interface interface {
 	transport.Register
 	SetCacheManager(cachetypes.Manager)
+	ServeReverseProxyV2(options ...OptionFunc)
 }
 
 var (
@@ -155,11 +156,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) ServeReverseProxyV2() {
+func (p *provider) ServeReverseProxyV2(options ...OptionFunc) {
 	// support OPTIONS method
 	p.HTTP.HandlePrefix("/", http.MethodOptions, nil, mux.CORS)
 	// fallback to reverse proxy when no route matches
-	fallback := p.HandleReverseProxyAPI()
+	fallback := p.HandleReverseProxyAPI(options...)
 	p.HTTP.HandleNotFound(fallback)
 	p.HTTP.HandleMethodNotAllowed(fallback)
 }
