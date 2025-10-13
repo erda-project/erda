@@ -109,7 +109,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 	ak, ok := svc.Labels[vars.LabelMcpErdaCloudServiceAuthorization]
 	if ok {
 		scopeType = "client"
-		_, c, err := akutil.GetClientId(ak, r.dao)
+		_, c, err := akutil.GetClientInfo(ak, r.dao)
 		if err != nil {
 			return err
 		}

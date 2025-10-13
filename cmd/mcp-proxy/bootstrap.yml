@@ -18,9 +18,6 @@ erda.app.mcp-proxy:
     local_cluster_name: "${DICE_CLUSTER_NAME}"
     namespace: "${DICE_NAMESPACE}"
 
-erda.app.reverse-proxy:
-  log_level: ${LOG_LEVEL:info}
-
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
 

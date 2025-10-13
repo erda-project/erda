@@ -17,6 +17,7 @@ package handler_mcp_server
 import (
 	"context"
 	"errors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"regexp"
 	"slices"
 	"strconv"
@@ -59,7 +60,7 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 
 	var scopes = make([]mcp_server.Scope, 0)
 
-	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
+	if !auth.IsAdmin(ctx) && apis.GetInternalClient(ctx) == "" {
 		clientId, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
 			return nil, errors.New("clientId not found")
@@ -137,7 +138,7 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
 	var scopes = make(map[string]*cmspb.ScopeIdList)
 
-	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
+	if !auth.IsAdmin(ctx) && apis.GetInternalClient(ctx) == "" {
 		clientId, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
 			return nil, errors.New("clientId not found")
@@ -180,7 +181,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 
 	var scopes = make([]mcp_server.Scope, 0)
 
-	if !auth.IsAdmin(ctx) && !auth.IsInternalClient(ctx) {
+	if !auth.IsAdmin(ctx) && apis.GetInternalClient(ctx) == "" {
 		clientId, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
 			return nil, errors.New("clientId not found")
