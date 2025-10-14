@@ -88,6 +88,10 @@ func (p *provider) registerMcpProxyManageAPI() {
 }
 
 func (p *provider) Run(ctx context.Context) error {
+	if !p.Config.McpScanConfig.Enable {
+		p.L.Info("mcp proxy mcp server discovery is disabled")
+		return nil
+	}
 	for {
 		err := p.onLeader(ctx, func(ctx context.Context) {
 			handler := handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL)
