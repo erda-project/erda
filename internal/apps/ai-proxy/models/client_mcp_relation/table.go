@@ -19,8 +19,8 @@ import "github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 type ClientMcpRelation struct {
 	common.BaseModel
 	ClientID  string `gorm:"column:client_id;type:char(36);not null;comment:client id;uniqueIndex:unique_clientid_modelid"`
-	ScopeType string `gorm:"column:scope_type;type:char(36);not null;comment:MCP scope，一般为org;uniqueIndex:unique_clientid_modelid"`
-	ScopeID   string `gorm:"column:scope_id;type:char(36);not null;comment:MCP scope id，一般为orgId;uniqueIndex:unique_clientid_modelid"`
+	ScopeType string `gorm:"column:scope_type;type:char(36);not null;comment:MCP scope;uniqueIndex:unique_clientid_modelid"`
+	ScopeID   string `gorm:"column:scope_id;type:char(36);not null;comment:MCP scope id;uniqueIndex:unique_clientid_modelid"`
 }
 
 // TableName 覆盖表名
