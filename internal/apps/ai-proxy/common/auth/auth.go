@@ -19,13 +19,7 @@ import (
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/pkg/common/apis"
 )
-
-func IsInternalClient(ctx context.Context) bool {
-	client := apis.GetInternalClient(ctx)
-	return client != ""
-}
 
 func IsAdmin(ctx context.Context) bool {
 	isAdmin, ok := ctxhelper.GetIsAdmin(ctx)
