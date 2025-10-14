@@ -23,8 +23,6 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types/common_types_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -54,14 +52,9 @@ func (f *ForceStreamUsage) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		return nil
 	}
 
-	// TODO use available fields
-	// skip service_provider_type=volcengine-ark and path = /v1/responses
-	provider := ctxhelper.MustGetModelProvider(pr.In.Context())
-	serviceProviderType := common_types_util.GetServiceProviderType(provider)
-	if serviceProviderType == common_types.ServiceProviderTypeVolcengineArk.String() {
-		if strings.HasPrefix(pr.Out.URL.Path, common.RequestPathPrefixV1Responses) {
-			return nil
-		}
+	// only set stream_options for /v1/chat/completions
+	if !strings.HasPrefix(pr.Out.URL.Path, common.RequestPathPrefixV1ChatCompletions) {
+		return nil
 	}
 
 	bodyCopy, err := body_util.SmartCloneBody(&pr.Out.Body, body_util.MaxSample)
