@@ -23,7 +23,6 @@ type ClientMcpRelation struct {
 	ScopeID   string `gorm:"column:scope_id;type:char(36);not null;comment:MCP scope id;uniqueIndex:unique_clientid_modelid"`
 }
 
-// TableName 覆盖表名
 func (*ClientMcpRelation) TableName() string {
 	return "ai_proxy_client_mcp_relation"
 }

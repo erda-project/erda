@@ -33,6 +33,11 @@ import (
 
 var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
 
+const ScopeTypePlatform = "platform"
+const ScopeTypeClientId = "client"
+const AnyScopeType = "*"
+const AnyScopeId = "*"
+
 type MCPHandler struct {
 	DAO               dao.DAO
 	McpProxyPublicURL string
@@ -84,19 +89,19 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 
 		// add default scope
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: "*",
-			ScopeId:   "0",
+			ScopeType: ScopeTypePlatform,
+			ScopeId:   AnyScopeId,
 		})
 
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: "client",
+			ScopeType: ScopeTypeClientId,
 			ScopeId:   clientId,
 		})
 
 	} else {
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: "*",
-			ScopeId:   "*",
+			ScopeType: AnyScopeType,
+			ScopeId:   AnyScopeId,
 		})
 	}
 
@@ -152,10 +157,10 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 		}
 
 		scopes = result.Scope
-		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{"0"}}
-		scopes["client"] = &cmspb.ScopeIdList{Ids: []string{clientId}}
+		scopes[AnyScopeType] = &cmspb.ScopeIdList{Ids: []string{"0"}}
+		scopes[ScopeTypeClientId] = &cmspb.ScopeIdList{Ids: []string{clientId}}
 	} else {
-		scopes["*"] = &cmspb.ScopeIdList{Ids: []string{}}
+		scopes[AnyScopeType] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
 
 	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
@@ -204,19 +209,19 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 
 		// add default scope
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: "*",
-			ScopeId:   "0",
+			ScopeType: ScopeTypePlatform,
+			ScopeId:   AnyScopeId,
 		})
 
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: "client",
+			ScopeType: ScopeTypeClientId,
 			ScopeId:   clientId,
 		})
 
 	} else {
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: "*",
-			ScopeId:   "*",
+			ScopeType: AnyScopeType,
+			ScopeId:   AnyScopeId,
 		})
 	}
 

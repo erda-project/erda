@@ -249,17 +249,28 @@ func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb
 	}
 
 	if len(options.Scopes) > 0 {
-		scopeQuery := tx
-		for i, scope := range options.Scopes {
-			if i == 0 {
-				if scope.ScopeId == "*" && scope.ScopeType == "*" {
-					break
+		scopeQuery := tx.Scopes(func(tx *gorm.DB) *gorm.DB {
+			for i, scope := range options.Scopes {
+				if i == 0 {
+					if scope.ScopeId == "*" && scope.ScopeType == "*" {
+						break
+					}
+					if scope.ScopeId == "*" {
+						tx = tx.Where("scope_type = ?", scope.ScopeType)
+					} else {
+						tx = tx.Where("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
+					}
+				} else {
+					if scope.ScopeId == "*" {
+						tx = tx.Or("scope_type = ?", scope.ScopeType)
+					} else {
+						tx = tx.Or("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
+					}
 				}
-				scopeQuery = scopeQuery.Where("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
-			} else {
-				scopeQuery = scopeQuery.Or("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
 			}
-		}
+			return tx
+		})
+
 		tx = tx.Where(scopeQuery)
 	}
 
