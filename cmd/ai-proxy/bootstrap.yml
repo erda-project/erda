@@ -4,12 +4,12 @@ gorilla-mux@ai:
 grpc-server@ai:
   addr: ":8082"
 
+erda.app.reverse-proxy:
+  log_level: ${LOG_LEVEL:info}
+
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
-
-erda.app.reverse-proxy:
-  log_level: ${LOG_LEVEL:info}
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}

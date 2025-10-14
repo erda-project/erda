@@ -33,6 +33,8 @@ type MCPServer struct {
 	ServerConfig     string `gorm:"type:server_config;not null;default:''"`
 	IsPublished      bool   `gorm:"type:boolean;not null;default:false"`
 	IsDefaultVersion bool   `gorm:"type:boolean;not null;default:false"`
+	ScopeType        string `gorm:"type:varchar(64);not null"`
+	ScopeId          string `gorm:"type:varchar(64);not null;default:''"`
 }
 
 func (*MCPServer) TableName() string { return "ai_proxy_mcp_server" }
@@ -55,6 +57,8 @@ func (m *MCPServer) ToProtobuf() (*pb.MCPServer, error) {
 		ServerConfig:     m.ServerConfig,
 		IsPublished:      m.IsPublished,
 		IsDefaultVersion: m.IsDefaultVersion,
+		ScopeType:        m.ScopeType,
+		ScopeId:          m.ScopeId,
 	}, nil
 }
 

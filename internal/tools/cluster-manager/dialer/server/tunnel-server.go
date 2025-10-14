@@ -291,6 +291,13 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	if req.URL.RawQuery != "" {
 		url = fmt.Sprintf("%s?%s", url, req.URL.RawQuery)
 	}
+
+	// if the request is event-stream, should keep connection without timeout
+	//accept := req.Header.Get("Accept")
+	//if strings.Contains(accept, "text/event-stream") || accept == "*/*" {
+	//	timeout = 0
+	//}
+
 	client := getClusterClient(server, clusterKey, timeout)
 	id := atomic.AddInt64(&counter, 1)
 	logrus.Infof("[%d] REQ cluster=%s setting-timeout=%s %s", id, clusterKey, timeout, url)
@@ -318,9 +325,37 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	for key, values := range resp.Header {
 		rwHeader[textproto.CanonicalMIMEHeaderKey(key)] = values
 	}
+	logrus.Infof("[%d] REQ Header %v, %s", id, resp.Header, url)
 	rw.WriteHeader(resp.StatusCode)
-	io.Copy(rw, resp.Body)
-	logrus.Infof("[%d] REQ DONE cluster=%s latency=%dms %s", id, clusterKey, time.Since(start).Milliseconds(), url)
+
+	flusher, ok := rw.(http.Flusher)
+	logrus.Infof("[%d] REQ Is Flusher %v, %s", id, ok, url)
+	defer logrus.Infof("[%d] REQ DONE cluster=%s latency=%dms %s", id, clusterKey, time.Since(start).Milliseconds(), url)
+	if !ok {
+		io.Copy(rw, resp.Body)
+		return
+	}
+
+	buf := make([]byte, 4096)
+	for {
+		n, err := resp.Body.Read(buf)
+		if n > 0 {
+			_, err = rw.Write(buf[:n])
+			if err != nil {
+				logrus.Errorf("Failed to write response: %v", err)
+				break
+			}
+			flusher.Flush()
+		}
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			logrus.Errorf("Failed to read response: %v", err)
+			return
+		}
+	}
+
 }
 
 func checkClusterIsExisted(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {

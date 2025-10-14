@@ -32,11 +32,17 @@ type DBClient struct {
 	DB *gorm.DB
 }
 
+type Scope struct {
+	ScopeType string `json:"scopeType"`
+	ScopeId   string `json:"scopeId"`
+}
+
 type ListOptions struct {
 	PageNum            int
 	PageSize           int
 	Name               string
 	IncludeUnpublished bool
+	Scopes             []Scope
 }
 
 func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegisterRequest) (*pb.MCPServerRegisterResponse, error) {
@@ -47,6 +53,15 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 	transportType := req.TransportType
 	if transportType == "" {
 		transportType = "sse"
+	}
+
+	scopeId := "0"
+	if req.ScopeId != nil {
+		scopeId = *req.ScopeId
+	}
+	scopeType := "*"
+	if req.ScopeType != nil {
+		scopeType = *req.ScopeType
 	}
 
 	rawConfig, err := mcpServerConfig.MarshalJSON()
@@ -73,6 +88,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				ServerConfig:     req.ServerConfig,
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
 				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
+				ScopeType:        scopeType,
+				ScopeId:          scopeId,
 			}
 			// create new server
 			if err = tx.Create(&dbServer).Error; err != nil {
@@ -98,6 +115,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		dbServer.Config = string(rawConfig)
 		dbServer.ServerConfig = req.ServerConfig
 		dbServer.IsPublished = req.IsPublished != nil && req.IsPublished.Value
+		dbServer.ScopeType = scopeType
+		dbServer.ScopeId = scopeId
 
 		// set current version to default.
 		if dbServer.IsDefaultVersion {
@@ -227,6 +246,32 @@ func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb
 
 	if !options.IncludeUnpublished {
 		tx = tx.Where("is_published = ?", true)
+	}
+
+	if len(options.Scopes) > 0 {
+		scopeQuery := tx.Scopes(func(tx *gorm.DB) *gorm.DB {
+			for i, scope := range options.Scopes {
+				if i == 0 {
+					if scope.ScopeId == "*" && scope.ScopeType == "*" {
+						break
+					}
+					if scope.ScopeId == "*" {
+						tx = tx.Where("scope_type = ?", scope.ScopeType)
+					} else {
+						tx = tx.Where("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
+					}
+				} else {
+					if scope.ScopeId == "*" {
+						tx = tx.Or("scope_type = ?", scope.ScopeType)
+					} else {
+						tx = tx.Or("(scope_type = ? AND scope_id = ?)", scope.ScopeType, scope.ScopeId)
+					}
+				}
+			}
+			return tx
+		})
+
+		tx = tx.Where(scopeQuery)
 	}
 
 	offset := (options.PageNum - 1) * options.PageSize

@@ -4,12 +4,19 @@ gorilla-mux@ai:
 grpc-server@ai:
   addr: ":8082"
 
+erda.app.reverse-proxy:
+  log_level: ${LOG_LEVEL:info}
+
 erda.app.mcp-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
-
-erda.app.reverse-proxy:
-  log_level: ${LOG_LEVEL:info}
+  mcp_scan_config:
+    enable: "${MCP_SCAN_ENABLE:false}"
+    mcp_clusters: "${MCP_CLUSTERS}"
+    sync_cluster_config_interval: "${SYNC_CLUSTER_CONFIG_INTERVAL:10m}"
+  dice_info:
+    local_cluster_name: "${DICE_CLUSTER_NAME}"
+    namespace: "${DICE_NAMESPACE}"
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
@@ -21,3 +28,8 @@ grpc-client@erda.core.openapi.dynamic_register:
   addr: ${ERDA_SERVER_GRPC_ADDR:erda-server:8096}
   block: false
 erda.core.openapi.dynamic_register-client: { }
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+  block: false
+erda.core.clustermanager.cluster-client: { }

@@ -12,19 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ctxhelper
+package mcp_proxy
 
-type McpInfo struct {
-	Name           string
-	Version        string
-	Host           string
-	Scheme         string
-	NeedTerminusId bool
-	Headers        map[string]string
-	ClusterName    string
-}
-
-type ReverseProxyFilterError struct {
-	FilterName string
-	Error      error
-}
+import (
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
+)
