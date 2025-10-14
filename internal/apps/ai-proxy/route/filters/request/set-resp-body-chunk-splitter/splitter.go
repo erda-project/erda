@@ -51,6 +51,8 @@ func (s *FixedSizeSplitter) NextChunk(r io.Reader) ([]byte, error) {
 	return buf[:n], err
 }
 
+const NewLineMaxCapacity = 10 * 1024 * 1024 // 10MB
+
 // NewLineSplitter splits chunks by single '\n' terminator; return value includes the '\n'.
 type NewLineSplitter struct {
 	scanner *bufio.Scanner
@@ -59,6 +61,7 @@ type NewLineSplitter struct {
 func (s *NewLineSplitter) NextChunk(r io.Reader) ([]byte, error) {
 	if s.scanner == nil {
 		s.scanner = bufio.NewScanner(r)
+		s.scanner.Buffer(make([]byte, 0, 64*1024), NewLineMaxCapacity)
 	}
 	if !s.scanner.Scan() {
 		if err := s.scanner.Err(); err != nil {
