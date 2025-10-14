@@ -1,4 +1,4 @@
-Django==3.2.25
+Django==4.2.25
 pytz==2021.1
 sqlparse==0.5.0
 requests==2.27.1
