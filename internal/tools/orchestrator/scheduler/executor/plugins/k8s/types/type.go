@@ -25,6 +25,13 @@ import (
 )
 
 const (
+	MCPLabelPrefix             = "mcp.erda.cloud"
+	LabelMcpErdaCloudComponent = "mcp.erda.cloud/component"
+	LabelMcpErdaCloudScopeType = "mcp.erda.cloud/scope-type"
+	LabelMcpErdaCloudScopeId   = "mcp.erda.cloud/scope-id"
+)
+
+const (
 	// to be deprecated.
 	// ADDON_GROUPS -> SERVICE_GROUPS
 	// ADDON_GROUP_ID -> SERVICE_GROUP_ID
@@ -40,6 +47,8 @@ const (
 	// default sa
 	DefaultServiceAccountName = "default"
 	DiceWorkSpace             = "DICE_WORKSPACE"
+
+	LabelDiceOrgId = "DICE_ORG_ID"
 )
 
 type ResourceUnitType string
