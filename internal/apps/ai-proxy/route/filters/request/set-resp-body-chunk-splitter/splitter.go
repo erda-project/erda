@@ -86,11 +86,6 @@ func (s *SSESplitter) NextChunk(r io.Reader) ([]byte, error) {
 			_, _ = s.buf.Read(chunk)
 			return chunk, nil
 		}
-		if idx := bytes.Index(s.buf.Bytes(), []byte("\r\n")); idx >= 0 {
-			chunk := make([]byte, idx+2) // Preserve \n\n
-			_, _ = s.buf.Read(chunk)
-			return chunk, nil
-		}
 		tmp := make([]byte, 4096)
 		n, err := r.Read(tmp)
 		if n > 0 {
