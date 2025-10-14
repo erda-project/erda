@@ -7,6 +7,7 @@ routes:
       - name: context
       - name: context-chat
       - name: extra-body
+      - name: force-stream-usage
       - name: thinking-handler
       - name: openai-compatible-director
       - name: anthropic-compatible-director

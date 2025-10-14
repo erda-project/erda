@@ -18,6 +18,7 @@ package ctxhelper
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
@@ -68,6 +69,9 @@ type (
 	mapKeyReverseProxyRequestRewriteError struct{ *ReverseProxyFilterError }
 	mapKeyReverseProxyResponseModifyError struct{ *ReverseProxyFilterError }
 	mapKeyReverseProxyRequestInSnapshot   struct{ *http.Request }
+	mapKeyReverseProxyRequestOutSnapshot  struct{ *http.Request }
+
+	mapKeyReverseProxyWholeHandledResponseBodyStr struct{ string }
 
 	// Keys for migrated context keys
 	mapKeyDBClient     struct{ dao.DAO }
@@ -82,6 +86,8 @@ type (
 
 	mapKeyRequestBodyTransformChanges     struct{ any }
 	mapKeyRequestThinkingTransformChanges struct{ any }
+
+	mapKeyRequestBeginAt struct{ time.Time }
 )
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)

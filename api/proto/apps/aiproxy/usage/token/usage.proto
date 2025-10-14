@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.usage;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+import "common/openapi.proto";
+
+service TokenUsageService {
+    rpc Create(TokenUsageCreateRequest) returns (TokenUsage) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/usages/token-usage"
+        };
+        option (erda.common.openapi) = {
+            private: true
+        };
+    }
+
+    rpc Paging(TokenUsagePagingRequest) returns (TokenUsagePagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/usages/token-usage"
+        };
+    }
+
+    rpc Aggregate(TokenUsagePagingRequest) returns (TokenUsageAggregateResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/usages/token-usage/aggregate"
+        };
+    }
+}
+
+message TokenUsage {
+    uint64 id = 1;
+
+    // request correlation
+    string callId = 2 [(validate.rules).string = {min_len: 1, max_len: 64}];
+    string xRequestId = 3 [(validate.rules).string = {ignore_empty: true, min_len: 1, max_len: 64}];
+
+    // attribution
+    string clientId = 4 [(validate.rules).string = {len: 36}];
+    string clientTokenId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string providerId = 6 [(validate.rules).string = {len: 36}];
+    string modelId = 7 [(validate.rules).string = {len: 36}];
+
+    google.protobuf.Timestamp createdAt = 8; // http request begin time
+    google.protobuf.Timestamp updatedAt = 9;
+
+    // usage
+    uint64 inputTokens = 10;
+    uint64 outputTokens = 11;
+    uint64 totalTokens = 12;
+    string usageDetails = 13;
+    bool isEstimated = 14;
+
+    metadata.Metadata metadata = 15;
+}
+
+message TokenUsageCreateRequest {
+    // request correlation
+    string callId = 1 [(validate.rules).string = {min_len: 1, max_len: 64}];
+    string xRequestId = 2 [(validate.rules).string = {min_len: 1, max_len: 64}];
+
+    // attribution
+    string clientId = 3 [(validate.rules).string = {len: 36}];
+    string clientTokenId = 4 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string providerId = 5 [(validate.rules).string = {len: 36}];
+    string modelId = 6 [(validate.rules).string = {len: 36}];
+
+    google.protobuf.Timestamp createdAt = 7;
+
+    // usage
+    uint64 inputTokens = 8 [(validate.rules).uint64 = {gte: 0}];
+    uint64 outputTokens = 9 [(validate.rules).uint64 = {gte: 0}];
+    uint64 totalTokens = 10 [(validate.rules).uint64 = {gte: 0}];
+    string usageDetails = 11;
+    bool isEstimated = 12;
+
+    metadata.Metadata metadata = 13;
+
+}
+
+message TokenUsagePagingRequest {
+    // paging
+    int64 pageNum = 1 [(validate.rules).int64 = {ignore_empty: true, gte: 1}];
+    int64 pageSize = 2 [(validate.rules).int64 = {ignore_empty: true, gte: 1, lte: 1000}];
+
+    // request correlation
+    string callId = 3 [(validate.rules).string = {ignore_empty: true, min_len: 1, max_len: 64}];
+    string xRequestId = 4 [(validate.rules).string = {min_len: 0, max_len: 64}];
+
+    // attribution
+    string clientId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string clientTokenId = 6 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string providerId = 7 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string modelId = 8 [(validate.rules).string = {ignore_empty: true, len: 36}];
+
+    repeated uint64 ids = 9;
+    optional bool isEstimated = 10;
+
+    // time range
+    // unix milliseconds, used for http query parsing convenience
+    uint64 timeRangeAfterMs = 11 [(validate.rules).uint64 = {ignore_empty: true, gte: 0}];
+    uint64 timeRangeBeforeMs = 12 [(validate.rules).uint64 = {ignore_empty: true, gte: 0}];
+}
+
+message TokenUsagePagingResponse {
+    uint64 total = 1;
+    repeated TokenUsage list = 2;
+}
+
+message TokenUsageAggregateResponse {
+    double totalCost = 1;
+    string currency = 2;
+    uint64 totalInputTokens = 3;
+    uint64 totalOutputTokens = 4;
+    uint64 totalTokens = 5;
+    uint64 recordCount = 6;
+    repeated TokenUsageDetail details = 7;
+}
+
+message TokenUsageDetail {
+    double cost = 1;
+    string currency = 2;
+    // usage
+    uint64 recordId = 3;
+    uint64 inputTokens = 4;
+    uint64 outputTokens = 5;
+    uint64 totalTokens = 6;
+    string modelId = 7 [(validate.rules).string = {len: 36}];
+}
