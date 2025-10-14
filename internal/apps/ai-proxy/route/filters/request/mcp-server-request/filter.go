@@ -32,11 +32,17 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/mcp-server-request/request"
 	setrespbodychunksplitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 const Name = "mcp-server-request"
 
 const TerminusRequestIdHeader = "Terminus-Request-Id"
+
+const (
+	portalHostHeader = "X-Portal-Host"
+	portalDestHeader = "X-Portal-Dest"
+)
 
 var (
 	_ filter_define.ProxyRequestRewriter = (*Filter)(nil)
@@ -91,7 +97,20 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	}
 	server := resp.GetData()
 
-	parsedEndpoint, err := parseEndpoint(server.Endpoint)
+	var ep = server.Endpoint
+	var clusterName = ""
+
+	if strings.HasPrefix(server.Endpoint, "inet") {
+		cluster, dest, portalUrl, _, err := customhttp.ParseInetUrl(server.Endpoint)
+		if err != nil {
+			logger.Errorf("parse inet url failed: %v", err)
+			return err
+		}
+		ep = fmt.Sprintf("http://%s/%s", dest, portalUrl)
+		clusterName = cluster
+	}
+
+	parsedEndpoint, err := parseEndpoint(ep)
 	if err != nil {
 		logger.Error("parse endpoint failed", err)
 		return err
@@ -100,10 +119,11 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	endpoint := fmt.Sprintf("%s:%s", parsedEndpoint.Host, parsedEndpoint.Port)
 
 	ctxhelper.PutMcpInfo(ctx, ctxhelper.McpInfo{
-		Name:    name,
-		Version: version,
-		Host:    endpoint,
-		Scheme:  parsedEndpoint.Scheme,
+		Name:        name,
+		Version:     version,
+		Host:        endpoint,
+		Scheme:      parsedEndpoint.Scheme,
+		ClusterName: clusterName,
 	})
 
 	req.Host = endpoint
@@ -127,11 +147,26 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	}
 	server := resp.GetData()
 
-	parsedEndpoint, err := parseEndpoint(server.Endpoint)
+	var ep = server.Endpoint
+	var clusterName = ""
+
+	if strings.HasPrefix(server.Endpoint, "inet") {
+		cluster, dest, portalUrl, _, err := customhttp.ParseInetUrl(server.Endpoint)
+		if err != nil {
+			logger.Errorf("parse inet url failed: %v", err)
+			return err
+		}
+		ep = fmt.Sprintf("http://%s/%s", dest, portalUrl)
+		clusterName = cluster
+	}
+
+	parsedEndpoint, err := parseEndpoint(ep)
 	if err != nil {
 		logger.Error("parse endpoint failed", err)
 		return err
 	}
+
+	endpoint := fmt.Sprintf("%s:%s", parsedEndpoint.Host, parsedEndpoint.Port)
 
 	logger.Infof("server info: %+v", parsedEndpoint)
 
@@ -146,6 +181,14 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 		return err
 	}
 
+	ctxhelper.PutMcpInfo(ctx, ctxhelper.McpInfo{
+		Name:        name,
+		Version:     tag,
+		Host:        endpoint,
+		Scheme:      parsedEndpoint.Scheme,
+		ClusterName: clusterName,
+	})
+
 	logger.Infof("request body %s", string(raw))
 
 	reader := bytes.NewReader(raw)
@@ -153,9 +196,9 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	req.Body = closer
 	req.ContentLength = int64(len(raw))
 
-	req.Host = parsedEndpoint.Host
+	req.Host = endpoint
 	req.URL.Scheme = parsedEndpoint.Scheme
-	req.URL.Host = parsedEndpoint.Host
+	req.URL.Host = endpoint
 	req.URL.Path = messagePath
 
 	return nil

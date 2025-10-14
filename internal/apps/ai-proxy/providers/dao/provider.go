@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_mcp_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/i18n"
@@ -69,6 +70,7 @@ type DAO interface {
 	AuditClient() *audit.DBClient
 	MCPServerClient() *mcp_server.DBClient
 	I18nClient() *i18n.DBClient
+	ClientMCPRelationClient() *client_mcp_relation.DBClient
 }
 
 type provider struct {
@@ -125,4 +127,8 @@ func (p *provider) MCPServerClient() *mcp_server.DBClient {
 
 func (p *provider) I18nClient() *i18n.DBClient {
 	return &i18n.DBClient{DB: p.DB}
+}
+
+func (p *provider) ClientMCPRelationClient() *client_mcp_relation.DBClient {
+	return &client_mcp_relation.DBClient{DB: p.DB}
 }
