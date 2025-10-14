@@ -30,6 +30,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -132,6 +133,7 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 		},
 	}
 
+	setMCPServiceLabelsAndAnnotations(k8sService, service, selectors)
 	setServiceLabelSelector(k8sService, selectors)
 	if selectors == nil {
 		k8sService.Labels = map[string]string{
@@ -165,6 +167,58 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 		})
 	}
 	return k8sService
+}
+
+func setMCPServiceLabelsAndAnnotations(k8sService *apiv1.Service, service *apistructs.Service, selectors map[string]string) {
+	// not project service, skip set mcp labels
+	if selectors == nil || selectors[LabelServiceGroupID] == "" {
+		return
+	}
+
+	var isMCP = false
+
+	if service.Labels != nil {
+		if k8sService.Labels == nil {
+			k8sService.Labels = make(map[string]string)
+		}
+		for key, value := range service.Labels {
+			if strings.HasPrefix(key, types.MCPLabelPrefix) {
+				isMCP = true
+				if len(value) >= LabelValueMaxLength {
+					logrus.Warnf(" lable selector key=%s  value=%s  with too long value for service %s in namespace %s, need len(value)< 63", key, value, k8sService.Name, k8sService.Namespace)
+					continue
+				}
+				if errs := validation.IsValidLabelValue(value); len(errs) == 0 {
+					k8sService.Labels[key] = value
+				}
+			}
+		}
+
+		if _, ok := k8sService.Labels[types.LabelMcpErdaCloudScopeType]; !ok {
+			// if scope type not exist, set mcp scope id use org id
+			if orgId, ok := service.Labels[types.LabelDiceOrgId]; ok {
+				k8sService.Labels[types.LabelMcpErdaCloudScopeType] = "org"
+				k8sService.Labels[types.LabelMcpErdaCloudScopeId] = orgId
+			}
+		}
+
+	}
+
+	if service.Annotations != nil {
+		if k8sService.Annotations == nil {
+			k8sService.Annotations = make(map[string]string)
+		}
+		for key, value := range service.Annotations {
+			if strings.HasPrefix(key, types.MCPLabelPrefix) {
+				isMCP = true
+				k8sService.Annotations[key] = value
+			}
+		}
+	}
+
+	if isMCP {
+		k8sService.Labels[types.LabelMcpErdaCloudComponent] = "mcp-server"
+	}
 }
 
 // TODO: Complete me.
@@ -339,6 +393,7 @@ func (k *Kubernetes) UpdateK8sService(k8sService *apiv1.Service, service *apistr
 		newPorts = append(newPorts, port)
 	}
 
+	setMCPServiceLabelsAndAnnotations(k8sService, service, nil)
 	setServiceLabelSelector(k8sService, selectors)
 	k8sService.Spec.Ports = newPorts
 

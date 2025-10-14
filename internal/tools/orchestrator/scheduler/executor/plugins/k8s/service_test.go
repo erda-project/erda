@@ -73,10 +73,20 @@ func Test_newService(t *testing.T) {
 					Ports: []diceyml.ServicePort{
 						{Port: 80, Protocol: "TCP"},
 					},
+					Labels: map[string]string{
+						"app":                    "fake-service",
+						"mcp.erda.cloud/name":    "fake-service",
+						"mcp.erda.cloud/version": "1.0.0",
+						"DICE_ORG_ID":            "6",
+					},
+					Annotations: map[string]string{
+						"mcp.erda.cloud/description": "This is a fake mcp server",
+					},
 				},
 				labels: map[string]string{
-					"app": "fake-service",
-					"svc": "fake-service.default.svc.cluster.local",
+					"servicegroup-id": "1",
+					"app":             "fake-service",
+					"svc":             "fake-service.default.svc.cluster.local",
 					// invalid label, value must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z])
 					"invalid": "manager.addon-idxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.erda.cloud",
 				},
@@ -90,8 +100,17 @@ func Test_newService(t *testing.T) {
 					Name:      "fake-service",
 					Namespace: apiv1.NamespaceDefault,
 					Labels: map[string]string{
-						"app": "fake-service",
-						"svc": "fake-service.default.svc.cluster.local",
+						"servicegroup-id":           "1",
+						"app":                       "fake-service",
+						"svc":                       "fake-service.default.svc.cluster.local",
+						"mcp.erda.cloud/component":  "mcp-server",
+						"mcp.erda.cloud/name":       "fake-service",
+						"mcp.erda.cloud/version":    "1.0.0",
+						"mcp.erda.cloud/scope-type": "org",
+						"mcp.erda.cloud/scope-id":   "6",
+					},
+					Annotations: map[string]string{
+						"mcp.erda.cloud/description": "This is a fake mcp server",
 					},
 				},
 				Spec: v1.ServiceSpec{
@@ -103,8 +122,9 @@ func Test_newService(t *testing.T) {
 						},
 					},
 					Selector: map[string]string{
-						"app": "fake-service",
-						"svc": "fake-service.default.svc.cluster.local",
+						"app":             "fake-service",
+						"servicegroup-id": "1",
+						"svc":             "fake-service.default.svc.cluster.local",
 					},
 				},
 			},

@@ -325,6 +325,8 @@ type Service struct {
 	Env map[string]string `json:"env"`
 	// labels for extension and some tags
 	Labels map[string]string `json:"labels"`
+	// annotations for extension
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// deploymentLabels 会转化到 pod spec label 中, dcos 忽略此字段
 	DeploymentLabels map[string]string `json:"deploymentLabels,omitempty"`
 	// Selectors see also diceyml.Service.Selectors

@@ -88,8 +88,8 @@ func (o *FieldnameValidateVisitor) VisitService(v DiceYmlVisitor, obj *Service) 
 	for k := range o.currentService {
 		switch i := k.(type) {
 		case string:
-			if !contain(i, []string{"image", "image_username", "image_password", "cmd", "labels", "ports", "envs", "hosts", "resources", "volumes", "deployments", "depends_on", "expose", "health_check", "binds", "sidecars", "init", "traffic_security", "endpoints", "mesh_enable", "k8s_snippet"}) {
-				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName}, i)] = fmt.Errorf("[%s] field '%s' not one of [image, image_username, image_password, cmd, ports, envs, hosts, labels, resources, volumes, deployments, depends_on, expose, health_check, binds, sidecars，init, traffic_security, endpoints, mesh_enable, k8s_snippet]", o.currentServiceName, i)
+			if !contain(i, []string{"image", "image_username", "image_password", "cmd", "labels", "ports", "envs", "hosts", "resources", "volumes", "deployments", "depends_on", "expose", "health_check", "binds", "sidecars", "init", "traffic_security", "endpoints", "mesh_enable", "k8s_snippet", "annotations"}) {
+				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName}, i)] = fmt.Errorf("[%s] field '%s' not one of [image, image_username, image_password, cmd, ports, envs, hosts, labels, resources, volumes, deployments, depends_on, expose, health_check, binds, sidecars，init, traffic_security, endpoints, mesh_enable, k8s_snippet, annotations]", o.currentServiceName, i)
 			}
 		default:
 			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s] %v not string type", o.currentServiceName, k)
