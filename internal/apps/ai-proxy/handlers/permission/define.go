@@ -74,14 +74,14 @@ var checkOneMethodPermission = func(methods map[string]*MethodPermission) interc
 				if !auth.IsClient(ctx) {
 					return nil, handlers.ErrNoPermission
 				}
-				logrus.Infof("[pass] only ak permission, method: %s", info.Method())
+				logrus.Infof("[pass] only ak permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}
 			if perm.AdminOrAk {
 				if !auth.Valid(ctx) {
 					return nil, handlers.ErrNoPermission
 				}
-				logrus.Infof("[pass] admin or ak permission, method: %s", info.Method())
+				logrus.Infof("[pass] admin or ak permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}
 			logrus.Errorf("[reject] should not be here, method: %s", fullMethodName)
@@ -104,7 +104,12 @@ var checkAndSetClientId = func(methods map[string]*MethodPermission) interceptor
 			if !ok || clientId == "" {
 				return h(ctx, req)
 			}
-			if err := akutil.AutoCheckAndSetClientId(clientId, req, perm.CheckButNotSetClientId); err != nil {
+			clientToken, ok := ctxhelper.GetClientToken(ctx)
+			var clientTokenId string
+			if ok {
+				clientTokenId = clientToken.Id
+			}
+			if err := akutil.AutoCheckAndSetClientInfo(clientId, clientTokenId, req, perm.CheckButNotSetClientId); err != nil {
 				return nil, err
 			}
 			return h(ctx, req)

@@ -31,6 +31,7 @@ var (
 
 	ErrAkNotFound        = HTTPError(errors.New("ak not found"), http.StatusUnauthorized)
 	ErrAkNotMatch        = HTTPError(errors.New("ak not match"), http.StatusForbidden)
+	ErrTokenNotMatch     = HTTPError(errors.New("token not match"), http.StatusForbidden)
 	ErrNoPermission      = HTTPError(errors.New("no permission"), http.StatusForbidden)
 	ErrNoAdminPermission = HTTPError(errors.New("no admin permission"), http.StatusForbidden)
 	ErrTokenExpired      = HTTPError(errors.New("token expired, please reapply"), http.StatusForbidden)

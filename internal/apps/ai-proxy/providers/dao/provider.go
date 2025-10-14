@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/session"
+	usage_token "github.com/erda-project/erda/internal/apps/ai-proxy/models/usage/token"
 )
 
 var (
@@ -71,6 +72,7 @@ type DAO interface {
 	MCPServerClient() *mcp_server.DBClient
 	I18nClient() *i18n.DBClient
 	ClientMCPRelationClient() *client_mcp_relation.DBClient
+	TokenUsageClient() *usage_token.DBClient
 }
 
 type provider struct {
@@ -131,4 +133,8 @@ func (p *provider) I18nClient() *i18n.DBClient {
 
 func (p *provider) ClientMCPRelationClient() *client_mcp_relation.DBClient {
 	return &client_mcp_relation.DBClient{DB: p.DB}
+}
+
+func (p *provider) TokenUsageClient() *usage_token.DBClient {
+	return &usage_token.DBClient{DB: p.DB}
 }

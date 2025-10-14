@@ -122,7 +122,7 @@ func GetClientInfo(ak string, dao dao.DAO) (*clienttokenpb.ClientToken, *clientp
 	return nil, client, nil
 }
 
-func AutoCheckAndSetClientId(clientId string, req any, skipSet bool) error {
+func AutoCheckAndSetClientInfo(clientId string, clientTokenId string, req any, skipSet bool) error {
 	// use reflect to set req's clientId field if have
 	clientIdField := reflect.ValueOf(req).Elem().FieldByName("ClientId")
 	if clientIdField != (reflect.Value{}) {
@@ -133,6 +133,20 @@ func AutoCheckAndSetClientId(clientId string, req any, skipSet bool) error {
 		}
 		if !skipSet {
 			clientIdField.SetString(clientId)
+		}
+	}
+	// check client token id
+	if clientTokenId != "" {
+		clientTokenIdField := reflect.ValueOf(req).Elem().FieldByName("ClientTokenId")
+		if clientTokenIdField != (reflect.Value{}) {
+			// compare if ClientTokenId already exists
+			currentClientTokenId := clientTokenIdField.String()
+			if currentClientTokenId != "" && currentClientTokenId != clientTokenId {
+				return handlers.ErrTokenNotMatch
+			}
+			if !skipSet {
+				clientTokenIdField.SetString(clientTokenId)
+			}
 		}
 	}
 	return nil
