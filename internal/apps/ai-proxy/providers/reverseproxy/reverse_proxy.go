@@ -106,8 +106,10 @@ func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
 		proxy := httputil.ReverseProxy{
-			Rewrite:        reverse_proxy.MyRewrite(w, requestFilters),
-			Transport:      transports.NewRequestFilterGeneratedResponseTransport(&transports.TimerTransport{}),
+			Rewrite: reverse_proxy.MyRewrite(w, requestFilters),
+			Transport: transports.NewRequestFilterGeneratedResponseTransport(&transports.CurlPrinterTransport{
+				Inner: &transports.TimerTransport{},
+			}),
 			FlushInterval:  -1,
 			ErrorLog:       nil,
 			BufferPool:     nil,
