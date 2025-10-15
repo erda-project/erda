@@ -240,7 +240,8 @@ func errorStatusHandler(resp *http.Response) error {
 
 	// generate standardized error response
 	errCtx := map[string]any{
-		"type": "llm-backend-error",
+		"type":                   "llm-backend-error",
+		"raw_llm_backend_status": fmt.Sprintf("%d (%s)", resp.StatusCode, http.StatusText(resp.StatusCode)),
 	}
 
 	// Content-Length may be -1, so only check body
