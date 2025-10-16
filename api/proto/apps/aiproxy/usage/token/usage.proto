@@ -119,7 +119,8 @@ message TokenUsageAggregateResponse {
     uint64 totalOutputTokens = 4;
     uint64 totalTokens = 5;
     uint64 recordCount = 6;
-    repeated TokenUsageDetail details = 7;
+    bool isEstimated = 7;
+    repeated TokenUsageDetail details = 8;
 }
 
 message TokenUsageDetail {
@@ -130,5 +131,8 @@ message TokenUsageDetail {
     uint64 inputTokens = 4;
     uint64 outputTokens = 5;
     uint64 totalTokens = 6;
+
     string modelId = 7 [(validate.rules).string = {len: 36}];
+    google.protobuf.Timestamp createdAt = 8; // http request begin time
+    bool isEstimated = 9;
 }
