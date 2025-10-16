@@ -15,6 +15,7 @@
 package reverseproxy
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -29,11 +30,19 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 )
 
-type OptionFunc func(*httputil.ReverseProxy)
+type OptionFunc func(context.Context, *httputil.ReverseProxy)
 
 func WithTransport(transport http.RoundTripper) OptionFunc {
-	return func(proxy *httputil.ReverseProxy) {
+	return func(_ context.Context, proxy *httputil.ReverseProxy) {
 		proxy.Transport = transport
+	}
+}
+
+func WithCtxHelperItems(putAnyFunctions ...func(context.Context)) OptionFunc {
+	return func(ctx context.Context, _ *httputil.ReverseProxy) {
+		for _, f := range putAnyFunctions {
+			f(ctx)
+		}
 	}
 }
 
@@ -101,7 +110,6 @@ func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc
 		}
 
 		ctxhelper.PutDBClient(ctx, p.Dao)
-		ctxhelper.PutRichClientHandler(ctx, p.richClientHandler)
 		ctxhelper.PutPathMatcher(ctx, matchedRoute.GetPathMatcher())
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
@@ -118,7 +126,7 @@ func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc
 		}
 
 		for _, option := range options {
-			option(&proxy)
+			option(ctx, &proxy)
 		}
 
 		proxy.ServeHTTP(w, r)

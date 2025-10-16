@@ -6,6 +6,7 @@ routes:
       - name: auth
       - name: context
       - name: context-responses
+      - name: responses-api-compatible
       - name: thinking-handler
       - name: openai-compatible-director
       - name: set-response-chunk-splitter

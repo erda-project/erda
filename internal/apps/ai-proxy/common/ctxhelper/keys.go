@@ -79,10 +79,10 @@ type (
 	mapKeyCacheManager struct{ cachetypes.Manager }
 
 	// Additional context keys migrated from vars
-	mapKeyIsAdmin           struct{ bool }
-	mapKeyClientId          struct{ string }
-	mapKeyAccessLang        struct{ string }
-	mapKeyRichClientHandler struct{ any }
+	mapKeyIsAdmin         struct{ bool }
+	mapKeyClientId        struct{ string }
+	mapKeyAccessLang      struct{ string }
+	mapKeyAIProxyHandlers struct{ any }
 
 	mapKeyRequestBodyTransformChanges     struct{ any }
 	mapKeyRequestThinkingTransformChanges struct{ any }

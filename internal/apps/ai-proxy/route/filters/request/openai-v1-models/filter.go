@@ -27,7 +27,7 @@ import (
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
@@ -55,7 +55,7 @@ var Creator filter_define.RequestRewriterCreator = func(_ string, _ json.RawMess
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// Set context for client handling
 	ctx := pr.In.Context()
-	richClientHandler := ctxhelper.MustGetRichClientHandler(ctx).(*handler_rich_client.ClientHandler)
+	richClientHandler := ctxhelper.MustGetAIProxyHandlers(ctx).(*aiproxytypes.Handlers).RichClientHandler
 	// try set clientId by ak
 	_, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
 	if err != nil {

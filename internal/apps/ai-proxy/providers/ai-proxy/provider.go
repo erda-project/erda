@@ -15,6 +15,7 @@
 package ai_proxy
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -33,20 +34,11 @@ import (
 	tokenusagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -67,6 +59,9 @@ type provider struct {
 	reverseproxy.Interface `autowired:"erda.app.reverse-proxy"`
 
 	cache cachetypes.Manager
+
+	handlers           *aiproxytypes.Handlers
+	ctxhelperFunctions []func(context.Context)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -78,25 +73,35 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// initialize token usage collector
 	token_usage.InitUsageCollector(p.Dao)
 
+	p.initHandlers()
+
 	p.registerAIProxyManageAPI()
 	p.registerMcpProxyManageAPI()
+
+	p.ServeReverseProxyV2(reverseproxy.WithCtxHelperItems(
+		func(ctx context.Context) {
+			ctxhelper.PutAIProxyHandlers(ctx, p.handlers)
+		},
+	))
 
 	return nil
 }
 
 func (p *provider) registerAIProxyManageAPI() {
 	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
-	clientpb.RegisterClientServiceImp(p, &handler_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientPerm)
-	modelproviderpb.RegisterModelProviderServiceImp(p, &handler_model_provider.ModelProviderHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckModelProviderPerm)
-	modelpb.RegisterModelServiceImp(p, &handler_model.ModelHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckModelPerm)
-	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
-	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckPromptPerm)
-	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckSessionPerm)
-	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientTokenPerm)
-	i18npb.RegisterI18NServiceImp(p, &handler_i18n.I18nHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckI18nPerm)
-	richclientpb.RegisterRichClientServiceImp(p, &handler_rich_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
-	auditpb.RegisterAuditServiceImp(p, &handler_audit.AuditHandler{DAO: p.Dao}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckAuditPerm)
-	tokenusagepb.RegisterTokenUsageServiceImp(p, &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache}, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckTokenUsagePerm, reverseproxy.TrySetLang())
+	register := p.Interface
+
+	clientpb.RegisterClientServiceImp(register, p.handlers.ClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientPerm)
+	modelproviderpb.RegisterModelProviderServiceImp(register, p.handlers.ModelProviderHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckModelProviderPerm)
+	modelpb.RegisterModelServiceImp(register, p.handlers.ModelHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckModelPerm)
+	clientmodelrelationpb.RegisterClientModelRelationServiceImp(register, p.handlers.ClientModelRelationHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
+	promptpb.RegisterPromptServiceImp(register, p.handlers.PromptHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckPromptPerm)
+	sessionpb.RegisterSessionServiceImp(register, p.handlers.SessionHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckSessionPerm)
+	clienttokenpb.RegisterClientTokenServiceImp(register, p.handlers.ClientTokenHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientTokenPerm)
+	i18npb.RegisterI18NServiceImp(register, p.handlers.I18nHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckI18nPerm)
+	richclientpb.RegisterRichClientServiceImp(register, p.handlers.RichClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
+	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckAuditPerm)
+	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckTokenUsagePerm, reverseproxy.TrySetLang())
 }
 
 func (p *provider) registerMcpProxyManageAPI() {
