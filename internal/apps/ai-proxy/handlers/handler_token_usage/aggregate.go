@@ -44,9 +44,13 @@ func (h *TokenUsageHandler) aggregateTokenUsages(ctx context.Context, records []
 	var currency string
 	totalCost := decimal.Zero
 
-	resp := &usagepb.TokenUsageAggregateResponse{RecordCount: uint64(len(records))}
+	resp := &usagepb.TokenUsageAggregateResponse{RecordCount: uint64(len(records)), IsEstimated: false}
 
 	for _, usage := range records {
+		if usage.IsEstimated {
+			resp.IsEstimated = true
+		}
+
 		if usage.TotalTokens == 0 {
 			usage.TotalTokens = usage.InputTokens + usage.OutputTokens
 		}
@@ -86,6 +90,8 @@ func (h *TokenUsageHandler) aggregateTokenUsages(ctx context.Context, records []
 			OutputTokens: usage.OutputTokens,
 			TotalTokens:  usage.TotalTokens,
 			ModelId:      usage.ModelId,
+			CreatedAt:    usage.CreatedAt,
+			IsEstimated:  usage.IsEstimated,
 		})
 	}
 
