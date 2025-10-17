@@ -10,6 +10,6 @@ CREATE TABLE `ai_proxy_client_mcp_relation`
     `scope_id`   CHAR(36) NOT NULL COMMENT 'MCP 作用域ID，一般为orgId',
 
     PRIMARY KEY (`id`),
-    UNIQUE INDEX `unique_clientid_modelid` (`client_id`, `scope_type`, `scope_id`, `deleted_at`),
+    UNIQUE INDEX `unique_clientid_modelid` (`client_id`, `scope_type`, `scope_id`, `deleted_at`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT 'ai-proxy 客户端 MCP 关联表';
