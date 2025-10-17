@@ -40,6 +40,7 @@ type Audit struct {
 	ActualResponseBody string `gorm:"column:actual_response_body;type:longtext" json:"actualResponseBody" yaml:"actualResponseBody"`
 	UserAgent          string `gorm:"column:user_agent;type:text" json:"userAgent" yaml:"userAgent"`
 	XRequestID         string `gorm:"column:x_request_id;type:varchar(64)" json:"xRequestID" yaml:"xRequestID"`
+	CallID             string `gorm:"column:call_id;type:char(36)" json:"callID" yaml:"callID"`
 
 	ClientID  string `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
 	ModelID   string `gorm:"column:model_id;type:char(36)" json:"modelID" yaml:"modelID"`
@@ -76,6 +77,7 @@ func (audit *Audit) ToProtobuf() *auditpb.Audit {
 		ActualResponseBody:       audit.ActualResponseBody,
 		UserAgent:                audit.UserAgent,
 		XRequestId:               audit.XRequestID,
+		CallId:                   audit.CallID,
 		ClientId:                 audit.ClientID,
 		ModelId:                  audit.ModelID,
 		SessionId:                audit.SessionID,
