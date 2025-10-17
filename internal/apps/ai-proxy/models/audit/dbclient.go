@@ -42,6 +42,10 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest
 	if req.XRequestId != "" {
 		c.XRequestID = req.XRequestId
 	}
+	// call-id
+	if req.CallId != "" {
+		c.CallID = req.CallId
+	}
 
 	sql := dbClient.DB.Model(c)
 	sql = sql.Where(c).Unscoped()
@@ -86,6 +90,7 @@ func (dbClient *DBClient) CreateWhenReceived(ctx context.Context, req *pb.AuditC
 	c.RequestBody = req.RequestBody
 	c.UserAgent = req.UserAgent
 	c.XRequestID = req.XRequestId
+	c.CallID = req.CallId
 	c.Username = req.Username
 	c.Email = req.Email
 	c.BizSource = req.BizSource

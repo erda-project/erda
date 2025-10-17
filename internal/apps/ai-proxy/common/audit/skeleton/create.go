@@ -38,6 +38,8 @@ func CreateSkeleton(in *http.Request) error {
 	createReq.UserAgent = httperrorutil.GetUserAgent(in.Header)
 	// x-request-id
 	createReq.XRequestId = ctxhelper.MustGetRequestID(in.Context())
+	// call-id
+	createReq.CallId = ctxhelper.MustGetGeneratedCallID(in.Context())
 
 	// metadata
 	createReq.RequestContentType = vars.GetFromHeader(in.Header, httperrorutil.HeaderKeyContentType)
@@ -73,7 +75,5 @@ func CreateSkeleton(in *http.Request) error {
 	}
 	// add operation_id
 	audithelper.Note(in.Context(), "operation_id", in.Method+" "+in.URL.Path)
-	// add x-ai-proxy-generated-call-id
-	audithelper.Note(in.Context(), "x_ai_proxy_generated_call_id", ctxhelper.MustGetGeneratedCallID(in.Context()))
 	return nil
 }

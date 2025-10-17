@@ -89,7 +89,7 @@ message TokenUsagePagingRequest {
     int64 pageSize = 2 [(validate.rules).int64 = {ignore_empty: true, gte: 1, lte: 1000}];
 
     // request correlation
-    string callId = 3 [(validate.rules).string = {ignore_empty: true, min_len: 1, max_len: 64}];
+    string callId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string xRequestId = 4 [(validate.rules).string = {min_len: 0, max_len: 64}];
 
     // attribution
