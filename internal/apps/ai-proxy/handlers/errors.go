@@ -30,11 +30,13 @@ var (
 	InvalidSessionResetAt = errors.New("invalid session resetAt")
 
 	ErrAkNotFound        = HTTPError(errors.New("ak not found"), http.StatusUnauthorized)
-	ErrAkNotMatch        = HTTPError(errors.New("ak not match"), http.StatusForbidden)
-	ErrTokenNotMatch     = HTTPError(errors.New("token not match"), http.StatusForbidden)
 	ErrNoPermission      = HTTPError(errors.New("no permission"), http.StatusForbidden)
 	ErrNoAdminPermission = HTTPError(errors.New("no admin permission"), http.StatusForbidden)
 	ErrTokenExpired      = HTTPError(errors.New("token expired, please reapply"), http.StatusForbidden)
+
+	ErrClientIdParamMismatch = HTTPError(errors.New("clientId param mismatch"), http.StatusForbidden)
+	ErrTokenIdParamMismatch  = HTTPError(errors.New("tokenId param mismatch"), http.StatusForbidden)
+	ErrNotAuthorized         = HTTPError(errors.New("not authorized"), http.StatusUnauthorized)
 )
 
 func HTTPError(err error, code int) error {

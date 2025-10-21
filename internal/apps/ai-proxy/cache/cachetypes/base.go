@@ -69,7 +69,7 @@ func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
 
 	c.mu.RLock()
 	if c.lastOK && c.data != nil {
-		c.getLogger(ctx).Infof("cache hit: %s", GetItemTypeName(c.itemType))
+		c.getLogger(ctx).Debugf("cache hit: %s", GetItemTypeName(c.itemType))
 		data := c.data
 		c.mu.RUnlock()
 		return 0, data, nil

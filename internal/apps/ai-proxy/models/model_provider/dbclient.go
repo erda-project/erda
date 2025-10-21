@@ -36,6 +36,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelProviderCreat
 		Desc:     req.Desc,
 		Type:     req.Type,
 		APIKey:   req.ApiKey,
+		ClientID: req.ClientId,
 		Metadata: metadata.FromProtobuf(req.Metadata),
 	}
 	if err := dbClient.DB.Model(c).Create(c).Error; err != nil {
@@ -45,8 +46,9 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelProviderCreat
 }
 
 func (dbClient *DBClient) Get(ctx context.Context, req *pb.ModelProviderGetRequest) (*pb.ModelProvider, error) {
-	c := &ModelProvider{BaseModel: common.BaseModelWithID(req.Id)}
-	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
+	c := &ModelProvider{BaseModel: common.BaseModelWithID(req.Id), ClientID: req.ClientId}
+	whereC := &ModelProvider{ClientID: req.ClientId}
+	if err := dbClient.DB.Model(c).First(c, whereC).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
@@ -54,7 +56,8 @@ func (dbClient *DBClient) Get(ctx context.Context, req *pb.ModelProviderGetReque
 
 func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelProviderDeleteRequest) (*commonpb.VoidResponse, error) {
 	c := &ModelProvider{BaseModel: common.BaseModelWithID(req.Id)}
-	sql := dbClient.DB.Model(c).Delete(c)
+	whereC := &ModelProvider{ClientID: req.ClientId}
+	sql := dbClient.DB.Model(c).Delete(c, whereC)
 	if sql.Error != nil {
 		return nil, sql.Error
 	}
@@ -71,22 +74,27 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelProviderUpdat
 		Desc:      req.Desc,
 		Type:      req.Type,
 		APIKey:    req.ApiKey,
+		ClientID:  req.ClientId,
 		Metadata:  metadata.FromProtobuf(req.Metadata),
 	}
-	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {
+	whereC := &ModelProvider{
+		BaseModel: common.BaseModelWithID(req.Id),
+		ClientID:  req.ClientId,
+	}
+	if err := dbClient.DB.Model(c).Where(whereC).Updates(c).Error; err != nil {
 		return nil, err
 	}
 	return dbClient.Get(ctx, &pb.ModelProviderGetRequest{Id: req.Id})
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
-	c := &ModelProvider{}
-	sql := dbClient.DB.Model(c)
+	c := &ModelProvider{
+		Type:     req.Type,
+		ClientID: req.ClientId,
+	}
+	sql := dbClient.DB.Model(c).Where(c)
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
-	}
-	if req.Type != "" {
-		sql = sql.Where("type = ?", req.Type)
 	}
 	if len(req.Ids) > 0 {
 		sql = sql.Where("id in (?)", req.Ids)

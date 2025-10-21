@@ -29,12 +29,13 @@ import (
 )
 
 type MethodPermission struct {
-	Method                 interface{}
-	OnlyAdmin              bool
-	OnlyAk                 bool
-	AdminOrAk              bool
-	NoAuth                 bool
-	CheckButNotSetClientId bool
+	Method            interface{}
+	OnlyAdmin         bool
+	OnlyAk            bool
+	AdminOrAk         bool // no client-token
+	LoggedIn          bool // just logged in
+	NoAuth            bool
+	SkipSetClientInfo bool
 }
 
 func CheckPermissions(perms ...*MethodPermission) transport.ServiceOption {
@@ -78,10 +79,17 @@ var checkOneMethodPermission = func(methods map[string]*MethodPermission) interc
 				return h(ctx, req)
 			}
 			if perm.AdminOrAk {
-				if !auth.Valid(ctx) {
+				if !auth.IsAdminOrClient(ctx) {
 					return nil, handlers.ErrNoPermission
 				}
 				logrus.Infof("[pass] admin or ak permission, method: %s", fullMethodName)
+				return h(ctx, req)
+			}
+			if perm.LoggedIn {
+				if !auth.IsLoggedIn(ctx) {
+					return nil, handlers.ErrNotAuthorized
+				}
+				logrus.Infof("[pass] logged-in permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}
 			logrus.Errorf("[reject] should not be here, method: %s", fullMethodName)
@@ -109,7 +117,7 @@ var checkAndSetClientId = func(methods map[string]*MethodPermission) interceptor
 			if ok {
 				clientTokenId = clientToken.Id
 			}
-			if err := akutil.AutoCheckAndSetClientInfo(clientId, clientTokenId, req, perm.CheckButNotSetClientId); err != nil {
+			if err := akutil.AutoCheckAndSetClientInfo(clientId, clientTokenId, req, perm.SkipSetClientInfo); err != nil {
 				return nil, err
 			}
 			return h(ctx, req)

@@ -18,6 +18,7 @@ import (
 	"context"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
@@ -30,16 +31,14 @@ func IsAdmin(ctx context.Context) bool {
 }
 
 func IsClient(ctx context.Context) bool {
-	clientId, ok := ctxhelper.GetClientId(ctx)
-	if !ok {
-		return false
-	}
-	return clientId != ""
+	client, _ := ctxhelper.GetClient(ctx)
+	clientToken, _ := ctxhelper.GetClientToken(ctx)
+	return client != nil && clientToken == nil
 }
 
-func GetClientId(ctx context.Context) string {
-	clientId, _ := ctxhelper.GetClientId(ctx)
-	return clientId
+func IsClientToken(ctx context.Context) bool {
+	clientToken, _ := ctxhelper.GetClientToken(ctx)
+	return clientToken != nil
 }
 
 func GetClient(ctx context.Context) *clientpb.Client {
@@ -47,9 +46,15 @@ func GetClient(ctx context.Context) *clientpb.Client {
 	return client
 }
 
-func Valid(ctx context.Context) bool {
-	if IsAdmin(ctx) {
-		return true
-	}
-	return IsClient(ctx)
+func GetClientToken(ctx context.Context) *clienttokenpb.ClientToken {
+	clientToken, _ := ctxhelper.GetClientToken(ctx)
+	return clientToken
+}
+
+func IsLoggedIn(ctx context.Context) bool {
+	return IsAdmin(ctx) || IsClient(ctx) || IsClientToken(ctx)
+}
+
+func IsAdminOrClient(ctx context.Context) bool {
+	return IsAdmin(ctx) || IsClient(ctx)
 }
