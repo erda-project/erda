@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -49,7 +50,7 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
 
 	// find client
-	clientToken, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
+	clientToken, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager))
 	if err != nil {
 		return http_error.NewHTTPError(ctx, http.StatusUnauthorized, err.Error())
 	}

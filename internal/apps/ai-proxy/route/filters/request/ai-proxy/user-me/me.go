@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -51,14 +52,14 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	var me Me
 
 	// check admin key first
-	isAdmin, err := akutil.CheckAdmin(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
+	isAdmin, err := akutil.CheckAdmin(ctx, pr.In, ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager))
 	if err != nil {
 		return http_error.NewHTTPError(ctx, http.StatusUnauthorized, err.Error())
 	}
 	me.IsAdmin = isAdmin
 	if !isAdmin {
 		// check client info
-		clientToken, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
+		clientToken, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager))
 		if err != nil {
 			return http_error.NewHTTPError(ctx, http.StatusUnauthorized, err.Error())
 		}

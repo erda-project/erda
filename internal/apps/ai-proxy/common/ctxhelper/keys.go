@@ -27,7 +27,6 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -76,7 +75,7 @@ type (
 	// Keys for migrated context keys
 	mapKeyDBClient     struct{ dao.DAO }
 	mapKeyPathMatcher  struct{ *path_matcher.PathMatcher }
-	mapKeyCacheManager struct{ cachetypes.Manager }
+	mapKeyCacheManager struct{ any }
 
 	// Additional context keys migrated from vars
 	mapKeyIsAdmin         struct{ bool }

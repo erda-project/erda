@@ -25,6 +25,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
@@ -57,7 +58,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.In.Context()
 	richClientHandler := ctxhelper.MustGetAIProxyHandlers(ctx).(*aiproxytypes.Handlers).RichClientHandler
 	// try set clientId by ak
-	_, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
+	_, client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager))
 	if err != nil {
 		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to get client, err: %v", err))
 	}

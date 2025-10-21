@@ -23,6 +23,7 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -51,6 +52,8 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	var (
 		l = ctxhelper.MustGetLogger(ctx)
 		q = ctxhelper.MustGetDBClient(ctx)
+
+		cacheManager = ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
 	)
 
 	// session
@@ -74,11 +77,12 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 
 	// find provider
 	var modelProvider *modelproviderpb.ModelProvider
-	modelProvider, err = q.ModelProviderClient().Get(ctx, &modelproviderpb.ModelProviderGetRequest{Id: model.ProviderId})
+	modelProviderV, err := cacheManager.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId)
 	if err != nil {
 		l.Errorf("failed to get model provider, id: %s, err: %v", model.ProviderId, err)
 		return http_error.NewHTTPError(ctx, http.StatusBadRequest, "ModelProviderId is invalid")
 	}
+	modelProvider = modelProviderV.(*modelproviderpb.ModelProvider)
 
 	// find prompt
 	headerPromptId := pr.Out.Header.Get(vars.XAIProxyPromptId)

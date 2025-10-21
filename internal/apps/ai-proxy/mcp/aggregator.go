@@ -32,8 +32,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
@@ -63,13 +63,13 @@ type Aggregator struct {
 	interval time.Duration
 }
 
-func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration, clusters []string, dao dao.DAO) *Aggregator {
+func NewAggregator(ctx context.Context, svc clusterpb.ClusterServiceServer, handler *handler_mcp_server.MCPHandler, logger logs.Logger, interval time.Duration, clusters []string, cache cachetypes.Manager) *Aggregator {
 	a := &Aggregator{
 		ClusterSvc:      svc,
 		clusters:        make(map[string]*ClusterController),
 		handles:         make(chan *ClusterController, 10),
 		lock:            sync.Mutex{},
-		register:        NewRegister(handler, logger, dao),
+		register:        NewRegister(handler, logger, cache),
 		logger:          logger,
 		interval:        interval,
 		endpointWatcher: make(map[string]context.CancelFunc),

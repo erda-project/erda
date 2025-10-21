@@ -23,32 +23,36 @@ import (
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 )
 
 func (util *AKUtil) TokenToClient(token string) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
-	pagingResp, err := util.Dao.ClientTokenClient().Paging(context.Background(), &clienttokenpb.ClientTokenPagingRequest{
-		PageSize: 1,
-		PageNum:  1,
-		Token:    token,
-	})
+	_, allTokensV, err := util.cache.ListAll(context.Background(), cachetypes.ItemTypeClientToken)
 	if err != nil {
 		return nil, nil, err
 	}
-	if pagingResp.Total == 0 {
+	var matchedTokens []*clienttokenpb.ClientToken
+	for _, clientToken := range allTokensV.([]*clienttokenpb.ClientToken) {
+		if clientToken.Token == token {
+			matchedTokens = append(matchedTokens, clientToken)
+		}
+	}
+	if len(matchedTokens) == 0 {
 		return nil, nil, fmt.Errorf("invalid token")
 	}
-	if pagingResp.Total > 1 {
+	if len(matchedTokens) > 1 {
 		return nil, nil, fmt.Errorf("multiple tokens found")
 	}
-	clientToken := pagingResp.List[0]
+	clientToken := matchedTokens[0]
 	if isTokenExpired(clientToken) {
 		return nil, nil, handlers.ErrTokenExpired
 	}
-	client, err := util.Dao.ClientClient().Get(context.Background(), &clientpb.ClientGetRequest{
-		ClientId: clientToken.ClientId,
-	})
-	return clientToken, client, err
+	clientV, err := util.cache.GetByID(context.Background(), cachetypes.ItemTypeClient, clientToken.ClientId)
+	if err != nil {
+		return nil, nil, err
+	}
+	return clientToken, clientV.(*clientpb.Client), err
 }
 
 const EnvKeyEnableTokenExpireCheck = "ENABLE_TOKEN_EXPIRE_CHECK"

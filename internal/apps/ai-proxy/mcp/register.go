@@ -30,9 +30,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -43,14 +43,14 @@ import (
 type Register struct {
 	handler *handler_mcp_server.MCPHandler
 	logger  logs.Logger
-	dao     dao.DAO
+	cache   cachetypes.Manager
 }
 
-func NewRegister(handler *handler_mcp_server.MCPHandler, logger logs.Logger, dao dao.DAO) *Register {
+func NewRegister(handler *handler_mcp_server.MCPHandler, logger logs.Logger, cache cachetypes.Manager) *Register {
 	return &Register{
 		handler: handler,
 		logger:  logger,
-		dao:     dao,
+		cache:   cache,
 	}
 }
 
@@ -109,7 +109,7 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 	ak, ok := svc.Labels[vars.LabelMcpErdaCloudServiceAuthorization]
 	if ok {
 		scopeType = "client"
-		_, c, err := akutil.GetClientInfo(ak, r.dao)
+		_, c, err := akutil.GetClientInfo(ak, r.cache)
 		if err != nil {
 			return err
 		}
