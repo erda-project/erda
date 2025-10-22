@@ -14,30 +14,24 @@
 
 package cachetypes
 
-import "context"
-
-// ItemType defines the type of cached items
-type ItemType int
-
-const (
-	ItemTypeModel ItemType = iota
-	ItemTypeProvider
+import (
+	"context"
 )
 
 // CacheItem defines the interface for individual cache items
 type CacheItem interface {
 	// ListAll returns all cached items, fallback to DB if cache miss
-	ListAll(ctx context.Context) (any, error)
+	ListAll(ctx context.Context) (uint64, any, error)
 	// GetByID returns an item by ID, fallback to DB if cache miss
 	GetByID(ctx context.Context, id string) (any, error)
 	// Refresh refreshes the cache from database
-	Refresh() error
+	Refresh() (uint64, error)
 }
 
 // Manager defines the interface for cache manager
 type Manager interface {
 	// ListAll returns all cached items of the specified type
-	ListAll(ctx context.Context, itemType ItemType) (any, error)
+	ListAll(ctx context.Context, itemType ItemType) (uint64, any, error)
 	// GetByID returns an item by ID for the specified type
 	GetByID(ctx context.Context, itemType ItemType, id string) (any, error)
 }

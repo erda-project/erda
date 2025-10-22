@@ -24,38 +24,41 @@ import (
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type AKUtil struct {
-	Dao dao.DAO
+	cache cachetypes.Manager
 }
 
-func New(dao dao.DAO) *AKUtil {
-	return &AKUtil{Dao: dao}
+func New(cache cachetypes.Manager) *AKUtil {
+	return &AKUtil{cache: cache}
 }
 
 func (util *AKUtil) AkToClient(ak string) (*clientpb.Client, error) {
-	pagingResp, err := util.Dao.ClientClient().Paging(context.Background(), &clientpb.ClientPagingRequest{
-		PageSize:     1,
-		PageNum:      1,
-		AccessKeyIds: []string{ak},
-	})
+	_, allClientsV, err := util.cache.ListAll(context.Background(), cachetypes.ItemTypeClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client by ak: %v", err)
 	}
-	if pagingResp.Total == 0 {
+	var matchedClients []*clientpb.Client
+	for _, client := range allClientsV.([]*clientpb.Client) {
+		if client.AccessKeyId == ak {
+			matchedClients = append(matchedClients, client)
+		}
+	}
+	total := len(matchedClients)
+	if total == 0 {
 		return nil, fmt.Errorf("client not found by ak: %s", ak)
 	}
-	if pagingResp.Total > 1 {
+	if total > 1 {
 		return nil, fmt.Errorf("multiple clients found by ak: %s", ak)
 	}
-	return pagingResp.List[0], nil
+	return matchedClients[0], nil
 }
 
 func (util *AKUtil) GetAkFromHeader(ctx context.Context, req any) (string, bool) {
@@ -89,33 +92,33 @@ func (util *AKUtil) GetAkFromHTTPHeader(req any) (string, bool) {
 	return v, v != ""
 }
 
-func CheckAdmin(ctx context.Context, req any, dao dao.DAO) (bool, error) {
-	ak, ok := New(dao).GetAkFromHeader(ctx, req)
+func CheckAdmin(ctx context.Context, req any, cacheManager cachetypes.Manager) (bool, error) {
+	ak, ok := New(cacheManager).GetAkFromHeader(ctx, req)
 	if !ok || ak == "" {
 		return false, handlers.ErrAkNotFound
 	}
 	return ak == os.Getenv(vars.EnvAIProxyAdminAuthKey), nil
 }
 
-func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
-	ak, ok := New(dao).GetAkFromHeader(ctx, req)
+func CheckAkOrToken(ctx context.Context, req any, cacheManager cachetypes.Manager) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
+	ak, ok := New(cacheManager).GetAkFromHeader(ctx, req)
 	if !ok {
 		return nil, nil, handlers.ErrAkNotFound
 	}
-	return GetClientInfo(ak, dao)
+	return GetClientInfo(ak, cacheManager)
 }
 
-func GetClientInfo(ak string, dao dao.DAO) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
+func GetClientInfo(ak string, cacheManager cachetypes.Manager) (*clienttokenpb.ClientToken, *clientpb.Client, error) {
 	// check by token
 	if strings.HasPrefix(ak, client_token.TokenPrefix) {
-		clientToken, client, err := New(dao).TokenToClient(ak)
+		clientToken, client, err := New(cacheManager).TokenToClient(ak)
 		if err != nil {
 			return nil, nil, handlers.HTTPError(err, http.StatusUnauthorized)
 		}
 		return clientToken, client, nil
 	}
 	// check by ak
-	client, err := New(dao).AkToClient(ak)
+	client, err := New(cacheManager).AkToClient(ak)
 	if err != nil {
 		return nil, nil, handlers.HTTPError(err, http.StatusUnauthorized)
 	}
