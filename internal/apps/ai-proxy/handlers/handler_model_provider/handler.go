@@ -16,7 +16,9 @@ package handler_model_provider
 
 import (
 	"context"
+	"fmt"
 
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
@@ -42,6 +44,18 @@ func (h *ModelProviderHandler) Get(ctx context.Context, req *pb.ModelProviderGet
 }
 
 func (h *ModelProviderHandler) Delete(ctx context.Context, req *pb.ModelProviderDeleteRequest) (*commonpb.VoidResponse, error) {
+	// check models
+	modelPagingResp, err := h.DAO.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
+		PageNum:    1,
+		PageSize:   1,
+		ProviderId: req.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if modelPagingResp.Total > 0 {
+		return nil, fmt.Errorf("provider has related models, can not delete")
+	}
 	return h.DAO.ModelProviderClient().Delete(ctx, req)
 }
 

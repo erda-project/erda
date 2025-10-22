@@ -16,7 +16,11 @@ package cachetypes
 
 import (
 	"context"
+	"reflect"
 	"sync"
+
+	"github.com/mohae/deepcopy"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
@@ -70,7 +74,7 @@ func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
 	c.mu.RLock()
 	if c.lastOK && c.data != nil {
 		c.getLogger(ctx).Debugf("cache hit: %s", GetItemTypeName(c.itemType))
-		data := c.data
+		data := smartClone(c.data)
 		c.mu.RUnlock()
 		return 0, data, nil
 	}
@@ -78,7 +82,52 @@ func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
 
 	// fallback to database query
 	c.getLogger(ctx).Warnf("cache miss: %s, fallback to database query", GetItemTypeName(c.itemType))
-	return c.QueryFromDB(ctx)
+	total, newData, err := c.QueryFromDB(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	// write back to cache
+	c.mu.Lock()
+	copiedNewData := smartClone(newData)
+	c.data = copiedNewData
+	c.lastOK = true
+	c.mu.Unlock()
+	return total, copiedNewData, nil
+}
+
+func smartClone(data any) any {
+	if data == nil {
+		return nil
+	}
+	if msg, ok := data.(proto.Message); ok {
+		return proto.Clone(msg)
+	}
+
+	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Slice {
+		if val.IsNil() {
+			return nil
+		}
+
+		length := val.Len()
+		cloned := reflect.MakeSlice(val.Type(), length, length)
+		for i := 0; i < length; i++ {
+			elem := val.Index(i).Interface()
+			clonedElem := smartClone(elem)
+			if clonedElem == nil {
+				cloned.Index(i).Set(reflect.Zero(val.Type().Elem()))
+				continue
+			}
+			elemValue := reflect.ValueOf(clonedElem)
+			if !elemValue.Type().AssignableTo(val.Type().Elem()) {
+				elemValue = elemValue.Convert(val.Type().Elem())
+			}
+			cloned.Index(i).Set(elemValue)
+		}
+		return cloned.Interface()
+	}
+
+	return deepcopy.Copy(data)
 }
 
 // GetByID implements the common logic for all cache items

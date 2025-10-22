@@ -16,7 +16,9 @@ package handler_model
 
 import (
 	"context"
+	"fmt"
 
+	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
@@ -51,6 +53,18 @@ func (h *ModelHandler) Update(ctx context.Context, req *pb.ModelUpdateRequest) (
 }
 
 func (h *ModelHandler) Delete(ctx context.Context, req *pb.ModelDeleteRequest) (*commonpb.VoidResponse, error) {
+	// check client-model-relation first
+	relationPagingResp, err := h.DAO.ClientModelRelationClient().Paging(ctx, &clientmodelrelationpb.PagingRequest{
+		PageNum:  1,
+		PageSize: 1,
+		ModelIds: []string{req.Id},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if relationPagingResp.Total > 0 {
+		return nil, fmt.Errorf("model is assigned to clients, can not delete")
+	}
 	return h.DAO.ModelClient().Delete(ctx, req)
 }
 
