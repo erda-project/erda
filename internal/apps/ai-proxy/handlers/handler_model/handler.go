@@ -75,6 +75,10 @@ func desensitizeModel(ctx context.Context, item *pb.Model) {
 	if auth.IsAdmin(ctx) {
 		return
 	}
+	// if a model is client-belonged, pass for the client
+	if item.ClientId != "" && auth.IsClient(ctx) {
+		return
+	}
 	// hide sensitive data for non-admin
 	item.ApiKey = ""
 	item.Metadata.Secret = nil

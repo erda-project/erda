@@ -71,7 +71,11 @@ func desensitizeProvider(ctx context.Context, item *pb.ModelProvider) {
 	if auth.IsAdmin(ctx) {
 		return
 	}
-	// hide sensitive data for non-admin
+	// if a provider is client-belonged, pass for the client
+	if item.ClientId != "" && auth.IsClient(ctx) {
+		return
+	}
+	// hide sensitive data
 	item.ApiKey = ""
 	item.Metadata.Secret = nil
 }

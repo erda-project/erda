@@ -31,8 +31,8 @@ import (
 type MethodPermission struct {
 	Method            interface{}
 	OnlyAdmin         bool
-	OnlyAk            bool
-	AdminOrAk         bool // no client-token
+	OnlyClient        bool
+	AdminOrClient     bool // no client-token
 	LoggedIn          bool // just logged in
 	NoAuth            bool
 	SkipSetClientInfo bool
@@ -71,14 +71,14 @@ var checkOneMethodPermission = func(methods map[string]*MethodPermission) interc
 				logrus.Infof("[pass] only admin permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}
-			if perm.OnlyAk {
+			if perm.OnlyClient {
 				if !auth.IsClient(ctx) {
 					return nil, handlers.ErrNoPermission
 				}
 				logrus.Infof("[pass] only ak permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}
-			if perm.AdminOrAk {
+			if perm.AdminOrClient {
 				if !auth.IsAdminOrClient(ctx) {
 					return nil, handlers.ErrNoPermission
 				}

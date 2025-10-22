@@ -131,7 +131,7 @@ func AutoCheckAndSetClientInfo(clientId string, clientTokenId string, req any, s
 		return nil
 	}
 
-	clientIdField, ok := findStringFieldCaseInsensitive(reqValue, "ClientID", "client_id")
+	clientIdField, ok := findStringFieldCaseInsensitive(reqValue, "ClientID", "client_id") // case-insensitive, so just compatible for snake-case and camel-case
 	if ok {
 		currentClientId := clientIdField.String()
 		if currentClientId != "" && currentClientId != clientId {
