@@ -95,6 +95,10 @@ func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
 	return total, copiedNewData, nil
 }
 
+// smartClone:
+// - if type is slice, clone each element
+// - if type is proto.Message, use proto.Clone
+// - otherwise, use deepcopy.Copy
 func smartClone(data any) any {
 	if data == nil {
 		return nil

@@ -82,11 +82,11 @@ var CheckSessionPerm = CheckPermissions(
 )
 
 var CheckClientTokenPerm = CheckPermissions(
-	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Create, LoggedIn: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Create, AdminOrClient: true},
 	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Get, LoggedIn: true},
-	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Update, LoggedIn: true},
-	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Paging, LoggedIn: true},
-	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Delete, LoggedIn: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Update, AdminOrClient: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Paging, AdminOrClient: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Delete, AdminOrClient: true},
 )
 
 var CheckRichClientPerm = CheckPermissions(

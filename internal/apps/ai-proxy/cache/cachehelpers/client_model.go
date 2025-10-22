@@ -32,7 +32,7 @@ type ModelWithProvider struct {
 }
 
 func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProvider, error) {
-	// platform-assigned-models
+	// platform-assigned models
 	assignedModels, err := _listAllClientAssignedModels(ctx, clientID)
 	if err != nil {
 		return nil, err

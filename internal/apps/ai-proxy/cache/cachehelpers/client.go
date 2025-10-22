@@ -35,5 +35,5 @@ func GetClientByAK(ctx context.Context, ak string) (*clientpb.Client, error) {
 			return client, nil
 		}
 	}
-	return nil, fmt.Errorf("client with access key id %s not found", ak)
+	return nil, fmt.Errorf("client with access-key-id %s not found", ak)
 }
