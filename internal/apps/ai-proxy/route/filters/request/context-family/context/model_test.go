@@ -30,6 +30,7 @@ import (
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 )
 
 // createProxyRequest creates a ProxyRequest for testing
@@ -62,7 +63,7 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 	modelIDValue, _ := structpb.NewValue("gpt-35-turbo")
 	modelNameValue, _ := structpb.NewValue("gpt-3.5-turbo")
 
-	models := []*ModelWithProvider{
+	models := []*cachehelpers.ModelWithProvider{
 		{
 			Model: &modelpb.Model{
 				Name: "GPT-3.5 Turbo",

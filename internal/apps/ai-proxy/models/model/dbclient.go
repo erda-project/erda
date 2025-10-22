@@ -38,6 +38,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelCreateRequest
 		Type:       model_type.GetModelTypeFromProtobuf(req.Type),
 		ProviderID: req.ProviderId,
 		APIKey:     req.ApiKey,
+		ClientID:   req.ClientId,
 		Metadata:   metadata.FromProtobuf(req.Metadata),
 	}
 	if err := dbClient.DB.Model(c).Create(c).Error; err != nil {
@@ -48,7 +49,8 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelCreateRequest
 
 func (dbClient *DBClient) Get(ctx context.Context, req *pb.ModelGetRequest) (*pb.Model, error) {
 	c := &Model{BaseModel: common.BaseModelWithID(req.Id)}
-	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
+	whereC := &Model{ClientID: req.ClientId}
+	if err := dbClient.DB.Model(c).First(c, whereC).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
@@ -64,7 +66,11 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelUpdateRequest
 		APIKey:     req.ApiKey,
 		Metadata:   metadata.FromProtobuf(req.Metadata),
 	}
-	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {
+	whereC := &Model{
+		BaseModel: common.BaseModelWithID(req.Id),
+		ClientID:  req.ClientId,
+	}
+	if err := dbClient.DB.Model(c).Where(whereC).Updates(c).Error; err != nil {
 		return nil, err
 	}
 	return dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id})
@@ -72,7 +78,8 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelUpdateRequest
 
 func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelDeleteRequest) (*commonpb.VoidResponse, error) {
 	c := &Model{BaseModel: common.BaseModelWithID(req.Id)}
-	sql := dbClient.DB.Model(c).Delete(c)
+	whereC := &Model{ClientID: req.ClientId}
+	sql := dbClient.DB.Model(c).Delete(c, whereC)
 	if sql.Error != nil {
 		return nil, sql.Error
 	}
@@ -83,8 +90,11 @@ func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelDeleteRequest
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest) (*pb.ModelPagingResponse, error) {
-	c := &Model{}
-	sql := dbClient.DB.Model(c)
+	c := &Model{
+		ProviderID: req.ProviderId,
+		ClientID:   req.ClientId,
+	}
+	sql := dbClient.DB.Model(c).Where(c)
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
 	}
@@ -97,8 +107,6 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 	if len(req.Ids) > 0 {
 		sql = sql.Where("id in (?)", req.Ids)
 	}
-	c.ProviderID = req.ProviderId
-	sql = sql.Where(c)
 	// order by
 	sql, err := sqlutil.HandleOrderBy(sql, req.OrderBys)
 	if err != nil {
@@ -126,7 +134,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 }
 
 func (dbClient *DBClient) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.ModelAbilitiesInfoUpdateRequest) (*commonpb.VoidResponse, error) {
-	m, err := dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id})
+	m, err := dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id, ClientId: req.ClientId})
 	if err != nil {
 		return nil, err
 	}

@@ -126,31 +126,74 @@ func GetClientInfo(ak string, cacheManager cachetypes.Manager) (*clienttokenpb.C
 }
 
 func AutoCheckAndSetClientInfo(clientId string, clientTokenId string, req any, skipSet bool) error {
-	// use reflect to set req's clientId field if have
-	clientIdField := reflect.ValueOf(req).Elem().FieldByName("ClientId")
-	if clientIdField != (reflect.Value{}) {
-		// compare if ClientId already exists
+	reqValue, ok := structValue(req)
+	if !ok {
+		return nil
+	}
+
+	clientIdField, ok := findStringFieldCaseInsensitive(reqValue, "ClientID", "client_id") // case-insensitive, so just compatible for snake-case and camel-case
+	if ok {
 		currentClientId := clientIdField.String()
 		if currentClientId != "" && currentClientId != clientId {
-			return handlers.ErrAkNotMatch
+			return handlers.ErrClientIdParamMismatch
 		}
-		if !skipSet {
+		if !skipSet && clientIdField.CanSet() {
 			clientIdField.SetString(clientId)
 		}
 	}
 	// check client token id
 	if clientTokenId != "" {
-		clientTokenIdField := reflect.ValueOf(req).Elem().FieldByName("ClientTokenId")
-		if clientTokenIdField != (reflect.Value{}) {
-			// compare if ClientTokenId already exists
+		clientTokenIdField, ok := findStringFieldCaseInsensitive(reqValue, "ClientTokenID", "client_token_id")
+		if ok {
 			currentClientTokenId := clientTokenIdField.String()
 			if currentClientTokenId != "" && currentClientTokenId != clientTokenId {
-				return handlers.ErrTokenNotMatch
+				return handlers.ErrTokenIdParamMismatch
 			}
-			if !skipSet {
+			if !skipSet && clientTokenIdField.CanSet() {
 				clientTokenIdField.SetString(clientTokenId)
 			}
 		}
 	}
 	return nil
+}
+
+func structValue(req any) (reflect.Value, bool) {
+	if req == nil {
+		return reflect.Value{}, false
+	}
+	value := reflect.ValueOf(req)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return reflect.Value{}, false
+	}
+	value = value.Elem()
+	if value.Kind() != reflect.Struct {
+		return reflect.Value{}, false
+	}
+	return value, true
+}
+
+func findStringFieldCaseInsensitive(structValue reflect.Value, names ...string) (reflect.Value, bool) {
+	for _, name := range names {
+		field := structValue.FieldByName(name)
+		if field.IsValid() && field.Kind() == reflect.String {
+			return field, true
+		}
+	}
+
+	structType := structValue.Type()
+	for i := 0; i < structValue.NumField(); i++ {
+		fieldType := structType.Field(i)
+		if fieldType.PkgPath != "" {
+			continue
+		}
+		for _, name := range names {
+			if strings.EqualFold(fieldType.Name, name) {
+				fieldValue := structValue.Field(i)
+				if fieldValue.Kind() == reflect.String {
+					return fieldValue, true
+				}
+			}
+		}
+	}
+	return reflect.Value{}, false
 }
