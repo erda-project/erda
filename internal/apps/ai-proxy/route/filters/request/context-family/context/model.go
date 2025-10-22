@@ -145,17 +145,17 @@ func getMapOfAvailableNameWithModels(clientModels []*ModelWithProvider) map[stri
 }
 
 func listAllModels(ctx context.Context) ([]*ModelWithProvider, error) {
-	cacheManager := ctxhelper.MustGetCacheManager(ctx)
+	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
 
 	// get models from cache
-	modelsV, err := cacheManager.ListAll(ctx, cachetypes.ItemTypeModel)
+	_, modelsV, err := cache.ListAll(ctx, cachetypes.ItemTypeModel)
 	if err != nil {
 		return nil, err
 	}
 	models := modelsV.([]*modelpb.Model)
 
 	// get providers from cache
-	providersV, err := cacheManager.ListAll(ctx, cachetypes.ItemTypeProvider)
+	_, providersV, err := cache.ListAll(ctx, cachetypes.ItemTypeProvider)
 	if err != nil {
 		return nil, err
 	}

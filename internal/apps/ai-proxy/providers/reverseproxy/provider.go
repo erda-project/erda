@@ -62,12 +62,12 @@ var (
 		Types:       []reflect.Type{interfaceType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
-	TrySetAuth = func(dao dao.DAO) transport.ServiceOption {
+	TrySetAuth = func(cacheManager cachetypes.Manager) transport.ServiceOption {
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 				// check admin key first
-				isAdmin, err := akutil.CheckAdmin(ctx, req, dao)
+				isAdmin, err := akutil.CheckAdmin(ctx, req, cacheManager)
 				if err != nil {
 					return nil, err
 				}
@@ -76,7 +76,7 @@ var (
 					return h(ctx, req)
 				}
 				// try set clientId by ak
-				clientToken, client, err := akutil.CheckAkOrToken(ctx, req, dao)
+				clientToken, client, err := akutil.CheckAkOrToken(ctx, req, cacheManager)
 				if err != nil {
 					return nil, err
 				}

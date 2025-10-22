@@ -91,22 +91,22 @@ func (p *provider) registerAIProxyManageAPI() {
 	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
 	register := p.Interface
 
-	clientpb.RegisterClientServiceImp(register, p.handlers.ClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientPerm)
-	modelproviderpb.RegisterModelProviderServiceImp(register, p.handlers.ModelProviderHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckModelProviderPerm)
-	modelpb.RegisterModelServiceImp(register, p.handlers.ModelHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckModelPerm)
-	clientmodelrelationpb.RegisterClientModelRelationServiceImp(register, p.handlers.ClientModelRelationHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
-	promptpb.RegisterPromptServiceImp(register, p.handlers.PromptHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckPromptPerm)
-	sessionpb.RegisterSessionServiceImp(register, p.handlers.SessionHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckSessionPerm)
-	clienttokenpb.RegisterClientTokenServiceImp(register, p.handlers.ClientTokenHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckClientTokenPerm)
-	i18npb.RegisterI18NServiceImp(register, p.handlers.I18nHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckI18nPerm)
-	richclientpb.RegisterRichClientServiceImp(register, p.handlers.RichClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
-	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckAuditPerm)
-	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.Dao), permission.CheckTokenUsagePerm, reverseproxy.TrySetLang())
+	clientpb.RegisterClientServiceImp(register, p.handlers.ClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckClientPerm)
+	modelproviderpb.RegisterModelProviderServiceImp(register, p.handlers.ModelProviderHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckModelProviderPerm)
+	modelpb.RegisterModelServiceImp(register, p.handlers.ModelHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckModelPerm)
+	clientmodelrelationpb.RegisterClientModelRelationServiceImp(register, p.handlers.ClientModelRelationHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckClientModelRelationPerm)
+	promptpb.RegisterPromptServiceImp(register, p.handlers.PromptHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckPromptPerm)
+	sessionpb.RegisterSessionServiceImp(register, p.handlers.SessionHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckSessionPerm)
+	clienttokenpb.RegisterClientTokenServiceImp(register, p.handlers.ClientTokenHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckClientTokenPerm)
+	i18npb.RegisterI18NServiceImp(register, p.handlers.I18nHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckI18nPerm)
+	richclientpb.RegisterRichClientServiceImp(register, p.handlers.RichClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
+	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckAuditPerm)
+	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckTokenUsagePerm, reverseproxy.TrySetLang())
 }
 
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.Dao), permission.CheckMCPPerm)
+	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
 }
 
 func init() {

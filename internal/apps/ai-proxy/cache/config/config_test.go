@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cache
+package config
 
 import (
 	"os"
@@ -230,14 +230,14 @@ func TestLoadConfig(t *testing.T) {
 			os.Setenv(envCacheEnabled, tt.enabledEnvValue)
 			os.Setenv(envCacheRefreshInterval, tt.intervalEnvValue)
 
-			config := loadConfig()
+			config := LoadConfig()
 
 			if config.Enabled != tt.expectedEnabled {
-				t.Errorf("loadConfig().Enabled = %v, expected %v", config.Enabled, tt.expectedEnabled)
+				t.Errorf("LoadConfig().Enabled = %v, expected %v", config.Enabled, tt.expectedEnabled)
 			}
 
 			if config.RefreshInterval != tt.expectedInterval {
-				t.Errorf("loadConfig().RefreshInterval = %v, expected %v", config.RefreshInterval, tt.expectedInterval)
+				t.Errorf("LoadConfig().RefreshInterval = %v, expected %v", config.RefreshInterval, tt.expectedInterval)
 			}
 		})
 	}

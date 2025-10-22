@@ -32,6 +32,7 @@ import (
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
@@ -70,9 +71,15 @@ type provider struct {
 
 	ClusterSvc             clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService" optional:"true"`
 	reverseproxy.Interface `autowired:"erda.app.reverse-proxy"`
+
+	cache cachetypes.Manager
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	// initialize cache manager
+	p.cache = cache.NewCacheManager(p.Dao, p.L, true)
+	p.SetCacheManager(p.cache)
+
 	p.registerMcpProxyManageAPI()
 
 	// initialize cache manager
@@ -84,7 +91,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.Dao), permission.CheckMCPPerm)
+	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
 }
 
 func (p *provider) Run(ctx context.Context) error {
@@ -99,7 +106,7 @@ func (p *provider) Run(ctx context.Context) error {
 			clusters := strings.Split(p.Config.McpScanConfig.McpClusters, ",")
 			p.L.Infof("listen mcp cluster list: %v", clusters)
 
-			aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.McpScanConfig.SyncClusterConfigInterval, clusters, p.Dao)
+			aggregator := mcp.NewAggregator(ctx, p.ClusterSvc, handler, p.L, p.Config.McpScanConfig.SyncClusterConfigInterval, clusters, p.cache)
 			if err := aggregator.Start(ctx); err != nil {
 				logrus.Error(err)
 				panic(err)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cache
+package config
 
 import (
 	"os"
@@ -26,15 +26,15 @@ const (
 	envCacheRefreshInterval = "AI_PROXY_CACHE_REFRESH_INTERVAL"
 )
 
-// config holds all cache-related configuration
-type config struct {
+// Config holds all cache-related configuration
+type Config struct {
 	Enabled         bool
 	RefreshInterval time.Duration
 }
 
-// loadConfig loads cache configuration from environment variables
-func loadConfig() *config {
-	return &config{
+// LoadConfig loads cache configuration from environment variables
+func LoadConfig() *Config {
+	return &Config{
 		Enabled:         isCacheEnabled(),
 		RefreshInterval: getRefreshInterval(),
 	}
