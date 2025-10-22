@@ -155,8 +155,8 @@ type mockCache struct {
 	models map[string]*modelpb.Model
 }
 
-func (m *mockCache) ListAll(ctx context.Context, itemType cachetypes.ItemType) (any, error) {
-	return nil, fmt.Errorf("not implemented")
+func (m *mockCache) ListAll(ctx context.Context, itemType cachetypes.ItemType) (uint64, any, error) {
+	return 0, nil, fmt.Errorf("not implemented")
 }
 
 func (m *mockCache) GetByID(ctx context.Context, itemType cachetypes.ItemType, id string) (any, error) {
