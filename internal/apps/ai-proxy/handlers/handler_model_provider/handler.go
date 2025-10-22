@@ -16,9 +16,12 @@ package handler_model_provider
 
 import (
 	"context"
+	"fmt"
 
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
@@ -31,21 +34,62 @@ func (h *ModelProviderHandler) Create(ctx context.Context, req *pb.ModelProvider
 }
 
 func (h *ModelProviderHandler) Get(ctx context.Context, req *pb.ModelProviderGetRequest) (*pb.ModelProvider, error) {
-	return h.DAO.ModelProviderClient().Get(ctx, req)
+	resp, err := h.DAO.ModelProviderClient().Get(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// data sensitive
+	desensitizeProvider(ctx, resp)
+	return resp, nil
 }
 
 func (h *ModelProviderHandler) Delete(ctx context.Context, req *pb.ModelProviderDeleteRequest) (*commonpb.VoidResponse, error) {
+	// check models
+	modelPagingResp, err := h.DAO.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
+		PageNum:    1,
+		PageSize:   1,
+		ProviderId: req.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if modelPagingResp.Total > 0 {
+		return nil, fmt.Errorf("provider has related models, can not delete")
+	}
 	return h.DAO.ModelProviderClient().Delete(ctx, req)
 }
 
 func (h *ModelProviderHandler) Update(ctx context.Context, req *pb.ModelProviderUpdateRequest) (*pb.ModelProvider, error) {
-	return h.DAO.ModelProviderClient().Update(ctx, req)
-}
-
-func (h *ModelProviderHandler) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
-	pagingResult, err := h.DAO.ModelProviderClient().Paging(ctx, req)
+	resp, err := h.DAO.ModelProviderClient().Update(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return pagingResult, nil
+	desensitizeProvider(ctx, resp)
+	return resp, nil
+}
+
+func (h *ModelProviderHandler) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
+	resp, err := h.DAO.ModelProviderClient().Paging(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// data sensitive
+	for _, item := range resp.List {
+		desensitizeProvider(ctx, item)
+	}
+	return resp, nil
+}
+
+func desensitizeProvider(ctx context.Context, item *pb.ModelProvider) {
+	// pass for: admin
+	if auth.IsAdmin(ctx) {
+		return
+	}
+	// if a provider is client-belonged, pass for the client
+	if item.ClientId != "" && auth.IsClient(ctx) {
+		return
+	}
+	// hide sensitive data
+	item.ApiKey = ""
+	item.Metadata.Secret = nil
 }

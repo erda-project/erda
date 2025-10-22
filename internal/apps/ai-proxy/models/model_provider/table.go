@@ -27,7 +27,8 @@ type ModelProvider struct {
 	Name     string            `gorm:"column:name;type:varchar(191)" json:"name" yaml:"name"`
 	Desc     string            `gorm:"column:desc;type:varchar(1024)" json:"desc" yaml:"desc"`
 	Type     string            `gorm:"column:type;type:varchar(191)" json:"type" yaml:"type"`
-	APIKey   string            `gorm:"column:api_key;type:varchar(191)" json:"aPIKey" yaml:"aPIKey"`
+	APIKey   string            `gorm:"column:api_key;type:varchar(191)" json:"apiKey" yaml:"apiKey"`
+	ClientID string            `gorm:"column:client_id;type:char(36)" json:"clientId" yaml:"clientId"`
 	Metadata metadata.Metadata `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
 }
 
@@ -43,6 +44,7 @@ func (m *ModelProvider) ToProtobuf() *pb.ModelProvider {
 		Desc:      m.Desc,
 		Type:      m.Type,
 		ApiKey:    m.APIKey,
+		ClientId:  m.ClientID,
 		Metadata:  m.Metadata.ToProtobuf(),
 	}
 }

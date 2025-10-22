@@ -62,6 +62,8 @@ message Model {
     string apiKey = 9;
     metadata.Metadata metadata = 10;
     string publisher = 11; // set at metadata.public.publisher; promoted to first-level when display
+
+    string clientId = 12;
 }
 
 enum ModelType {
@@ -82,6 +84,8 @@ message ModelCreateRequest {
     string providerId = 4 [(validate.rules).string = {len: 36}];
     string apiKey = 5;
     metadata.Metadata metadata = 6;
+
+    string clientId = 7 [(validate.rules).string = {len: 36}];
 }
 
 message ModelUpdateRequest {
@@ -92,14 +96,24 @@ message ModelUpdateRequest {
     string providerId = 5 [(validate.rules).string = {len: 36}];
     string apiKey = 6;
     metadata.Metadata metadata = 7;
+
+    // auto-injected to restrict data permission
+    string clientId = 8 [(validate.rules).string = {len: 36, ignore_empty: true}];
+
 }
 
 message ModelDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+
+    // auto-injected to restrict data permission
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+
+    // auto-injected to restrict data permission
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelPagingRequest {
@@ -111,6 +125,9 @@ message ModelPagingRequest {
     repeated string ids = 6 [(validate.rules).repeated.items.string = {len: 36}];
     repeated string orderBys = 7 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
     string nameFull = 8 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
+
+    // auto-injected to restrict data permission
+    string clientId = 9 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelPagingResponse {
@@ -123,4 +140,7 @@ message ModelAbilitiesInfoUpdateRequest {
     map<string, google.protobuf.Value> abilities = 2;
     map<string, google.protobuf.Value> context = 3;
     map<string, google.protobuf.Value> pricing = 4;
+
+    // auto-injected to restrict data permission
+    string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }

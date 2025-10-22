@@ -20,29 +20,13 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
-	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
-	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
-	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
-	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
-	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
-	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
-	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
-	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
-	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	tokenusagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
-	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
-	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 const Name = "erda.app.ai-proxy"
@@ -85,28 +69,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	))
 
 	return nil
-}
-
-func (p *provider) registerAIProxyManageAPI() {
-	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
-	register := p.Interface
-
-	clientpb.RegisterClientServiceImp(register, p.handlers.ClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckClientPerm)
-	modelproviderpb.RegisterModelProviderServiceImp(register, p.handlers.ModelProviderHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckModelProviderPerm)
-	modelpb.RegisterModelServiceImp(register, p.handlers.ModelHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckModelPerm)
-	clientmodelrelationpb.RegisterClientModelRelationServiceImp(register, p.handlers.ClientModelRelationHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckClientModelRelationPerm)
-	promptpb.RegisterPromptServiceImp(register, p.handlers.PromptHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckPromptPerm)
-	sessionpb.RegisterSessionServiceImp(register, p.handlers.SessionHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckSessionPerm)
-	clienttokenpb.RegisterClientTokenServiceImp(register, p.handlers.ClientTokenHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckClientTokenPerm)
-	i18npb.RegisterI18NServiceImp(register, p.handlers.I18nHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckI18nPerm)
-	richclientpb.RegisterRichClientServiceImp(register, p.handlers.RichClientHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckRichClientPerm, reverseproxy.TrySetLang())
-	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckAuditPerm)
-	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, apis.Options(), encoderOpts, reverseproxy.TrySetAuth(p.cache), permission.CheckTokenUsagePerm, reverseproxy.TrySetLang())
-}
-
-func (p *provider) registerMcpProxyManageAPI() {
-	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
 }
 
 func init() {

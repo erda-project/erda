@@ -20,9 +20,9 @@ import (
 	"net/http"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
-	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -32,14 +32,8 @@ type RequestForModel struct {
 	Model string `json:"model"`
 }
 
-// ModelWithProvider combines model with its provider information
-type ModelWithProvider struct {
-	*modelpb.Model
-	Provider *providerpb.ModelProvider
-}
-
-func findModel(req *http.Request, requestCtx interface{}, client *clientpb.Client) (*modelpb.Model, error) {
-	q := ctxhelper.MustGetDBClient(req.Context())
+func findModel(req *http.Request, requestCtx any, client *clientpb.Client) (*modelpb.Model, error) {
+	cache := ctxhelper.MustGetCacheManager(req.Context()).(cachetypes.Manager)
 
 	// Use unified lookup function
 	identifier, err := findModelIdentifier(req, requestCtx)
@@ -52,11 +46,11 @@ func findModel(req *http.Request, requestCtx interface{}, client *clientpb.Clien
 
 	// If there's a specific UUID, get model directly
 	if identifier.ID != "" {
-		model, err := q.ModelClient().Get(req.Context(), &modelpb.ModelGetRequest{Id: identifier.ID})
+		modelV, err := cache.GetByID(req.Context(), cachetypes.ItemTypeModel, identifier.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get model by uuid: %s", identifier.ID)
 		}
-		return model, nil
+		return modelV.(*modelpb.Model), nil
 	}
 
 	// Find by model name + optional publisher
@@ -77,7 +71,7 @@ func findModel(req *http.Request, requestCtx interface{}, client *clientpb.Clien
 }
 
 func getOneModelByNameAndPublisher(ctx context.Context, inputModelName string, inputModelPublisher string, clientID string) (*modelpb.Model, error) {
-	allClientModels, err := listAllClientModels(ctx, clientID)
+	allClientModels, err := cachehelpers.ListAllClientModels(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +116,7 @@ func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
 // - ${publisher}/${model.name}
 // - ${model.name}
 // - ${model.provider.type}/${model.name}
-func getMapOfAvailableNameWithModels(clientModels []*ModelWithProvider) map[string][]*modelpb.Model {
+func getMapOfAvailableNameWithModels(clientModels []*cachehelpers.ModelWithProvider) map[string][]*modelpb.Model {
 	modelsMap := make(map[string][]*modelpb.Model)
 	for _, model := range clientModels {
 		publisher := model.Metadata.Public["publisher"].GetStringValue()
@@ -144,7 +138,7 @@ func getMapOfAvailableNameWithModels(clientModels []*ModelWithProvider) map[stri
 	return modelsMap
 }
 
-func listAllModels(ctx context.Context) ([]*ModelWithProvider, error) {
+func listAllModels(ctx context.Context) ([]*cachehelpers.ModelWithProvider, error) {
 	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
 
 	// get models from cache
@@ -168,51 +162,19 @@ func listAllModels(ctx context.Context) ([]*ModelWithProvider, error) {
 	}
 
 	// combine models with providers
-	var result []*ModelWithProvider
+	var result []*cachehelpers.ModelWithProvider
 	for _, model := range models {
 		provider, ok := providerMap[model.ProviderId]
 		if !ok {
 			continue // skip models without provider
 		}
-		result = append(result, &ModelWithProvider{
+		result = append(result, &cachehelpers.ModelWithProvider{
 			Model:    model,
 			Provider: provider,
 		})
 	}
 
 	return result, nil
-}
-
-func listAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProvider, error) {
-	// get client model IDs directly from database (since it's per-client and changes frequently)
-	q := ctxhelper.MustGetDBClient(ctx)
-	clientModelsResp, err := q.ClientModelRelationClient().ListClientModels(ctx, &clientmodelrelationpb.ListClientModelsRequest{ClientId: clientID})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list client models: %v", err)
-	}
-
-	if len(clientModelsResp.ModelIds) == 0 {
-		return nil, nil
-	}
-
-	// get all models with providers
-	allModels, err := listAllModels(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// filter models by client relations
-	var clientModels []*ModelWithProvider
-	for _, model := range allModels {
-		for _, modelID := range clientModelsResp.ModelIds {
-			if model.Id == modelID {
-				clientModels = append(clientModels, model)
-				break
-			}
-		}
-	}
-
-	return clientModels, nil
 }
 
 func constructFriendlyError(ctx context.Context, inputModelName string, inputModelPublisher string) error {

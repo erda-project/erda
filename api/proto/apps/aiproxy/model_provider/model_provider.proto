@@ -52,6 +52,8 @@ message ModelProvider {
     string type = 7; // Company/Manufacturer/Vendor Name, such as: OpenAI, Azure, Aliyun, Terminus, etc.
     string apiKey = 8;
     metadata.Metadata metadata = 9;
+
+    string clientId = 10;
 }
 
 message ModelProviderCreateRequest {
@@ -60,14 +62,22 @@ message ModelProviderCreateRequest {
     string type = 3 [(validate.rules).string = {min_len: 2, max_len: 191}];
     string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
     metadata.Metadata metadata = 5;
+
+    string clientId = 6 [(validate.rules).string = {len: 36}];
 }
 
 message ModelProviderGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+
+    // auto-injected to restrict data permission
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelProviderDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+
+    // auto-injected to restrict data permission
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelProviderUpdateRequest {
@@ -77,6 +87,9 @@ message ModelProviderUpdateRequest {
     string type = 4 [(validate.rules).string = {min_len: 2, max_len: 191}];
     string apiKey = 5 [(validate.rules).string = {min_len: 0, max_len: 128}];
     metadata.Metadata metadata = 6;
+
+    // auto-injected to restrict data permission
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelProviderPagingRequest {
@@ -86,6 +99,8 @@ message ModelProviderPagingRequest {
     string type = 4 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     repeated string ids = 5 [(validate.rules).repeated.items.string = {len: 36}];
     repeated string orderBys = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+
+    string clientId = 7 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message ModelProviderPagingResponse {
