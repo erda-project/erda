@@ -65,6 +65,10 @@ func (c *BaseCacheItem) getLogger(ctx context.Context) logs.Logger {
 
 // ListAll implements the common logic for all cache items
 func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
+	return c.listAll(ctx, true)
+}
+
+func (c *BaseCacheItem) listAll(ctx context.Context, needClone bool) (uint64, any, error) {
 	// if cache is disabled, always query from database
 	if !c.config.Enabled {
 		c.getLogger(ctx).Warn("cache is disabled, fallback to database query")
@@ -74,7 +78,10 @@ func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
 	c.mu.RLock()
 	if c.lastOK && c.data != nil {
 		c.getLogger(ctx).Debugf("cache hit: %s", GetItemTypeName(c.itemType))
-		data := smartClone(c.data)
+		data := c.data
+		if needClone {
+			data = smartClone(c.data)
+		}
 		c.mu.RUnlock()
 		return 0, data, nil
 	}
@@ -88,11 +95,14 @@ func (c *BaseCacheItem) ListAll(ctx context.Context) (uint64, any, error) {
 	}
 	// write back to cache
 	c.mu.Lock()
-	copiedNewData := smartClone(newData)
-	c.data = copiedNewData
+	c.data = newData
+	resultData := c.data
+	if needClone {
+		resultData = smartClone(c.data)
+	}
 	c.lastOK = true
 	c.mu.Unlock()
-	return total, copiedNewData, nil
+	return total, resultData, nil
 }
 
 // smartClone:
@@ -136,12 +146,16 @@ func smartClone(data any) any {
 
 // GetByID implements the common logic for all cache items
 func (c *BaseCacheItem) GetByID(ctx context.Context, id string) (any, error) {
-	_, data, err := c.ListAll(ctx)
+	_, data, err := c.listAll(ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.GetByIDFromData(ctx, data, id)
+	v, err := c.GetByIDFromData(ctx, data, id)
+	if err != nil {
+		return nil, err
+	}
+	return smartClone(v), nil
 }
 
 // Refresh implements the common logic for all cache items
