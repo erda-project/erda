@@ -32,7 +32,7 @@ type DBClient struct {
 }
 
 func (dbClient *DBClient) ListClientMCPScope(ctx context.Context, request *pb.ListClientMCPScopeRequest) (*pb.ListAllocatedMCPScopeResponse, error) {
-	tx := dbClient.DB.Begin()
+	tx := dbClient.DB.WithContext(ctx)
 	var relations []*ClientMcpRelation
 
 	if err := TxCheckClientID(tx, request.ClientId); err != nil {
@@ -60,7 +60,7 @@ func (dbClient *DBClient) ListClientMCPScope(ctx context.Context, request *pb.Li
 }
 
 func (dbClient *DBClient) Allocate(ctx context.Context, req *pb.AllocateRequest) (*commonpb.VoidResponse, error) {
-	tx := dbClient.DB.Begin()
+	tx := dbClient.DB.WithContext(ctx)
 	// check client id
 	if err := TxCheckClientID(tx, req.ClientId); err != nil {
 		tx.Rollback()
@@ -83,7 +83,7 @@ func (dbClient *DBClient) Allocate(ctx context.Context, req *pb.AllocateRequest)
 }
 
 func (dbClient *DBClient) UnAllocate(ctx context.Context, req *pb.AllocateRequest) (*commonpb.VoidResponse, error) {
-	tx := dbClient.DB.Begin()
+	tx := dbClient.DB.WithContext(ctx)
 	// check client id
 	if err := TxCheckClientID(tx, req.ClientId); err != nil {
 		tx.Rollback()

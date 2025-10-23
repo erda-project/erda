@@ -164,6 +164,9 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 	}
 
 	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 	mcpServer := resp.GetData()
 
 	if scopes["*"] == nil && !slices.Contains(scopes[mcpServer.ScopeType].Ids, mcpServer.ScopeId) {
