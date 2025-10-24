@@ -15,9 +15,12 @@
 package ai_proxy
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
+	"time"
 )
 
 func init() {
@@ -29,6 +32,16 @@ func initPprof() {
 	runtime.SetBlockProfileRate(1)
 
 	go func() {
-		_ = http.ListenAndServe(":6060", nil)
+		server := &http.Server{
+			Addr:              ":6060",
+			ReadTimeout:       15 * time.Second,
+			ReadHeaderTimeout: 15 * time.Second,
+			WriteTimeout:      15 * time.Second,
+			IdleTimeout:       60 * time.Second,
+			Handler:           nil,
+		}
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("pprof server ListenAndServe error: %v", err)
+		}
 	}()
 }
