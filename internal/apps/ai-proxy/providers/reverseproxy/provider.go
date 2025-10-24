@@ -124,8 +124,6 @@ type provider struct {
 
 	Routes []*router_define.Route
 	Router *router_define.Router
-
-	healthCheckAPI http.HandlerFunc
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -153,12 +151,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}
 
-	p.HTTP.Handle("/health", http.MethodGet, func() http.HandlerFunc {
-		if p.healthCheckAPI != nil {
-			return p.healthCheckAPI
-		}
-		return func(w http.ResponseWriter, r *http.Request) {}
-	}())
+	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	p.ServeReverseProxyV2()
 
 	return nil
