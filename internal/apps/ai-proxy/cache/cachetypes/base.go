@@ -16,6 +16,7 @@ package cachetypes
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -32,13 +33,14 @@ import (
 // IQueryFromDB defines the interface for database queries
 type IQueryFromDB interface {
 	QueryFromDB(ctx context.Context) (uint64, any, error)
-	GetByIDFromData(ctx context.Context, data any, id string) (any, error)
+	GetIDValue(item any) (string, error)
 }
 
 // baseCacheItem provides the base implementation for CacheItem interface
 type BaseCacheItem struct {
 	data         any
 	lastOK       bool
+	index        map[string]any
 	mu           sync.RWMutex
 	DBClient     dao.DAO
 	itemType     ItemType       // identify the specific cache item type
@@ -76,16 +78,30 @@ func (c *BaseCacheItem) listAll(ctx context.Context, needClone bool) (uint64, an
 	}
 
 	c.mu.RLock()
-	if c.lastOK && c.data != nil {
-		c.getLogger(ctx).Debugf("cache hit: %s", GetItemTypeName(c.itemType))
-		data := c.data
-		if needClone {
-			data = smartClone(c.data)
-		}
-		c.mu.RUnlock()
-		return 0, data, nil
-	}
+	cached := c.lastOK && c.data != nil
 	c.mu.RUnlock()
+
+	if cached {
+		c.mu.Lock()
+		if c.lastOK && c.data != nil {
+			if c.index == nil {
+				index, err := c.buildIndexFromListData(c.data)
+				if err != nil {
+					c.mu.Unlock()
+					return 0, nil, err
+				}
+				c.index = index
+			}
+			data := c.data
+			if needClone {
+				data = smartClone(c.data)
+			}
+			c.mu.Unlock()
+			c.getLogger(ctx).Debugf("cache hit: %s", GetItemTypeName(c.itemType))
+			return 0, data, nil
+		}
+		c.mu.Unlock()
+	}
 
 	// fallback to database query
 	c.getLogger(ctx).Warnf("cache miss: %s, fallback to database query", GetItemTypeName(c.itemType))
@@ -93,16 +109,56 @@ func (c *BaseCacheItem) listAll(ctx context.Context, needClone bool) (uint64, an
 	if err != nil {
 		return 0, nil, err
 	}
-	// write back to cache
+
+	index, err := c.buildIndexFromListData(newData)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	resultData := newData
+	if needClone {
+		resultData = smartClone(newData)
+	}
+
 	c.mu.Lock()
 	c.data = newData
-	resultData := c.data
-	if needClone {
-		resultData = smartClone(c.data)
-	}
+	c.index = index
 	c.lastOK = true
 	c.mu.Unlock()
 	return total, resultData, nil
+}
+
+func (c *BaseCacheItem) buildIndexFromListData(data any) (map[string]any, error) {
+	index := make(map[string]any)
+	if data == nil {
+		return index, nil
+	}
+
+	value := reflect.ValueOf(data)
+	if value.Kind() == reflect.Ptr {
+		if value.IsNil() {
+			return index, nil
+		}
+		value = value.Elem()
+	}
+
+	if value.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("expected slice data for %s cache item", GetItemTypeName(c.itemType))
+	}
+
+	length := value.Len()
+	for i := 0; i < length; i++ {
+		elem := value.Index(i).Interface()
+		id, err := c.GetIDValue(elem)
+		if err != nil {
+			return nil, err
+		}
+		if id == "" {
+			return nil, fmt.Errorf("empty id for %s cache item", GetItemTypeName(c.itemType))
+		}
+		index[id] = elem
+	}
+	return index, nil
 }
 
 // smartClone:
@@ -146,14 +202,35 @@ func smartClone(data any) any {
 
 // GetByID implements the common logic for all cache items
 func (c *BaseCacheItem) GetByID(ctx context.Context, id string) (any, error) {
-	_, data, err := c.listAll(ctx, false)
-	if err != nil {
+	if !c.config.Enabled {
+		_, data, err := c.listAll(ctx, false)
+		if err != nil {
+			return nil, err
+		}
+		return c.getByIDFromData(ctx, data, id)
+	}
+
+	if _, _, err := c.listAll(ctx, false); err != nil {
 		return nil, err
 	}
 
-	v, err := c.GetByIDFromData(ctx, data, id)
+	c.mu.RLock()
+	v, ok := c.index[id]
+	c.mu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("%s with ID %s not found", GetItemTypeName(c.itemType), id)
+	}
+	return smartClone(v), nil
+}
+
+func (c *BaseCacheItem) getByIDFromData(ctx context.Context, data any, id string) (any, error) {
+	index, err := c.buildIndexFromListData(data)
 	if err != nil {
 		return nil, err
+	}
+	v, ok := index[id]
+	if !ok {
+		return nil, fmt.Errorf("%s with ID %s not found", GetItemTypeName(c.itemType), id)
 	}
 	return smartClone(v), nil
 }
@@ -168,8 +245,17 @@ func (c *BaseCacheItem) Refresh() (uint64, error) {
 		return 0, err
 	}
 
+	index, err := c.buildIndexFromListData(data)
+	if err != nil {
+		c.mu.Lock()
+		c.lastOK = false
+		c.mu.Unlock()
+		return 0, err
+	}
+
 	c.mu.Lock()
 	c.data = data
+	c.index = index
 	c.lastOK = true
 	c.mu.Unlock()
 	return total, nil

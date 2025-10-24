@@ -113,7 +113,7 @@ func (dbClient *DBClient) CreateWhenReceived(ctx context.Context, req *pb.AuditC
 	cputil.MustObjJSONTransfer(&meta, &pbMeta)
 	c.Metadata = metadata.FromProtobuf(&pbMeta)
 
-	if err := dbClient.DB.Create(c).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Create(c).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil

@@ -48,7 +48,6 @@ func WithCtxHelperItems(putAnyFunctions ...func(context.Context)) OptionFunc {
 
 func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		// inject context
 		ctx := ctxhelper.InitCtxMapIfNeed(r.Context())
 		r = r.WithContext(ctx)

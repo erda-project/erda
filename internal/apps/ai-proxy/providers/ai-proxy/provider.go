@@ -40,7 +40,7 @@ type provider struct {
 	L      logs.Logger
 	Dao    dao.DAO `autowired:"erda.apps.ai-proxy.dao"`
 
-	reverseproxy.Interface `autowired:"erda.app.reverse-proxy"`
+	ReverseProxy reverseproxy.Interface `autowired:"erda.app.reverse-proxy"`
 
 	cache cachetypes.Manager
 
@@ -52,7 +52,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	// initialize cache manager
 	p.cache = cache.NewCacheManager(p.Dao, p.L, false)
-	p.SetCacheManager(p.cache)
+	p.ReverseProxy.SetCacheManager(p.cache)
 
 	// initialize token usage collector
 	token_usage.InitUsageCollector(p.Dao)
@@ -62,7 +62,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.registerAIProxyManageAPI()
 	p.registerMcpProxyManageAPI()
 
-	p.ServeReverseProxyV2(reverseproxy.WithCtxHelperItems(
+	// custom health check
+	p.ReverseProxy.SetHealthCheckAPI(p.HealthCheckAPI())
+
+	p.ReverseProxy.ServeReverseProxyV2(reverseproxy.WithCtxHelperItems(
 		func(ctx context.Context) {
 			ctxhelper.PutAIProxyHandlers(ctx, p.handlers)
 		},

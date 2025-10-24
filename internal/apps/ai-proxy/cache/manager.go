@@ -27,7 +27,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/config"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 // cacheManager implements the Manager interface using CacheItem
@@ -61,8 +63,20 @@ func NewCacheManager(dao dao.DAO, logger logs.Logger, isMcpProxy bool) cachetype
 	return manager
 }
 
+func tryGetID(ctx context.Context) string {
+	callID, ok := ctxhelper.GetGeneratedCallID(ctx)
+	if ok {
+		return fmt.Sprintf("call: %s", callID)
+	}
+	return fmt.Sprintf("uuid: %s", uuid.New())
+}
+
 // ListAll returns all cached items of the specified type
 func (m *cacheManager) ListAll(ctx context.Context, itemType cachetypes.ItemType) (uint64, any, error) {
+	cacheReqID := tryGetID(ctx)
+	m.logger.Debugf("[%s] cache in: list all cache items for %s", cacheReqID, cachetypes.GetItemTypeName(itemType))
+	defer m.logger.Debugf("[%s] cache out: list all cache items for %s", cacheReqID, cachetypes.GetItemTypeName(itemType))
+
 	item := m.items[itemType]
 	if item == nil {
 		return 0, nil, fmt.Errorf("unsupported item type: %d", itemType)
@@ -73,6 +87,10 @@ func (m *cacheManager) ListAll(ctx context.Context, itemType cachetypes.ItemType
 
 // GetByID returns an item by ID for the specified type
 func (m *cacheManager) GetByID(ctx context.Context, itemType cachetypes.ItemType, id string) (any, error) {
+	cacheReqID := tryGetID(ctx)
+	m.logger.Debugf("[%s] cache in: get one cache item for %s, id: %s", cacheReqID, cachetypes.GetItemTypeName(itemType), id)
+	defer m.logger.Debugf("[%s] cache out: get one cache item for %s, id: %s", cacheReqID, cachetypes.GetItemTypeName(itemType), id)
+
 	item := m.items[itemType]
 	if item == nil {
 		return nil, fmt.Errorf("unsupported item type: %d", itemType)

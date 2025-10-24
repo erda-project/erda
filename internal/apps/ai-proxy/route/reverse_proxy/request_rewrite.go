@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/dumplog"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/skeleton"
+	auditskeleton "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/skeleton"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -89,7 +89,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 		ctxhelper.PutReverseProxyRequestInSnapshot(pr.In.Context(), &inSnap)
 
 		// create audit skeleton
-		if err := skeleton.CreateSkeleton(pr.In); err != nil {
+		if err := auditskeleton.CreateSkeleton(pr.In); err != nil {
 			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("failed to create audit skeleton: %v", err)
 		}
 

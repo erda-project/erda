@@ -46,17 +46,10 @@ func (c *providerCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error
 	return uint64(resp.Total), resp.List, nil
 }
 
-func (c *providerCacheItem) GetByIDFromData(ctx context.Context, data any, id string) (any, error) {
-	providers, ok := data.([]*pb.ModelProvider)
+func (c *providerCacheItem) GetIDValue(item any) (string, error) {
+	provider, ok := item.(*pb.ModelProvider)
 	if !ok {
-		return nil, fmt.Errorf("invalid provider data type")
+		return "", fmt.Errorf("invalid provider data type")
 	}
-
-	for _, provider := range providers {
-		if provider.Id == id {
-			return provider, nil
-		}
-	}
-
-	return nil, fmt.Errorf("provider with ID %s not found", id)
+	return provider.Id, nil
 }
