@@ -68,7 +68,7 @@ func (p *provider) initHandlers() {
 }
 
 func (p *provider) registerAIProxyManageAPI() {
-	register := p.Interface
+	register := p.ReverseProxy
 
 	clientpb.RegisterClientServiceImp(register, p.handlers.ClientHandler, p.getProtoOptions(permission.CheckClientPerm)...)
 	modelproviderpb.RegisterModelProviderServiceImp(register, p.handlers.ModelProviderHandler, p.getProtoOptions(permission.CheckModelProviderPerm)...)
@@ -85,7 +85,7 @@ func (p *provider) registerAIProxyManageAPI() {
 
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
+	mcppb.RegisterMCPServerServiceImp(p.ReverseProxy, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
 }
 
 func (p *provider) getProtoOptions(opts ...transport.ServiceOption) []transport.ServiceOption {

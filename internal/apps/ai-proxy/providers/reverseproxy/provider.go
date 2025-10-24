@@ -45,6 +45,7 @@ type Interface interface {
 	transport.Register
 	SetCacheManager(cachetypes.Manager)
 	ServeReverseProxyV2(options ...OptionFunc)
+	SetHealthCheckAPI(h http.HandlerFunc)
 }
 
 var (
@@ -167,6 +168,10 @@ func (p *provider) ServeReverseProxyV2(options ...OptionFunc) {
 
 func (p *provider) SetCacheManager(manager cachetypes.Manager) {
 	p.cacheManager = manager
+}
+
+func (p *provider) SetHealthCheckAPI(h http.HandlerFunc) {
+	p.HTTP.ForceHandle("/health", http.MethodGet, h)
 }
 
 func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {

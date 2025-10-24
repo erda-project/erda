@@ -15,7 +15,9 @@
 package skeleton
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -64,7 +66,9 @@ func CreateSkeleton(in *http.Request) error {
 	createReq.Email = vars.GetFromHeader(in.Header, vars.XAIProxyEmail)
 
 	// insert audit into db
-	newAudit, err := ctxhelper.MustGetDBClient(in.Context()).AuditClient().CreateWhenReceived(in.Context(), &createReq)
+	createAuditCtx, cancelF := context.WithTimeoutCause(in.Context(), time.Second, fmt.Errorf("create audit timeout"))
+	defer cancelF()
+	newAudit, err := ctxhelper.MustGetDBClient(in.Context()).AuditClient().CreateWhenReceived(createAuditCtx, &createReq)
 	if err != nil {
 		l := ctxhelper.MustGetLoggerBase(in.Context())
 		l.Errorf("failed to create audit: %v", err)
