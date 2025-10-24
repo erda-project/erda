@@ -46,17 +46,10 @@ func (c *clientCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error) 
 	return uint64(resp.Total), resp.List, nil
 }
 
-func (c *clientCacheItem) GetByIDFromData(ctx context.Context, data any, id string) (any, error) {
-	clients, ok := data.([]*pb.Client)
+func (c *clientCacheItem) GetIDValue(item any) (string, error) {
+	client, ok := item.(*pb.Client)
 	if !ok {
-		return nil, fmt.Errorf("invalid client data type")
+		return "", fmt.Errorf("invalid client data type")
 	}
-
-	for _, client := range clients {
-		if client.Id == id {
-			return client, nil
-		}
-	}
-
-	return nil, fmt.Errorf("client with ID %s not found", id)
+	return client.Id, nil
 }

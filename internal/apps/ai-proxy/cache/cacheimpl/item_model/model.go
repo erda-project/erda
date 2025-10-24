@@ -46,17 +46,10 @@ func (c *modelCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error) {
 	return uint64(resp.Total), resp.List, nil
 }
 
-func (c *modelCacheItem) GetByIDFromData(ctx context.Context, data any, id string) (any, error) {
-	models, ok := data.([]*pb.Model)
+func (c *modelCacheItem) GetIDValue(item any) (string, error) {
+	model, ok := item.(*pb.Model)
 	if !ok {
-		return nil, fmt.Errorf("invalid model data type")
+		return "", fmt.Errorf("invalid model data type")
 	}
-
-	for _, model := range models {
-		if model.Id == id {
-			return model, nil
-		}
-	}
-
-	return nil, fmt.Errorf("model with ID %s not found", id)
+	return model.Id, nil
 }

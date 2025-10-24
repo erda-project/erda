@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -51,10 +52,14 @@ type provider struct {
 	L      logs.Logger
 
 	Router *mux.Router
+
+	mu     sync.Mutex
+	routes map[string]*mux.Route
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.Router = mux.NewRouter()
+	p.routes = make(map[string]*mux.Route)
 	return nil
 }
 
@@ -80,23 +85,29 @@ func (p *provider) Close() error {
 }
 
 func (p *provider) Handle(path, method string, h http.Handler, middles ...Middle) {
+	method = normalizeMethod(method)
 	p.L.Infof("handle %s %s", path, method)
 	h = Wraps(h, middles...)
-	if method == "*" {
-		p.Router.Path(path).Handler(h)
-	} else {
-		p.Router.Path(path).Methods(strings.ToUpper(method)).Handler(h)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	route := p.registerRouteLocked(path, method, h)
+	key := p.routeKey(path, method)
+	if _, exists := p.routes[key]; !exists {
+		p.routes[key] = route
 	}
 }
 
 func (p *provider) HandlePrefix(prefix, method string, h http.Handler, middles ...Middle) {
+	method = normalizeMethod(method)
 	p.L.Infof("handle prefix %s %s", prefix, method)
 	h = Wraps(h, middles...)
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if method == "*" {
 		p.Router.PathPrefix(prefix).Handler(h)
-	} else {
-		p.Router.PathPrefix(prefix).Methods(strings.ToUpper(method)).Handler(h)
+		return
 	}
+	p.Router.PathPrefix(prefix).Methods(method).Handler(h)
 }
 
 func (p *provider) HandleMatch(match func(r *http.Request) bool, h http.Handler, middles ...Middle) {
@@ -115,6 +126,22 @@ func (p *provider) HandleMethodNotAllowed(h http.Handler, middles ...Middle) {
 	p.Router.MethodNotAllowedHandler = Wraps(h, middles...)
 }
 
+func (p *provider) ForceHandle(path, method string, h http.Handler, middles ...Middle) {
+	method = normalizeMethod(method)
+	p.L.Infof("force handle %s %s", path, method)
+	h = Wraps(h, middles...)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	key := p.routeKey(path, method)
+	if route, exists := p.routes[key]; exists {
+		route.Handler(h)
+		return
+	}
+	p.routes[key] = p.registerRouteLocked(path, method, h)
+}
+
 type Config struct {
 	Addr string `json:"addr" yaml:"addr"`
 }
@@ -124,4 +151,24 @@ func Wraps(h http.Handler, middles ...Middle) http.Handler {
 		h = m(h)
 	}
 	return h
+}
+
+func (p *provider) registerRouteLocked(path, method string, h http.Handler) *mux.Route {
+	route := p.Router.Path(path)
+	if method == "*" {
+		return route.Handler(h)
+	}
+	return route.Methods(method).Handler(h)
+}
+
+func (p *provider) routeKey(path, method string) string {
+	return method + " " + path
+}
+
+func normalizeMethod(method string) string {
+	method = strings.TrimSpace(method)
+	if method == "" || method == "*" {
+		return "*"
+	}
+	return strings.ToUpper(method)
 }

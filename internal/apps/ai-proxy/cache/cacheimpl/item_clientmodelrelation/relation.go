@@ -46,17 +46,10 @@ func (c *clientModelRelationCacheItem) QueryFromDB(ctx context.Context) (uint64,
 	return uint64(resp.Total), resp.List, nil
 }
 
-func (c *clientModelRelationCacheItem) GetByIDFromData(ctx context.Context, data any, id string) (any, error) {
-	relations, ok := data.([]*pb.ClientModelRelation)
+func (c *clientModelRelationCacheItem) GetIDValue(item any) (string, error) {
+	relation, ok := item.(*pb.ClientModelRelation)
 	if !ok {
-		return nil, fmt.Errorf("invalid client-relation-relation data type")
+		return "", fmt.Errorf("invalid client-relation-relation data type")
 	}
-
-	for _, relation := range relations {
-		if relation.Id == id {
-			return relation, nil
-		}
-	}
-
-	return nil, fmt.Errorf("client-model-relation with ID %s not found", id)
+	return relation.Id, nil
 }

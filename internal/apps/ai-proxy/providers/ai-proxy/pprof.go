@@ -12,17 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mux
+package ai_proxy
 
 import (
 	"net/http"
+	_ "net/http/pprof"
+	"runtime"
 )
 
-type Mux interface {
-	Handle(path, method string, h http.Handler, middles ...Middle)
-	HandlePrefix(prefix, method string, h http.Handler, middles ...Middle)
-	HandleMatch(match func(r *http.Request) bool, h http.Handler, middles ...Middle)
-	HandleNotFound(h http.Handler, middles ...Middle)
-	HandleMethodNotAllowed(h http.Handler, middles ...Middle)
-	ForceHandle(path, method string, h http.Handler, middles ...Middle)
+func init() {
+	initPprof()
+}
+
+func initPprof() {
+	runtime.SetMutexProfileFraction(100)
+	runtime.SetBlockProfileRate(1)
+
+	go func() {
+		_ = http.ListenAndServe(":6060", nil)
+	}()
 }
