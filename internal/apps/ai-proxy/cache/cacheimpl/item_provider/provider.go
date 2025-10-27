@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -36,7 +36,7 @@ func NewProviderCacheItem(dao dao.DAO, config *config.Config) cachetypes.CacheIt
 }
 
 func (c *providerCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error) {
-	resp, err := c.DBClient.ModelProviderClient().Paging(ctx, &pb.ModelProviderPagingRequest{
+	resp, err := c.DBClient.ServiceProviderClient().Paging(ctx, &pb.ServiceProviderPagingRequest{
 		PageNum:  1,
 		PageSize: 999,
 	})
@@ -47,7 +47,7 @@ func (c *providerCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error
 }
 
 func (c *providerCacheItem) GetIDValue(item any) (string, error) {
-	provider, ok := item.(*pb.ModelProvider)
+	provider, ok := item.(*pb.ServiceProvider)
 	if !ok {
 		return "", fmt.Errorf("invalid provider data type")
 	}

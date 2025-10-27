@@ -20,19 +20,19 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 )
 
 func TestGetServiceProviderType(t *testing.T) {
 	tests := []struct {
 		name     string
-		provider *modelproviderpb.ModelProvider
+		provider *serviceproviderpb.ServiceProvider
 		want     string
 	}{
 		{
 			name: "has service provider type",
-			provider: &modelproviderpb.ModelProvider{
+			provider: &serviceproviderpb.ServiceProvider{
 				Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{
 						metaKeyServiceProviderType: structpb.NewStringValue(common_types.ServiceProviderTypeVolcengineArk.String()),
@@ -48,19 +48,19 @@ func TestGetServiceProviderType(t *testing.T) {
 		},
 		{
 			name:     "nil metadata",
-			provider: &modelproviderpb.ModelProvider{},
+			provider: &serviceproviderpb.ServiceProvider{},
 			want:     "",
 		},
 		{
 			name: "nil public map",
-			provider: &modelproviderpb.ModelProvider{
+			provider: &serviceproviderpb.ServiceProvider{
 				Metadata: &metadatapb.Metadata{},
 			},
 			want: "",
 		},
 		{
 			name: "key missing",
-			provider: &modelproviderpb.ModelProvider{
+			provider: &serviceproviderpb.ServiceProvider{
 				Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{
 						"other": structpb.NewStringValue("value"),

@@ -23,8 +23,8 @@ import (
 )
 
 func GetAPISegment(ctx context.Context) *api_segment.API {
-	provider := ctxhelper.MustGetModelProvider(ctx)
+	provider := ctxhelper.MustGetServiceProvider(ctx)
 	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
-	providerMeta := providerNormalMeta.MustToModelProviderMeta()
+	providerMeta := providerNormalMeta.MustToServiceProviderMeta()
 	return providerMeta.Public.API
 }

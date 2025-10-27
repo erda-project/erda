@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler_model_provider
+package handler_service_provider
 
 import (
 	"context"
 	"fmt"
 
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
-type ModelProviderHandler struct {
+type ServiceProviderHandler struct {
 	DAO dao.DAO
 }
 
-func (h *ModelProviderHandler) Create(ctx context.Context, req *pb.ModelProviderCreateRequest) (*pb.ModelProvider, error) {
-	return h.DAO.ModelProviderClient().Create(ctx, req)
+func (h *ServiceProviderHandler) Create(ctx context.Context, req *pb.ServiceProviderCreateRequest) (*pb.ServiceProvider, error) {
+	return h.DAO.ServiceProviderClient().Create(ctx, req)
 }
 
-func (h *ModelProviderHandler) Get(ctx context.Context, req *pb.ModelProviderGetRequest) (*pb.ModelProvider, error) {
-	resp, err := h.DAO.ModelProviderClient().Get(ctx, req)
+func (h *ServiceProviderHandler) Get(ctx context.Context, req *pb.ServiceProviderGetRequest) (*pb.ServiceProvider, error) {
+	resp, err := h.DAO.ServiceProviderClient().Get(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (h *ModelProviderHandler) Get(ctx context.Context, req *pb.ModelProviderGet
 	return resp, nil
 }
 
-func (h *ModelProviderHandler) Delete(ctx context.Context, req *pb.ModelProviderDeleteRequest) (*commonpb.VoidResponse, error) {
+func (h *ServiceProviderHandler) Delete(ctx context.Context, req *pb.ServiceProviderDeleteRequest) (*commonpb.VoidResponse, error) {
 	// check models
 	modelPagingResp, err := h.DAO.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
 		PageNum:    1,
@@ -56,11 +56,11 @@ func (h *ModelProviderHandler) Delete(ctx context.Context, req *pb.ModelProvider
 	if modelPagingResp.Total > 0 {
 		return nil, fmt.Errorf("provider has related models, can not delete")
 	}
-	return h.DAO.ModelProviderClient().Delete(ctx, req)
+	return h.DAO.ServiceProviderClient().Delete(ctx, req)
 }
 
-func (h *ModelProviderHandler) Update(ctx context.Context, req *pb.ModelProviderUpdateRequest) (*pb.ModelProvider, error) {
-	resp, err := h.DAO.ModelProviderClient().Update(ctx, req)
+func (h *ServiceProviderHandler) Update(ctx context.Context, req *pb.ServiceProviderUpdateRequest) (*pb.ServiceProvider, error) {
+	resp, err := h.DAO.ServiceProviderClient().Update(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +68,8 @@ func (h *ModelProviderHandler) Update(ctx context.Context, req *pb.ModelProvider
 	return resp, nil
 }
 
-func (h *ModelProviderHandler) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
-	resp, err := h.DAO.ModelProviderClient().Paging(ctx, req)
+func (h *ServiceProviderHandler) Paging(ctx context.Context, req *pb.ServiceProviderPagingRequest) (*pb.ServiceProviderPagingResponse, error) {
+	resp, err := h.DAO.ServiceProviderClient().Paging(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (h *ModelProviderHandler) Paging(ctx context.Context, req *pb.ModelProvider
 	return resp, nil
 }
 
-func desensitizeProvider(ctx context.Context, item *pb.ModelProvider) {
+func desensitizeProvider(ctx context.Context, item *pb.ServiceProvider) {
 	// pass for: admin
 	if auth.IsAdmin(ctx) {
 		return

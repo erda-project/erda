@@ -29,7 +29,7 @@ import (
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 )
 
@@ -75,7 +75,7 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 					},
 				},
 			},
-			Provider: &providerpb.ModelProvider{
+			Provider: &providerpb.ServiceProvider{
 				Type: "Azure",
 			},
 		},
