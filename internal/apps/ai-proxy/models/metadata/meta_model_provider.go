@@ -22,11 +22,11 @@ import (
 )
 
 type (
-	ModelProviderMeta struct {
-		Public ModelProviderMetaPublic `json:"public,omitempty"`
-		Secret ModelProviderMetaSecret `json:"secret,omitempty"`
+	ServiceProviderMeta struct {
+		Public ServiceProviderMetaPublic `json:"public,omitempty"`
+		Secret ServiceProviderMetaSecret `json:"secret,omitempty"`
 	}
-	ModelProviderMetaPublic struct {
+	ServiceProviderMetaPublic struct {
 		Scheme   string `json:"scheme,omitempty"`   // deprecated, use @APIStyleConfig
 		Endpoint string `json:"endpoint,omitempty"` // deprecated, use @APIStyleConfig
 		Host     string `json:"host,omitempty"`     // deprecated, use @APIStyleConfig
@@ -37,27 +37,27 @@ type (
 		// API Related configs
 		API *api_segment.API `json:"api,omitempty"`
 	}
-	ModelProviderMetaSecret struct {
+	ServiceProviderMetaSecret struct {
 		AnotherAPIKey string `json:"anotherApiKey,omitempty"`
 	}
 )
 
-func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
+func (m *Metadata) ToServiceProviderMeta() (*ServiceProviderMeta, error) {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal Metadata to json: %v", err)
 	}
-	var result ModelProviderMeta
+	var result ServiceProviderMeta
 	if err := json.Unmarshal(b, &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal string to ModelProviderMeta: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal string to ServiceProviderMeta: %v", err)
 	}
 	return &result, nil
 }
 
-func (m *Metadata) MustToModelProviderMeta() *ModelProviderMeta {
-	meta, err := m.ToModelProviderMeta()
+func (m *Metadata) MustToServiceProviderMeta() *ServiceProviderMeta {
+	meta, err := m.ToServiceProviderMeta()
 	if err != nil {
-		panic(fmt.Sprintf("failed to convert Metadata to ModelProviderMeta: %v", err))
+		panic(fmt.Sprintf("failed to convert Metadata to ServiceProviderMeta: %v", err))
 	}
 	return meta
 }

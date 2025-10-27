@@ -31,7 +31,7 @@ import (
 type Handlers struct {
 	ClientHandler              *handler_client.ClientHandler
 	ModelHandler               *handler_model.ModelHandler
-	ModelProviderHandler       *handler_model_provider.ModelProviderHandler
+	ServiceProviderHandler     *handler_model_provider.ServiceProviderHandler
 	ClientModelRelationHandler *handler_client_model_relation.ClientModelRelationHandler
 	PromptHandler              *handler_prompt.PromptHandler
 	SessionHandler             *handler_session.SessionHandler

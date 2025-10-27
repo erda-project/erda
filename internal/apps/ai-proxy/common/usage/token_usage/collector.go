@@ -56,7 +56,7 @@ func Collect(resp *http.Response) {
 			}
 			return clientToken.Id
 		}(),
-		ProviderId: ctxhelper.MustGetModelProvider(ctx).Id,
+		ProviderId: ctxhelper.MustGetServiceProvider(ctx).Id,
 		ModelId:    ctxhelper.MustGetModel(ctx).Id,
 		CreatedAt:  timestamppb.New(ctxhelper.MustGetRequestBeginAt(ctx)),
 		Metadata:   nil,

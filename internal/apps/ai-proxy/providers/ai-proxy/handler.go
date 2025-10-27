@@ -27,8 +27,8 @@ import (
 	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	tokenusagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -55,7 +55,7 @@ func (p *provider) initHandlers() {
 	p.handlers = &aiproxytypes.Handlers{
 		ClientHandler:              &handler_client.ClientHandler{DAO: p.Dao},
 		ModelHandler:               &handler_model.ModelHandler{DAO: p.Dao},
-		ModelProviderHandler:       &handler_model_provider.ModelProviderHandler{DAO: p.Dao},
+		ServiceProviderHandler:     &handler_model_provider.ServiceProviderHandler{DAO: p.Dao},
 		ClientModelRelationHandler: &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao},
 		PromptHandler:              &handler_prompt.PromptHandler{DAO: p.Dao},
 		SessionHandler:             &handler_session.SessionHandler{DAO: p.Dao},
@@ -71,7 +71,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	register := p.ReverseProxy
 
 	clientpb.RegisterClientServiceImp(register, p.handlers.ClientHandler, p.getProtoOptions(permission.CheckClientPerm)...)
-	modelproviderpb.RegisterModelProviderServiceImp(register, p.handlers.ModelProviderHandler, p.getProtoOptions(permission.CheckModelProviderPerm)...)
+	serviceproviderpb.RegisterServiceProviderServiceImp(register, p.handlers.ServiceProviderHandler, p.getProtoOptions(permission.CheckServiceProviderPerm)...)
 	modelpb.RegisterModelServiceImp(register, p.handlers.ModelHandler, p.getProtoOptions(permission.CheckModelPerm)...)
 	clientmodelrelationpb.RegisterClientModelRelationServiceImp(register, p.handlers.ClientModelRelationHandler, p.getProtoOptions(permission.CheckClientModelRelationPerm)...)
 	promptpb.RegisterPromptServiceImp(register, p.handlers.PromptHandler, p.getProtoOptions(permission.CheckPromptPerm)...)

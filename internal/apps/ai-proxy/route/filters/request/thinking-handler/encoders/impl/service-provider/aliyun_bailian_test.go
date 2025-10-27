@@ -22,14 +22,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
-func newProviderWithServiceType(t common_types.ServiceProviderType) *modelproviderpb.ModelProvider {
-	return &modelproviderpb.ModelProvider{
+func newProviderWithServiceType(t common_types.ServiceProviderType) *serviceproviderpb.ServiceProvider {
+	return &serviceproviderpb.ServiceProvider{
 		Metadata: &metadatapb.Metadata{
 			Public: map[string]*structpb.Value{
 				"service_provider_type": structpb.NewStringValue(t.String()),
@@ -40,7 +40,7 @@ func newProviderWithServiceType(t common_types.ServiceProviderType) *modelprovid
 
 func TestBailianThinkingEncoder(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.PutModelProvider(ctx, newProviderWithServiceType(common_types.ServiceProviderTypeAliyunBailian))
+	ctxhelper.PutServiceProvider(ctx, newProviderWithServiceType(common_types.ServiceProviderTypeAliyunBailian))
 
 	encoder := &BailianThinkingEncoder{}
 
@@ -56,13 +56,13 @@ func TestBailianThinkingEncoder(t *testing.T) {
 
 func TestBailianThinkingEncoder_CanEncodeVariants(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.PutModelProvider(ctx, newProviderWithServiceType(common_types.ServiceProviderTypeAliyunBailian))
+	ctxhelper.PutServiceProvider(ctx, newProviderWithServiceType(common_types.ServiceProviderTypeAliyunBailian))
 
 	encoder := &BailianThinkingEncoder{}
 
 	assert.True(t, encoder.CanEncode(ctx))
 
 	ctx = ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.PutModelProvider(ctx, &modelproviderpb.ModelProvider{})
+	ctxhelper.PutServiceProvider(ctx, &serviceproviderpb.ServiceProvider{})
 	assert.False(t, encoder.CanEncode(ctx))
 }

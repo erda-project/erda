@@ -101,7 +101,7 @@ func (f *BedrockDirector) AwsBedrockDirector(pr *httputil.ProxyRequest, apiStyle
 // SignAwsRequest signs the request with AWS SigV4, clearing existing signatures first
 func SignAwsRequest(pr *httputil.ProxyRequest, bodyBytes []byte) error {
 	// get ak/sk
-	provider := ctxhelper.MustGetModelProvider(pr.Out.Context())
+	provider := ctxhelper.MustGetServiceProvider(pr.Out.Context())
 	ak := provider.Metadata.Secret["ak"].GetStringValue()
 	sk := provider.Metadata.Secret["sk"].GetStringValue()
 	if ak == "" || sk == "" {

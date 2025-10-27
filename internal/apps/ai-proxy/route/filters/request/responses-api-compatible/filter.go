@@ -49,7 +49,7 @@ var Creator filter_define.RequestRewriterCreator = func(_ string, _ json.RawMess
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// handle volcengine-ark
-	provider := ctxhelper.MustGetModelProvider(pr.In.Context())
+	provider := ctxhelper.MustGetServiceProvider(pr.In.Context())
 	serviceProviderType := common_types_util.GetServiceProviderType(provider)
 	if serviceProviderType == common_types.ServiceProviderTypeVolcengineArk.String() {
 		bodyCopy, err := body_util.SmartCloneBody(&pr.Out.Body, body_util.MaxSample)

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model_provider
+package service_provider
 
 import (
 	"context"
 
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
@@ -30,8 +30,8 @@ type DBClient struct {
 	DB *gorm.DB
 }
 
-func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelProviderCreateRequest) (*pb.ModelProvider, error) {
-	c := &ModelProvider{
+func (dbClient *DBClient) Create(ctx context.Context, req *pb.ServiceProviderCreateRequest) (*pb.ServiceProvider, error) {
+	c := &ServiceProvider{
 		Name:     req.Name,
 		Desc:     req.Desc,
 		Type:     req.Type,
@@ -45,18 +45,18 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelProviderCreat
 	return c.ToProtobuf(), nil
 }
 
-func (dbClient *DBClient) Get(ctx context.Context, req *pb.ModelProviderGetRequest) (*pb.ModelProvider, error) {
-	c := &ModelProvider{BaseModel: common.BaseModelWithID(req.Id), ClientID: req.ClientId}
-	whereC := &ModelProvider{ClientID: req.ClientId}
+func (dbClient *DBClient) Get(ctx context.Context, req *pb.ServiceProviderGetRequest) (*pb.ServiceProvider, error) {
+	c := &ServiceProvider{BaseModel: common.BaseModelWithID(req.Id), ClientID: req.ClientId}
+	whereC := &ServiceProvider{ClientID: req.ClientId}
 	if err := dbClient.DB.Model(c).First(c, whereC).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
 }
 
-func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelProviderDeleteRequest) (*commonpb.VoidResponse, error) {
-	c := &ModelProvider{BaseModel: common.BaseModelWithID(req.Id)}
-	whereC := &ModelProvider{ClientID: req.ClientId}
+func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ServiceProviderDeleteRequest) (*commonpb.VoidResponse, error) {
+	c := &ServiceProvider{BaseModel: common.BaseModelWithID(req.Id)}
+	whereC := &ServiceProvider{ClientID: req.ClientId}
 	sql := dbClient.DB.Model(c).Delete(c, whereC)
 	if sql.Error != nil {
 		return nil, sql.Error
@@ -67,8 +67,8 @@ func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelProviderDelet
 	return &commonpb.VoidResponse{}, nil
 }
 
-func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelProviderUpdateRequest) (*pb.ModelProvider, error) {
-	c := &ModelProvider{
+func (dbClient *DBClient) Update(ctx context.Context, req *pb.ServiceProviderUpdateRequest) (*pb.ServiceProvider, error) {
+	c := &ServiceProvider{
 		BaseModel: common.BaseModelWithID(req.Id),
 		Name:      req.Name,
 		Desc:      req.Desc,
@@ -77,18 +77,18 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelProviderUpdat
 		ClientID:  req.ClientId,
 		Metadata:  metadata.FromProtobuf(req.Metadata),
 	}
-	whereC := &ModelProvider{
+	whereC := &ServiceProvider{
 		BaseModel: common.BaseModelWithID(req.Id),
 		ClientID:  req.ClientId,
 	}
 	if err := dbClient.DB.Model(c).Where(whereC).Updates(c).Error; err != nil {
 		return nil, err
 	}
-	return dbClient.Get(ctx, &pb.ModelProviderGetRequest{Id: req.Id})
+	return dbClient.Get(ctx, &pb.ServiceProviderGetRequest{Id: req.Id})
 }
 
-func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
-	c := &ModelProvider{
+func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ServiceProviderPagingRequest) (*pb.ServiceProviderPagingResponse, error) {
+	c := &ServiceProvider{
 		Type:     req.Type,
 		ClientID: req.ClientId,
 	}
@@ -106,7 +106,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagin
 	}
 	var (
 		total int64
-		list  ModelProviders
+		list  ServiceProviders
 	)
 	if req.PageNum == 0 {
 		req.PageNum = 1
@@ -119,7 +119,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagin
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ModelProviderPagingResponse{
+	return &pb.ServiceProviderPagingResponse{
 		Total: total,
 		List:  list.ToProtobuf(),
 	}, nil

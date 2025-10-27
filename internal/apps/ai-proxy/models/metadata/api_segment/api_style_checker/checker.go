@@ -17,17 +17,17 @@ package api_style_checker
 import (
 	"strings"
 
-	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 )
 
-func CheckIsOpenAICompatibleByProvider(provider *providerpb.ModelProvider) bool {
+func CheckIsOpenAICompatibleByProvider(provider *providerpb.ServiceProvider) bool {
 	if provider == nil {
 		return false
 	}
 	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
-	providerMeta := providerNormalMeta.MustToModelProviderMeta()
+	providerMeta := providerNormalMeta.MustToServiceProviderMeta()
 	return providerMeta.Public.API != nil &&
 		strings.EqualFold(string(providerMeta.Public.API.APIStyle), string(api_style.APIStyleOpenAICompatible))
 }
