@@ -41,7 +41,7 @@ func _handleModelHeaders(resp *http.Response) {
 	if model, ok := ctxhelper.GetModel(resp.Request.Context()); ok && model != nil {
 		resp.Header.Set(vars.XAIProxyModelId, model.Id)
 		resp.Header.Set(vars.XAIProxyModelName, model.Name)
-		if provider, ok := ctxhelper.GetModelProvider(resp.Request.Context()); ok && provider != nil {
+		if provider, ok := ctxhelper.GetServiceProvider(resp.Request.Context()); ok && provider != nil {
 			resp.Header.Set(vars.XAIProxyProviderName, provider.Name)
 		}
 	}

@@ -15,11 +15,11 @@
 package common_types_util
 
 import (
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 )
 
 const metaKeyServiceProviderType = "service_provider_type"
 
-func GetServiceProviderType(p *modelproviderpb.ModelProvider) string {
+func GetServiceProviderType(p *serviceproviderpb.ServiceProvider) string {
 	return p.GetMetadata().GetPublic()[metaKeyServiceProviderType].GetStringValue()
 }

@@ -23,7 +23,7 @@ import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/cmd/ai-proxy/integration-tests/common"
 	"github.com/erda-project/erda/cmd/ai-proxy/integration-tests/config"
 )
@@ -33,7 +33,7 @@ type RichClient = richclientpb.RichClient
 type Client = clientpb.Client
 type RichModel = richclientpb.RichModel
 type Model = modelpb.Model
-type Provider = modelproviderpb.ModelProvider
+type Provider = serviceproviderpb.ServiceProvider
 
 // TestRichClientAPI tests all Rich Client API endpoints
 func TestRichClientAPI(t *testing.T) {

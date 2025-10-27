@@ -21,7 +21,7 @@ import (
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -153,10 +153,10 @@ func listAllModels(ctx context.Context) ([]*cachehelpers.ModelWithProvider, erro
 	if err != nil {
 		return nil, err
 	}
-	providers := providersV.([]*providerpb.ModelProvider)
+	providers := providersV.([]*providerpb.ServiceProvider)
 
 	// build provider mapping for fast lookup
-	providerMap := make(map[string]*providerpb.ModelProvider)
+	providerMap := make(map[string]*providerpb.ServiceProvider)
 	for _, provider := range providers {
 		providerMap[provider.Id] = provider
 	}

@@ -23,8 +23,8 @@ import (
 	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 )
@@ -37,12 +37,12 @@ var CheckClientPerm = CheckPermissions(
 	&MethodPermission{Method: clientpb.ClientServiceServer.Delete, OnlyAdmin: true},
 )
 
-var CheckModelProviderPerm = CheckPermissions(
-	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Create, AdminOrClient: true},
-	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Get, LoggedIn: true},
-	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Update, AdminOrClient: true},
-	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Delete, AdminOrClient: true},
-	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Paging, LoggedIn: true},
+var CheckServiceProviderPerm = CheckPermissions(
+	&MethodPermission{Method: serviceproviderpb.ServiceProviderServiceServer.Create, AdminOrClient: true},
+	&MethodPermission{Method: serviceproviderpb.ServiceProviderServiceServer.Get, LoggedIn: true},
+	&MethodPermission{Method: serviceproviderpb.ServiceProviderServiceServer.Update, AdminOrClient: true},
+	&MethodPermission{Method: serviceproviderpb.ServiceProviderServiceServer.Delete, AdminOrClient: true},
+	&MethodPermission{Method: serviceproviderpb.ServiceProviderServiceServer.Paging, LoggedIn: true},
 )
 
 var CheckModelPerm = CheckPermissions(

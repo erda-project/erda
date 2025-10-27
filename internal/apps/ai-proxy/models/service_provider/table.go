@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model_provider
+package service_provider
 
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
-type ModelProvider struct {
+type ServiceProvider struct {
 	common.BaseModel
 	Name     string            `gorm:"column:name;type:varchar(191)" json:"name" yaml:"name"`
 	Desc     string            `gorm:"column:desc;type:varchar(1024)" json:"desc" yaml:"desc"`
@@ -32,10 +32,10 @@ type ModelProvider struct {
 	Metadata metadata.Metadata `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
 }
 
-func (*ModelProvider) TableName() string { return "ai_proxy_model_provider" }
+func (*ServiceProvider) TableName() string { return "ai_proxy_model_provider" }
 
-func (m *ModelProvider) ToProtobuf() *pb.ModelProvider {
-	return &pb.ModelProvider{
+func (m *ServiceProvider) ToProtobuf() *pb.ServiceProvider {
+	return &pb.ServiceProvider{
 		Id:        m.ID.String,
 		CreatedAt: timestamppb.New(m.CreatedAt),
 		UpdatedAt: timestamppb.New(m.UpdatedAt),
@@ -49,11 +49,11 @@ func (m *ModelProvider) ToProtobuf() *pb.ModelProvider {
 	}
 }
 
-type ModelProviders []*ModelProvider
+type ServiceProviders []*ServiceProvider
 
-func (modelProviders ModelProviders) ToProtobuf() []*pb.ModelProvider {
-	var pbClients []*pb.ModelProvider
-	for _, c := range modelProviders {
+func (serviceProviders ServiceProviders) ToProtobuf() []*pb.ServiceProvider {
+	var pbClients []*pb.ServiceProvider
+	for _, c := range serviceProviders {
 		pbClients = append(pbClients, c.ToProtobuf())
 	}
 	return pbClients

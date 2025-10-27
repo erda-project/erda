@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy.model_provider;
-option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb";
+package erda.apps.aiproxy.service_provider;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb";
 
 import "google/api/annotations.proto";
 import "apps/aiproxy/metadata/metadata.proto";
@@ -9,39 +9,39 @@ import "google/protobuf/timestamp.proto";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/http.proto";
 
-service ModelProviderService {
-    rpc Create(ModelProviderCreateRequest) returns (ModelProvider) {
+service ServiceProviderService {
+    rpc Create(ServiceProviderCreateRequest) returns (ServiceProvider) {
         option(google.api.http) = {
-            post: "/api/ai-proxy/model-providers"
+            post: "/api/ai-proxy/service-providers"
         };
     }
 
-    rpc Get(ModelProviderGetRequest) returns (ModelProvider) {
+    rpc Get(ServiceProviderGetRequest) returns (ServiceProvider) {
         option(google.api.http) = {
-            get: "/api/ai-proxy/model-providers/{id}"
+            get: "/api/ai-proxy/service-providers/{id}"
         };
     }
 
-    rpc Delete(ModelProviderDeleteRequest) returns (common.VoidResponse) {
+    rpc Delete(ServiceProviderDeleteRequest) returns (common.VoidResponse) {
         option(google.api.http) = {
-            delete: "/api/ai-proxy/model-providers/{id}"
+            delete: "/api/ai-proxy/service-providers/{id}"
         };
     }
 
-    rpc Update(ModelProviderUpdateRequest) returns (ModelProvider) {
+    rpc Update(ServiceProviderUpdateRequest) returns (ServiceProvider) {
         option(google.api.http) = {
-            put: "/api/ai-proxy/model-providers/{id}"
+            put: "/api/ai-proxy/service-providers/{id}"
         };
     }
 
-    rpc Paging(ModelProviderPagingRequest) returns (ModelProviderPagingResponse) {
+    rpc Paging(ServiceProviderPagingRequest) returns (ServiceProviderPagingResponse) {
         option(google.api.http) = {
-            get: "/api/ai-proxy/model-providers?type={type}"
+            get: "/api/ai-proxy/service-providers?type={type}"
         };
     }
 }
 
-message ModelProvider {
+message ServiceProvider {
     string id = 1;
     google.protobuf.Timestamp createdAt = 2;
     google.protobuf.Timestamp updatedAt = 3;
@@ -56,7 +56,7 @@ message ModelProvider {
     string clientId = 10;
 }
 
-message ModelProviderCreateRequest {
+message ServiceProviderCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
     string type = 3 [(validate.rules).string = {min_len: 2, max_len: 191}];
@@ -66,21 +66,21 @@ message ModelProviderCreateRequest {
     string clientId = 6 [(validate.rules).string = {len: 36}];
 }
 
-message ModelProviderGetRequest {
+message ServiceProviderGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
 
     // auto-injected to restrict data permission
     string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
-message ModelProviderDeleteRequest {
+message ServiceProviderDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
 
     // auto-injected to restrict data permission
     string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
-message ModelProviderUpdateRequest {
+message ServiceProviderUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
@@ -92,7 +92,7 @@ message ModelProviderUpdateRequest {
     string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
-message ModelProviderPagingRequest {
+message ServiceProviderPagingRequest {
     uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
     uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
@@ -103,7 +103,7 @@ message ModelProviderPagingRequest {
     string clientId = 7 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
-message ModelProviderPagingResponse {
+message ServiceProviderPagingResponse {
     int64 total = 1;
-    repeated ModelProvider list = 2;
+    repeated ServiceProvider list = 2;
 }

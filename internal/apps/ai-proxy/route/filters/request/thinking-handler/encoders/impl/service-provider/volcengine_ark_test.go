@@ -22,14 +22,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
-func newVolcengineProvider(serviceType common_types.ServiceProviderType) *modelproviderpb.ModelProvider {
-	return &modelproviderpb.ModelProvider{
+func newVolcengineProvider(serviceType common_types.ServiceProviderType) *serviceproviderpb.ServiceProvider {
+	return &serviceproviderpb.ServiceProvider{
 		Metadata: &metadatapb.Metadata{
 			Public: map[string]*structpb.Value{
 				"service_provider_type": structpb.NewStringValue(serviceType.String()),
@@ -40,7 +40,7 @@ func newVolcengineProvider(serviceType common_types.ServiceProviderType) *modelp
 
 func TestVolcengineThinkingEncoder(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.PutModelProvider(ctx, newVolcengineProvider(common_types.ServiceProviderTypeVolcengineArk))
+	ctxhelper.PutServiceProvider(ctx, newVolcengineProvider(common_types.ServiceProviderTypeVolcengineArk))
 
 	encoder := &VolcengineThinkingEncoder{}
 
@@ -55,7 +55,7 @@ func TestVolcengineThinkingEncoder(t *testing.T) {
 
 func TestVolcengineThinkingEncoder_CanEncode_False(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.PutModelProvider(ctx, &modelproviderpb.ModelProvider{})
+	ctxhelper.PutServiceProvider(ctx, &serviceproviderpb.ServiceProvider{})
 
 	encoder := &VolcengineThinkingEncoder{}
 

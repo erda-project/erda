@@ -41,9 +41,9 @@ func New() *CustomHTTPDirector { return &CustomHTTPDirector{} }
 func (f *CustomHTTPDirector) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	r := pr.Out
 	ctx := r.Context()
-	provider := ctxhelper.MustGetModelProvider(ctx)
+	provider := ctxhelper.MustGetServiceProvider(ctx)
 	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
-	providerMeta := providerNormalMeta.MustToModelProviderMeta()
+	providerMeta := providerNormalMeta.MustToServiceProviderMeta()
 	// merge model & provider api segment
 	var modelAPISegment *api_segment.API
 	modelPublicAPISegmentValue, ok := ctxhelper.MustGetModel(ctx).Metadata.Public["api"]
@@ -246,7 +246,7 @@ func handleJSONPathTemplate(ctx context.Context, s string) string {
 	if !parser.NeedDoReplace(s) {
 		return s
 	}
-	provider := ctxhelper.MustGetModelProvider(ctx)
+	provider := ctxhelper.MustGetServiceProvider(ctx)
 	model := ctxhelper.MustGetModel(ctx)
 	availableObjects := map[string]any{
 		"provider": provider,

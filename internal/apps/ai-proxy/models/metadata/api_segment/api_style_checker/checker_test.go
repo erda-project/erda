@@ -21,13 +21,13 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
-	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 )
 
 func TestCheckIsOpenAICompatible(t *testing.T) {
 	type args struct {
-		provider *providerpb.ModelProvider
+		provider *providerpb.ServiceProvider
 	}
 	tests := []struct {
 		name string
@@ -37,7 +37,7 @@ func TestCheckIsOpenAICompatible(t *testing.T) {
 		{
 			name: "without api segment",
 			args: args{
-				provider: &providerpb.ModelProvider{Metadata: &metadatapb.Metadata{
+				provider: &providerpb.ServiceProvider{Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{},
 				}},
 			},
@@ -46,7 +46,7 @@ func TestCheckIsOpenAICompatible(t *testing.T) {
 		{
 			name: "with api segment, but not openai-compatible",
 			args: args{
-				provider: &providerpb.ModelProvider{Metadata: &metadatapb.Metadata{
+				provider: &providerpb.ServiceProvider{Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{
 						"api": func() *structpb.Value {
 							apiMap := map[string]any{
@@ -63,7 +63,7 @@ func TestCheckIsOpenAICompatible(t *testing.T) {
 		{
 			name: "with api segment, and apiStyle is openai-compatible",
 			args: args{
-				provider: &providerpb.ModelProvider{Metadata: &metadatapb.Metadata{
+				provider: &providerpb.ServiceProvider{Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{
 						"api": func() *structpb.Value {
 							apiMap := map[string]any{

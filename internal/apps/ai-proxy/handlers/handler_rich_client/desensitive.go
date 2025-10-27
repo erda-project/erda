@@ -17,7 +17,7 @@ package handler_rich_client
 import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 )
 
 // desensitiveModel removes sensitive information from model in-place
@@ -33,7 +33,7 @@ func desensitiveModel(model *modelpb.Model) *modelpb.Model {
 }
 
 // desensitiveProvider removes sensitive information from provider in-place
-func desensitiveProvider(provider *modelproviderpb.ModelProvider) *modelproviderpb.ModelProvider {
+func desensitiveProvider(provider *serviceproviderpb.ServiceProvider) *serviceproviderpb.ServiceProvider {
 	if provider == nil {
 		return nil
 	}

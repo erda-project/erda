@@ -23,7 +23,7 @@ import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 )
 
 func TestDesensitiveModel(t *testing.T) {
@@ -91,7 +91,7 @@ func TestDesensitiveProvider(t *testing.T) {
 	})
 
 	// Create test provider with sensitive data
-	provider := &modelproviderpb.ModelProvider{
+	provider := &serviceproviderpb.ServiceProvider{
 		Id:        "test-provider-id",
 		CreatedAt: timestamppb.Now(),
 		UpdatedAt: timestamppb.Now(),
@@ -159,7 +159,7 @@ func TestDesensitiveModel_NilMetadata(t *testing.T) {
 }
 
 func TestDesensitiveProvider_NilMetadata(t *testing.T) {
-	provider := &modelproviderpb.ModelProvider{
+	provider := &serviceproviderpb.ServiceProvider{
 		Id:       "test-provider-id",
 		Name:     "Test Provider",
 		ApiKey:   "sensitive-provider-key",
@@ -277,7 +277,7 @@ func TestDesensitiveProvider_ApiKeyDeletion(t *testing.T) {
 	})
 
 	// Create test provider with api config in public metadata
-	provider := &modelproviderpb.ModelProvider{
+	provider := &serviceproviderpb.ServiceProvider{
 		Id:     "test-provider-id",
 		Name:   "Test Provider",
 		ApiKey: "sensitive-provider-key",

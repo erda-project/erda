@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler_model_provider
+package handler_service_provider
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
@@ -36,14 +36,14 @@ func TestDesensitizeProvider(t *testing.T) {
 	tests := []struct {
 		name         string
 		setupCtx     func(context.Context)
-		buildPayload func() *pb.ModelProvider
+		buildPayload func() *pb.ServiceProvider
 		want         want
 	}{
 		{
 			name:     "non-admin hides sensitive fields",
 			setupCtx: nil,
-			buildPayload: func() *pb.ModelProvider {
-				return &pb.ModelProvider{
+			buildPayload: func() *pb.ServiceProvider {
+				return &pb.ServiceProvider{
 					ApiKey: "should-hide",
 					Metadata: &metadatapb.Metadata{
 						Secret: map[string]*structpb.Value{
@@ -62,8 +62,8 @@ func TestDesensitizeProvider(t *testing.T) {
 			setupCtx: func(ctx context.Context) {
 				ctxhelper.PutIsAdmin(ctx, true)
 			},
-			buildPayload: func() *pb.ModelProvider {
-				return &pb.ModelProvider{
+			buildPayload: func() *pb.ServiceProvider {
+				return &pb.ServiceProvider{
 					ApiKey: "keep-me",
 					Metadata: &metadatapb.Metadata{
 						Secret: map[string]*structpb.Value{
@@ -82,8 +82,8 @@ func TestDesensitizeProvider(t *testing.T) {
 			setupCtx: func(ctx context.Context) {
 				ctxhelper.PutClient(ctx, &clientpb.Client{Id: "client-1"})
 			},
-			buildPayload: func() *pb.ModelProvider {
-				return &pb.ModelProvider{
+			buildPayload: func() *pb.ServiceProvider {
+				return &pb.ServiceProvider{
 					ClientId: "client-1",
 					ApiKey:   "keep-me",
 					Metadata: &metadatapb.Metadata{

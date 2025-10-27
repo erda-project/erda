@@ -34,7 +34,7 @@ type VolcengineThinkingEncoder struct {
 }
 
 func (e *VolcengineThinkingEncoder) CanEncode(ctx context.Context) bool {
-	provider := ctxhelper.MustGetModelProvider(ctx)
+	provider := ctxhelper.MustGetServiceProvider(ctx)
 	return strings.EqualFold(common_types_util.GetServiceProviderType(provider), common_types.ServiceProviderTypeVolcengineArk.String())
 }
 

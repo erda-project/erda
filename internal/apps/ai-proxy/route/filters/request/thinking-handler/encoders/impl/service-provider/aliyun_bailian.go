@@ -33,7 +33,7 @@ type BailianThinkingEncoder struct {
 }
 
 func (e *BailianThinkingEncoder) CanEncode(ctx context.Context) bool {
-	provider := ctxhelper.MustGetModelProvider(ctx)
+	provider := ctxhelper.MustGetServiceProvider(ctx)
 	return strings.EqualFold(common_types_util.GetServiceProviderType(provider), common_types.ServiceProviderTypeAliyunBailian.String())
 }
 

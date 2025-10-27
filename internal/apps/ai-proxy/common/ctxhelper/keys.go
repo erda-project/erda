@@ -24,8 +24,8 @@ import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
@@ -38,7 +38,9 @@ type (
 	// Keys migrated from vars package
 	mapKeyClient          struct{ *clientpb.Client }
 	mapKeyModel           struct{ *modelpb.Model }
-	mapKeyModelProvider   struct{ *modelproviderpb.ModelProvider }
+	mapKeyServiceProvider struct {
+		*serviceproviderpb.ServiceProvider
+	}
 	mapKeyPromptTemplate  struct{ *promptpb.Prompt }
 	mapKeySession         struct{ *sessionpb.Session }
 	mapKeyClientToken     struct{ *clienttokenpb.ClientToken }

@@ -20,7 +20,7 @@ import (
 
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
@@ -28,7 +28,7 @@ import (
 // ModelWithProvider combines model with its provider information
 type ModelWithProvider struct {
 	*modelpb.Model
-	Provider *providerpb.ModelProvider
+	Provider *providerpb.ServiceProvider
 }
 
 func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProvider, error) {
@@ -55,7 +55,7 @@ func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProv
 		}
 		allModelsWithProvider = append(allModelsWithProvider, &ModelWithProvider{
 			Model:    model,
-			Provider: providerV.(*providerpb.ModelProvider),
+			Provider: providerV.(*providerpb.ServiceProvider),
 		})
 	}
 

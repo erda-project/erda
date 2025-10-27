@@ -27,8 +27,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/service_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/session"
 	usage_token "github.com/erda-project/erda/internal/apps/ai-proxy/models/usage/token"
 )
@@ -61,7 +61,7 @@ type DAO interface {
 	Q() *gorm.DB
 	Tx() *gorm.DB
 
-	ModelProviderClient() *model_provider.DBClient
+	ServiceProviderClient() *service_provider.DBClient
 	ClientClient() *client.DBClient
 	ModelClient() *model.DBClient
 	ClientModelRelationClient() *client_model_relation.DBClient
@@ -91,8 +91,8 @@ func (p *provider) Tx() *gorm.DB {
 	return p.DB.Session(&gorm.Session{})
 }
 
-func (p *provider) ModelProviderClient() *model_provider.DBClient {
-	return &model_provider.DBClient{DB: p.DB}
+func (p *provider) ServiceProviderClient() *service_provider.DBClient {
+	return &service_provider.DBClient{DB: p.DB}
 }
 
 func (p *provider) ClientClient() *client.DBClient {

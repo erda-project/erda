@@ -10,7 +10,7 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/http.proto";
 import "apps/aiproxy/client/client.proto";
 import "apps/aiproxy/model/model.proto";
-import "apps/aiproxy/model_provider/model_provider.proto";
+import "apps/aiproxy/service_provider/service_provider.proto";
 
 service RichClientService {
     rpc GetByAccessKeyId(GetByClientAccessKeyIdRequest) returns (RichClient) {
@@ -31,6 +31,6 @@ message RichClient {
 
 message RichModel {
     model.Model model = 1;
-    model_provider.ModelProvider provider = 2;
+    service_provider.ServiceProvider provider = 2;
 }
 
