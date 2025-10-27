@@ -21,9 +21,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_service_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 )
@@ -31,7 +31,7 @@ import (
 type Handlers struct {
 	ClientHandler              *handler_client.ClientHandler
 	ModelHandler               *handler_model.ModelHandler
-	ServiceProviderHandler     *handler_model_provider.ServiceProviderHandler
+	ServiceProviderHandler     *handler_service_provider.ServiceProviderHandler
 	ClientModelRelationHandler *handler_client_model_relation.ClientModelRelationHandler
 	PromptHandler              *handler_prompt.PromptHandler
 	SessionHandler             *handler_session.SessionHandler

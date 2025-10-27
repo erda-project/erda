@@ -39,9 +39,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_service_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
@@ -55,7 +55,7 @@ func (p *provider) initHandlers() {
 	p.handlers = &aiproxytypes.Handlers{
 		ClientHandler:              &handler_client.ClientHandler{DAO: p.Dao},
 		ModelHandler:               &handler_model.ModelHandler{DAO: p.Dao},
-		ServiceProviderHandler:     &handler_model_provider.ServiceProviderHandler{DAO: p.Dao},
+		ServiceProviderHandler:     &handler_service_provider.ServiceProviderHandler{DAO: p.Dao},
 		ClientModelRelationHandler: &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao},
 		PromptHandler:              &handler_prompt.PromptHandler{DAO: p.Dao},
 		SessionHandler:             &handler_session.SessionHandler{DAO: p.Dao},
