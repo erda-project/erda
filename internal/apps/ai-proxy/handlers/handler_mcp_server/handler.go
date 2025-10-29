@@ -28,15 +28,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
-
-const ScopeTypePlatform = "platform"
-const ScopeTypeClientId = "client"
-const AnyScopeType = "*"
-const AnyScopeId = "*"
 
 type MCPHandler struct {
 	DAO               dao.DAO
@@ -89,19 +85,19 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 
 		// add default scope
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: ScopeTypePlatform,
-			ScopeId:   AnyScopeId,
+			ScopeType: vars.McpScopeTypePlatform,
+			ScopeId:   vars.McpAnyScopeId,
 		})
 
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: ScopeTypeClientId,
+			ScopeType: vars.McpScopeTypeClientId,
 			ScopeId:   clientId,
 		})
 
 	} else {
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: AnyScopeType,
-			ScopeId:   AnyScopeId,
+			ScopeType: vars.McpAnyScopeType,
+			ScopeId:   vars.McpAnyScopeId,
 		})
 	}
 
@@ -157,10 +153,10 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 		}
 
 		scopes = result.Scope
-		scopes[AnyScopeType] = &cmspb.ScopeIdList{Ids: []string{"0"}}
-		scopes[ScopeTypeClientId] = &cmspb.ScopeIdList{Ids: []string{clientId}}
+		scopes[vars.McpAnyScopeType] = &cmspb.ScopeIdList{Ids: []string{"0"}}
+		scopes[vars.McpScopeTypeClientId] = &cmspb.ScopeIdList{Ids: []string{clientId}}
 	} else {
-		scopes[AnyScopeType] = &cmspb.ScopeIdList{Ids: []string{}}
+		scopes[vars.McpAnyScopeType] = &cmspb.ScopeIdList{Ids: []string{}}
 	}
 
 	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
@@ -212,19 +208,19 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 
 		// add default scope
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: ScopeTypePlatform,
-			ScopeId:   AnyScopeId,
+			ScopeType: vars.McpScopeTypePlatform,
+			ScopeId:   vars.McpAnyScopeId,
 		})
 
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: ScopeTypeClientId,
+			ScopeType: vars.McpScopeTypeClientId,
 			ScopeId:   clientId,
 		})
 
 	} else {
 		scopes = append(scopes, mcp_server.Scope{
-			ScopeType: AnyScopeType,
-			ScopeId:   AnyScopeId,
+			ScopeType: vars.McpAnyScopeType,
+			ScopeId:   vars.McpAnyScopeId,
 		})
 	}
 

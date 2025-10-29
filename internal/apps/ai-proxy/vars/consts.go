@@ -52,3 +52,13 @@ const (
 const (
 	EnvAIProxyAdminAuthKey = "AI_PROXY_ADMIN_AUTH_KEY"
 )
+
+const (
+	McpScopeTypePlatform = "platform"
+	McpScopeTypeClientId = "client"
+
+	McpDefaultScopeType = McpScopeTypePlatform
+	McpDefaultScopeId   = "0"
+	McpAnyScopeType     = "*"
+	McpAnyScopeId       = "*"
+)
