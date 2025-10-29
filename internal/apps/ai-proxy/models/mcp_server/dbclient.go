@@ -26,6 +26,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type DBClient struct {
@@ -55,11 +56,11 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		transportType = "sse"
 	}
 
-	scopeId := "0"
+	scopeId := vars.McpDefaultScopeId
 	if req.ScopeId != nil {
 		scopeId = *req.ScopeId
 	}
-	scopeType := "*"
+	scopeType := vars.McpDefaultScopeType
 	if req.ScopeType != nil {
 		scopeType = *req.ScopeType
 	}
