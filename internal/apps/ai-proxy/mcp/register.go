@@ -102,8 +102,8 @@ func (r *Register) register(ctx context.Context, svc *corev1.Service, clusterNam
 
 	scopeType := svc.Labels[vars.LabelMcpErdaCloudServiceScopeType]
 	if scopeType == "" {
-		scopeType = "*"
-		scopeId = "0"
+		scopeType = vars.McpDefaultScopeType
+		scopeId = vars.McpDefaultScopeId
 	}
 
 	ak, ok := svc.Labels[vars.LabelMcpErdaCloudServiceAuthorization]
