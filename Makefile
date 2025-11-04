@@ -211,12 +211,11 @@ prepare-ai-proxy:
 	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/route/filters/all/generate
 
 proto-go-in-ci:
-	cd api/proto-go && \
- 	make build-use-docker-image
+	PROTO_PATH_PREFIX="$(PROTO_PATH_PREFIX)" $(MAKE) -C api/proto-go build-use-docker-image
 
 proto-go-in-local:
-	cd api/proto-go && \
-	make fetch-remote-proto && make clean && make build
+	$(MAKE) -C api/proto-go fetch-remote-proto
+	PROTO_PATH_PREFIX="$(PROTO_PATH_PREFIX)" $(MAKE) -C api/proto-go clean build
 
 buildkit-image-all:
 	MAKE_BUILD_CMD=build-all ./build/scripts/buildkit_image.sh
