@@ -1,0 +1,61 @@
+{
+  "Qwen-VL-Plus": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "Qwen-VL（通义千问-VL）是阿里云推出的强大开源多模态大模型，支持中英文、高分辨率图片和多图对话，具备卓越的图像识别、推理、文本检测等综合视觉语言能力，在多个中英文多模态任务上逼近或超越GPT-4V和Gemini Ultra，广泛适用于智能问答、图文理解与分割、复杂跨模态应用等场景。",
+      "apiKey": "",
+      "type": "multimodal",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "image_recognition",
+              "video_recognition"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 131072,
+            "max_completion_tokens": 8192,
+            "max_prompt_tokens": 129024
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.0000045",
+            "image": "0.0002688",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.0000015",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          },
+          "request_type": "openai"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

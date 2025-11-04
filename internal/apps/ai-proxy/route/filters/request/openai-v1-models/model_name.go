@@ -24,8 +24,7 @@ import (
 )
 
 func GenerateModelNameWithPublisher(model *modelpb.Model) string {
-	publisher := GetModelPublisher(model)
-	return fmt.Sprintf("%s/%s", publisher, model.Name)
+	return fmt.Sprintf("%s/%s", model.Publisher, model.Name)
 }
 
 func GetModelDisplayName(model *modelpb.Model) string {

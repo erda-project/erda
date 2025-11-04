@@ -16,10 +16,30 @@ package common_types_util
 
 import (
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 )
 
 const metaKeyServiceProviderType = "service_provider_type"
 
 func GetServiceProviderType(p *serviceproviderpb.ServiceProvider) string {
-	return p.GetMetadata().GetPublic()[metaKeyServiceProviderType].GetStringValue()
+	if p == nil {
+		return ""
+	}
+	typ := p.GetType()
+	if common_types.ServiceProviderType(typ).IsValid() {
+		return typ
+	}
+	metadata := p.GetMetadata()
+	if metadata == nil {
+		return ""
+	}
+	public := metadata.GetPublic()
+	if public == nil {
+		return ""
+	}
+	value, ok := public[metaKeyServiceProviderType]
+	if !ok || value == nil {
+		return ""
+	}
+	return value.GetStringValue()
 }

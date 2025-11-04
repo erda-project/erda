@@ -1,0 +1,64 @@
+{
+  "gpt-4.1": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "GPT-4.1是OpenAI最新发布的通用大模型系列，在代码能力、指令遵循和超长上下文（支持百万tokens）上都有重大提升，整体超越GPT-4o系列，并以更低成本和更高速度覆盖API各类应用场景，是当前前沿AI智能的新标杆。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "structured_output",
+              "reasoning",
+              "image_recognition",
+              "embedding",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "image",
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1047576,
+            "max_completion_tokens": 32768,
+            "max_prompt_tokens": 1047576
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "deployment_name": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000008",
+            "image": "0",
+            "input_cache_read": "0.0000005",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000002",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.model_provider;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/templates/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+import "google/protobuf/struct.proto";
+
+service TemplateService {
+    rpc ListServiceProviderTemplates(TemplateListRequest) returns (TemplateListResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/templates/types/service-provider"
+        };
+    }
+    rpc ListModelTemplates(TemplateListRequest) returns (TemplateListResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/templates/types/model"
+        };
+    }
+}
+
+message Placeholder {
+    string name = 1;
+    bool required = 2;
+    string desc = 3;
+    string default = 4;
+    string example = 5;
+
+    string type = 6; // target type
+    google.protobuf.Struct mapping = 7;
+}
+
+message PlaceholderForCreate {
+    string name = 1;
+    bool required = 2;
+    string desc = 3;
+    string default = 4;
+    string example = 5;
+}
+
+message Template {
+    repeated Placeholder placeholders = 1;
+    google.protobuf.Struct config = 2;
+    google.protobuf.Struct metadata = 3;
+    bool deprecated = 4;
+}
+
+message TemplateForCreate {
+    string name = 1;
+    string desc = 2;
+    repeated PlaceholderForCreate placeholders = 3;
+    google.protobuf.Struct metadata = 4;
+    google.protobuf.Struct config = 7;
+
+    optional int64 instanceCount = 5;
+    optional int64 enabledInstanceCount = 6;
+    bool deprecated = 8;
+}
+
+message TemplateListRequest {
+    // auto-injected to restrict instanceCount
+    string clientId = 1 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    bool checkInstance = 2;
+    bool renderTemplate = 3; // render config
+}
+
+message TemplateListResponse {
+    int64 total = 1;
+    repeated TemplateForCreate list = 2;
+}

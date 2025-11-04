@@ -82,7 +82,7 @@ fake_subscriber.txt
 
 http-client.env.json
 
-api/proto-go
+api/proto-go/**/*.go
 
 # go test
 /coverage*

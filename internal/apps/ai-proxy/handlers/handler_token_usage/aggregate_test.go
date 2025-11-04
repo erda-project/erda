@@ -169,3 +169,7 @@ func (m *mockCache) GetByID(ctx context.Context, itemType cachetypes.ItemType, i
 	}
 	return model, nil
 }
+
+func (m *mockCache) TriggerRefresh(ctx context.Context, itemTypes ...cachetypes.ItemType) {
+	// no-op for tests
+}

@@ -1,0 +1,60 @@
+{
+  "gpt-4-vision-preview": {
+    "deprecated": true,
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "GPT-4 with Vision 支持图片转文字能力，可通过 API 调用实现多模态内容理解。\n\n该模型实际已经指向 gpt-4o。",
+      "apiKey": "",
+      "type": "multimodal",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "enable_thinking",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 128000,
+            "max_completion_tokens": 16384,
+            "max_prompt_tokens": null
+          },
+          "deployment_name": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.00001",
+            "image": "0.003613",
+            "input_cache_read": "0.00000125",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.0000025",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

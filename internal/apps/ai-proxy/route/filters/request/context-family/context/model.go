@@ -119,7 +119,7 @@ func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
 func getMapOfAvailableNameWithModels(clientModels []*cachehelpers.ModelWithProvider) map[string][]*modelpb.Model {
 	modelsMap := make(map[string][]*modelpb.Model)
 	for _, model := range clientModels {
-		publisher := model.Metadata.Public["publisher"].GetStringValue()
+		publisher := model.Publisher
 		keys := append([]string{},
 			fmt.Sprintf("%s/%s", publisher, model.Name),
 			model.Name,

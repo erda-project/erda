@@ -1,0 +1,81 @@
+{
+  "aws-bedrock": {
+    "placeholders": [
+      {
+        "name": "bedrock-access-key",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "bedrock-secret-key",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "bedrock-location",
+        "type": "string",
+        "example": "us-east-1",
+        "required": true
+      }
+    ],
+    "config": {
+      "type": "${@template.name}",
+      "desc": "AWS Bedrock",
+      "apiKey": "use:ak:sk",
+      "metadata": {
+        "public": {
+          "api": {
+            "apiStyle": "anthropic-compatible",
+            "apiStyleConfigs": {
+              "POST:/proxy/bedrock/model/{model}/{suffix}": {
+                "headers": {
+                  "x-api-key": [
+                    "set",
+                    "${@provider.apiKey}"
+                  ]
+                },
+                "host": "bedrock-runtime.${@provider.metadata.public.location}.amazonaws.com",
+                "method": "POST",
+                "path": [
+                  "replace",
+                  "/proxy/bedrock/",
+                  "/"
+                ],
+                "queryParams": {},
+                "scheme": "https"
+              },
+              "POST:/v1/chat/completions": {
+                "headers": {
+                  "accept": [
+                    "set",
+                    "application/json"
+                  ],
+                  "anthropic-version": [
+                    "set",
+                    "2023-06-01"
+                  ],
+                  "x-api-key": [
+                    "set",
+                    "${@provider.apiKey}"
+                  ]
+                },
+                "host": "bedrock-runtime.${@provider.metadata.public.location}.amazonaws.com",
+                "method": "POST",
+                "path": "/model/${@model.metadata.public.model_id}/invoke",
+                "queryParams": {},
+                "scheme": "https"
+              }
+            },
+            "apiVendor": "aws-bedrock"
+          },
+          "location": "${@template.placeholders.bedrock-location}",
+          "service_provider_type": "aws-bedrock"
+        },
+        "secret": {
+          "ak": "${@template.placeholders.bedrock-access-key}",
+          "sk": "${@template.placeholders.bedrock-secret-key}"
+        }
+      }
+    }
+  }
+}

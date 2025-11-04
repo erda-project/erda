@@ -1,0 +1,65 @@
+{
+  "claude-haiku-3.5": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "mapping": {
+          "by": {
+            "service_provider_type": {
+              "aws-bedrock": "us.anthropic.claude-3-haiku-20240307-v1:0"
+            }
+          },
+          "default": "${@template.name}"
+        }
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aws-bedrock"
+      ]
+    },
+    "config": {
+      "desc": "Claude 3.5 Haiku features offers enhanced capabilities in speed, coding accuracy, and tool use. Engineered to excel in real-time applications, it delivers quick response times that are essential for dynamic tasks such as chat interactions and immediate coding suggestions.\\n\\nThis makes it highly suitable for environments that demand both speed and precision, such as software development, customer service bots, and data management systems.\\n\\nThis model is currently pointing to [Claude 3.5 Haiku (2024-10-22)](/anthropic/claude-3-5-haiku-20241022).",
+      "apiKey": "use:ak:sk",
+      "type": "text_generation",
+      "publisher": "anthropic",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning"
+            ],
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 200000,
+            "max_completion_tokens": 8192,
+            "max_prompt_tokens": null
+          },
+          "model_id": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "pricing": {
+          "completion": "0.000004",
+          "image": "0",
+          "input_cache_read": "0.00000008",
+          "input_cache_write": "0.000001",
+          "internal_reasoning": "0",
+          "prompt": "0.0000008",
+          "request": "0",
+          "unit": "USD",
+          "web_search": "0"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

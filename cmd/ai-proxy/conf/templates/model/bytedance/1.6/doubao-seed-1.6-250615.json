@@ -1,0 +1,66 @@
+{
+  "doubao-seed-1.6-250615": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark"
+      ]
+    },
+    "config": {
+      "desc": "全新多模态深度思考模型，同时支持 thinking、non-thinking、auto三种思考模式。其中 non-thinking 模型对比 doubao-1.5-pro-32k-250115 模型大幅提升。",
+      "apiKey": "",
+      "type": "multimodal",
+      "publisher": "bytedance",
+      "metadata": {
+        "public": {
+          "_display_name": "ByteDance: Doubao-Seed-1.6",
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool",
+              "structured_output",
+              "image_recognition",
+              "video_recognition",
+              "enable_thinking"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text",
+              "image",
+              "video"
+            ]
+          },
+          "context": {
+            "context_length": 256000,
+            "max_completion_tokens": 64000,
+            "max_prompt_tokens": 224000
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000008",
+            "image": "0",
+            "input_cache_read": "0.000000162",
+            "input_cache_write": "0.000000017",
+            "internal_reasoning": "0",
+            "prompt": "0.0000008",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

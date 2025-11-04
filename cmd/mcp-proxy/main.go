@@ -31,7 +31,7 @@ var bootstrap string
 var routesFS embed.FS
 
 func main() {
-	config.InjectEmbedRoutesFS(routesFS)
+	config.InjectEmbedFS(&routesFS, nil)
 	common.Run(&servicehub.RunOptions{
 		Content: bootstrap,
 	})

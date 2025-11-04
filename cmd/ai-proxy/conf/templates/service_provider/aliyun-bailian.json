@@ -1,0 +1,49 @@
+{
+  "aliyun-bailian": {
+    "placeholders": [
+      {
+        "name": "api-key",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "another-api-key",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "config": {
+      "type": "${@template.name}",
+      "desc": "Aliyun Bailian",
+      "apiKey": "${@template.placeholders.api-key}",
+      "metadata": {
+        "public": {
+          "api": {
+            "apiStyle": "openai-compatible",
+            "apiStyleConfigs": {
+              "*:*": {
+                "headers": {
+                  "Authorization": [
+                    "Set",
+                    "Bearer ${@provider.apiKey}"
+                  ]
+                },
+                "host": "dashscope.aliyuncs.com",
+                "path": [
+                  "replace",
+                  "/v1",
+                  "/compatible-mode/v1"
+                ],
+                "scheme": "https"
+              }
+            }
+          },
+          "location": "cn"
+        },
+        "secret": {
+          "anotherApiKey": "${@template.placeholders.another-api-key}"
+        }
+      }
+    }
+  }
+}
