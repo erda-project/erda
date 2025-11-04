@@ -10,6 +10,7 @@ usage() {
     echo "ACTION: "
     echo "    build        build proto to go files."
     echo "    clean        clean result files of protocol building."
+    echo "    format       format generated go files."
     exit 1
 }
 if [ -z "$1" ]; then
@@ -19,13 +20,31 @@ fi
 PACKAGE_PATH=$(sed -n '/^module \(.*\)/p' go.mod)
 PACKAGE_PATH=${PACKAGE_PATH#"module "}
 
+resolve_proto_prefix() {
+    local prefix="${PROTO_PATH_PREFIX:-$MODULE_PATH}"
+    if [ -z "${prefix}" ]; then
+        return 1
+    fi
+    prefix=${prefix%/}
+    if [[ "${prefix}" == /* || "${prefix}" == *".."* ]]; then
+        echo "invalid prefix: ${prefix}" >&2
+        exit 1
+    fi
+    printf '%s' "${prefix}"
+    return 0
+}
+
 # build protocol
 build_protocol() {
     BASE_PATH="../proto"
     GEN_ALL_IMPORTS="true"
-    if [ -n "${MODULE_PATH}" ]; then
-        BASE_PATH="${BASE_PATH}/${MODULE_PATH}"
-        echo "base path: $BASE_PATH"
+    if prefix=$(resolve_proto_prefix); then
+        BASE_PATH="${BASE_PATH}/${prefix}"
+        if [ ! -d "${BASE_PATH}" ]; then
+            echo "base path not found: ${BASE_PATH}" >&2
+            exit 1
+        fi
+        echo "base path: ${BASE_PATH}"
         unset GEN_ALL_IMPORTS
     fi
     if [ -n "$GEN_ALL_IMPORTS" ]; then
@@ -35,32 +54,30 @@ build_protocol() {
         echo "package proto" >> all.go
         echo "import (" >> all.go
     fi
-    MODULES=$(find "${BASE_PATH}" -type d);
-    for path in ${MODULES}; do
-        HAS_PROTO_FILE=$(eval echo $(bash -c "find "${path}" -maxdepth 1 -name *.proto 2>/dev/null" | wc -l));
-        if [ ${HAS_PROTO_FILE} -gt 0 ]; then
-            if [ -z "$(echo ${path#../proto})" ]; then
-                continue; # skip ../proto
+    while IFS= read -r path; do
+        if [ -n "$(find "${path}" -maxdepth 1 -name "*.proto" -print -quit 2>/dev/null)" ]; then
+            local relative_path="${path#../proto/}"
+            if [ -z "${relative_path}" ]; then
+                continue # skip ../proto
             fi
-            MODULE_PATH=${path#../proto/};
-            echo "build module ${MODULE_PATH}";
-            mkdir -p ${MODULE_PATH}/pb;
-            mkdir -p ${MODULE_PATH}/client;
+            echo "build module ${relative_path}"
+            mkdir -p "${relative_path}/pb"
+            mkdir -p "${relative_path}/client"
             gohub protoc protocol \
                  --include=../proto \
-                 --msg_out="${MODULE_PATH}/pb" \
-                 --service_out="${MODULE_PATH}/pb" \
-                 --client_out="${MODULE_PATH}/client" \
+                 --msg_out="${relative_path}/pb" \
+                 --service_out="${relative_path}/pb" \
+                 --client_out="${relative_path}/client" \
                  --validate=true \
                  --json=true \
                  --json_opt=emit_defaults=true \
                  --json_opt=allow_unknown_fields=true \
-                 ${path}/*.proto
+                 "${path}"/*.proto
             if [ -n "$GEN_ALL_IMPORTS" ]; then
-                echo "_ \"${PACKAGE_PATH}/${MODULE_PATH}/pb\"" >> all.go
+                echo "_ \"${PACKAGE_PATH}/${relative_path}/pb\"" >> all.go
             fi
-        fi;
-    done;
+        fi
+    done < <(find "${BASE_PATH}" -type d)
     if [ -n "$GEN_ALL_IMPORTS" ]; then
         echo ")" >> all.go
         gofmt -w -l all.go
@@ -70,10 +87,43 @@ build_protocol() {
     echo "build all proto successfully !";
 }
 
+format_generated_code() {
+    echo "run gofmt && goimports"
+    local search_path="."
+    if prefix=$(resolve_proto_prefix); then
+        if [ ! -d "${prefix}" ]; then
+            echo "format: skip, directory '${prefix}' not found"
+            return 0
+        fi
+        search_path="${prefix}"
+    fi
+    GOFILES=$(find "${search_path}" -name "*.go")
+    if [ -z "$GOFILES" ]; then
+        return 0
+    fi
+    for path in $GOFILES; do
+        gofmt -w -l "$path"
+        goimports -w -l "$path"
+    done
+}
+
 # clean result files of building
 clean_result() {
-    find . -type d -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
-    rm -rf all.go
+    if prefix=$(resolve_proto_prefix); then
+        local target="./${prefix}"
+        if [ ! -d "${target}" ]; then
+            echo "skip clean: ${target} does not exist"
+            return
+        fi
+        echo "clean generated files under ${prefix}"
+        while IFS= read -r -d '' dir; do
+            rm -rf "${dir}"
+        done < <(find "${target}" -type d \( -name pb -o -name client \) -print0)
+        find "${target}" -depth -type d -empty -delete
+    else
+        find . -type d -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
+        rm -rf all.go
+    fi
 }
 
 case "$1" in
@@ -82,6 +132,9 @@ case "$1" in
         ;;
     "clean")
         clean_result
+        ;;
+    "format")
+        format_generated_code
         ;;
     *)
         usage
