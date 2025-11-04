@@ -1,21 +1,16 @@
 GOPROXY := https://goproxy.cn,direct
 GHPROXY := ""
 
-.PHONY: build clean
+.PHONY: build clean format
 build:
 	./build.sh build
-	@echo "" && make format
+	./build.sh format
 
 clean:
-	@./build.sh clean
+	./build.sh clean
 
 format:
-	@echo "run gofmt && goimports"
-	@GOFILES=$$(find . -name "*.go"); \
-	for path in $${GOFILES}; do \
-		gofmt -w -l $${path}; \
-		goimports -w -l $${path}; \
-	done;
+	./build.sh format
 
 auto-update-gohub-for-master:
 	@if [[ "$$(git rev-parse --abbrev-ref HEAD)" == "master" ]]; then \
@@ -36,6 +31,7 @@ build-use-docker-image:
 		-v $${proj_root}:/go/src/github.com/erda-project/erda \
 		-v $$(go env GOMODCACHE):/go/pkg/mod \
 		-e target_proj_root=$${target_proj_root} \
+		-e PROTO_PATH_PREFIX=$${PROTO_PATH_PREFIX} \
 		registry.erda.cloud/erda/gohub:1.0.10 \
 		sh -c 'cd /go/src/github.com/erda-project/erda && make proto-go-in-local'
 
