@@ -26,6 +26,7 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 )
 
@@ -119,4 +120,9 @@ var CheckAuditPerm = CheckPermissions(
 var CheckTokenUsagePerm = CheckPermissions(
 	&MethodPermission{Method: usagepb.TokenUsageServiceServer.Paging, LoggedIn: true},
 	&MethodPermission{Method: usagepb.TokenUsageServiceServer.Aggregate, LoggedIn: true},
+)
+
+var CheckTemplatePerm = CheckPermissions(
+	&MethodPermission{Method: templatepb.TemplateServiceServer.ListServiceProviderTemplates, LoggedIn: true},
+	&MethodPermission{Method: templatepb.TemplateServiceServer.ListModelTemplates, LoggedIn: true},
 )

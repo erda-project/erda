@@ -29,6 +29,7 @@ func desensitiveModel(model *modelpb.Model) *modelpb.Model {
 	if model.Metadata != nil {
 		model.Metadata.Secret = nil
 	}
+	model.TemplateParams = nil
 	return model
 }
 
@@ -45,6 +46,7 @@ func desensitiveProvider(provider *serviceproviderpb.ServiceProvider) *servicepr
 			delete(provider.Metadata.Public, "api")
 		}
 	}
+	provider.TemplateParams = nil
 	return provider
 }
 

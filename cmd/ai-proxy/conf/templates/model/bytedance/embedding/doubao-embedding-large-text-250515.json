@@ -1,0 +1,59 @@
+{
+  "doubao-embedding-large-text-250515": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark"
+      ]
+    },
+    "config": {
+      "desc": "doubao-embedding-large，一款由字节跳动研发的语义向量化模型，主要面向向量检索的使用场景，支持中、英双语。",
+      "apiKey": "",
+      "type": "embedding",
+      "publisher": "bytedance",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "embedding",
+              "audio_transcription",
+              "audio_translation"
+            ],
+            "input_modalities": [
+              "audio",
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 4000,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0.0",
+            "input_cache_read": "0.0",
+            "input_cache_write": "0.0",
+            "internal_reasoning": "0.0",
+            "prompt": "5.00000000000e-8",
+            "request": "0.0",
+            "unit": "CNY",
+            "web_search": "0.0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

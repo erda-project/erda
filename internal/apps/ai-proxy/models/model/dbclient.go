@@ -16,6 +16,7 @@ package model
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -31,17 +32,21 @@ type DBClient struct {
 	DB *gorm.DB
 }
 
-func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelCreateRequest) (*pb.Model, error) {
+func (dbClient *DBClient) Create(ctx context.Context, req *pb.Model) (*pb.Model, error) {
 	c := &Model{
-		Name:       req.Name,
-		Desc:       req.Desc,
-		Type:       model_type.GetModelTypeFromProtobuf(req.Type),
-		ProviderID: req.ProviderId,
-		APIKey:     req.ApiKey,
-		ClientID:   req.ClientId,
-		Metadata:   metadata.FromProtobuf(req.Metadata),
+		Name:           req.Name,
+		Desc:           req.Desc,
+		Type:           model_type.GetModelTypeFromProtobuf(req.Type),
+		Publisher:      req.Publisher,
+		ProviderID:     req.ProviderId,
+		APIKey:         req.ApiKey,
+		ClientID:       req.ClientId,
+		TemplateID:     req.TemplateId,
+		TemplateParams: req.TemplateParams,
+		IsEnabled:      req.IsEnabled,
+		Metadata:       metadata.FromProtobuf(req.Metadata),
 	}
-	if err := dbClient.DB.Model(c).Create(c).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).Create(c).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
@@ -50,33 +55,39 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelCreateRequest
 func (dbClient *DBClient) Get(ctx context.Context, req *pb.ModelGetRequest) (*pb.Model, error) {
 	c := &Model{BaseModel: common.BaseModelWithID(req.Id)}
 	whereC := &Model{ClientID: req.ClientId}
-	if err := dbClient.DB.Model(c).First(c, whereC).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).First(c, whereC).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
 }
 
-func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelUpdateRequest) (*pb.Model, error) {
+func (dbClient *DBClient) Update(ctx context.Context, req *pb.Model) (*pb.Model, error) {
+	if req.Id == "" {
+		return nil, gorm.ErrPrimaryKeyRequired
+	}
 	c := &Model{
-		BaseModel:  common.BaseModelWithID(req.Id),
-		Name:       req.Name,
-		Desc:       req.Desc,
-		Type:       model_type.GetModelTypeFromProtobuf(req.Type),
-		ProviderID: req.ProviderId,
-		APIKey:     req.ApiKey,
-		Metadata:   metadata.FromProtobuf(req.Metadata),
+		BaseModel:      common.BaseModelWithID(req.Id),
+		Name:           req.Name,
+		Desc:           req.Desc,
+		APIKey:         req.ApiKey,
+		TemplateParams: req.TemplateParams,
+		IsEnabled:      req.IsEnabled,
+		Metadata:       metadata.FromProtobuf(req.Metadata),
 	}
 	whereC := &Model{
 		BaseModel: common.BaseModelWithID(req.Id),
 		ClientID:  req.ClientId,
 	}
-	if err := dbClient.DB.Model(c).Where(whereC).Updates(c).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).Where(whereC).Updates(c).Error; err != nil {
 		return nil, err
 	}
 	return dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id})
 }
 
 func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelDeleteRequest) (*commonpb.VoidResponse, error) {
+	if req.Id == "" {
+		return nil, gorm.ErrPrimaryKeyRequired
+	}
 	c := &Model{BaseModel: common.BaseModelWithID(req.Id)}
 	whereC := &Model{ClientID: req.ClientId}
 	sql := dbClient.DB.Model(c).Delete(c, whereC)
@@ -93,6 +104,8 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 	c := &Model{
 		ProviderID: req.ProviderId,
 		ClientID:   req.ClientId,
+		TemplateID: req.TemplateId,
+		IsEnabled:  req.IsEnabled,
 	}
 	sql := dbClient.DB.Model(c).Where(c)
 	if req.Name != "" {
@@ -154,4 +167,43 @@ func (dbClient *DBClient) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.
 		return nil, err
 	}
 	return &commonpb.VoidResponse{}, nil
+}
+
+func (dbClient *DBClient) GetClientModelIDs(ctx context.Context, clientId string) ([]string, error) {
+	var modelClientIdClause string
+	var relationClientIdClause string
+	if clientId == "" {
+		modelClientIdClause = "(m.client_id = ? or m.client_id IS NULL)"
+		relationClientIdClause = "(r.client_id = ? or r.client_id IS NULL)"
+	} else {
+		modelClientIdClause = "m.client_id = ?"
+		relationClientIdClause = "r.client_id = ?"
+	}
+	sql := fmt.Sprintf(`
+SELECT
+    t.model_id
+FROM (
+    -- client-belonged models
+    SELECT
+        m.id          AS model_id
+    FROM ai_proxy_model AS m
+    WHERE %s and (m.deleted_at IS NULL or m.deleted_at <= '1970-01-01 08:00:00')
+
+    UNION
+
+    -- platform-assigned models
+    SELECT
+        r.model_id    AS model_id
+    FROM ai_proxy_client_model_relation AS r
+    WHERE %s and (r.deleted_at IS NULL or r.deleted_at <= '1970-01-01 08:00:00')
+) AS t
+`, modelClientIdClause, relationClientIdClause)
+	var ids []string
+	if err := dbClient.DB.WithContext(ctx).Raw(sql,
+		clientId,
+		clientId,
+	).Scan(&ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
 }

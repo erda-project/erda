@@ -18,11 +18,22 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mohae/deepcopy"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
+	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ServiceProviderHandler struct {
@@ -30,17 +41,61 @@ type ServiceProviderHandler struct {
 }
 
 func (h *ServiceProviderHandler) Create(ctx context.Context, req *pb.ServiceProviderCreateRequest) (*pb.ServiceProvider, error) {
-	return h.DAO.ServiceProviderClient().Create(ctx, req)
-}
+	// check template
+	tpl, err := cachehelpers.GetAndCheckTemplateByTypeName(ctx, templatetypes.TemplateTypeServiceProvider, req.TemplateId, req.TemplateParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get template: %w", err)
+	}
+	// convert template.config for easy-use
+	var rawProviderTemplate pb.ServiceProvider
+	cputil.MustObjJSONTransfer(tpl.Config, &rawProviderTemplate)
 
-func (h *ServiceProviderHandler) Get(ctx context.Context, req *pb.ServiceProviderGetRequest) (*pb.ServiceProvider, error) {
-	resp, err := h.DAO.ServiceProviderClient().Get(ctx, req)
+	renderedTpl := deepcopy.Copy(tpl).(*templatepb.Template)
+	if err := template.RenderTemplate(req.TemplateId, renderedTpl, req.TemplateParams); err != nil {
+		return nil, fmt.Errorf("failed to render template: %w", err)
+	}
+	// convert template.config for easy-use
+	var renderedProviderTemplate pb.ServiceProvider
+	cputil.MustObjJSONTransfer(renderedTpl.Config, &renderedProviderTemplate)
+
+	// type
+	if !common_types.ServiceProviderType(renderedProviderTemplate.Type).IsValid() {
+		return nil, fmt.Errorf("invalid provider type: %s", rawProviderTemplate.Type)
+	}
+
+	c := pb.ServiceProvider{
+		Name:           req.Name,
+		Desc:           strutil.FirstNoneEmpty(req.Desc, rawProviderTemplate.Desc),
+		Type:           renderedProviderTemplate.Type, // use rendered value for paging
+		ApiKey:         rawProviderTemplate.ApiKey,
+		Metadata:       req.Metadata, // only store requested metadata; all metadata will be merged when display or use
+		ClientId:       req.ClientId,
+		TemplateId:     req.TemplateId,
+		TemplateParams: req.TemplateParams,
+	}
+	result, err := h.DAO.ServiceProviderClient().Create(ctx, &c)
 	if err != nil {
 		return nil, err
 	}
+	// trigger cache refresh
+	go ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager).TriggerRefresh(ctx, cachetypes.ItemTypeProvider)
+	return result, nil
+}
+
+func (h *ServiceProviderHandler) Get(ctx context.Context, req *pb.ServiceProviderGetRequest) (*pb.ServiceProvider, error) {
+	provider, err := h.DAO.ServiceProviderClient().Get(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if req.RenderTemplate {
+		provider, err = cachehelpers.GetRenderedServiceProviderByID(ctx, provider.Id)
+		if err != nil {
+			return nil, err
+		}
+	}
 	// data sensitive
-	desensitizeProvider(ctx, resp)
-	return resp, nil
+	desensitizeProvider(ctx, provider)
+	return provider, nil
 }
 
 func (h *ServiceProviderHandler) Delete(ctx context.Context, req *pb.ServiceProviderDeleteRequest) (*commonpb.VoidResponse, error) {
@@ -56,16 +111,41 @@ func (h *ServiceProviderHandler) Delete(ctx context.Context, req *pb.ServiceProv
 	if modelPagingResp.Total > 0 {
 		return nil, fmt.Errorf("provider has related models, can not delete")
 	}
-	return h.DAO.ServiceProviderClient().Delete(ctx, req)
-}
-
-func (h *ServiceProviderHandler) Update(ctx context.Context, req *pb.ServiceProviderUpdateRequest) (*pb.ServiceProvider, error) {
-	resp, err := h.DAO.ServiceProviderClient().Update(ctx, req)
+	result, err := h.DAO.ServiceProviderClient().Delete(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	desensitizeProvider(ctx, resp)
-	return resp, nil
+	// trigger cache refresh
+	go ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager).TriggerRefresh(ctx, cachetypes.ItemTypeProvider)
+	return result, nil
+}
+
+func (h *ServiceProviderHandler) Update(ctx context.Context, req *pb.ServiceProviderUpdateRequest) (*pb.ServiceProvider, error) {
+	// get current
+	current, err := h.DAO.ServiceProviderClient().Get(ctx, &pb.ServiceProviderGetRequest{Id: req.Id})
+	if err != nil {
+		return nil, err
+	}
+	u := pb.ServiceProvider{
+		Id:             req.Id,
+		Name:           req.Name,
+		Desc:           req.Desc,
+		Metadata:       req.Metadata,
+		ClientId:       req.ClientId,
+		TemplateParams: req.TemplateParams,
+	}
+	if req.IsEnabled == nil {
+		u.IsEnabled = current.IsEnabled
+	} else {
+		u.IsEnabled = req.IsEnabled
+	}
+	result, err := h.DAO.ServiceProviderClient().Update(ctx, &u)
+	if err != nil {
+		return nil, err
+	}
+	// trigger cache refresh
+	go ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager).TriggerRefresh(ctx, cachetypes.ItemTypeProvider)
+	return result, nil
 }
 
 func (h *ServiceProviderHandler) Paging(ctx context.Context, req *pb.ServiceProviderPagingRequest) (*pb.ServiceProviderPagingResponse, error) {
@@ -74,7 +154,14 @@ func (h *ServiceProviderHandler) Paging(ctx context.Context, req *pb.ServiceProv
 		return nil, err
 	}
 	// data sensitive
-	for _, item := range resp.List {
+	for i, item := range resp.List {
+		if req.RenderTemplate {
+			item, err = cachehelpers.GetRenderedServiceProviderByID(ctx, item.Id)
+			if err != nil {
+				return nil, err
+			}
+			resp.List[i] = item
+		}
 		desensitizeProvider(ctx, item)
 	}
 	return resp, nil
@@ -92,4 +179,5 @@ func desensitizeProvider(ctx context.Context, item *pb.ServiceProvider) {
 	// hide sensitive data
 	item.ApiKey = ""
 	item.Metadata.Secret = nil
+	item.TemplateParams = nil
 }

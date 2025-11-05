@@ -1,0 +1,65 @@
+{
+  "claude-sonnet-3.7": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "mapping": {
+          "by": {
+            "service_provider_type": {
+              "aws-bedrock": "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+            }
+          },
+          "default": "${@template.name}"
+        }
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aws-bedrock"
+      ]
+    },
+    "config": {
+      "desc": "cross-region inference",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "anthropic",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning"
+            ],
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 200000,
+            "max_completion_tokens": 64000,
+            "max_prompt_tokens": null
+          },
+          "model_id": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000015",
+            "image": "0.0048",
+            "input_cache_read": "0.0000003",
+            "input_cache_write": "0.00000375",
+            "internal_reasoning": "0",
+            "prompt": "0.000003",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

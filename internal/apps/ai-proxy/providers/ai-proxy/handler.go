@@ -30,8 +30,10 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	tokenusagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
@@ -43,6 +45,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_service_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
@@ -51,7 +54,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func (p *provider) initHandlers() {
+func (p *provider) initHandlers(templates templatetypes.TemplatesByType) {
 	p.handlers = &aiproxytypes.Handlers{
 		ClientHandler:              &handler_client.ClientHandler{DAO: p.Dao},
 		ModelHandler:               &handler_model.ModelHandler{DAO: p.Dao},
@@ -64,6 +67,7 @@ func (p *provider) initHandlers() {
 		RichClientHandler:          &handler_rich_client.ClientHandler{DAO: p.Dao},
 		AuditHandler:               &handler_audit.AuditHandler{DAO: p.Dao},
 		TokenUsageHandler:          &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache},
+		TemplateHandler:            &handler_template.TemplateHandler{Cache: p.cache},
 	}
 }
 
@@ -81,6 +85,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	richclientpb.RegisterRichClientServiceImp(register, p.handlers.RichClientHandler, p.getProtoOptions(permission.CheckRichClientPerm)...)
 	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, p.getProtoOptions(permission.CheckAuditPerm)...)
 	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, p.getProtoOptions(permission.CheckTokenUsagePerm)...)
+	templatepb.RegisterTemplateServiceImp(register, p.handlers.TemplateHandler, p.getProtoOptions(permission.CheckTemplatePerm)...)
 }
 
 func (p *provider) registerMcpProxyManageAPI() {

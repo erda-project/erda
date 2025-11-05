@@ -30,16 +30,19 @@ type DBClient struct {
 	DB *gorm.DB
 }
 
-func (dbClient *DBClient) Create(ctx context.Context, req *pb.ServiceProviderCreateRequest) (*pb.ServiceProvider, error) {
+func (dbClient *DBClient) Create(ctx context.Context, req *pb.ServiceProvider) (*pb.ServiceProvider, error) {
 	c := &ServiceProvider{
-		Name:     req.Name,
-		Desc:     req.Desc,
-		Type:     req.Type,
-		APIKey:   req.ApiKey,
-		ClientID: req.ClientId,
-		Metadata: metadata.FromProtobuf(req.Metadata),
+		Name:           req.Name,
+		Desc:           req.Desc,
+		Type:           req.Type,
+		APIKey:         req.ApiKey,
+		ClientID:       req.ClientId,
+		TemplateID:     req.TemplateId,
+		TemplateParams: req.TemplateParams,
+		IsEnabled:      req.IsEnabled,
+		Metadata:       metadata.FromProtobuf(req.Metadata),
 	}
-	if err := dbClient.DB.Model(c).Create(c).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).Create(c).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
@@ -48,16 +51,19 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ServiceProviderCre
 func (dbClient *DBClient) Get(ctx context.Context, req *pb.ServiceProviderGetRequest) (*pb.ServiceProvider, error) {
 	c := &ServiceProvider{BaseModel: common.BaseModelWithID(req.Id), ClientID: req.ClientId}
 	whereC := &ServiceProvider{ClientID: req.ClientId}
-	if err := dbClient.DB.Model(c).First(c, whereC).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).First(c, whereC).Error; err != nil {
 		return nil, err
 	}
 	return c.ToProtobuf(), nil
 }
 
 func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ServiceProviderDeleteRequest) (*commonpb.VoidResponse, error) {
+	if req.Id == "" {
+		return nil, gorm.ErrPrimaryKeyRequired
+	}
 	c := &ServiceProvider{BaseModel: common.BaseModelWithID(req.Id)}
 	whereC := &ServiceProvider{ClientID: req.ClientId}
-	sql := dbClient.DB.Model(c).Delete(c, whereC)
+	sql := dbClient.DB.WithContext(ctx).Model(c).Delete(c, whereC)
 	if sql.Error != nil {
 		return nil, sql.Error
 	}
@@ -67,21 +73,24 @@ func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ServiceProviderDel
 	return &commonpb.VoidResponse{}, nil
 }
 
-func (dbClient *DBClient) Update(ctx context.Context, req *pb.ServiceProviderUpdateRequest) (*pb.ServiceProvider, error) {
+func (dbClient *DBClient) Update(ctx context.Context, req *pb.ServiceProvider) (*pb.ServiceProvider, error) {
+	if req.Id == "" {
+		return nil, gorm.ErrPrimaryKeyRequired
+	}
 	c := &ServiceProvider{
-		BaseModel: common.BaseModelWithID(req.Id),
-		Name:      req.Name,
-		Desc:      req.Desc,
-		Type:      req.Type,
-		APIKey:    req.ApiKey,
-		ClientID:  req.ClientId,
-		Metadata:  metadata.FromProtobuf(req.Metadata),
+		BaseModel:      common.BaseModelWithID(req.Id),
+		Name:           req.Name,
+		Desc:           req.Desc,
+		APIKey:         req.ApiKey,
+		TemplateParams: req.TemplateParams,
+		IsEnabled:      req.IsEnabled,
+		Metadata:       metadata.FromProtobuf(req.Metadata),
 	}
 	whereC := &ServiceProvider{
 		BaseModel: common.BaseModelWithID(req.Id),
 		ClientID:  req.ClientId,
 	}
-	if err := dbClient.DB.Model(c).Where(whereC).Updates(c).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).Where(whereC).Updates(c).Error; err != nil {
 		return nil, err
 	}
 	return dbClient.Get(ctx, &pb.ServiceProviderGetRequest{Id: req.Id})
@@ -89,10 +98,12 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ServiceProviderUpd
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ServiceProviderPagingRequest) (*pb.ServiceProviderPagingResponse, error) {
 	c := &ServiceProvider{
-		Type:     req.Type,
-		ClientID: req.ClientId,
+		Type:       req.Type,
+		ClientID:   req.ClientId,
+		TemplateID: req.TemplateId,
+		IsEnabled:  req.IsEnabled,
 	}
-	sql := dbClient.DB.Model(c).Where(c)
+	sql := dbClient.DB.WithContext(ctx).Model(c).Where(c)
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
 	}

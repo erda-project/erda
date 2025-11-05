@@ -1,0 +1,127 @@
+{
+  "azure-ai-foundry": {
+    "placeholders": [
+      {
+        "name": "azure-host",
+        "type": "string",
+        "example": "terminusaifoundry-example.services.ai.azure.com",
+        "required": true
+      },
+      {
+        "name": "azure-scheme",
+        "type": "string",
+        "example": "https",
+        "default": "https",
+        "required": false
+      },
+      {
+        "name": "azure-location",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "api-key",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "another-api-key",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "config": {
+      "type": "${@template.name}",
+      "desc": "Azure AI Foundry",
+      "apiKey": "${@template.placeholders.api-key}",
+      "metadata": {
+        "public": {
+          "host": "${@template.placeholders.azure-host}",
+          "scheme": "${@template.placeholders.azure-scheme}",
+          "api": {
+            "apiStyle": "openai-compatible",
+            "apiStyleConfigs": {
+              "*:*": {
+                "headers": {
+                  "Authorization": [
+                    "delete"
+                  ],
+                  "api-key": [
+                    "set",
+                    "${@provider.apiKey}"
+                  ]
+                },
+                "host": "${@provider.metadata.public.host}",
+                "path": [
+                  "replace",
+                  "/v1",
+                  "/openai/v1"
+                ],
+                "queryParams": {
+                  "api-version": [
+                    "set",
+                    "preview"
+                  ]
+                },
+                "scheme": "${@provider.metadata.public.scheme}"
+              },
+              "*:/v1/audio/transcriptions;*:/v1/audio/translations": {
+                "headers": {
+                  "Authorization": [
+                    "delete"
+                  ],
+                  "api-key": [
+                    "set",
+                    "${@provider.apiKey}"
+                  ]
+                },
+                "host": "${@provider.metadata.public.host}",
+                "path": [
+                  "replace",
+                  "/v1/",
+                  "/openai/deployments/${@model.metadata.public.deployment_id}/"
+                ],
+                "queryParams": {
+                  "api-version": [
+                    "set",
+                    "2024-10-21"
+                  ]
+                },
+                "scheme": "${@provider.metadata.public.scheme}"
+              },
+              "*:/v1/files;*:/v1/files/{file_id};*:/v1/files/{file_id}/content": {
+                "headers": {
+                  "Authorization": [
+                    "delete"
+                  ],
+                  "api-key": [
+                    "set",
+                    "${@provider.apiKey}"
+                  ]
+                },
+                "host": "${@provider.metadata.public.host}",
+                "path": [
+                  "replace",
+                  "/v1/files",
+                  "/openai/files"
+                ],
+                "queryParams": {
+                  "api-version": [
+                    "set",
+                    "2025-04-01-preview"
+                  ]
+                },
+                "scheme": "${@provider.metadata.public.scheme}"
+              }
+            }
+          },
+          "location": "${@template.placeholders.azure-location}",
+          "service_provider_type": "azure-ai-foundry"
+        },
+        "secret": {
+          "anotherApiKey": "${@template.placeholders.another-api-key}"
+        }
+      }
+    }
+  }
+}

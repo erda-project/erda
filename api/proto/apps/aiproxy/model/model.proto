@@ -61,9 +61,12 @@ message Model {
     string providerId = 8;
     string apiKey = 9;
     metadata.Metadata metadata = 10;
-    string publisher = 11; // set at metadata.public.publisher; promoted to first-level when display
+    string publisher = 11;
 
     string clientId = 12;
+    string templateId = 13;
+    map<string, string> templateParams = 14;
+    optional bool isEnabled = 15;
 }
 
 enum ModelType {
@@ -80,40 +83,41 @@ enum ModelType {
 message ModelCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string.max_len = 1024];
-    ModelType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
-    string providerId = 4 [(validate.rules).string = {len: 36}];
-    string apiKey = 5;
-    metadata.Metadata metadata = 6;
+    string providerId = 3 [(validate.rules).string = {len: 36}];
+    metadata.Metadata metadata = 4;
 
-    string clientId = 7 [(validate.rules).string = {len: 36}];
+    string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string templateId = 6 [(validate.rules).string = {max_len: 36}]; // required, must create from template
+    map<string, string> templateParams = 7; // placeholder values to render template config
+    optional bool isEnabled = 8;
 }
 
 message ModelUpdateRequest {
     string id = 1;
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string.max_len = 1024];
-    ModelType type = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
-    string providerId = 5 [(validate.rules).string = {len: 36}];
-    string apiKey = 6;
-    metadata.Metadata metadata = 7;
+    metadata.Metadata metadata = 4;
 
     // auto-injected to restrict data permission
-    string clientId = 8 [(validate.rules).string = {len: 36, ignore_empty: true}];
-
+    string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    map<string, string> templateParams = 6; // placeholder values to render template config
+    optional bool isEnabled = 7;
 }
 
 message ModelDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
 
     // auto-injected to restrict data permission
-    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
 
     // auto-injected to restrict data permission
-    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
+
+    bool renderTemplate = 3;
 }
 
 message ModelPagingRequest {
@@ -128,6 +132,12 @@ message ModelPagingRequest {
 
     // auto-injected to restrict data permission
     string clientId = 9 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string templateId = 10 [(validate.rules).string = {max_len: 36, ignore_empty: true}];
+    string publisher = 11 [(validate.rules).string = {max_len: 36, ignore_empty: true}];
+    bool renderTemplate = 12;
+    optional bool isEnabled = 13;
+    bool clientOnly = 14; // only return client-specified model instance
+    bool viaDB = 15; // default from cache
 }
 
 message ModelPagingResponse {

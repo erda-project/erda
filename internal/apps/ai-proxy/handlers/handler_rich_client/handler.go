@@ -76,8 +76,13 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 	}
 	locale := i18n_services.GetLocaleFromContext(inputLang)
 	for _, model := range allModels {
+		// render template
+		renderedModel, err := cachehelpers.GetRenderedModelByID(ctx, model.Id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to render model, id: %s, err: %w", model.Id, err)
+		}
 		// enhance model
-		enhancedModel := metadataEnhancerService.EnhanceModelMetadata(ctx, model.Model, locale)
+		enhancedModel := metadataEnhancerService.EnhanceModelMetadata(ctx, renderedModel, locale)
 		richModels = append(richModels, &pb.RichModel{
 			Model:    desensitiveModel(enhancedModel),
 			Provider: desensitiveProvider(model.Provider),

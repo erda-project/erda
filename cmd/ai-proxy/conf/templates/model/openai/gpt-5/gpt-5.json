@@ -1,0 +1,75 @@
+{
+  "gpt-5": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "GPT-5 is OpenAI’s most advanced model, offering major improvements in reasoning, code quality, and user experience. It is optimized for complex tasks that require step-by-step reasoning, instruction following, and accuracy in high-stakes use cases. It supports test-time routing features and advanced prompt understanding, including user-specified intent like \\\"think hard about this.\\\" Improvements include reductions in hallucination, sycophancy, and better performance in coding, writing, and health-related tasks.\\n\\nNote that BYOK is required for this model. Set up here: https://openrouter.ai/settings/integrations",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "image_recognition",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "api": {
+            "apiStyleConfigs": {
+              "POST:/v1/chat/completions": {
+                "body": {
+                  "force": {
+                    "temperature": 1
+                  },
+                  "rename": {
+                    "max_tokens": "max_completion_tokens"
+                  }
+                }
+              }
+            }
+          },
+          "context": {
+            "context_length": 400000,
+            "max_completion_tokens": 128000,
+            "max_prompt_tokens": null
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.00001",
+            "image": "0",
+            "input_cache_read": "0.000000125",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.00000125",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "deepseek-v3.1-terminus": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark"
+      ]
+    },
+    "config": {
+      "desc": "DeepSeek-V3.1 现已更新至 DeepSeek-V3.1-Terminus 版本。\n\n此次更新在保持模型原有能力的基础上，针对用户反馈的问题进行了改进，包括：\n\n语言一致性： 缓解了中英文混杂、偶发异常字符等情况；\n\nAgent 能力： 进一步优化了 Code Agent 与 Search Agent 的表现。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "deepseek",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool",
+              "enable_thinking"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 128000,
+            "max_completion_tokens": 32000,
+            "max_prompt_tokens": 96000
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000012",
+            "image": "0",
+            "input_cache_read": "0.0000008",
+            "input_cache_write": "0.000000017",
+            "internal_reasoning": "0",
+            "prompt": "0.000004",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

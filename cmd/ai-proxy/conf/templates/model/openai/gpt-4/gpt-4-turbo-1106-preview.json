@@ -1,0 +1,57 @@
+{
+  "gpt-4-turbo-1106-preview": {
+    "deprecated": true,
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "GPT-4 Turbo 是 OpenAI 最新一代大模型，具备更强能力、128K超长上下文窗口、更低价格（输入便宜3倍、输出便宜2倍），适用于大规模和高效的文本生成任务。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 0,
+            "max_completion_tokens": 0,
+            "max_prompt_tokens": 0
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "deployment_name": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0.025"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
