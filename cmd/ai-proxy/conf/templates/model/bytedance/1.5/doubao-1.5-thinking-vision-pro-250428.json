@@ -16,7 +16,7 @@
     "config": {
       "desc": "doubao-1.5-thinking-vision-pro 全新视觉深度思考模型，具备更强的通用多模态理解和推理能力，在 59 个公开评测基准中的 37 个上取得 SOTA 表现。",
       "apiKey": "",
-      "type": "multimodal",
+      "type": "text_generation",
       "publisher": "bytedance",
       "metadata": {
         "public": {

@@ -23,7 +23,7 @@
     "config": {
       "desc": "cross-region inference",
       "apiKey": "",
-      "type": "multimodal",
+      "type": "text_generation",
       "publisher": "anthropic",
       "metadata": {
         "public": {

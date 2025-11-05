@@ -52,7 +52,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// load templates
-	templatesByType, err := template.LoadTemplatesFromEmbeddedDir(p.L, config.EmbedTemplatesFS)
+	templatesByType, err := template.LoadTemplatesFromEmbeddedFS(p.L, config.EmbedTemplatesFS)
 	if err != nil {
 		return err
 	}

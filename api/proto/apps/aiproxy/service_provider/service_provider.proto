@@ -63,12 +63,12 @@ message ServiceProvider {
 message ServiceProviderCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    metadata.Metadata metadata = 5;
+    metadata.Metadata metadata = 3;
 
-    string clientId = 6 [(validate.rules).string = {len: 36, ignore_empty: true}];
-    string templateId = 7 [(validate.rules).string = {max_len: 36}]; // required, must create from template
-    map<string, string> templateParams = 8; // placeholder values to render template config
-    optional bool isEnabled = 9;
+    string clientId = 4 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string templateId = 5 [(validate.rules).string = {max_len: 36}]; // required, must create from template
+    map<string, string> templateParams = 6; // placeholder values to render template config
+    optional bool isEnabled = 7;
 }
 
 message ServiceProviderGetRequest {
@@ -94,8 +94,8 @@ message ServiceProviderUpdateRequest {
 
     // auto-injected to restrict data permission
     string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
-    map<string, string> templateParams = 7; // placeholder values to render template config
-    optional bool isEnabled = 8;
+    map<string, string> templateParams = 6; // placeholder values to render template config
+    optional bool isEnabled = 7;
 }
 
 message ServiceProviderPagingRequest {

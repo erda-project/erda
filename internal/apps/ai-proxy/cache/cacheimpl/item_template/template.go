@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
@@ -30,41 +29,37 @@ type templateCacheItem struct {
 	*cachetypes.BaseCacheItem
 
 	templatesByType templatetypes.TemplatesByType
+
+	// for easy-use, currently templatesByType is immutable
+	total uint64
+	items []*templatetypes.TypeNamedTemplate
 }
 
 func NewTemplateCacheItem(dao dao.DAO, config *config.Config, templatesByType templatetypes.TemplatesByType) cachetypes.CacheItem {
 	item := &templateCacheItem{}
 	item.BaseCacheItem = cachetypes.NewBaseCacheItem(cachetypes.ItemTypeTemplate, dao, config, item)
 	item.templatesByType = templatesByType
-	return item
-}
 
-type TypeNamedTemplate struct {
-	Type templatetypes.TemplateType
-	Name string
-	Tpl  *pb.Template
-}
-
-func (c *templateCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error) {
-	var total uint64
-	var result []*TypeNamedTemplate
-	for typ, typedTemplates := range c.templatesByType {
-		total += uint64(len(typedTemplates))
+	for typ, typedTemplates := range item.templatesByType {
+		item.total += uint64(len(typedTemplates))
 		for name, tpl := range typedTemplates {
-			newTpl := TypeNamedTemplate{
+			newTpl := templatetypes.TypeNamedTemplate{
 				Type: typ,
 				Name: name,
 				Tpl:  tpl,
 			}
-			result = append(result, &newTpl)
+			item.items = append(item.items, &newTpl)
 		}
 	}
+	return item
+}
 
-	return total, result, nil
+func (c *templateCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error) {
+	return c.total, c.items, nil
 }
 
 func (c *templateCacheItem) GetIDValue(item any) (string, error) {
-	tpl, ok := item.(*TypeNamedTemplate)
+	tpl, ok := item.(*templatetypes.TypeNamedTemplate)
 	if !ok {
 		return "", fmt.Errorf("invalid template data type")
 	}

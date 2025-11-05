@@ -22,6 +22,12 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 )
 
+type TypeNamedTemplate struct {
+	Type TemplateType
+	Name string
+	Tpl  *pb.Template
+}
+
 // TemplateType represents the category a template belongs to. The type
 // is usually derived from the directory name under cmd/ai-proxy/conf/templates
 // (e.g. "service_provider", "model").

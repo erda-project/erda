@@ -29,8 +29,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 )
 
-// LoadTemplatesFromEmbeddedDir reads template definitions from the embedded filesystem.
-func LoadTemplatesFromEmbeddedDir(logger logs.Logger, templatesFS embed.FS) (templatetypes.TemplatesByType, error) {
+// LoadTemplatesFromEmbeddedFS reads template definitions from the embedded filesystem.
+func LoadTemplatesFromEmbeddedFS(logger logs.Logger, templatesFS embed.FS) (templatetypes.TemplatesByType, error) {
 	templatesByType := templatetypes.TemplatesByType{
 		templatetypes.TemplateTypeServiceProvider: make(templatetypes.TemplateSet),
 		templatetypes.TemplateTypeModel:           make(templatetypes.TemplateSet),

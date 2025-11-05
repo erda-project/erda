@@ -46,24 +46,19 @@ func GetRenderedModelByID(ctx context.Context, modelID string) (*pb.Model, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get template: %w", err)
 	}
-	tpl := tplV.(*item_template.TypeNamedTemplate).Tpl
+	tpl := tplV.(*templatetypes.TypeNamedTemplate).Tpl
 
-	providerTemplateName := ""
-	if model.ProviderId != "" {
-		if providerV, providerErr := cache.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId); providerErr == nil {
-			if provider, ok := providerV.(*providerpb.ServiceProvider); ok {
-				providerTemplateName = provider.TemplateId
-			}
-		}
+	spV, err := cache.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId)
+	if err != nil {
+		return nil, err
 	}
+	sp := spV.(*providerpb.ServiceProvider)
 
 	renderParams := make(map[string]string, len(model.TemplateParams)+1)
 	for k, v := range model.TemplateParams {
 		renderParams[k] = v
 	}
-	if providerTemplateName != "" {
-		renderParams[template.ServiceProviderTemplateNameParamKey] = providerTemplateName
-	}
+	renderParams[template.ServiceProviderTypeParamKey] = sp.Type
 	// render template
 	if err := template.RenderTemplate(model.TemplateId, tpl, renderParams); err != nil {
 		return nil, fmt.Errorf("failed to render template: %w", err)

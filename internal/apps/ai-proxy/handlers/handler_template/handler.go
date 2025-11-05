@@ -19,14 +19,13 @@ import (
 	"sort"
 
 	"google.golang.org/protobuf/encoding/protojson"
-	structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
@@ -45,7 +44,7 @@ func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
-	allTemplates := allTemplatesV.([]*item_template.TypeNamedTemplate)
+	allTemplates := allTemplatesV.([]*templatetypes.TypeNamedTemplate)
 	spTemplateMap := make(map[string]*pb.Template)
 	for _, tpl := range allTemplates {
 		if tpl.Type != templatetypes.TemplateTypeServiceProvider {
@@ -119,8 +118,6 @@ func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req 
 
 	result.Total = int64(len(result.List))
 
-	result.Total = int64(len(result.List))
-
 	return &result, nil
 }
 
@@ -129,13 +126,13 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 	if err != nil {
 		return nil, err
 	}
-	allTemplates := allTemplatesV.([]*item_template.TypeNamedTemplate)
+	allTemplates := allTemplatesV.([]*templatetypes.TypeNamedTemplate)
 	modelTemplateMap := make(map[string]*pb.Template)
 	for _, tpl := range allTemplates {
 		if tpl.Type != templatetypes.TemplateTypeModel {
 			continue
 		}
-		if tpl.Tpl.GetDeprecated() {
+		if !req.ShowDeprecated && tpl.Tpl.GetDeprecated() {
 			continue
 		}
 		modelTemplateMap[tpl.Name] = tpl.Tpl
@@ -230,6 +227,7 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 		}
 		result.List = append(result.List, &detail)
 	}
+	result.Total = int64(len(result.List))
 	return &result, nil
 }
 

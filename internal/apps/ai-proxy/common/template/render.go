@@ -42,12 +42,12 @@ func RenderTemplate(templateName string, tpl *pb.Template, params map[string]str
 }
 
 // findAndReplacePlaceholders
-// 遍历 config 的每个 v，如果是非 slice 或者 map，则递归遍历；直到遍历到叶子节点
-// 对每个叶子节点判断是否是 `${@template.placeholders.xxx}` 格式
-// placeholderValues:
+// Traverse every value in the config; if it is a slice or map, recurse until reaching leaf nodes.
+// For each leaf node, check whether the value matches the `${@template.placeholders.xxx}` format.
+// placeholderValues example:
 // - api-key: 1234
 // - another-api-key: 5678
-// placeholders 参数：根据每个 placeholder 的属性，比如是否必填、默认值等，进行精细化渲染
+// The placeholders argument enables fine-grained rendering (e.g., required flags, defaults, etc.).
 func findAndReplacePlaceholders(templateName string, placeholderDefines []*pb.Placeholder, cfgJSON []byte, placeholderValues map[string]string) ([]byte, error) {
 	var cfg interface{}
 	if err := json.Unmarshal(cfgJSON, &cfg); err != nil {
@@ -84,10 +84,10 @@ const (
 	templateNamePlaceholder = "${@template.name}"
 )
 
-// ServiceProviderTemplateNameParamKey is the reserved key that callers can use
-// to inject the current service provider template name into the rendering
+// ServiceProviderTypeParamKey is the reserved key that callers can use
+// to inject the current service provider type into the rendering
 // context. Mapping rules can leverage it to select provider-specific values.
-const ServiceProviderTemplateNameParamKey = "__service_provider_template_name__"
+const ServiceProviderTypeParamKey = "__service_provider_type__"
 
 type omissionSentinel struct{}
 
@@ -327,34 +327,12 @@ func resolveMappingBy(by map[string]interface{}, placeholderValues map[string]st
 		if !ok {
 			return nil, false, fmt.Errorf("invalid mapping.by.service_provider_type format")
 		}
-		providerName := ""
+		providerType := ""
 		if placeholderValues != nil {
-			providerName = placeholderValues[ServiceProviderTemplateNameParamKey]
+			providerType = placeholderValues[ServiceProviderTypeParamKey]
 		}
-		if providerName != "" {
-			if value, found := providerMap[providerName]; found {
-				return value, true, nil
-			}
-		}
-		if value, found := providerMap["default"]; found {
-			return value, true, nil
-		}
-		if value, found := providerMap["*"]; found {
-			return value, true, nil
-		}
-	}
-	// maintain backward compatibility for older templates using service_provider
-	if providerRaw, ok := by["service_provider"]; ok {
-		providerMap, ok := providerRaw.(map[string]interface{})
-		if !ok {
-			return nil, false, fmt.Errorf("invalid mapping.by.service_provider format")
-		}
-		providerName := ""
-		if placeholderValues != nil {
-			providerName = placeholderValues[ServiceProviderTemplateNameParamKey]
-		}
-		if providerName != "" {
-			if value, found := providerMap[providerName]; found {
+		if providerType != "" {
+			if value, found := providerMap[providerType]; found {
 				return value, true, nil
 			}
 		}

@@ -27,7 +27,6 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -90,9 +89,6 @@ type (
 	mapKeyRequestThinkingTransformChanges struct{ any }
 
 	mapKeyRequestBeginAt struct{ time.Time }
-
-	mapKeyModelTemplate           struct{ *templatepb.Template }
-	mapKeyServiceProviderTemplate struct{ *templatepb.Template }
 )
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)

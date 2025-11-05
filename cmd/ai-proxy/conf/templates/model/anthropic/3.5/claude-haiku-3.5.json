@@ -22,7 +22,7 @@
     },
     "config": {
       "desc": "Claude 3.5 Haiku features offers enhanced capabilities in speed, coding accuracy, and tool use. Engineered to excel in real-time applications, it delivers quick response times that are essential for dynamic tasks such as chat interactions and immediate coding suggestions.\\n\\nThis makes it highly suitable for environments that demand both speed and precision, such as software development, customer service bots, and data management systems.\\n\\nThis model is currently pointing to [Claude 3.5 Haiku (2024-10-22)](/anthropic/claude-3-5-haiku-20241022).",
-      "apiKey": "use:ak:sk",
+      "apiKey": "",
       "type": "text_generation",
       "publisher": "anthropic",
       "metadata": {

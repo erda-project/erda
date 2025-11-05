@@ -66,6 +66,7 @@ message TemplateListRequest {
     string clientId = 1 [(validate.rules).string = {len: 36, ignore_empty: true}];
     bool checkInstance = 2;
     bool renderTemplate = 3; // render config
+    bool showDeprecated = 4; // show deprecated for admin
 }
 
 message TemplateListResponse {

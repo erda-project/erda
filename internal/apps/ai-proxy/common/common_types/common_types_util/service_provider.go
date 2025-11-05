@@ -21,6 +21,9 @@ import (
 
 const metaKeyServiceProviderType = "service_provider_type"
 
+// GetServiceProviderType
+// - get from p.type if valid
+// - backward to p.metadata.public.service_provider_type
 func GetServiceProviderType(p *serviceproviderpb.ServiceProvider) string {
 	if p == nil {
 		return ""

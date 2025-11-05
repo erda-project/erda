@@ -17,7 +17,7 @@
     "config": {
       "desc": "GPT-4 Turbo with Vision 支持图片转文字能力，可通过 API 调用实现多模态内容理解。",
       "apiKey": "",
-      "type": "multimodal",
+      "type": "text_generation",
       "publisher": "openai",
       "metadata": {
         "public": {

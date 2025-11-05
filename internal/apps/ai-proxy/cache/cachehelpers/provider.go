@@ -45,7 +45,7 @@ func GetRenderedServiceProviderByID(ctx context.Context, providerID string) (*pb
 	if err != nil {
 		return nil, fmt.Errorf("failed to get template: %w", err)
 	}
-	tpl := tplV.(*item_template.TypeNamedTemplate).Tpl
+	tpl := tplV.(*templatetypes.TypeNamedTemplate).Tpl
 	// render
 	if err := template.RenderTemplate(provider.TemplateId, tpl, provider.TemplateParams); err != nil {
 		return nil, fmt.Errorf("failed to render template: %w", err)

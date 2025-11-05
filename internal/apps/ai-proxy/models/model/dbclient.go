@@ -16,6 +16,7 @@ package model
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -169,25 +170,34 @@ func (dbClient *DBClient) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.
 }
 
 func (dbClient *DBClient) GetClientModelIDs(ctx context.Context, clientId string) ([]string, error) {
-	sql := `
+	var modelClientIdClause string
+	var relationClientIdClause string
+	if clientId == "" {
+		modelClientIdClause = "(m.client_id = ? or m.client_id IS NULL)"
+		relationClientIdClause = "(r.client_id = ? or r.client_id IS NULL)"
+	} else {
+		modelClientIdClause = "m.client_id = ?"
+		relationClientIdClause = "r.client_id = ?"
+	}
+	sql := fmt.Sprintf(`
 SELECT
     t.model_id
 FROM (
-    -- 客户端专属模型
+    -- client-belonged models
     SELECT
         m.id          AS model_id
     FROM ai_proxy_model AS m
-    WHERE m.client_id = ? and (m.deleted_at IS NULL or m.deleted_at <= '1970-01-01 08:00:00')
+    WHERE %s and (m.deleted_at IS NULL or m.deleted_at <= '1970-01-01 08:00:00')
 
     UNION
 
-    -- 关联关系里的模型
+    -- platform-assigned models
     SELECT
         r.model_id    AS model_id
     FROM ai_proxy_client_model_relation AS r
-    WHERE r.client_id = ? and (r.deleted_at IS NULL or r.deleted_at <= '1970-01-01 08:00:00')
+    WHERE %s and (r.deleted_at IS NULL or r.deleted_at <= '1970-01-01 08:00:00')
 ) AS t
-`
+`, modelClientIdClause, relationClientIdClause)
 	var ids []string
 	if err := dbClient.DB.WithContext(ctx).Raw(sql,
 		clientId,

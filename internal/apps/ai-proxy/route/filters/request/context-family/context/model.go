@@ -101,9 +101,19 @@ func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
 	if len(models) == 0 {
 		return nil
 	}
+	// client-belonged models are always preferred
+	var filteredModels []*modelpb.Model
+	for _, model := range models {
+		if model.ClientId != "" {
+			filteredModels = append(filteredModels, model)
+		}
+	}
+	if len(filteredModels) == 0 {
+		filteredModels = models
+	}
 	// sort models by updated_at desc
 	var latestModel *modelpb.Model
-	for _, model := range models {
+	for _, model := range filteredModels {
 		if latestModel == nil || model.UpdatedAt.AsTime().After(latestModel.UpdatedAt.AsTime()) {
 			latestModel = model
 		}

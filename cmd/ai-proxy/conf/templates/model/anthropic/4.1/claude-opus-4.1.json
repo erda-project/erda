@@ -22,7 +22,7 @@
     },
     "config": {
       "desc": "cross-region inference",
-      "apiKey": "use:ak:sk",
+      "apiKey": "",
       "type": "text_generation",
       "publisher": "anthropic",
       "metadata": {

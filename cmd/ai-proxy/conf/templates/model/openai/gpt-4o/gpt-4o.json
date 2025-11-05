@@ -16,7 +16,7 @@
     "config": {
       "desc": "GPT-4o 是 OpenAI 推出的最新旗舰多模态大模型，能够以极快速度和高质量处理文本、语音、图像等多种数据，实现实时对话、多语言理解与多模态交互。 ",
       "apiKey": "",
-      "type": "multimodal",
+      "type": "text_generation",
       "publisher": "openai",
       "metadata": {
         "public": {

@@ -18,14 +18,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mohae/deepcopy"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n/i18n_services"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/i18n"
@@ -39,23 +43,30 @@ type ModelHandler struct {
 
 func (h *ModelHandler) Create(ctx context.Context, req *pb.ModelCreateRequest) (*pb.Model, error) {
 	// check template
-	tpl, err := cachehelpers.GetTemplateByTypeName(ctx, templatetypes.TemplateTypeModel, req.TemplateId, req.TemplateParams)
+	tpl, err := cachehelpers.GetAndCheckTemplateByTypeName(ctx, templatetypes.TemplateTypeModel, req.TemplateId, req.TemplateParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get template: %w", err)
 	}
+	// convert template.config for easy-use
+	var rawModelTemplate pb.Model
+	cputil.MustObjJSONTransfer(tpl.Config, &rawModelTemplate)
 
-	// convert tpl.config for easy-use
-	var modelTemplate pb.Model
-	cputil.MustObjJSONTransfer(tpl.Config, &modelTemplate)
+	renderedTpl := deepcopy.Copy(tpl).(*templatepb.Template)
+	if err := template.RenderTemplate(req.TemplateId, renderedTpl, req.TemplateParams); err != nil {
+		return nil, fmt.Errorf("failed to render template: %w", err)
+	}
+	// convert template.config for easy-use
+	var renderedModelTemplate pb.Model
+	cputil.MustObjJSONTransfer(renderedTpl.Config, &renderedModelTemplate)
 
 	model := &pb.Model{
 		Name:           req.Name,
-		Desc:           strutil.FirstNoneEmpty(req.Desc, modelTemplate.Desc),
-		Type:           modelTemplate.Type,
+		Desc:           strutil.FirstNoneEmpty(req.Desc, rawModelTemplate.Desc),
+		Type:           renderedModelTemplate.Type, // use rendered value for paging
 		ProviderId:     req.ProviderId,
-		ApiKey:         modelTemplate.ApiKey,
-		Metadata:       req.Metadata, // only store requested metadata; all metadata will be merged when display or use
-		Publisher:      modelTemplate.Publisher,
+		ApiKey:         rawModelTemplate.ApiKey,
+		Metadata:       req.Metadata,                    // only store requested metadata; all metadata will be merged when display or use
+		Publisher:      renderedModelTemplate.Publisher, // use rendered value for paging
 		ClientId:       req.ClientId,
 		TemplateId:     req.TemplateId,
 		TemplateParams: req.TemplateParams,
@@ -157,10 +168,10 @@ func (h *ModelHandler) Delete(ctx context.Context, req *pb.ModelDeleteRequest) (
 }
 
 func (h *ModelHandler) Paging(ctx context.Context, req *pb.ModelPagingRequest) (resp *pb.ModelPagingResponse, err error) {
-	if req.ViaCache {
-		resp, err = h.pagingViaCache(ctx, req)
-	} else {
+	if req.ViaDB {
 		resp, err = h.pagingViaDB(ctx, req)
+	} else {
+		resp, err = h.pagingViaCache(ctx, req)
 	}
 	if err != nil {
 		return nil, err

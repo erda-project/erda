@@ -16,7 +16,7 @@
     "config": {
       "desc": "全新多模态深度思考模型，同时支持 thinking、non-thinking、auto三种思考模式。其中 non-thinking 模型对比 doubao-1.5-pro-32k-250115 模型大幅提升。",
       "apiKey": "",
-      "type": "multimodal",
+      "type": "text_generation",
       "publisher": "bytedance",
       "metadata": {
         "public": {

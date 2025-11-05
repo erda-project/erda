@@ -25,13 +25,13 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 )
 
-func GetTemplateByTypeName(ctx context.Context, typ templatetypes.TemplateType, name string, placeholderValues map[string]string) (*pb.Template, error) {
+func GetAndCheckTemplateByTypeName(ctx context.Context, typ templatetypes.TemplateType, name string, placeholderValues map[string]string) (*pb.Template, error) {
 	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
 	templateV, err := cache.GetByID(ctx, cachetypes.ItemTypeTemplate, item_template.ConstructID(typ, name))
 	if err != nil {
 		return nil, err
 	}
-	tpl := templateV.(*item_template.TypeNamedTemplate).Tpl
+	tpl := templateV.(*templatetypes.TypeNamedTemplate).Tpl
 	if tpl.GetDeprecated() {
 		return nil, fmt.Errorf("template %s of type %s is deprecated", name, typ)
 	}

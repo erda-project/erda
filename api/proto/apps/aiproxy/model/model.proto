@@ -83,13 +83,13 @@ enum ModelType {
 message ModelCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string.max_len = 1024];
-    string providerId = 4 [(validate.rules).string = {len: 36}];
-    metadata.Metadata metadata = 6;
+    string providerId = 3 [(validate.rules).string = {len: 36}];
+    metadata.Metadata metadata = 4;
 
-    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
-    string templateId = 8 [(validate.rules).string = {max_len: 36}]; // required, must create from template
-    map<string, string> templateParams = 9; // placeholder values to render template config
-    optional bool isEnabled = 10;
+    string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string templateId = 6 [(validate.rules).string = {max_len: 36}]; // required, must create from template
+    map<string, string> templateParams = 7; // placeholder values to render template config
+    optional bool isEnabled = 8;
 }
 
 message ModelUpdateRequest {
@@ -100,24 +100,24 @@ message ModelUpdateRequest {
 
     // auto-injected to restrict data permission
     string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
-    map<string, string> templateParams = 7; // placeholder values to render template config
-    optional bool isEnabled = 8;
+    map<string, string> templateParams = 6; // placeholder values to render template config
+    optional bool isEnabled = 7;
 }
 
 message ModelDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
 
     // auto-injected to restrict data permission
-    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ModelGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
 
     // auto-injected to restrict data permission
-    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
 
-    bool renderTemplate = 8;
+    bool renderTemplate = 3;
 }
 
 message ModelPagingRequest {
@@ -137,7 +137,7 @@ message ModelPagingRequest {
     bool renderTemplate = 12;
     optional bool isEnabled = 13;
     bool clientOnly = 14; // only return client-specified model instance
-    bool viaCache = 15; // default from db
+    bool viaDB = 15; // default from cache
 }
 
 message ModelPagingResponse {

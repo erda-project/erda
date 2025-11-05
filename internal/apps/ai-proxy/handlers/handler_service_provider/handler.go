@@ -42,7 +42,7 @@ type ServiceProviderHandler struct {
 
 func (h *ServiceProviderHandler) Create(ctx context.Context, req *pb.ServiceProviderCreateRequest) (*pb.ServiceProvider, error) {
 	// check template
-	tpl, err := cachehelpers.GetTemplateByTypeName(ctx, templatetypes.TemplateTypeServiceProvider, req.TemplateId, req.TemplateParams)
+	tpl, err := cachehelpers.GetAndCheckTemplateByTypeName(ctx, templatetypes.TemplateTypeServiceProvider, req.TemplateId, req.TemplateParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get template: %w", err)
 	}
@@ -181,25 +181,3 @@ func desensitizeProvider(ctx context.Context, item *pb.ServiceProvider) {
 	item.Metadata.Secret = nil
 	item.TemplateParams = nil
 }
-
-//func renderTemplate(ctx context.Context, provider *pb.ServiceProvider) error {
-//	// get template
-//	tpl, err := cachehelpers.GetTemplateByTypeName(ctx, templatetypes.TemplateTypeServiceProvider, provider.TemplateId, provider.TemplateParams)
-//	if err != nil {
-//		return fmt.Errorf("failed to get template: %w", err)
-//	}
-//	// render template
-//	if err := template.RenderTemplate(tpl, provider.TemplateParams); err != nil {
-//		return fmt.Errorf("failed to render template: %w", err)
-//	}
-//	// merge providerTemplate to provider
-//	var providerTemplate pb.ServiceProvider
-//	cputil.MustObjJSONTransfer(tpl.Config, &providerTemplate)
-//	provider.ApiKey = providerTemplate.ApiKey
-//	mergedMetadata, err := metadata.OverrideMetadata(ctx, providerTemplate.Metadata, provider.Metadata)
-//	if err != nil {
-//		return err
-//	}
-//	provider.Metadata = mergedMetadata
-//	return nil
-//}
