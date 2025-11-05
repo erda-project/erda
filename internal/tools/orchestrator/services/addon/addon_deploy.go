@@ -550,7 +550,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 		buildErr = a.BuildCanalServiceItem(useOperator, params, addonIns, addonSpec, addonDice)
 	case apistructs.AddonRedis:
-		if capacity.RedisOperator && params.Plan == apistructs.AddonProfessional && version.Compare(addonSpec.Version, "6.2.10", ">=") {
+		if capacity.RedisOperator && params.Plan == apistructs.AddonProfessional && version.Compare(addonSpec.Version, "6", ">=") {
 			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
 				AddonName: apistructs.AddonRedis + "-operator",
 				Plan:      apistructs.AddonBasic,
