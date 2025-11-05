@@ -1,0 +1,59 @@
+{
+  "gpt-4o-mini": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "GPT-4o mini是OpenAI推出的新一代小型模型，兼具优异的多模态推理与文本智能，在性能大幅提升的同时显著降低了成本，让开发者和企业能够以更低的价格大规模部署高效、可靠的AI应用。\n\n",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "embedding"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 128000,
+            "max_completion_tokens": 16384,
+            "max_prompt_tokens": 0
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "deployment_name": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.0000006",
+            "image": "0",
+            "input_cache_read": "0.000000075",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.00000015",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

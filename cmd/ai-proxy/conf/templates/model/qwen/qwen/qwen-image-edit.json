@@ -1,0 +1,55 @@
+{
+  "qwen-image-edit": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "通义千问-图像编辑模型（Qwen-Image-Edit）支持精准的中英双语文字编辑、调色、细节增强、风格迁移、增删物体、改变位置和动作等操作，可实现复杂的图文编辑。\n计费：0.3元/张\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2976416",
+      "apiKey": "",
+      "type": "image",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [],
+            "input_modalities": [
+              "image",
+              "text"
+            ],
+            "output_modalities": [
+              "image"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

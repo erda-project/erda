@@ -1,0 +1,49 @@
+{
+  "volcengine-ark": {
+    "placeholders": [
+      {
+        "name": "api-key",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "another-api-key",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "config": {
+      "type": "${@template.name}",
+      "desc": "Volcengine Ark",
+      "apiKey": "${@template.placeholders.api-key}",
+      "metadata": {
+        "public": {
+          "api": {
+            "apiStyle": "openai-compatible",
+            "apiStyleConfigs": {
+              "*:*": {
+                "headers": {
+                  "Authorization": [
+                    "Set",
+                    "Bearer ${@provider.apiKey}"
+                  ]
+                },
+                "host": "ark.cn-beijing.volces.com",
+                "path": [
+                  "replace",
+                  "/v1",
+                  "/api/v3"
+                ]
+              }
+            }
+          },
+          "location": "cnbeijing",
+          "service_provider_type": "volcengine-ark"
+        },
+        "secret": {
+          "anotherApiKey": "${@template.placeholders.another-api-key}"
+        }
+      }
+    }
+  }
+}

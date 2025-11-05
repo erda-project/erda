@@ -66,7 +66,8 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 	models := []*cachehelpers.ModelWithProvider{
 		{
 			Model: &modelpb.Model{
-				Name: "GPT-3.5 Turbo",
+				Name:      "GPT-3.5 Turbo",
+				Publisher: "openai",
 				Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{
 						"publisher":  publisherValue,

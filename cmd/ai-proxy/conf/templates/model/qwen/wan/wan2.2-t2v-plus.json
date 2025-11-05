@@ -1,0 +1,54 @@
+{
+  "wan2.2-t2v-plus": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "万相2.2专业版，当前最新模型；在画面细节表现、运动稳定性方面均有显著提升。\n分辨率档位：480P、1080P\n帧率：30fps\n时长：5秒\n计费：\n- 480P：0.14元/秒\n- 1080P：0.70元/秒\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2865250",
+      "apiKey": "",
+      "type": "image",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "video"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

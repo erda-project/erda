@@ -97,13 +97,13 @@ func (s *MetadataEnhancerService) EnhanceModelMetadata(ctx context.Context, mode
 	meta := metadata.FromProtobuf(model.Metadata)
 
 	// enhance publisher info
-	s.enhancePublisherInfo(meta, locale)
+	s.enhancePublisherInfo(model.Publisher, meta, locale)
 
 	// enhance abilities info
 	s.enhanceAbilitiesInfo(meta, locale)
 
 	// set logo
-	s.setModelLogo(meta)
+	s.setModelLogo(model.Publisher, meta)
 
 	// enhance pricing info
 	s.enhancePricingInfo(meta, locale)
@@ -114,12 +114,7 @@ func (s *MetadataEnhancerService) EnhanceModelMetadata(ctx context.Context, mode
 }
 
 // enhancePublisherInfo enhance publisher information
-func (s *MetadataEnhancerService) enhancePublisherInfo(meta metadata.Metadata, locale string) {
-	publisherV := meta.Public["publisher"]
-	if publisherV == nil {
-		return
-	}
-	publisher := publisherV.(string)
+func (s *MetadataEnhancerService) enhancePublisherInfo(publisher string, meta metadata.Metadata, locale string) {
 	if publisher == "" {
 		return
 	}
@@ -166,19 +161,10 @@ func (s *MetadataEnhancerService) enhanceAbilitiesInfo(meta metadata.Metadata, l
 }
 
 // setModelLogo set model logo
-func (s *MetadataEnhancerService) setModelLogo(meta metadata.Metadata) {
-	publisherV := meta.Public["publisher"]
-	if publisherV == nil {
-		return
-	}
-	publisher, ok := publisherV.(string)
-	if !ok {
-		return
-	}
+func (s *MetadataEnhancerService) setModelLogo(publisher string, meta metadata.Metadata) {
 	if publisher == "" {
 		return
 	}
-
 	config, ok := s.getConfigFromCache(string(i18n.CategoryPublisher), publisher, string(i18n.FieldLogo), string(i18n.LocaleUniversal))
 	if !ok {
 		return

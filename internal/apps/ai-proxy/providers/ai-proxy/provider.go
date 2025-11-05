@@ -23,7 +23,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
@@ -49,15 +51,20 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	// load templates
+	templatesByType, err := template.LoadTemplatesFromEmbeddedFS(p.L, config.EmbedTemplatesFS)
+	if err != nil {
+		return err
+	}
 
 	// initialize cache manager
-	p.cache = cache.NewCacheManager(p.Dao, p.L, false)
+	p.cache = cache.NewCacheManager(p.Dao, p.L, templatesByType, false)
 	p.ReverseProxy.SetCacheManager(p.cache)
 
 	// initialize token usage collector
 	token_usage.InitUsageCollector(p.Dao)
 
-	p.initHandlers()
+	p.initHandlers(templatesByType)
 
 	p.registerAIProxyManageAPI()
 	p.registerMcpProxyManageAPI()

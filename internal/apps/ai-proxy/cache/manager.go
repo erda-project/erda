@@ -25,9 +25,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_clientmodelrelation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_provider"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
@@ -40,7 +42,7 @@ type cacheManager struct {
 }
 
 // NewCacheManager creates a new cache manager instance
-func NewCacheManager(dao dao.DAO, logger logs.Logger, isMcpProxy bool) cachetypes.Manager {
+func NewCacheManager(dao dao.DAO, logger logs.Logger, templatesByType templatetypes.TemplatesByType, isMcpProxy bool) cachetypes.Manager {
 	cfg := config.LoadConfig()
 	manager := &cacheManager{
 		items:  map[cachetypes.ItemType]cachetypes.CacheItem{},
@@ -53,6 +55,7 @@ func NewCacheManager(dao dao.DAO, logger logs.Logger, isMcpProxy bool) cachetype
 		manager.items[cachetypes.ItemTypeProvider] = item_provider.NewProviderCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeClientModelRelation] = item_clientmodelrelation.NewClientModelRelationCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeClientToken] = item_clienttoken.NewClientTokenCacheItem(dao, cfg)
+		manager.items[cachetypes.ItemTypeTemplate] = item_template.NewTemplateCacheItem(dao, cfg, templatesByType)
 	}
 
 	// start background refresh goroutine only if cache is enabled
@@ -99,19 +102,34 @@ func (m *cacheManager) GetByID(ctx context.Context, itemType cachetypes.ItemType
 	return item.GetByID(ctx, id)
 }
 
+// TriggerRefresh triggers a refresh for the specified item
+func (m *cacheManager) TriggerRefresh(ctx context.Context, itemTypes ...cachetypes.ItemType) {
+	for _, t := range itemTypes {
+		i := m.items[t]
+		m.refreshOneItemType(t, i)
+	}
+}
+
 // startRefreshLoop starts the background refresh loop
 func (m *cacheManager) startRefreshLoop() {
 	// start the independent refresh goroutine for each item type
 	for itemType, item := range m.items {
 		go func(t cachetypes.ItemType, i cachetypes.CacheItem) {
 			for {
-				if total, err := i.Refresh(); err != nil {
-					m.logger.Errorf("cache refresh error for %s: %v (interval: %s)", cachetypes.GetItemTypeName(t), err, m.config.RefreshInterval)
-				} else {
-					m.logger.Infof("cache refresh success for %s (interval: %s), total: %d", cachetypes.GetItemTypeName(t), m.config.RefreshInterval, total)
-				}
+				m.refreshOneItemType(t, i)
 				time.Sleep(m.config.RefreshInterval)
 			}
 		}(itemType, item)
+	}
+}
+
+func (m *cacheManager) refreshOneItemType(t cachetypes.ItemType, i cachetypes.CacheItem) {
+	timeBegin := time.Now()
+	total, err := i.Refresh()
+	timeCost := time.Since(timeBegin)
+	if err != nil {
+		m.logger.Errorf("cache refresh error for %s: %v (interval: %s) (cost: %s)", cachetypes.GetItemTypeName(t), err, m.config.RefreshInterval, timeCost)
+	} else {
+		m.logger.Infof("cache refresh success for %s (interval: %s) (cost: %s), total: %d", cachetypes.GetItemTypeName(t), m.config.RefreshInterval, timeCost, total)
 	}
 }

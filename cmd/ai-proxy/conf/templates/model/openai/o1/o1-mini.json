@@ -1,0 +1,58 @@
+{
+  "o1-mini": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "OpenAI o1‑mini 是专为高效推理优化的小型模型，特别擅长数学和编程任务，在主要 STEM（理工）评测中逼近旗舰模型 o1 的表现，并以极低成本和更快速度服务于需要强推理能力但不依赖广泛知识的实际应用。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 128000,
+            "max_completion_tokens": 65536,
+            "max_prompt_tokens": 128000
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "deployment_name": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000012",
+            "image": "0",
+            "input_cache_read": "0.000000605",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000003",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

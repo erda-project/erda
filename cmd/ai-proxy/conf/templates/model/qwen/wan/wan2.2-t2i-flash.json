@@ -1,0 +1,54 @@
+{
+  "wan2.2-t2i-flash": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "万相2.2极速版，当前最新模型。\n在创意性、稳定性、写实质感上全面升级，生成速度快，性价比高。\n计费：0.14元/张\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2862677",
+      "apiKey": "",
+      "type": "image",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "image"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

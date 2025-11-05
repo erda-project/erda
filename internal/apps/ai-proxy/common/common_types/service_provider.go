@@ -18,12 +18,23 @@ package common_types
 type ServiceProviderType string
 
 const (
-	ServiceProviderTypeVolcengineArk  ServiceProviderType = "volcengine-ark"
-	ServiceProviderTypeAliyunBailian  ServiceProviderType = "aliyun-bailian"
-	ServiceProviderTypeAWSBedrock     ServiceProviderType = "aws-bedrock"
-	ServiceProviderTypeAzureAIFoundry ServiceProviderType = "azure-ai-foundry"
-	ServiceProviderTypeOpenAI         ServiceProviderType = "openai"
-	ServiceProviderTypeAnthropic      ServiceProviderType = "anthropic"
+	ServiceProviderTypeAzureAIFoundry   ServiceProviderType = "azure-ai-foundry"
+	ServiceProviderTypeAliyunBailian    ServiceProviderType = "aliyun-bailian"
+	ServiceProviderTypeVolcengineArk    ServiceProviderType = "volcengine-ark"
+	ServiceProviderTypeAWSBedrock       ServiceProviderType = "aws-bedrock"
+	ServiceProviderTypeOpenAICompatible ServiceProviderType = "openai-compatible"
 )
 
 func (m ServiceProviderType) String() string { return string(m) }
+
+func (m ServiceProviderType) IsValid() bool {
+	switch m {
+	case ServiceProviderTypeAzureAIFoundry,
+		ServiceProviderTypeAliyunBailian,
+		ServiceProviderTypeVolcengineArk,
+		ServiceProviderTypeAWSBedrock,
+		ServiceProviderTypeOpenAICompatible:
+		return true
+	}
+	return false
+}

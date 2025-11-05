@@ -21,9 +21,8 @@ import (
 	"net/http/httputil"
 
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
-	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
@@ -52,8 +51,6 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	var (
 		l = ctxhelper.MustGetLogger(ctx)
 		q = ctxhelper.MustGetDBClient(ctx)
-
-		cacheManager = ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
 	)
 
 	// session
@@ -74,15 +71,18 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 		l.Errorf("failed to request model, err: %v", err)
 		return http_error.NewHTTPError(ctx, http.StatusBadRequest, fmt.Sprintf("Model is invalid: %v", err))
 	}
+	model, err = cachehelpers.GetRenderedModelByID(ctx, model.Id)
+	if err != nil {
+		l.Errorf("failed to get rendered model, err: %v", err)
+		return http_error.NewHTTPError(ctx, http.StatusBadRequest, fmt.Sprintf("ModelId is invalid: %v", err))
+	}
 
 	// find provider
-	var serviceProvider *serviceproviderpb.ServiceProvider
-	serviceProviderV, err := cacheManager.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId)
+	serviceProvider, err := cachehelpers.GetRenderedServiceProviderByID(ctx, model.ProviderId)
 	if err != nil {
 		l.Errorf("failed to get service provider, id: %s, err: %v", model.ProviderId, err)
-		return http_error.NewHTTPError(ctx, http.StatusBadRequest, "ServiceProviderId is invalid")
+		return http_error.NewHTTPError(ctx, http.StatusBadRequest, fmt.Sprintf("ServiceProviderId is invalid: %v", err))
 	}
-	serviceProvider = serviceProviderV.(*serviceproviderpb.ServiceProvider)
 
 	// find prompt
 	headerPromptId := pr.Out.Header.Get(vars.XAIProxyPromptId)

@@ -1,0 +1,59 @@
+{
+  "qwen3-235b-a22b": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "通义千问3-235B-A22B 实现思考模式和非思考模式的有效融合，可在对话中切换模式。推理能力显著超过QwQ、通用能力显著超过Qwen2.5-72B-Instruct，达到同规模业界SOTA水平。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "enable_thinking"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 131072,
+            "max_completion_tokens": 16384,
+            "max_prompt_tokens": 129024
+          },
+          "extra_json_body_for_non_stream": "{\"enable_thinking\": false}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.00002",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000002",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          },
+          "request_type": "openai"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

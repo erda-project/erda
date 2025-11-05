@@ -28,24 +28,31 @@ type ServiceProvider struct {
 	Desc     string            `gorm:"column:desc;type:varchar(1024)" json:"desc" yaml:"desc"`
 	Type     string            `gorm:"column:type;type:varchar(191)" json:"type" yaml:"type"`
 	APIKey   string            `gorm:"column:api_key;type:varchar(191)" json:"apiKey" yaml:"apiKey"`
-	ClientID string            `gorm:"column:client_id;type:char(36)" json:"clientId" yaml:"clientId"`
+	ClientID string            `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
 	Metadata metadata.Metadata `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
+
+	TemplateID     string            `gorm:"column:template_id;type:varchar(36)" json:"templateID" yaml:"templateID"`
+	TemplateParams map[string]string `gorm:"column:template_params;type:jsonb;serializer:json" json:"templateParams" yaml:"templateParams"`
+	IsEnabled      *bool             `gorm:"column:is_enabled;type:bool;not null;default:1" json:"isEnabled" yaml:"isEnabled"`
 }
 
 func (*ServiceProvider) TableName() string { return "ai_proxy_model_provider" }
 
 func (m *ServiceProvider) ToProtobuf() *pb.ServiceProvider {
 	return &pb.ServiceProvider{
-		Id:        m.ID.String,
-		CreatedAt: timestamppb.New(m.CreatedAt),
-		UpdatedAt: timestamppb.New(m.UpdatedAt),
-		DeletedAt: timestamppb.New(m.DeletedAt.Time),
-		Name:      m.Name,
-		Desc:      m.Desc,
-		Type:      m.Type,
-		ApiKey:    m.APIKey,
-		ClientId:  m.ClientID,
-		Metadata:  m.Metadata.ToProtobuf(),
+		Id:             m.ID.String,
+		CreatedAt:      timestamppb.New(m.CreatedAt),
+		UpdatedAt:      timestamppb.New(m.UpdatedAt),
+		DeletedAt:      timestamppb.New(m.DeletedAt.Time),
+		Name:           m.Name,
+		Desc:           m.Desc,
+		Type:           m.Type,
+		ApiKey:         m.APIKey,
+		ClientId:       m.ClientID,
+		TemplateId:     m.TemplateID,
+		TemplateParams: m.TemplateParams,
+		IsEnabled:      m.IsEnabled,
+		Metadata:       m.Metadata.ToProtobuf(),
 	}
 }
 

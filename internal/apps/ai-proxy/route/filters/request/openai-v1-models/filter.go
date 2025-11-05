@@ -83,7 +83,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 				ID:        GenerateModelNameWithPublisher(m.Model),
 				CreatedAt: m.Model.CreatedAt.Seconds, // seconds
 				Object:    "model",                   // always "model"
-				OwnedBy:   GetModelPublisher(m.Model),
+				OwnedBy:   m.Model.Publisher,
 			},
 			Name: GetModelDisplayName(m.Model),
 		})

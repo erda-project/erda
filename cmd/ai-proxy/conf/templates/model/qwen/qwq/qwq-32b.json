@@ -1,0 +1,58 @@
+{
+  "qwq-32b": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "QwQ-32B 版本在性能上可媲美业界主流顶级推理模型，具备高效处理长文本和多轮对话的能力，同时提供 HuggingFace Transformers、vLLM、Llama.cpp 等多种兼容部署方式，广泛适用于学术研究和实际应用场景。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "enable_thinking"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 131072,
+            "max_completion_tokens": 8192,
+            "max_prompt_tokens": 98304
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000006",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000002",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          },
+          "request_type": "openai"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

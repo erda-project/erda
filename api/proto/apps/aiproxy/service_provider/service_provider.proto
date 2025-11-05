@@ -8,6 +8,7 @@ import "apps/aiproxy/metadata/metadata.proto";
 import "google/protobuf/timestamp.proto";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/http.proto";
+import "google/protobuf/struct.proto";
 
 service ServiceProviderService {
     rpc Create(ServiceProviderCreateRequest) returns (ServiceProvider) {
@@ -54,16 +55,20 @@ message ServiceProvider {
     metadata.Metadata metadata = 9;
 
     string clientId = 10;
+    string templateId = 11;
+    map<string, string> templateParams = 12;
+    optional bool isEnabled = 13;
 }
 
 message ServiceProviderCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    string type = 3 [(validate.rules).string = {min_len: 2, max_len: 191}];
-    string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    metadata.Metadata metadata = 5;
+    metadata.Metadata metadata = 3;
 
-    string clientId = 6 [(validate.rules).string = {len: 36}];
+    string clientId = 4 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string templateId = 5 [(validate.rules).string = {max_len: 36}]; // required, must create from template
+    map<string, string> templateParams = 6; // placeholder values to render template config
+    optional bool isEnabled = 7;
 }
 
 message ServiceProviderGetRequest {
@@ -71,6 +76,7 @@ message ServiceProviderGetRequest {
 
     // auto-injected to restrict data permission
     string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    bool renderTemplate = 3;
 }
 
 message ServiceProviderDeleteRequest {
@@ -84,12 +90,12 @@ message ServiceProviderUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    string type = 4 [(validate.rules).string = {min_len: 2, max_len: 191}];
-    string apiKey = 5 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    metadata.Metadata metadata = 6;
+    metadata.Metadata metadata = 4;
 
     // auto-injected to restrict data permission
-    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    map<string, string> templateParams = 6; // placeholder values to render template config
+    optional bool isEnabled = 7;
 }
 
 message ServiceProviderPagingRequest {
@@ -101,6 +107,9 @@ message ServiceProviderPagingRequest {
     repeated string orderBys = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
 
     string clientId = 7 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string templateId = 8 [(validate.rules).string = {max_len: 36, ignore_empty: true}];
+    bool renderTemplate = 9;
+    optional bool isEnabled = 10;
 }
 
 message ServiceProviderPagingResponse {

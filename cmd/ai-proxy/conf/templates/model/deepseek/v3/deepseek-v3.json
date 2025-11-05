@@ -1,0 +1,58 @@
+{
+  "deepseek-v3": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark",
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "DeepSeek-V3 是一款 6710 亿参数的高性能开源稀疏专家大模型（MoE），在代码、数学、推理、多语言等领域全面超越现有开源模型，在多项标准评测中逼近或赶超前沿闭源大模型，并支持128K超长上下文、FP8混合精度推理与灵活部署，成为当前最强大的开源通用大语言模型之一。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "deepseek",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 65536,
+            "max_completion_tokens": 8192,
+            "max_prompt_tokens": 57344
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000008",
+            "image": "0",
+            "input_cache_read": "0.00000006",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000002",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          },
+          "request_type": "openai"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

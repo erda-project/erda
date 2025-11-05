@@ -1,0 +1,65 @@
+{
+  "gpt-4-8k": {
+    "deprecated": true,
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ]
+    },
+    "config": {
+      "desc": "GPT-4 是 OpenAI 推出的先进大模型，具备更强的推理、创造力和多模态（文字+视觉）能力，相比 GPT-3.5 在准确性、安全性及对复杂任务的处理能力上显著提升，广泛应用于各类实际场景。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "enable_thinking",
+              "image_recognition",
+              "structured_output",
+              "tool",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 8191,
+            "max_completion_tokens": 4096,
+            "max_prompt_tokens": 8191
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "deployment_name": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.00006",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.00003",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

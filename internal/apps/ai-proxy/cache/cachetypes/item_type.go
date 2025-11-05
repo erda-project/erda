@@ -25,6 +25,7 @@ const (
 	ItemTypeClientModelRelation
 	ItemTypeClient
 	ItemTypeClientToken
+	ItemTypeTemplate
 )
 
 // GetItemTypeName returns human-readable name for ItemType
@@ -40,6 +41,8 @@ func GetItemTypeName(itemType ItemType) string {
 		return "client"
 	case ItemTypeClientToken:
 		return "clientToken"
+	case ItemTypeTemplate:
+		return "template"
 	default:
 		return fmt.Sprintf("unknown(%d)", itemType)
 	}

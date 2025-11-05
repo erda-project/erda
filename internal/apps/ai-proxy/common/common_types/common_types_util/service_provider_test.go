@@ -42,6 +42,13 @@ func TestGetServiceProviderType(t *testing.T) {
 			want: common_types.ServiceProviderTypeVolcengineArk.String(),
 		},
 		{
+			name: "type field is valid",
+			provider: &serviceproviderpb.ServiceProvider{
+				Type: common_types.ServiceProviderTypeAzureAIFoundry.String(),
+			},
+			want: common_types.ServiceProviderTypeAzureAIFoundry.String(),
+		},
+		{
 			name:     "nil provider",
 			provider: nil,
 			want:     "",

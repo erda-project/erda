@@ -27,19 +27,29 @@ type Config struct {
 
 	SelfURL string `file:"self_url" env:"SELF_URL" required:"true"`
 
-	EmbedRoutesFS embed.FS
+	EmbedRoutesFS    embed.FS
+	EmbedTemplatesFS embed.FS
 }
 
-var embedRoutesFS embed.FS
+var (
+	EmbedRoutesFS    embed.FS
+	EmbedTemplatesFS embed.FS
+)
 
-func InjectEmbedRoutesFS(in embed.FS) {
-	embedRoutesFS = in
+func InjectEmbedFS(routesFS, TemplatesFS *embed.FS) {
+	if routesFS != nil {
+		EmbedRoutesFS = *routesFS
+	}
+	if TemplatesFS != nil {
+		EmbedTemplatesFS = *TemplatesFS
+	}
 }
 
 // DoPost do some post process after config loaded
 func (cfg *Config) DoPost() error {
 	// routes fs
-	cfg.EmbedRoutesFS = embedRoutesFS
+	cfg.EmbedRoutesFS = EmbedRoutesFS
+	cfg.EmbedTemplatesFS = EmbedTemplatesFS
 
 	// parse log level
 	level, err := logrus.ParseLevel(cfg.LogLevelStr)

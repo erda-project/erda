@@ -29,8 +29,11 @@ var bootstrap string
 //go:embed conf/routes
 var routesFS embed.FS
 
+//go:embed conf/templates
+var templatesFS embed.FS
+
 func main() {
-	config.InjectEmbedRoutesFS(routesFS)
+	config.InjectEmbedFS(&routesFS, &templatesFS)
 	common.Run(&servicehub.RunOptions{
 		Content: bootstrap,
 	})

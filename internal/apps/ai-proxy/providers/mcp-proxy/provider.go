@@ -77,13 +77,13 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// initialize cache manager
-	p.cache = cache.NewCacheManager(p.Dao, p.L, true)
+	p.cache = cache.NewCacheManager(p.Dao, p.L, nil, true)
 	p.SetCacheManager(p.cache)
 
 	p.registerMcpProxyManageAPI()
 
 	// initialize cache manager
-	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, true))
+	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, nil, true))
 
 	p.ServeReverseProxyV2(reverseproxy.WithTransport(transports.NewMcpTransport()))
 	return nil

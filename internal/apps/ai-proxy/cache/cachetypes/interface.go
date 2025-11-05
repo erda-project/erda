@@ -34,4 +34,6 @@ type Manager interface {
 	ListAll(ctx context.Context, itemType ItemType) (uint64, any, error)
 	// GetByID returns an item by ID for the specified type
 	GetByID(ctx context.Context, itemType ItemType, id string) (any, error)
+	// TriggerRefresh refreshes the cache from database
+	TriggerRefresh(ctx context.Context, itemTypes ...ItemType)
 }

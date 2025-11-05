@@ -1,0 +1,61 @@
+{
+  "deepseek-r1": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark",
+        "aliyun-bailian"
+      ]
+    },
+    "config": {
+      "desc": "DeepSeek-R1是由DeepSeek-AI推出的新一代开源大模型，通过大规模强化学习（RL）直接提升推理能力，并在不开启有监督微调（SFT）情况下实现了卓越表现，其原版及多款精 distilled 小模型均在数学、代码和推理等任务上达到或超越同类前沿模型，面向学术界与产业界免费开放可商用。",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "deepseek",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "enable_thinking",
+              "structured_output",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 131072,
+            "max_completion_tokens": 98304,
+            "max_prompt_tokens": 16384
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000016",
+            "image": "0",
+            "input_cache_read": "0.0000008",
+            "input_cache_write": "0.000000017",
+            "internal_reasoning": "0",
+            "prompt": "0.000004",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          },
+          "request_type": "openai"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
