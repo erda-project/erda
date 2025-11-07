@@ -21,13 +21,12 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
-
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
