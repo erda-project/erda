@@ -14,8 +14,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "是深度求索全新推出的混合推理模型，支持思考与非思考2种推理模式，较 deepseek-r1-0528 思考效率更高。",
     "config": {
-      "desc": "是深度求索全新推出的混合推理模型，支持思考与非思考2种推理模式，较 deepseek-r1-0528 思考效率更高。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "deepseek",

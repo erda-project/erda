@@ -30,9 +30,10 @@
         "required": false
       }
     ],
+    "desc": "Azure AI Foundry",
     "config": {
       "type": "${@template.name}",
-      "desc": "Azure AI Foundry",
+      "desc": "${@template.desc}",
       "apiKey": "${@template.placeholders.api-key}",
       "metadata": {
         "public": {

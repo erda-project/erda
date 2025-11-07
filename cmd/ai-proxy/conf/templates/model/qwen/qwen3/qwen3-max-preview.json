@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "通义千问3系列Max模型Preview版本，相较2.5系列整体通用能力有大幅度提升，中英文通用文本理解能力、复杂指令遵循能力、主观开放任务能力、多语言能力、工具调用能力均显著增强；模型知识幻觉更少。\n阶梯计费，具体可参考文档：https://help.aliyun.com/zh/model-studio/models#b00bc62972qtn",
     "config": {
-      "desc": "通义千问3系列Max模型Preview版本，相较2.5系列整体通用能力有大幅度提升，中英文通用文本理解能力、复杂指令遵循能力、主观开放任务能力、多语言能力、工具调用能力均显著增强；模型知识幻觉更少。\n阶梯计费，具体可参考文档：https://help.aliyun.com/zh/model-studio/models#b00bc62972qtn",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

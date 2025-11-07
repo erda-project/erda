@@ -17,6 +17,7 @@ package cachehelpers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
@@ -73,5 +74,6 @@ func GetRenderedModelByID(ctx context.Context, modelID string) (*pb.Model, error
 	model.Metadata = mergedMetadata
 	model.ApiKey = modelTemplate.ApiKey
 	model.Type = modelTemplate.Type
+	model.Desc = strings.ReplaceAll(model.Desc, template.TemplateDescPlaceholder, tpl.Desc)
 	return model, nil
 }

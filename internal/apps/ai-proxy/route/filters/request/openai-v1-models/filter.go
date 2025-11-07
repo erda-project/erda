@@ -70,7 +70,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 
 	richClient, err := richClientHandler.GetByAccessKeyId(ctx, &richclientpb.GetByClientAccessKeyIdRequest{AccessKeyId: client.AccessKeyId})
 	if err != nil {
-		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, "Failed to get rich client")
+		return http_error.NewHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to get rich client, err: %v", err))
 	}
 	if richClient == nil {
 		return http_error.NewHTTPError(ctx, http.StatusUnauthorized, "Client not found")

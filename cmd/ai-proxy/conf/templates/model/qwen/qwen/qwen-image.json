@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "通义千问-文生图模型（Qwen-Image）是一款通用图像生成模型，支持多种艺术风格，尤其擅长复杂文本渲染，特别是中英文文本渲染。模型支持多行布局、段落级文本生成以及细粒度细节刻画，可实现复杂的图文混合布局设计。\n计费：0.25元/张\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2975126",
     "config": {
-      "desc": "通义千问-文生图模型（Qwen-Image）是一款通用图像生成模型，支持多种艺术风格，尤其擅长复杂文本渲染，特别是中英文文本渲染。模型支持多行布局、段落级文本生成以及细粒度细节刻画，可实现复杂的图文混合布局设计。\n计费：0.25元/张\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2975126",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "image",
       "publisher": "qwen",

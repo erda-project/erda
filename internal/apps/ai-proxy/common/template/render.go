@@ -30,7 +30,7 @@ func RenderTemplate(templateName string, tpl *pb.Template, params map[string]str
 		return err
 	}
 	// render json bytes
-	renderedBytes, err := findAndReplacePlaceholders(templateName, tpl.Placeholders, cfgBytes, params)
+	renderedBytes, err := findAndReplacePlaceholders(templateName, tpl.Desc, tpl.Placeholders, cfgBytes, params)
 	if err != nil {
 		return err
 	}
@@ -48,10 +48,9 @@ func RenderTemplate(templateName string, tpl *pb.Template, params map[string]str
 // - api-key: 1234
 // - another-api-key: 5678
 // The placeholders argument enables fine-grained rendering (e.g., required flags, defaults, etc.).
-func findAndReplacePlaceholders(templateName string, placeholderDefines []*pb.Placeholder, cfgJSON []byte, placeholderValues map[string]string) ([]byte, error) {
+func findAndReplacePlaceholders(templateName, templateDesc string, placeholderDefines []*pb.Placeholder, cfgJSON []byte, placeholderValues map[string]string) ([]byte, error) {
 	var cfg interface{}
 	if err := json.Unmarshal(cfgJSON, &cfg); err != nil {
-
 		return nil, fmt.Errorf("failed to parse template config: %w", err)
 	}
 
@@ -66,7 +65,7 @@ func findAndReplacePlaceholders(templateName string, placeholderDefines []*pb.Pl
 		defByName[def.GetName()] = def
 	}
 
-	updated, err := replacePlaceholdersRecursively(templateName, cfg, defByName, placeholderValues)
+	updated, err := replacePlaceholdersRecursively(templateName, templateDesc, cfg, defByName, placeholderValues)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +81,7 @@ const (
 	placeholderPrefix       = "${@template.placeholders."
 	placeholderSuffix       = "}"
 	templateNamePlaceholder = "${@template.name}"
+	TemplateDescPlaceholder = "${@template.desc}"
 )
 
 // ServiceProviderTypeParamKey is the reserved key that callers can use
@@ -93,11 +93,11 @@ type omissionSentinel struct{}
 
 var omitPlaceholder = &omissionSentinel{}
 
-func replacePlaceholdersRecursively(templateName string, value interface{}, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
+func replacePlaceholdersRecursively(templateName, templateDesc string, value interface{}, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
 	switch typed := value.(type) {
 	case map[string]interface{}:
 		for key, v := range typed {
-			replaced, err := replacePlaceholdersRecursively(templateName, v, placeholderDefines, placeholderValues)
+			replaced, err := replacePlaceholdersRecursively(templateName, templateDesc, v, placeholderDefines, placeholderValues)
 			if err != nil {
 				return nil, err
 			}
@@ -111,7 +111,7 @@ func replacePlaceholdersRecursively(templateName string, value interface{}, plac
 	case []interface{}:
 		result := make([]interface{}, 0, len(typed))
 		for _, v := range typed {
-			replaced, err := replacePlaceholdersRecursively(templateName, v, placeholderDefines, placeholderValues)
+			replaced, err := replacePlaceholdersRecursively(templateName, templateDesc, v, placeholderDefines, placeholderValues)
 			if err != nil {
 				return nil, err
 			}
@@ -125,6 +125,9 @@ func replacePlaceholdersRecursively(templateName string, value interface{}, plac
 		if typed == templateNamePlaceholder {
 			return templateName, nil
 		}
+		if typed == TemplateDescPlaceholder {
+			return templateDesc, nil
+		}
 		if !strings.HasPrefix(typed, placeholderPrefix) || !strings.HasSuffix(typed, placeholderSuffix) {
 			return typed, nil
 		}
@@ -132,13 +135,13 @@ func replacePlaceholdersRecursively(templateName string, value interface{}, plac
 			return nil, fmt.Errorf("invalid placeholder format: %q", typed)
 		}
 		name := typed[len(placeholderPrefix) : len(typed)-len(placeholderSuffix)]
-		return resolvePlaceholderValue(templateName, name, placeholderDefines, placeholderValues)
+		return resolvePlaceholderValue(templateName, templateDesc, name, placeholderDefines, placeholderValues)
 	default:
 		return value, nil
 	}
 }
 
-func resolvePlaceholderValue(templateName, name string, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
+func resolvePlaceholderValue(templateName, templateDesc, name string, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
 	definition, defined := placeholderDefines[name]
 	if !defined {
 		return nil, fmt.Errorf("undefined placeholder %q", name)
@@ -149,7 +152,7 @@ func resolvePlaceholderValue(templateName, name string, placeholderDefines map[s
 		if err != nil {
 			return nil, err
 		}
-		return evaluateStringIfNeeded(converted, templateName)
+		return evaluateStringIfNeeded(converted, templateName, templateDesc)
 	}
 
 	if mapped, ok, err := resolvePlaceholderMapping(definition, placeholderValues); err != nil {
@@ -159,7 +162,7 @@ func resolvePlaceholderValue(templateName, name string, placeholderDefines map[s
 		if err != nil {
 			return nil, err
 		}
-		return evaluateStringIfNeeded(converted, templateName)
+		return evaluateStringIfNeeded(converted, templateName, templateDesc)
 	}
 
 	if hasPlaceholderDefault(definition) {
@@ -167,7 +170,7 @@ func resolvePlaceholderValue(templateName, name string, placeholderDefines map[s
 		if err != nil {
 			return nil, err
 		}
-		return evaluateStringIfNeeded(defaultValue, templateName)
+		return evaluateStringIfNeeded(defaultValue, templateName, templateDesc)
 	}
 
 	if definition.GetRequired() {
@@ -280,13 +283,16 @@ func coercePlaceholderValue(raw interface{}, definition *pb.Placeholder) (interf
 	}
 }
 
-func evaluateStringIfNeeded(value interface{}, templateName string) (interface{}, error) {
+func evaluateStringIfNeeded(value interface{}, templateName, templateDesc string) (interface{}, error) {
 	str, ok := value.(string)
 	if !ok {
 		return value, nil
 	}
 	if str == templateNamePlaceholder {
 		return templateName, nil
+	}
+	if str == TemplateDescPlaceholder {
+		return templateDesc, nil
 	}
 	return str, nil
 }

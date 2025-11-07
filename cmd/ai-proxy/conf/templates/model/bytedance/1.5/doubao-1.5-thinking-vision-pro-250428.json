@@ -5,7 +5,7 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "${@template.name}"
+        "default": "doubao-1-5-thinking-vision-pro-250428"
       }
     ],
     "metadata": {
@@ -13,8 +13,9 @@
         "volcengine-ark"
       ]
     },
+    "desc": "doubao-1.5-thinking-vision-pro 全新视觉深度思考模型，具备更强的通用多模态理解和推理能力，在 59 个公开评测基准中的 37 个上取得 SOTA 表现。",
     "config": {
-      "desc": "doubao-1.5-thinking-vision-pro 全新视觉深度思考模型，具备更强的通用多模态理解和推理能力，在 59 个公开评测基准中的 37 个上取得 SOTA 表现。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "bytedance",
