@@ -33,8 +33,6 @@ type RequestForModel struct {
 }
 
 func findModel(req *http.Request, requestCtx any, client *clientpb.Client) (*modelpb.Model, error) {
-	cache := ctxhelper.MustGetCacheManager(req.Context()).(cachetypes.Manager)
-
 	// Use unified lookup function
 	identifier, err := findModelIdentifier(req, requestCtx)
 	if err != nil {
@@ -46,11 +44,12 @@ func findModel(req *http.Request, requestCtx any, client *clientpb.Client) (*mod
 
 	// If there's a specific UUID, get model directly
 	if identifier.ID != "" {
-		modelV, err := cache.GetByID(req.Context(), cachetypes.ItemTypeModel, identifier.ID)
+		// check permission
+		model, err := cachehelpers.GetOneClientModel(req.Context(), client.Id, identifier.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get model by uuid: %s", identifier.ID)
+			return nil, fmt.Errorf("invalid model id or permission denied: %v", err)
 		}
-		return modelV.(*modelpb.Model), nil
+		return model.Model, nil
 	}
 
 	// Find by model name + optional publisher

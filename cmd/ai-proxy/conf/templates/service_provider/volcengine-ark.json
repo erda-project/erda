@@ -12,9 +12,10 @@
         "required": false
       }
     ],
+    "desc": "Volcengine Ark",
     "config": {
       "type": "${@template.name}",
-      "desc": "Volcengine Ark",
+      "desc": "${@template.desc}",
       "apiKey": "${@template.placeholders.api-key}",
       "metadata": {
         "public": {
@@ -37,8 +38,7 @@
               }
             }
           },
-          "location": "cnbeijing",
-          "service_provider_type": "volcengine-ark"
+          "location": "cnbeijing"
         },
         "secret": {
           "anotherApiKey": "${@template.placeholders.another-api-key}"

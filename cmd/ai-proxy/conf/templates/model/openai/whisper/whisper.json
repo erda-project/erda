@@ -13,8 +13,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "whisper",
     "config": {
-      "desc": "whisper",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "audio",
       "publisher": "openai",
@@ -38,7 +39,6 @@
             "max_prompt_tokens": 0
           },
           "deployment_id": "${@template.placeholders.target-model-name}",
-          "deployment_name": "${@template.placeholders.target-model-name}",
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
             "completion": "0",

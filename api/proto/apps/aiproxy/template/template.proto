@@ -40,6 +40,7 @@ message PlaceholderForCreate {
     string desc = 3;
     string default = 4;
     string example = 5;
+    google.protobuf.Struct mapping = 6;
 }
 
 message Template {
@@ -47,6 +48,7 @@ message Template {
     google.protobuf.Struct config = 2;
     google.protobuf.Struct metadata = 3;
     bool deprecated = 4;
+    string desc = 5;
 }
 
 message TemplateForCreate {

@@ -5,7 +5,7 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "${@template.name}"
+        "default": "doubao-seed-1-6-250615"
       }
     ],
     "metadata": {
@@ -13,8 +13,9 @@
         "volcengine-ark"
       ]
     },
+    "desc": "全新多模态深度思考模型，同时支持 thinking、non-thinking、auto三种思考模式。其中 non-thinking 模型对比 doubao-1.5-pro-32k-250115 模型大幅提升。",
     "config": {
-      "desc": "全新多模态深度思考模型，同时支持 thinking、non-thinking、auto三种思考模式。其中 non-thinking 模型对比 doubao-1.5-pro-32k-250115 模型大幅提升。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "bytedance",

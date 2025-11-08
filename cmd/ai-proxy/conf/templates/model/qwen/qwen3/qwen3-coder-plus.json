@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "Qwen3-Coder-480B-A35B-instruct 的闭源版本。\n\n通义千问代码模型。最新的 Qwen3-Coder-Plus 系列模型是基于 Qwen3 的代码生成模型，具有强大的Coding Agent能力，擅长工具调用和环境交互，能够实现自主编程，代码能力卓越的同时兼具通用能力。",
     "config": {
-      "desc": "Qwen3-Coder-480B-A35B-instruct 的闭源版本。\n\n通义千问代码模型。最新的 Qwen3-Coder-Plus 系列模型是基于 Qwen3 的代码生成模型，具有强大的Coding Agent能力，擅长工具调用和环境交互，能够实现自主编程，代码能力卓越的同时兼具通用能力。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

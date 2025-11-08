@@ -27,9 +27,10 @@
         "required": false
       }
     ],
+    "desc": "OpenAI-Style API Compatible",
     "config": {
       "type": "${@template.name}",
-      "desc": "OpenAI-Style API Compatible",
+      "desc": "${@template.desc}",
       "apiKey": "${@template.placeholders.api-key}",
       "metadata": {
         "public": {
@@ -48,8 +49,7 @@
               }
             }
           },
-          "location": "${@template.placeholders.location}",
-          "service_provider_type": "openai-compatible"
+          "location": "${@template.placeholders.location}"
         },
         "secret": {
           "anotherApiKey": "${@template.placeholders.another-api-key}"

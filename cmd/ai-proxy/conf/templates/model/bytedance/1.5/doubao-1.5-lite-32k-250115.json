@@ -5,7 +5,7 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "${@template.name}"
+        "default": "doubao-1-5-lite-32k-250115"
       }
     ],
     "metadata": {
@@ -13,8 +13,9 @@
         "volcengine-ark"
       ]
     },
+    "desc": "Doubao-1.5-lite，全新一代轻量版模型，极致响应速度，效果与时延均达到全球一流水平。",
     "config": {
-      "desc": "Doubao-1.5-lite，全新一代轻量版模型，极致响应速度，效果与时延均达到全球一流水平。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "bytedance",

@@ -1,5 +1,5 @@
 {
-  "gpt-35-turbo-0125": {
+  "gpt-3.5-turbo-4k": {
     "deprecated": true,
     "placeholders": [
       {
@@ -14,8 +14,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "gpt-3.5-turbo-4k",
     "config": {
-      "desc": "gpt-35-turbo-0125",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "openai",
@@ -23,10 +24,7 @@
         "public": {
           "abilities": {
             "abilities": [
-              "tool",
-              "structured_output",
               "reasoning",
-              "enable_thinking",
               "responses_api"
             ],
             "input_modalities": [
@@ -37,20 +35,18 @@
             ]
           },
           "context": {
-            "context_length": 4096,
+            "context_length": 16384,
             "max_completion_tokens": 4096,
-            "max_prompt_tokens": 4097
+            "max_prompt_tokens": 12288
           },
-          "deployment_id": "gpt-35-turbo-0125",
-          "deployment_name": "gpt-35-turbo-0125",
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.0000015",
+            "completion": "0.000002",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000005",
+            "prompt": "0.000002",
             "request": "0",
             "unit": "USD",
             "web_search": "0"

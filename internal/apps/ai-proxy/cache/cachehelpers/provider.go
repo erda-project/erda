@@ -17,6 +17,7 @@ package cachehelpers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
@@ -59,5 +60,6 @@ func GetRenderedServiceProviderByID(ctx context.Context, providerID string) (*pb
 	provider.Metadata = mergedMetadata
 	provider.ApiKey = providerTemplate.ApiKey
 	provider.Type = providerTemplate.Type
+	provider.Desc = strings.ReplaceAll(provider.Desc, template.TemplateDescPlaceholder, tpl.Desc)
 	return provider, nil
 }

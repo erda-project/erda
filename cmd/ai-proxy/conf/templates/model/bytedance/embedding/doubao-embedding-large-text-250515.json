@@ -13,8 +13,9 @@
         "volcengine-ark"
       ]
     },
+    "desc": "doubao-embedding-large，一款由字节跳动研发的语义向量化模型，主要面向向量检索的使用场景，支持中、英双语。",
     "config": {
-      "desc": "doubao-embedding-large，一款由字节跳动研发的语义向量化模型，主要面向向量检索的使用场景，支持中、英双语。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "embedding",
       "publisher": "bytedance",

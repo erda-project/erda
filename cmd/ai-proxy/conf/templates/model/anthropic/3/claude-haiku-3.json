@@ -20,8 +20,9 @@
         "aws-bedrock"
       ]
     },
+    "desc": "claude-3-haiku",
     "config": {
-      "desc": "claude-3-haiku",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "anthropic",

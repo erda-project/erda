@@ -31,7 +31,7 @@ type ServiceProvider struct {
 	ClientID string            `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
 	Metadata metadata.Metadata `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
 
-	TemplateID     string            `gorm:"column:template_id;type:varchar(36)" json:"templateID" yaml:"templateID"`
+	TemplateID     string            `gorm:"column:template_id;type:varchar(64)" json:"templateID" yaml:"templateID"`
 	TemplateParams map[string]string `gorm:"column:template_params;type:jsonb;serializer:json" json:"templateParams" yaml:"templateParams"`
 	IsEnabled      *bool             `gorm:"column:is_enabled;type:bool;not null;default:1" json:"isEnabled" yaml:"isEnabled"`
 }

@@ -14,8 +14,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "GPT-4 Turbo 是 OpenAI 最新一代大模型，具备更强能力、128K超长上下文窗口、更低价格（输入便宜3倍、输出便宜2倍），适用于大规模和高效的文本生成任务。",
     "config": {
-      "desc": "GPT-4 Turbo 是 OpenAI 最新一代大模型，具备更强能力、128K超长上下文窗口、更低价格（输入便宜3倍、输出便宜2倍），适用于大规模和高效的文本生成任务。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "openai",

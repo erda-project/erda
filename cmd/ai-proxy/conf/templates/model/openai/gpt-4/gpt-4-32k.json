@@ -14,8 +14,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "GPT-4 是 OpenAI 推出的先进大模型，具备更强的推理、创造力和多模态（文字+视觉）能力，相比 GPT-3.5 在准确性、安全性及对复杂任务的处理能力上显著提升，广泛应用于各类实际场景。",
     "config": {
-      "desc": "GPT-4 是 OpenAI 推出的先进大模型，具备更强的推理、创造力和多模态（文字+视觉）能力，相比 GPT-3.5 在准确性、安全性及对复杂任务的处理能力上显著提升，广泛应用于各类实际场景。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "openai",

@@ -13,8 +13,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "text-embedding-ada-002",
     "config": {
-      "desc": "text-embedding-ada-002",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "embedding",
       "publisher": "openai",

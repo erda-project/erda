@@ -14,8 +14,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "deepseek-v3 由深度求索公司自研的MoE模型，多项评测成绩超越了 qwen2.5-72b 和 llama-3.1-405b 等开源模型，并在性能上和世界顶尖的闭源模型 gpt-4o 及 claude-3.5-Sonnet 不分伯仲。",
     "config": {
-      "desc": "deepseek-v3 由深度求索公司自研的MoE模型，多项评测成绩超越了 qwen2.5-72b 和 llama-3.1-405b 等开源模型，并在性能上和世界顶尖的闭源模型 gpt-4o 及 claude-3.5-Sonnet 不分伯仲。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "deepseek",

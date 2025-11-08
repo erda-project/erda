@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "qwen-long",
     "config": {
-      "desc": "qwen-long",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

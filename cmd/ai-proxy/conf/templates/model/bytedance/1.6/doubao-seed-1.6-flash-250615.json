@@ -5,7 +5,7 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "${@template.name}"
+        "default": "doubao-seed-1-6-flash-250615"
       }
     ],
     "metadata": {
@@ -13,8 +13,9 @@
         "volcengine-ark"
       ]
     },
+    "desc": "有极致推理速度的多模态深度思考模型；同时支持文本和视觉理解。文本理解能力超过上一代 Lite 系列模型，视觉理解比肩友商 Pro 系列模型。",
     "config": {
-      "desc": "有极致推理速度的多模态深度思考模型；同时支持文本和视觉理解。文本理解能力超过上一代 Lite 系列模型，视觉理解比肩友商 Pro 系列模型。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "bytedance",

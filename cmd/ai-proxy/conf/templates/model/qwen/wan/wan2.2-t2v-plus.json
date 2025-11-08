@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "万相2.2专业版，当前最新模型；在画面细节表现、运动稳定性方面均有显著提升。\n分辨率档位：480P、1080P\n帧率：30fps\n时长：5秒\n计费：\n- 480P：0.14元/秒\n- 1080P：0.70元/秒\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2865250",
     "config": {
-      "desc": "万相2.2专业版，当前最新模型；在画面细节表现、运动稳定性方面均有显著提升。\n分辨率档位：480P、1080P\n帧率：30fps\n时长：5秒\n计费：\n- 480P：0.14元/秒\n- 1080P：0.70元/秒\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2865250",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "image",
       "publisher": "qwen",
