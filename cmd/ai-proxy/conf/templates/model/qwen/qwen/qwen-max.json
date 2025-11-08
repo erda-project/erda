@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "Qwen2.5-Max 以超过 20 万亿 tokens 的海量数据进行预训练，并结合高质量的有监督微调（SFT）及人类反馈强化学习（RLHF）深度优化。",
     "config": {
-      "desc": "Qwen2.5-Max 以超过 20 万亿 tokens 的海量数据进行预训练，并结合高质量的有监督微调（SFT）及人类反馈强化学习（RLHF）深度优化。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

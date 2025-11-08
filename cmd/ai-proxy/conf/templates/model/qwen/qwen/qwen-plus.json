@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "Qwen-Plus 能力均衡，推理效果、成本和速度介于通义千问-Max和通义千问-Turbo之间，适合中等复杂任务。",
     "config": {
-      "desc": "Qwen-Plus 能力均衡，推理效果、成本和速度介于通义千问-Max和通义千问-Turbo之间，适合中等复杂任务。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

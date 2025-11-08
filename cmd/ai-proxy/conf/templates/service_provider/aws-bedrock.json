@@ -18,9 +18,10 @@
         "required": true
       }
     ],
+    "desc": "AWS Bedrock",
     "config": {
       "type": "${@template.name}",
-      "desc": "AWS Bedrock",
+      "desc": "${@template.desc}",
       "apiKey": "use:ak:sk",
       "metadata": {
         "public": {
@@ -68,8 +69,7 @@
             },
             "apiVendor": "aws-bedrock"
           },
-          "location": "${@template.placeholders.bedrock-location}",
-          "service_provider_type": "aws-bedrock"
+          "location": "${@template.placeholders.bedrock-location}"
         },
         "secret": {
           "ak": "${@template.placeholders.bedrock-access-key}",

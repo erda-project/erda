@@ -26,6 +26,7 @@ import (
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
@@ -148,16 +149,27 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 
 	modelsByTemplateID := make(map[string][]*modelpb.Model)
 	if req.CheckInstance {
-		_, modelsV, err := t.Cache.ListAll(ctx, cachetypes.ItemTypeModel)
-		if err != nil {
-			return nil, err
+		var modelInstances []*modelpb.Model
+		if req.ClientId != "" {
+			allClientModels, err := cachehelpers.ListAllClientModels(ctx, req.ClientId)
+			if err != nil {
+				return nil, err
+			}
+			for _, clientModel := range allClientModels {
+				modelInstances = append(modelInstances, clientModel.Model)
+			}
+		} else if ctxhelper.MustGetIsAdmin(ctx) {
+			_, modelsV, err := t.Cache.ListAll(ctx, cachetypes.ItemTypeModel)
+			if err != nil {
+				return nil, err
+			}
+			modelInstances = modelsV.([]*modelpb.Model)
 		}
-		models := modelsV.([]*modelpb.Model)
-		for _, model := range models {
-			if model.TemplateId == "" || model.ClientId == "" || model.ClientId != req.ClientId {
+		for _, instance := range modelInstances {
+			if instance.TemplateId == "" {
 				continue
 			}
-			modelsByTemplateID[model.TemplateId] = append(modelsByTemplateID[model.TemplateId], model)
+			modelsByTemplateID[instance.TemplateId] = append(modelsByTemplateID[instance.TemplateId], instance)
 		}
 	}
 
@@ -246,6 +258,7 @@ func convertPlaceholdersForCreate(src []*pb.Placeholder) []*pb.PlaceholderForCre
 			Desc:     placeholder.GetDesc(),
 			Default:  placeholder.GetDefault(),
 			Example:  placeholder.GetExample(),
+			Mapping:  placeholder.GetMapping(),
 		})
 	}
 	return result

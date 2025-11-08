@@ -1,5 +1,5 @@
 {
-  "gpt-35-turbo-16k": {
+  "gpt-3.5-turbo-0125": {
     "deprecated": true,
     "placeholders": [
       {
@@ -14,20 +14,16 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "gpt-3.5-turbo-0125, see: https://platform.openai.com/docs/models/gpt-3.5-turbo",
     "config": {
-      "desc": "gpt-35-turbo-16k",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "openai",
       "metadata": {
         "public": {
           "abilities": {
-            "abilities": [
-              "reasoning",
-              "enable_thinking",
-              "structured_output",
-              "responses_api"
-            ],
+            "abilities": [],
             "input_modalities": [
               "text"
             ],
@@ -35,23 +31,19 @@
               "text"
             ]
           },
-          "api_version": "2023-05-15",
-          "avaliable_api_versions": "2023-03-15-preview, 2023-05-15, 2023-06-01-preview, 2023-07-01-preview",
           "context": {
-            "context_length": 4096,
+            "context_length": 16385,
             "max_completion_tokens": 4096,
-            "max_prompt_tokens": 16385
+            "max_prompt_tokens": null
           },
-          "deployment_id": "gpt-35-turbo-16k",
-          "deployment_name": "gpt-35-turbo-16k",
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.000004",
+            "completion": "0.0000015",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.000003",
+            "prompt": "0.0000005",
             "request": "0",
             "unit": "USD",
             "web_search": "0"

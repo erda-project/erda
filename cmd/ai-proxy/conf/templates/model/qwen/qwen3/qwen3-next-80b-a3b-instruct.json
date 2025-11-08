@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "基于Qwen3的新一代非思考模式开源模型，相较上一版本（通义千问3-235B-A22B-Instruct-2507）中文文本理解能力更佳、逻辑推理能力有增强、文本生成类任务表现更好。",
     "config": {
-      "desc": "基于Qwen3的新一代非思考模式开源模型，相较上一版本（通义千问3-235B-A22B-Instruct-2507）中文文本理解能力更佳、逻辑推理能力有增强、文本生成类任务表现更好。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

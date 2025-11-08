@@ -13,8 +13,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "dall-e-3",
     "config": {
-      "desc": "dall-e-3",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "image",
       "publisher": "openai",

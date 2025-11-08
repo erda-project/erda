@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "基于Qwen3的非思考模式开源模型，创作能力与模型安全性均有提升。",
     "config": {
-      "desc": "基于Qwen3的非思考模式开源模型，创作能力与模型安全性均有提升。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

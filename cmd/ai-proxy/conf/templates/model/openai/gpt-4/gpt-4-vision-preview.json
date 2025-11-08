@@ -14,8 +14,9 @@
         "azure-ai-foundry"
       ]
     },
+    "desc": "GPT-4 with Vision 支持图片转文字能力，可通过 API 调用实现多模态内容理解。\n\n该模型实际已经指向 gpt-4o。",
     "config": {
-      "desc": "GPT-4 with Vision 支持图片转文字能力，可通过 API 调用实现多模态内容理解。\n\n该模型实际已经指向 gpt-4o。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "openai",

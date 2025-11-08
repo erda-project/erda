@@ -31,7 +31,22 @@ type ModelWithProvider struct {
 	Provider *providerpb.ServiceProvider
 }
 
+func GetOneClientModel(ctx context.Context, clientID, modelID string) (*ModelWithProvider, error) {
+	allClientModels, err := ListAllClientModels(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+	for _, clientModel := range allClientModels {
+		if clientModel.Id == modelID {
+			return clientModel, nil
+		}
+	}
+	return nil, fmt.Errorf("failed to get model by id: %s", modelID)
+}
+
 func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProvider, error) {
+	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
+
 	// platform-assigned models
 	assignedModels, err := _listAllClientAssignedModels(ctx, clientID)
 	if err != nil {
@@ -46,16 +61,25 @@ func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProv
 
 	// all
 	allModels := append(assignedModels, belongedModels...)
-	cacheManager := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
-	var allModelsWithProvider []*ModelWithProvider
+	providerIDMap := make(map[string]struct{})
+	providerMap := make(map[string]*providerpb.ServiceProvider)
 	for _, model := range allModels {
-		providerV, err := cacheManager.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId)
+		_, ok := providerMap[model.ProviderId]
+		if ok {
+			continue
+		}
+		providerIDMap[model.ProviderId] = struct{}{}
+		providerV, err := cache.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId)
 		if err != nil {
 			return nil, err
 		}
+		providerMap[model.ProviderId] = providerV.(*providerpb.ServiceProvider)
+	}
+	var allModelsWithProvider []*ModelWithProvider
+	for _, model := range allModels {
 		allModelsWithProvider = append(allModelsWithProvider, &ModelWithProvider{
 			Model:    model,
-			Provider: providerV.(*providerpb.ServiceProvider),
+			Provider: providerMap[model.ProviderId],
 		})
 	}
 

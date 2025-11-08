@@ -1,5 +1,5 @@
 {
-  "Qwen-VL-Plus": {
+  "qwen-vl-plus": {
     "placeholders": [
       {
         "name": "target-model-name",
@@ -13,8 +13,9 @@
         "aliyun-bailian"
       ]
     },
+    "desc": "Qwen-VL（通义千问-VL）是阿里云推出的强大开源多模态大模型，支持中英文、高分辨率图片和多图对话，具备卓越的图像识别、推理、文本检测等综合视觉语言能力，在多个中英文多模态任务上逼近或超越GPT-4V和Gemini Ultra，广泛适用于智能问答、图文理解与分割、复杂跨模态应用等场景。",
     "config": {
-      "desc": "Qwen-VL（通义千问-VL）是阿里云推出的强大开源多模态大模型，支持中英文、高分辨率图片和多图对话，具备卓越的图像识别、推理、文本检测等综合视觉语言能力，在多个中英文多模态任务上逼近或超越GPT-4V和Gemini Ultra，广泛适用于智能问答、图文理解与分割、复杂跨模态应用等场景。",
+      "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
       "publisher": "qwen",

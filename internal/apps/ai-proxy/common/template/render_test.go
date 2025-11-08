@@ -24,6 +24,8 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 )
 
+const testTemplateDesc = "test-template-desc"
+
 func TestFindAndReplacePlaceholders(t *testing.T) {
 	t.Run("successfully replaces placeholders", func(t *testing.T) {
 		cfg := map[string]interface{}{
@@ -49,7 +51,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			{Name: "token", Type: "string", Required: true},
 		}
 
-		rendered, err := findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{
+		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{
 			"api-key":  "1234",
 			"endpoint": "https://example.com",
 			"token":    "abcd",
@@ -87,7 +89,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			{Name: "missing", Required: true},
 		}
 
-		_, err = findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{})
+		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), `missing required placeholder "missing"`)
 	})
@@ -99,7 +101,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		cfgJSON, err := json.Marshal(cfg)
 		require.NoError(t, err)
 
-		_, err = findAndReplacePlaceholders("test-template", nil, cfgJSON, map[string]string{})
+		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, nil, cfgJSON, map[string]string{})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid placeholder format")
 	})
@@ -120,13 +122,28 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			},
 		}
 
-		rendered, err := findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{})
+		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}
 		require.NoError(t, json.Unmarshal(rendered, &actual))
 
 		require.Equal(t, "terminus.example.com", actual["metadata"].(map[string]interface{})["host"])
+	})
+
+	t.Run("replaces template desc placeholder", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"desc": "${@template.desc}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		rendered, err := findAndReplacePlaceholders("test-template", "awesome template desc", nil, cfgJSON, map[string]string{})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "awesome template desc", actual["desc"])
 	})
 
 	t.Run("omits optional placeholder without default", func(t *testing.T) {
@@ -142,7 +159,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			{Name: "another-api-key", Required: false},
 		}
 
-		rendered, err := findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{})
+		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}
@@ -172,7 +189,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			},
 		}
 
-		rendered, err := findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{})
+		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}
@@ -200,7 +217,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		}
 
 		value := `{"context_length": 10, "max_completion_tokens": 20, "max_prompt_tokens": 30}`
-		rendered, err := findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{
+		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{
 			"context": value,
 		})
 		require.NoError(t, err)
@@ -227,7 +244,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			},
 		}
 
-		_, err = findAndReplacePlaceholders("test-template", defs, cfgJSON, map[string]string{
+		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{
 			"context": "not-json",
 		})
 		require.Error(t, err)
@@ -249,7 +266,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			},
 		}
 
-		rendered, err := findAndReplacePlaceholders("gpt-4o", defs, cfgJSON, map[string]string{})
+		rendered, err := findAndReplacePlaceholders("gpt-4o", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}
@@ -266,7 +283,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		cfgJSON, err := json.Marshal(cfg)
 		require.NoError(t, err)
 
-		rendered, err := findAndReplacePlaceholders("template-foo", nil, cfgJSON, map[string]string{})
+		rendered, err := findAndReplacePlaceholders("template-foo", testTemplateDesc, nil, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}
@@ -307,7 +324,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		}
 
 		// provider specific mapping
-		rendered, err := findAndReplacePlaceholders("claude-opus-4.1", defs, cfgJSON, map[string]string{
+		rendered, err := findAndReplacePlaceholders("claude-opus-4.1", testTemplateDesc, defs, cfgJSON, map[string]string{
 			ServiceProviderTypeParamKey: "aws-bedrock",
 		})
 		require.NoError(t, err)
@@ -317,7 +334,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.Equal(t, "us.anthropic.claude-opus-4-1-20250805-v1:0", actual["model_name"])
 
 		// fallback to mapping default when provider does not match
-		rendered, err = findAndReplacePlaceholders("claude-opus-4.1", defs, cfgJSON, map[string]string{
+		rendered, err = findAndReplacePlaceholders("claude-opus-4.1", testTemplateDesc, defs, cfgJSON, map[string]string{
 			ServiceProviderTypeParamKey: "volcengine-ark",
 		})
 		require.NoError(t, err)
@@ -326,7 +343,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.Equal(t, "claude-opus-4.1", actual["model_name"])
 
 		// fallback to mapping default when provider context missing
-		rendered, err = findAndReplacePlaceholders("claude-opus-4.1", defs, cfgJSON, map[string]string{})
+		rendered, err = findAndReplacePlaceholders("claude-opus-4.1", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 		actual = map[string]interface{}{}
 		require.NoError(t, json.Unmarshal(rendered, &actual))
@@ -355,7 +372,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			},
 		}
 
-		rendered, err := findAndReplacePlaceholders("sample-template", defs, cfgJSON, map[string]string{})
+		rendered, err := findAndReplacePlaceholders("sample-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}

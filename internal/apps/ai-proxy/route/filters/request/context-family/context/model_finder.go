@@ -29,8 +29,8 @@ import (
 
 // ModelIdentifier contains model identification information
 type ModelIdentifier struct {
-	ID   string // Model UUID (if provided)
-	Name string // Model name
+	ID   string
+	Name string
 }
 
 // ModelFinder defines the interface for finding model identifiers

@@ -12,9 +12,10 @@
         "required": false
       }
     ],
+    "desc": "Aliyun Bailian",
     "config": {
       "type": "${@template.name}",
-      "desc": "Aliyun Bailian",
+      "desc": "${@template.desc}",
       "apiKey": "${@template.placeholders.api-key}",
       "metadata": {
         "public": {

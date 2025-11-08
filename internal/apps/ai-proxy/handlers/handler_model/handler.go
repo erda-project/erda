@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
@@ -59,6 +60,23 @@ func (h *ModelHandler) Create(ctx context.Context, req *pb.ModelCreateRequest) (
 	var renderedModelTemplate pb.Model
 	cputil.MustObjJSONTransfer(renderedTpl.Config, &renderedModelTemplate)
 
+	// check provider
+	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
+	providerV, err := cache.GetByID(ctx, cachetypes.ItemTypeProvider, req.ProviderId)
+	if err != nil {
+		return nil, err
+	}
+	provider := providerV.(*providerpb.ServiceProvider)
+	// check client-id
+	if req.ClientId != "" {
+		if provider.ClientId != req.ClientId {
+			return nil, fmt.Errorf("provider doesn't belong to client")
+		}
+	} else {
+		// use provider's client-id as default
+		req.ClientId = provider.ClientId
+	}
+
 	model := &pb.Model{
 		Name:           req.Name,
 		Desc:           strutil.FirstNoneEmpty(req.Desc, rawModelTemplate.Desc),
@@ -82,22 +100,11 @@ func (h *ModelHandler) Create(ctx context.Context, req *pb.ModelCreateRequest) (
 }
 
 func (h *ModelHandler) Get(ctx context.Context, req *pb.ModelGetRequest) (*pb.Model, error) {
-	allClientModels, err := cachehelpers.ListAllClientModels(ctx, req.ClientId)
+	clientModel, err := cachehelpers.GetOneClientModel(ctx, req.ClientId, req.Id)
 	if err != nil {
 		return nil, err
 	}
-	found := false
-	var model *pb.Model
-	for _, clientModel := range allClientModels {
-		if clientModel.Id == req.Id {
-			found = true
-			model = clientModel.Model
-			break
-		}
-	}
-	if !found {
-		return nil, fmt.Errorf("failed to get model by id: %s", req.Id)
-	}
+	model := clientModel.Model
 	if req.RenderTemplate {
 		model, err = cachehelpers.GetRenderedModelByID(ctx, model.Id)
 		if err != nil {
