@@ -102,6 +102,9 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ClientPagingReques
 	if len(req.AccessKeyIds) > 0 {
 		sql = sql.Where("access_key_id IN (?)", req.AccessKeyIds)
 	}
+	if len(req.ClientId) > 0 {
+		sql = sql.Where("id = ?", req.ClientId)
+	}
 	// order by
 	sql, err := sqlutil.HandleOrderBy(sql, req.OrderBys)
 	if err != nil {
