@@ -23,11 +23,12 @@ import (
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
 func TestAggregateTokenUsages_Basic(t *testing.T) {
-	ctx := context.Background()
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 
 	models := map[string]*modelpb.Model{
 		"m1": buildModelWithPricing(map[string]any{
@@ -47,6 +48,8 @@ func TestAggregateTokenUsages_Basic(t *testing.T) {
 	}
 
 	handler := &TokenUsageHandler{Cache: &mockCache{models: models}}
+	// inject cache manager into context to mimic normal initialized request context
+	ctxhelper.PutCacheManager(ctx, handler.Cache)
 
 	resp, err := handler.aggregateTokenUsages(ctx, usages, "")
 	if err != nil {
@@ -77,7 +80,7 @@ func TestAggregateTokenUsages_Basic(t *testing.T) {
 }
 
 func TestAggregateTokenUsages_NoPricing(t *testing.T) {
-	ctx := context.Background()
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 
 	models := map[string]*modelpb.Model{
 		"m1": buildModelWithPricing(map[string]any{
@@ -96,6 +99,7 @@ func TestAggregateTokenUsages_NoPricing(t *testing.T) {
 	}
 
 	handler := &TokenUsageHandler{Cache: &mockCache{models: models}}
+	ctxhelper.PutCacheManager(ctx, handler.Cache)
 
 	resp, err := handler.aggregateTokenUsages(ctx, usages, "")
 	if err != nil {
@@ -108,7 +112,7 @@ func TestAggregateTokenUsages_NoPricing(t *testing.T) {
 }
 
 func TestAggregateTokenUsages_MixedCurrency(t *testing.T) {
-	ctx := context.Background()
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 
 	models := map[string]*modelpb.Model{
 		"m1": buildModelWithPricing(map[string]any{
@@ -126,6 +130,7 @@ func TestAggregateTokenUsages_MixedCurrency(t *testing.T) {
 	}
 
 	handler := &TokenUsageHandler{Cache: &mockCache{models: models}}
+	ctxhelper.PutCacheManager(ctx, handler.Cache)
 
 	_, err := handler.aggregateTokenUsages(ctx, usages, "")
 	if err == nil {
