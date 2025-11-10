@@ -22,11 +22,10 @@ import (
 	"strings"
 
 	"github.com/shopspring/decimal"
-	"google.golang.org/protobuf/proto"
 
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n/i18n_services"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
@@ -121,27 +120,16 @@ func (h *TokenUsageHandler) resolveModel(ctx context.Context, modelID, locale st
 	if h.Cache == nil {
 		return nil, fmt.Errorf("model cache is not configured")
 	}
-	cachedModel, err := h.Cache.GetByID(ctx, cachetypes.ItemTypeModel, modelID)
+	model, err := cachehelpers.GetRenderedModelByID(ctx, modelID)
 	if err != nil {
 		return nil, err
 	}
-	model, ok := cachedModel.(*modelpb.Model)
-	if !ok || model == nil {
-		return nil, fmt.Errorf("model %s not found", modelID)
-	}
-
-	cloned, ok := proto.Clone(model).(*modelpb.Model)
-	if !ok {
-		return nil, fmt.Errorf("failed to clone model %s", modelID)
-	}
-
 	if locale != "" && h.DAO != nil {
 		if enhancer := i18n_services.NewMetadataEnhancerService(ctx, h.DAO); enhancer != nil {
-			cloned = enhancer.EnhanceModelMetadata(ctx, cloned, locale)
+			model = enhancer.EnhanceModelMetadata(ctx, model, locale)
 		}
 	}
-
-	return cloned, nil
+	return model, nil
 }
 
 func calculateUsagePrice(inputTokens, outputTokens uint64, pricing tokenPricing) float64 {
