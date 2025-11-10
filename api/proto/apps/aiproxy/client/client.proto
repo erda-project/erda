@@ -87,6 +87,9 @@ message ClientPagingRequest {
     string name = 4;
     repeated string accessKeyIds = 5;
     repeated string orderBys = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+
+    // auto-injected to restrict instanceCount
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }
 
 message ClientPagingResponse {

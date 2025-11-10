@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
@@ -31,7 +32,13 @@ func (h *ClientHandler) Create(ctx context.Context, req *pb.ClientCreateRequest)
 }
 
 func (h *ClientHandler) Get(ctx context.Context, req *pb.ClientGetRequest) (*pb.Client, error) {
-	return h.DAO.ClientClient().Get(ctx, req)
+	client, err := h.DAO.ClientClient().Get(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// data sensitive
+	desensitizeClient(ctx, client)
+	return client, nil
 }
 
 func (h *ClientHandler) Delete(ctx context.Context, req *pb.ClientDeleteRequest) (*commonpb.VoidResponse, error) {
@@ -43,5 +50,33 @@ func (h *ClientHandler) Update(ctx context.Context, req *pb.ClientUpdateRequest)
 }
 
 func (h *ClientHandler) Paging(ctx context.Context, req *pb.ClientPagingRequest) (*pb.ClientPagingResponse, error) {
-	return h.DAO.ClientClient().Paging(ctx, req)
+	resp, err := h.DAO.ClientClient().Paging(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// data sensitive
+	for _, item := range resp.List {
+		desensitizeClient(ctx, item)
+	}
+	return resp, nil
+}
+
+func desensitizeClient(ctx context.Context, item *pb.Client) {
+	// pass for: admin
+	if auth.IsAdmin(ctx) {
+		return
+	}
+	// pass for: the client itself
+	if auth.IsClient(ctx) {
+		authed := auth.GetClient(ctx)
+		if authed != nil && authed.Id == item.Id {
+			return
+		}
+	}
+	// hide sensitive data
+	item.AccessKeyId = ""
+	item.SecretKeyId = ""
+	if item.Metadata != nil {
+		item.Metadata.Secret = nil
+	}
 }
