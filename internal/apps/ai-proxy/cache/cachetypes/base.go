@@ -97,14 +97,14 @@ func (c *BaseCacheItem) listAll(ctx context.Context, needClone bool) (uint64, an
 				data = smartClone(c.data)
 			}
 			c.mu.Unlock()
-			c.getLogger(ctx).Debugf("cache hit: %s", GetItemTypeName(c.itemType))
+			c.getLogger(ctx).Debugf("cache hit: %s", c.itemType.String())
 			return 0, data, nil
 		}
 		c.mu.Unlock()
 	}
 
 	// fallback to database query
-	c.getLogger(ctx).Warnf("cache miss: %s, fallback to database query", GetItemTypeName(c.itemType))
+	c.getLogger(ctx).Warnf("cache miss: %s, fallback to database query", c.itemType.String())
 	total, newData, err := c.QueryFromDB(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -143,7 +143,7 @@ func (c *BaseCacheItem) buildIndexFromListData(data any) (map[string]any, error)
 	}
 
 	if value.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("expected slice data for %s cache item", GetItemTypeName(c.itemType))
+		return nil, fmt.Errorf("expected slice data for %s cache item", c.itemType.String())
 	}
 
 	length := value.Len()
@@ -154,7 +154,7 @@ func (c *BaseCacheItem) buildIndexFromListData(data any) (map[string]any, error)
 			return nil, err
 		}
 		if id == "" {
-			return nil, fmt.Errorf("empty id for %s cache item", GetItemTypeName(c.itemType))
+			return nil, fmt.Errorf("empty id for %s cache item", c.itemType.String())
 		}
 		index[id] = elem
 	}
@@ -218,7 +218,7 @@ func (c *BaseCacheItem) GetByID(ctx context.Context, id string) (any, error) {
 	v, ok := c.index[id]
 	c.mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("%s with ID %s not found", GetItemTypeName(c.itemType), id)
+		return nil, fmt.Errorf("%s with ID %s not found", c.itemType.String(), id)
 	}
 	return smartClone(v), nil
 }
@@ -230,7 +230,7 @@ func (c *BaseCacheItem) getByIDFromData(ctx context.Context, data any, id string
 	}
 	v, ok := index[id]
 	if !ok {
-		return nil, fmt.Errorf("%s with ID %s not found", GetItemTypeName(c.itemType), id)
+		return nil, fmt.Errorf("%s with ID %s not found", c.itemType.String(), id)
 	}
 	return smartClone(v), nil
 }

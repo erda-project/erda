@@ -77,8 +77,8 @@ func tryGetID(ctx context.Context) string {
 // ListAll returns all cached items of the specified type
 func (m *cacheManager) ListAll(ctx context.Context, itemType cachetypes.ItemType) (uint64, any, error) {
 	cacheReqID := tryGetID(ctx)
-	m.logger.Debugf("[%s] cache in: list all cache items for %s", cacheReqID, cachetypes.GetItemTypeName(itemType))
-	defer m.logger.Debugf("[%s] cache out: list all cache items for %s", cacheReqID, cachetypes.GetItemTypeName(itemType))
+	m.logger.Debugf("[%s] cache in: list all cache items for %s", cacheReqID, itemType.String())
+	defer m.logger.Debugf("[%s] cache out: list all cache items for %s", cacheReqID, itemType.String())
 
 	item := m.items[itemType]
 	if item == nil {
@@ -91,8 +91,8 @@ func (m *cacheManager) ListAll(ctx context.Context, itemType cachetypes.ItemType
 // GetByID returns an item by ID for the specified type
 func (m *cacheManager) GetByID(ctx context.Context, itemType cachetypes.ItemType, id string) (any, error) {
 	cacheReqID := tryGetID(ctx)
-	m.logger.Debugf("[%s] cache in: get one cache item for %s, id: %s", cacheReqID, cachetypes.GetItemTypeName(itemType), id)
-	defer m.logger.Debugf("[%s] cache out: get one cache item for %s, id: %s", cacheReqID, cachetypes.GetItemTypeName(itemType), id)
+	m.logger.Debugf("[%s] cache in: get one cache item for %s, id: %s", cacheReqID, itemType.String(), id)
+	defer m.logger.Debugf("[%s] cache out: get one cache item for %s, id: %s", cacheReqID, itemType.String(), id)
 
 	item := m.items[itemType]
 	if item == nil {
@@ -128,8 +128,8 @@ func (m *cacheManager) refreshOneItemType(t cachetypes.ItemType, i cachetypes.Ca
 	total, err := i.Refresh()
 	timeCost := time.Since(timeBegin)
 	if err != nil {
-		m.logger.Errorf("cache refresh error for %s: %v (interval: %s) (cost: %s)", cachetypes.GetItemTypeName(t), err, m.config.RefreshInterval, timeCost)
+		m.logger.Errorf("cache refresh error for %s: %v (interval: %s) (cost: %s)", t.String(), err, m.config.RefreshInterval, timeCost)
 	} else {
-		m.logger.Infof("cache refresh success for %s (interval: %s) (cost: %s), total: %d", cachetypes.GetItemTypeName(t), m.config.RefreshInterval, timeCost, total)
+		m.logger.Infof("cache refresh success for %s (interval: %s) (cost: %s), total: %d", t.String(), m.config.RefreshInterval, timeCost, total)
 	}
 }
