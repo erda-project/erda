@@ -28,8 +28,7 @@ const (
 	ItemTypeTemplate
 )
 
-// GetItemTypeName returns human-readable name for ItemType
-func GetItemTypeName(itemType ItemType) string {
+func (itemType ItemType) String() string {
 	switch itemType {
 	case ItemTypeModel:
 		return "model"
