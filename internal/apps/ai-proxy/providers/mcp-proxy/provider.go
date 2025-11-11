@@ -86,9 +86,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.registerMcpProxyManageAPI()
 
-	// initialize cache manager
-	p.SetCacheManager(cache.NewCacheManager(p.Dao, p.L, nil, true))
-
 	p.ServeReverseProxyV2(reverseproxy.WithTransport(transports.NewMcpTransport()))
 	return nil
 }
