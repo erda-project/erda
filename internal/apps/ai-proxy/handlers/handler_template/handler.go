@@ -86,7 +86,7 @@ func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req 
 		cputil.MustObjJSONTransfer(spTemplate.Config, &providerConfig)
 		detail := pb.TemplateForCreate{
 			Name:         name,
-			Desc:         providerConfig.Desc,
+			Desc:         spTemplate.Desc, // use top-level desc
 			Placeholders: convertPlaceholdersForCreate(spTemplate.Placeholders),
 			Metadata:     spTemplate.Metadata,
 			Config:       spTemplate.Config,
@@ -101,6 +101,7 @@ func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req 
 				return nil, err
 			}
 			detail.Config = spTemplate.Config
+			detail.Desc = spTemplate.Desc
 		}
 		// calculate instance count
 		if req.CheckInstance {
@@ -192,7 +193,7 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 		cputil.MustObjJSONTransfer(modelTemplate.Config, &modelTemplateConfig)
 		detail := pb.TemplateForCreate{
 			Name:         name,
-			Desc:         modelTemplateConfig.Desc,
+			Desc:         modelTemplate.Desc, // use top-level desc
 			Placeholders: convertPlaceholdersForCreate(modelTemplate.Placeholders),
 			Metadata:     modelTemplate.Metadata,
 			Config:       modelTemplate.Config,
@@ -224,6 +225,7 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 				return nil, err
 			}
 			detail.Config = cfgStruct
+			detail.Desc = renderedCfg.Desc
 		}
 		// calculate instance count
 		if req.CheckInstance {

@@ -29,7 +29,7 @@ func newCtx() context.Context {
 	return ctxhelper.InitCtxMapIfNeed(context.Background())
 }
 
-func TestCheckAndFillAuth_Admin_AllowsMissingXRequestId(t *testing.T) {
+func TestCheckAndFillAuth_Admin_AllowsMissingXRequestIdOrCallId(t *testing.T) {
 	ctx := newCtx()
 	ctxhelper.PutIsAdmin(ctx, true)
 	req := &auditpb.AuditPagingRequest{}
@@ -43,12 +43,12 @@ func TestCheckAndFillAuth_Admin_AllowsMissingXRequestId(t *testing.T) {
 	if req.AuthKey != "" {
 		t.Fatalf("admin path should not override authKey, got %q", req.AuthKey)
 	}
-	if err := requireXRequestIdForNonAdmin(ctx, req); err != nil {
-		t.Fatalf("admin should bypass x_request_id requirement: %v", err)
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
+		t.Fatalf("admin should bypass identifier requirement: %v", err)
 	}
 }
 
-func TestCheckAndFillAuth_ClientAK_MissingXRequestId_Error(t *testing.T) {
+func TestCheckAndFillAuth_ClientAK_MissingXRequestIdOrCallId_Error(t *testing.T) {
 	ctx := newCtx()
 	ctxhelper.PutIsAdmin(ctx, false)
 	ctxhelper.PutClient(ctx, &clientpb.Client{AccessKeyId: "AK1"})
@@ -57,8 +57,8 @@ func TestCheckAndFillAuth_ClientAK_MissingXRequestId_Error(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error from checkAndFillAuth: %v", err)
 	}
-	if err := requireXRequestIdForNonAdmin(ctx, req); err == nil {
-		t.Fatalf("expected error for missing x_request_id, got nil")
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err == nil {
+		t.Fatalf("expected error for missing x_request_id or call_id, got nil")
 	}
 }
 
@@ -77,25 +77,25 @@ func TestCheckAndFillAuth_ClientAK_WithXRequestId_SetsAuthKey(t *testing.T) {
 	if req.AuthKey != "AK1" {
 		t.Fatalf("expected authKey to be set to AK, got %q", req.AuthKey)
 	}
-	if err := requireXRequestIdForNonAdmin(ctx, req); err != nil {
-		t.Fatalf("unexpected error from requireXRequestIdForNonAdmin: %v", err)
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
+		t.Fatalf("unexpected error from requireXRequestIdOrCallIdForNonAdmin: %v", err)
 	}
 }
 
-func TestCheckAndFillAuth_ClientToken_PrefersTokenAndRequiresXRequestId(t *testing.T) {
+func TestCheckAndFillAuth_ClientToken_PrefersTokenAndRequiresXRequestIdOrCallId(t *testing.T) {
 	ctx := newCtx()
 	ctxhelper.PutIsAdmin(ctx, false)
 	ctxhelper.PutClientToken(ctx, &clienttokenpb.ClientToken{Token: "t_token1"})
 	ctxhelper.PutClient(ctx, &clientpb.Client{AccessKeyId: "AK1"})
 
-	// missing x_request_id -> error only from requireXRequestIdForNonAdmin
+	// missing x_request_id and call_id -> error only from requireXRequestIdOrCallIdForNonAdmin
 	req := &auditpb.AuditPagingRequest{}
 	_, err := checkAndFillAuth(ctx, req)
 	if err != nil {
 		t.Fatalf("unexpected error from checkAndFillAuth: %v", err)
 	}
-	if err := requireXRequestIdForNonAdmin(ctx, req); err == nil {
-		t.Fatalf("expected error for missing x_request_id when using token")
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err == nil {
+		t.Fatalf("expected error for missing x_request_id or call_id when using token")
 	}
 
 	// with x_request_id -> use token
@@ -107,7 +107,47 @@ func TestCheckAndFillAuth_ClientToken_PrefersTokenAndRequiresXRequestId(t *testi
 	if req.AuthKey != "t_token1" {
 		t.Fatalf("expected authKey to be token, got %q", req.AuthKey)
 	}
-	if err := requireXRequestIdForNonAdmin(ctx, req); err != nil {
-		t.Fatalf("unexpected error from requireXRequestIdForNonAdmin: %v", err)
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
+		t.Fatalf("unexpected error from requireXRequestIdOrCallIdForNonAdmin: %v", err)
+	}
+}
+
+func TestCheckAndFillAuth_ClientAK_WithCallId_SetsAuthKey(t *testing.T) {
+	ctx := newCtx()
+	ctxhelper.PutIsAdmin(ctx, false)
+	ctxhelper.PutClient(ctx, &clientpb.Client{AccessKeyId: "AK1"})
+	req := &auditpb.AuditPagingRequest{CallId: "CID1"}
+	isAdmin, err := checkAndFillAuth(ctx, req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if isAdmin {
+		t.Fatalf("expected isAdmin=false")
+	}
+	if req.AuthKey != "AK1" {
+		t.Fatalf("expected authKey to be set to AK, got %q", req.AuthKey)
+	}
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
+		t.Fatalf("unexpected error from requireXRequestIdOrCallIdForNonAdmin: %v", err)
+	}
+}
+
+func TestCheckAndFillAuth_ClientToken_WithCallId_PrefersToken(t *testing.T) {
+	ctx := newCtx()
+	ctxhelper.PutIsAdmin(ctx, false)
+	ctxhelper.PutClientToken(ctx, &clienttokenpb.ClientToken{Token: "t_token1"})
+	ctxhelper.PutClient(ctx, &clientpb.Client{AccessKeyId: "AK1"})
+
+	// with call_id -> use token
+	req := &auditpb.AuditPagingRequest{CallId: "CID2"}
+	_, err := checkAndFillAuth(ctx, req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if req.AuthKey != "t_token1" {
+		t.Fatalf("expected authKey to be token, got %q", req.AuthKey)
+	}
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
+		t.Fatalf("unexpected error from requireXRequestIdOrCallIdForNonAdmin: %v", err)
 	}
 }

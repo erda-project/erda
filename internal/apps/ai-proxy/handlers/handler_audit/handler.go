@@ -33,7 +33,7 @@ func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (
 	if err != nil {
 		return nil, err
 	}
-	if err := requireXRequestIdForNonAdmin(ctx, req); err != nil {
+	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
 		return nil, err
 	}
 
@@ -83,11 +83,13 @@ func checkAndFillAuth(ctx context.Context, req *pb.AuditPagingRequest) (bool, er
 	return isAdmin, nil
 }
 
-// requireXRequestIdForNonAdmin enforces that non-admin calls provide x_request_id to narrow down the search scope.
-func requireXRequestIdForNonAdmin(ctx context.Context, req *pb.AuditPagingRequest) error {
+// requireXRequestIdOrCallIdForNonAdmin enforces that non-admin callers provide
+// at least one request identifier to narrow down the search scope. The caller
+// must supply one of `x_request_id` or `call_id`.
+func requireXRequestIdOrCallIdForNonAdmin(ctx context.Context, req *pb.AuditPagingRequest) error {
 	if !ctxhelper.MustGetIsAdmin(ctx) {
-		if req.XRequestId == "" {
-			return fmt.Errorf("missing query param: x_request_id")
+		if req.XRequestId == "" && req.CallId == "" {
+			return fmt.Errorf("missing query param: one of x_request_id or call_id is required")
 		}
 	}
 	return nil
