@@ -26,6 +26,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_config_instance"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/service_provider"
@@ -73,6 +75,8 @@ type DAO interface {
 	I18nClient() *i18n.DBClient
 	ClientMCPRelationClient() *client_mcp_relation.DBClient
 	TokenUsageClient() *usage_token.DBClient
+	MCPServerTemplateClient() *mcp_server_template.DBClient
+	MCPServerConfigInstanceClient() *mcp_server_config_instance.DBClient
 }
 
 type provider struct {
@@ -137,4 +141,12 @@ func (p *provider) ClientMCPRelationClient() *client_mcp_relation.DBClient {
 
 func (p *provider) TokenUsageClient() *usage_token.DBClient {
 	return &usage_token.DBClient{DB: p.DB}
+}
+
+func (p *provider) MCPServerTemplateClient() *mcp_server_template.DBClient {
+	return mcp_server_template.NewDBClient(p.DB)
+}
+
+func (p *provider) MCPServerConfigInstanceClient() *mcp_server_config_instance.DBClient {
+	return mcp_server_config_instance.NewDBClient(p.DB)
 }

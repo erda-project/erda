@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.mcp_server_template;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_template/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+message TemplateItem {
+  string name = 1;
+  string type = 2;
+  string description = 3;
+  bool required = 4;
+  optional string default = 5;
+}
+
+message MCPServerTemplateItem {
+  int64 id = 1;
+  string mcp_name = 2;
+  string version = 3;
+  repeated TemplateItem template = 4;
+  int64 instanceCount = 5;
+  bool is_configurable = 6;
+}
+
+message MCPServerTemplateGetRequest {
+  string mcp_name = 1;
+  string version = 2;
+}
+
+message MCPServerTemplateGetResponse {
+  repeated TemplateItem template = 1;
+}
+
+message MCPServerTemplateListRequest {
+  uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+}
+
+message MCPServerTemplateListResponse {
+  uint64 total = 1;
+  repeated MCPServerTemplateItem list = 2;
+}
+
+message MCPServerTemplateCreateRequest {
+  string mcp_name = 1;
+  string version = 2;
+  string template = 3;
+}
+
+message MCPServerTemplateCreateResponse {
+  MCPServerTemplateItem data = 1;
+}
+
+service MCPServerTemplateService {
+  rpc Get(MCPServerTemplateGetRequest) returns(MCPServerTemplateGetResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/templates/{mcp_name}?version={version}"
+    };
+  }
+
+  rpc List(MCPServerTemplateListRequest) returns(MCPServerTemplateListResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/templates"
+    };
+  }
+
+  rpc Create(MCPServerTemplateCreateRequest) returns(MCPServerTemplateCreateResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/mcp/templates"
+      body: "*"
+    };
+  }
+}

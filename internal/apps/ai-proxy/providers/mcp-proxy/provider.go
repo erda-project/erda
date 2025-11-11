@@ -30,10 +30,14 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	mcipb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_config_instance/pb"
+	mtpb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_template/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server_config_instance"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/mcp"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -92,6 +96,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
 	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
+
+	mtpb.RegisterMCPServerTemplateServiceImp(p, handler_mcp_server_template.NewMcpTemplateHandler(p.Dao, p.L), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMcpTemplatePerm)
+
+	mcipb.RegisterMCPServerConfigInstanceServiceImp(p, handler_mcp_server_config_instance.NewMCPConfigInstanceHandler(p.Dao, p.L), reverseproxy.TrySetAuth(p.cache), permission.CheckMcpConfigInstancePerm)
 }
 
 func (p *provider) Run(ctx context.Context) error {

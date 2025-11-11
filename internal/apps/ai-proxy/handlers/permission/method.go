@@ -22,6 +22,8 @@ import (
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	mcipb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_config_instance/pb"
+	mtpb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_template/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
@@ -101,6 +103,20 @@ var CheckMCPPerm = CheckPermissions(
 	&MethodPermission{Method: mcppb.MCPServerServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: mcppb.MCPServerServiceServer.Register, AdminOrClient: true},
 	&MethodPermission{Method: mcppb.MCPServerServiceServer.Publish, OnlyAdmin: true},
+)
+
+var CheckMcpTemplatePerm = CheckPermissions(
+	&MethodPermission{Method: mtpb.MCPServerTemplateServiceServer.Get, AdminOrClient: true},
+	&MethodPermission{Method: mtpb.MCPServerTemplateServiceServer.List, AdminOrClient: true},
+	&MethodPermission{Method: mtpb.MCPServerTemplateServiceServer.Create, OnlyAdmin: true},
+)
+
+var CheckMcpConfigInstancePerm = CheckPermissions(
+	&MethodPermission{Method: mcipb.MCPServerConfigInstanceServiceServer.Get, AdminOrClient: true},
+	&MethodPermission{Method: mcipb.MCPServerConfigInstanceServiceServer.List, AdminOrClient: true},
+	&MethodPermission{Method: mcipb.MCPServerConfigInstanceServiceServer.Create, AdminOrClient: true},
+	&MethodPermission{Method: mcipb.MCPServerConfigInstanceServiceServer.Update, AdminOrClient: true},
+	&MethodPermission{Method: mcipb.MCPServerConfigInstanceServiceServer.Delete, AdminOrClient: true},
 )
 
 var CheckI18nPerm = CheckPermissions(
