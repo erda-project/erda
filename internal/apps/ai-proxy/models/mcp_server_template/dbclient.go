@@ -16,6 +16,7 @@ package mcp_server_template
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -39,14 +40,23 @@ func (d *DBClient) Get(ctx context.Context, name string, version string) (*McpSe
 	return &template, nil
 }
 
-func (d *DBClient) List(ctx context.Context, pageSize uint64, pageNum uint64) ([]*McpServerTemplate, int64, error) {
-	var templates []*McpServerTemplate
+type ListOption struct {
+	ClientId        string
+	PageSize        uint64
+	PageNum         uint64
+	McpName         *string
+	IsExistInstance *bool
+}
+
+func (d *DBClient) List(ctx context.Context, option ListOption) ([]*McpServerTemplateWithInstanceCount, int64, error) {
 	var total int64
-	if pageSize == 0 {
-		pageSize = 10
+	var pageSize uint64 = 10
+	if option.PageSize != 0 {
+		pageSize = option.PageSize
 	}
-	if pageNum == 0 {
-		pageNum = 1
+	var pageNum uint64 = 1
+	if option.PageNum != 0 {
+		pageNum = option.PageNum
 	}
 
 	tx := d.db.WithContext(ctx).Model(&McpServerTemplate{})
@@ -56,12 +66,62 @@ func (d *DBClient) List(ctx context.Context, pageSize uint64, pageNum uint64) ([
 		return nil, 0, err
 	}
 
-	if err := tx.Offset(int((pageNum - 1) * pageSize)).Limit(int(pageSize)).Find(&templates).Error; err != nil {
-		logrus.Errorf("failed to list templates, err: %v", err)
+	var results []*McpServerTemplateWithInstanceCount
+	var args []any
+
+	query := `
+		SELECT
+		    t.*,
+		    COUNT(c.id) AS instance_count
+		FROM
+		    ai_proxy_mcp_server_template AS t
+		LEFT JOIN
+		    ai_proxy_mcp_server_config_instance AS c
+		ON
+		    t.mcp_name = c.mcp_name
+		    AND t.version = c.version
+`
+	if option.ClientId != "" {
+		query = query + `
+		AND c.client_id = ?
+`
+		args = append(args, option.ClientId)
+	}
+
+	if option.McpName != nil {
+		query = query + `
+		WHERE t.mcp_name like ?
+`
+		args = append(args, fmt.Sprintf("%%%s%%", *option.McpName))
+	}
+
+	query = query + `
+		GROUP BY
+		    t.mcp_name, t.version
+`
+
+	// the empty template will be created automatically,
+	// so if instance_count is 0, these instances need to be skipped;
+	// if instance_count greater than 0, these instances need to be included
+	if option.IsExistInstance != nil {
+		var where = `HAVING instance_count = 0 AND t.template != '[]' AND t.template != ''`
+		if *option.IsExistInstance {
+			where = `HAVING instance_count > 0 OR t.template = '[]' OR t.template = ''`
+		}
+		query = query + where
+	}
+
+	query = query + `
+		LIMIT ? OFFSET ?
+`
+	args = append(args, pageSize, (pageNum-1)*pageSize)
+
+	logrus.Infof("args: %+v", args)
+	if err := d.db.Debug().WithContext(ctx).Raw(query, args...).Scan(&results).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return templates, total, nil
+	return results, total, nil
 }
 
 func (d *DBClient) Create(ctx context.Context, template string, name string, version string) (*McpServerTemplate, error) {

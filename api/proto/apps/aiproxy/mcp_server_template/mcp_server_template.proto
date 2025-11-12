@@ -11,7 +11,7 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 message TemplateItem {
   string name = 1;
   string type = 2;
-  string description = 3;
+  string desc = 3;
   bool required = 4;
   optional string default = 5;
 }
@@ -23,6 +23,8 @@ message MCPServerTemplateItem {
   repeated TemplateItem template = 4;
   int64 instanceCount = 5;
   bool is_configurable = 6;
+  string description = 7;
+  string provider = 8;
 }
 
 message MCPServerTemplateGetRequest {
@@ -37,6 +39,8 @@ message MCPServerTemplateGetResponse {
 message MCPServerTemplateListRequest {
   uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
   uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+  optional string mcp_name = 3;
+  optional bool is_exist_instance = 4;
 }
 
 message MCPServerTemplateListResponse {

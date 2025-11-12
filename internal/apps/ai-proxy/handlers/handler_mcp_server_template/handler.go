@@ -17,7 +17,7 @@ package handler_mcp_server_template
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_template"
 	"slices"
 
 	"github.com/sirupsen/logrus"
@@ -97,35 +97,27 @@ func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemp
 		clientId = id
 	}
 
-	list, total, err := m.dao.MCPServerTemplateClient().List(ctx, request.PageSize, request.PageNum)
+	list, total, err := m.dao.MCPServerTemplateClient().List(ctx, mcp_server_template.ListOption{
+		ClientId:        clientId,
+		PageSize:        request.PageSize,
+		PageNum:         request.PageNum,
+		McpName:         request.McpName,
+		IsExistInstance: request.IsExistInstance,
+	})
 	if err != nil {
 		m.logger.Errorf("failed to get mcp server template list, err: %v", err)
 		return nil, err
-	}
-
-	instances, _, err := m.dao.MCPServerConfigInstanceClient().List(ctx, &mcp_server_config_instance.ListOptions{PageSize: 0, PageNum: 0, ClientId: &clientId})
-	if err != nil {
-		m.logger.Errorf("failed to get mcp server config instance list, err: %v", err)
-		return nil, err
-	}
-
-	var exist = make(map[string]int64)
-	for _, instance := range instances {
-		key := fmt.Sprintf("%s%s%s", instance.McpName, instance.Version, instance.ClientID)
-		exist[key]++
 	}
 
 	var items = make([]*pb.MCPServerTemplateItem, 0, len(list))
 	for _, template := range list {
 		temp := template.ToProtobuf()
 
-		key := fmt.Sprintf("%s%s%s", temp.McpName, temp.Version, clientId)
-		temp.InstanceCount = exist[key]
 		// if template is not nil, it means it can be configured
 		temp.IsConfigurable = temp.Template != nil && len(temp.Template) != 0
 
 		// If the instance does not exist, create an instance for the MCP with a template of {} or ''.
-		if exist[key] == 0 && template.IsEmptyTemplate() && !auth.IsAdmin(ctx) {
+		if temp.InstanceCount == 0 && template.IsEmptyTemplate() && !auth.IsAdmin(ctx) {
 			_, err := m.dao.MCPServerConfigInstanceClient().CreateOrUpdate(ctx, &mcp_server_config_instance.McpServerConfigInstance{
 				McpName:  temp.McpName,
 				Version:  temp.Version,
@@ -142,9 +134,12 @@ func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemp
 		items = append(items, temp)
 	}
 
-	// sort templates
+	// sort templates [NoInstance] < [ExistInstance and Configurable] < [UnConfigurable]
 	slices.SortFunc(items, func(a, b *pb.MCPServerTemplateItem) int {
-		if a.IsConfigurable {
+		if a.IsConfigurable && !b.IsConfigurable {
+			return -1
+		}
+		if a.InstanceCount == 0 {
 			return -1
 		}
 		return 1
