@@ -17,7 +17,6 @@ package handler_mcp_server_template
 import (
 	"context"
 	"errors"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_template"
 	"slices"
 
 	"github.com/sirupsen/logrus"
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_config_instance"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 

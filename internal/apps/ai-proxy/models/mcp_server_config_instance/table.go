@@ -17,11 +17,11 @@ package mcp_server_config_instance
 import (
 	"encoding/json"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_config_instance/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
-	"github.com/sirupsen/logrus"
 )
 
 type McpServerConfigInstance struct {
