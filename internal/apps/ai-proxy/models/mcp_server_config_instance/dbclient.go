@@ -51,7 +51,7 @@ func (c *DBClient) Count(ctx context.Context, mcpName, version, clientId string)
 		tx = tx.Where("client_id = ?", clientId)
 	}
 
-	if err := tx.Count(&count).Error; err != nil {
+	if err := tx.Debug().Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

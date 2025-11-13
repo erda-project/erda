@@ -17,9 +17,9 @@ package mcp_server_template
 import (
 	"context"
 	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type DBClient struct {
@@ -48,31 +48,24 @@ type ListOption struct {
 	IsExistInstance *bool
 }
 
+// List Query the Mcp templates with MCP instance count join instance table
 func (d *DBClient) List(ctx context.Context, option ListOption) ([]*McpServerTemplateWithInstanceCount, int64, error) {
-	var total int64
-	var pageSize uint64 = 10
+	var (
+		total    int64
+		pageSize uint64 = 10
+		pageNum  uint64 = 1
+		args     []any
+	)
+
 	if option.PageSize != 0 {
 		pageSize = option.PageSize
 	}
-	var pageNum uint64 = 1
 	if option.PageNum != 0 {
 		pageNum = option.PageNum
 	}
 
-	tx := d.db.WithContext(ctx).Model(&McpServerTemplate{})
-
-	if err := tx.Count(&total).Error; err != nil {
-		logrus.Errorf("failed to count templates, err: %v", err)
-		return nil, 0, err
-	}
-
-	var results []*McpServerTemplateWithInstanceCount
-	var args []any
-
-	query := `
-		SELECT
-		    t.*,
-		    COUNT(c.id) AS instance_count
+	// JOIN
+	joinClause := `
 		FROM
 		    ai_proxy_mcp_server_template AS t
 		LEFT JOIN
@@ -80,44 +73,64 @@ func (d *DBClient) List(ctx context.Context, option ListOption) ([]*McpServerTem
 		ON
 		    t.mcp_name = c.mcp_name
 		    AND t.version = c.version
-`
+			AND (c.deleted_at <= '1970-01-01 08:00:00' OR c.deleted_at IS NULL)
+	`
 	if option.ClientId != "" {
-		query = query + `
-		AND c.client_id = ?
-`
+		joinClause += " AND c.client_id = ?"
 		args = append(args, option.ClientId)
 	}
 
+	// --- WHERE ---
+	whereClauses := make([]string, 0)
 	if option.McpName != nil {
-		query = query + `
-		WHERE t.mcp_name like ?
-`
+		whereClauses = append(whereClauses, "t.mcp_name LIKE ?")
 		args = append(args, fmt.Sprintf("%%%s%%", *option.McpName))
 	}
 
-	query = query + `
-		GROUP BY
-		    t.mcp_name, t.version
-`
+	groupBy := " GROUP BY t.mcp_name, t.version"
 
 	// the empty template will be created automatically,
 	// so if instance_count is 0, these instances need to be skipped;
 	// if instance_count greater than 0, these instances need to be included
+	having := ""
 	if option.IsExistInstance != nil {
-		var where = `HAVING instance_count = 0 AND t.template != '[]' AND t.template != ''`
 		if *option.IsExistInstance {
-			where = `HAVING instance_count > 0 OR t.template = '[]' OR t.template = ''`
+			having = ` HAVING COUNT(c.id) > 0 `
+		} else {
+			having = ` HAVING COUNT(c.id) = 0 `
+			whereClauses = append(whereClauses, "(t.template != '[]' AND t.template != '')")
 		}
-		query = query + where
 	}
 
-	query = query + `
-		LIMIT ? OFFSET ?
-`
-	args = append(args, pageSize, (pageNum-1)*pageSize)
+	if len(whereClauses) > 0 {
+		joinClause += " WHERE " + strings.Join(whereClauses, " AND ")
+	}
 
-	logrus.Infof("args: %+v", args)
-	if err := d.db.Debug().WithContext(ctx).Raw(query, args...).Scan(&results).Error; err != nil {
+	// --- Count ---
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM (
+			SELECT 1
+			` + joinClause + groupBy + having + `
+		) AS subquery
+	`
+	if err := d.db.WithContext(ctx).Raw(countQuery, args...).Scan(&total).Error; err != nil {
+		logrus.Errorf("failed to count templates, err: %v", err)
+		return nil, 0, err
+	}
+
+	// --- Data Select ---
+	dataQuery := `
+		SELECT
+		    t.*,
+		    COUNT(c.id) AS instance_count
+		` + joinClause + groupBy + having + `
+		LIMIT ? OFFSET ?
+	`
+	argsWithPage := append(args, pageSize, (pageNum-1)*pageSize)
+
+	var results []*McpServerTemplateWithInstanceCount
+	if err := d.db.WithContext(ctx).Raw(dataQuery, argsWithPage...).Scan(&results).Error; err != nil {
 		return nil, 0, err
 	}
 
