@@ -68,10 +68,11 @@ func (m *MCPTemplateHandler) Get(ctx context.Context, request *pb.MCPServerTempl
 
 	if count == 0 && template.IsEmptyTemplate() && !auth.IsAdmin(ctx) {
 		_, err = m.dao.MCPServerConfigInstanceClient().CreateOrUpdate(ctx, &mcp_server_config_instance.McpServerConfigInstance{
-			McpName:  template.McpName,
-			Version:  template.Version,
-			Config:   "{}",
-			ClientID: clientId,
+			McpName:      template.McpName,
+			Version:      template.Version,
+			Config:       "{}",
+			ClientID:     clientId,
+			InstanceName: mcp_server_config_instance.DefaultInstanceName,
 		})
 		if err != nil {
 			m.logger.Errorf("failed to create mcp server config instance info, err: %v", err)
@@ -119,10 +120,11 @@ func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemp
 		// If the instance does not exist, create an instance for the MCP with a template of {} or ''.
 		if temp.InstanceCount == 0 && template.IsEmptyTemplate() && !auth.IsAdmin(ctx) {
 			_, err := m.dao.MCPServerConfigInstanceClient().CreateOrUpdate(ctx, &mcp_server_config_instance.McpServerConfigInstance{
-				McpName:  temp.McpName,
-				Version:  temp.Version,
-				Config:   "{}",
-				ClientID: clientId,
+				McpName:      temp.McpName,
+				Version:      temp.Version,
+				Config:       "{}",
+				ClientID:     clientId,
+				InstanceName: mcp_server_config_instance.DefaultInstanceName,
 			})
 			if err != nil {
 				m.logger.Errorf("failed to create mcp server config instance, err: %v", err)

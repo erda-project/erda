@@ -24,6 +24,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 )
 
+const DefaultInstanceName = "default"
+const EmptyConfig = "{}"
+
 type McpServerConfigInstance struct {
 	common.BaseModel
 	InstanceName string `gorm:"column:instance_name;type:varchar(255)"`
@@ -31,6 +34,12 @@ type McpServerConfigInstance struct {
 	Config       string `gorm:"column:config;type:text" json:"config"`
 	McpName      string `gorm:"column:mcp_name;type:varchar(255);not null" json:"mcp_name"`
 	Version      string `gorm:"column:version;type:varchar(128);not null" json:"version"`
+}
+
+type McpServerConfigInstanceCountResult struct {
+	McpName string `gorm:"column:mcp_name;type:varchar(255);not null" json:"mcp_name"`
+	Version string `gorm:"column:version;type:varchar(128);not null" json:"version"`
+	Count   int    `gorm:"column:count;type:int" json:"count"`
 }
 
 // TableName 指定表名

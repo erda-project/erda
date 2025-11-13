@@ -125,10 +125,11 @@ func (m *MCPConfigInstanceHandler) Create(ctx context.Context, request *pb.MCPSe
 	}
 
 	instance, err := m.dao.MCPServerConfigInstanceClient().CreateOrUpdate(ctx, &mcp_server_config_instance.McpServerConfigInstance{
-		McpName:  request.McpName,
-		Version:  request.Version,
-		Config:   string(config),
-		ClientID: clientId,
+		McpName:      request.McpName,
+		Version:      request.Version,
+		Config:       string(config),
+		ClientID:     clientId,
+		InstanceName: mcp_server_config_instance.DefaultInstanceName,
 	})
 	if err != nil {
 		m.logger.Errorf("failed to create instance: %v", err)

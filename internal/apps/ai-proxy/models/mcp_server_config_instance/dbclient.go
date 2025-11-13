@@ -44,14 +44,40 @@ func (c *DBClient) Get(ctx context.Context, mcpName, version, clientId string) (
 
 func (c *DBClient) Count(ctx context.Context, mcpName, version, clientId string) (int64, error) {
 	var count int64
-	if err := c.db.WithContext(ctx).Model(&McpServerConfigInstance{}).
+	tx := c.db.WithContext(ctx).Model(&McpServerConfigInstance{}).
 		Where("mcp_name = ?", mcpName).
-		Where("version = ?", version).
-		Where("client_id = ?", clientId).
-		Count(&count).Error; err != nil {
+		Where("version = ?", version)
+	if clientId != "" {
+		tx = tx.Where("client_id = ?", clientId)
+	}
+
+	if err := tx.Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (c *DBClient) CountAll(ctx context.Context, clientId string) ([]*McpServerConfigInstanceCountResult, error) {
+	var args []any
+	query := `
+    SELECT mcp_name, version, COUNT(*) AS count
+    FROM ai_proxy_mcp_server_config_instance`
+
+	if clientId != "" {
+		query = query + " WHERE client_id = ? "
+		args = append(args, clientId)
+	}
+
+	query = query + `
+    GROUP BY mcp_name, version
+    ORDER BY mcp_name`
+
+	var results []*McpServerConfigInstanceCountResult
+	err := c.db.WithContext(ctx).Raw(query, args...).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (c *DBClient) CreateOrUpdate(ctx context.Context, model *McpServerConfigInstance) (*McpServerConfigInstance, error) {

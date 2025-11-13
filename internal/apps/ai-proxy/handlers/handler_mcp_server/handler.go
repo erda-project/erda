@@ -17,16 +17,21 @@ package handler_mcp_server
 import (
 	"context"
 	"errors"
+	"fmt"
+	"gorm.io/gorm"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_config_instance"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -56,17 +61,24 @@ func (m *MCPHandler) Delete(ctx context.Context, req *pb.MCPServerDeleteRequest)
 }
 
 func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionRequest) (*pb.MCPServerVersionResponse, error) {
+
+	var clientId = ""
+
+	if !auth.IsAdmin(ctx) {
+		id, ok := ctxhelper.GetClientId(ctx)
+		if !ok {
+			logrus.Error("client id should not be empty for non-admin")
+			return nil, errors.New("failed to get clientId")
+		}
+		clientId = id
+	}
+
 	var servers []*pb.MCPServer
 	var total int64
 
 	var scopes = make([]mcp_server.Scope, 0)
 
 	if !auth.IsAdmin(ctx) && apis.GetInternalClient(ctx) == "" {
-		clientId, ok := ctxhelper.GetClientId(ctx)
-		if !ok {
-			return nil, errors.New("clientId not found")
-		}
-
 		result, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
 			ClientId: clientId,
 		})
@@ -112,14 +124,34 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 		return nil, err
 	}
 
-	if !req.UseRawEndpoint {
-		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
-			return nil, err
-		}
+	// select instance count
+	instances, err := m.DAO.MCPServerConfigInstanceClient().CountAll(ctx, clientId)
+	if err != nil {
+		return nil, err
+	}
 
-		for i := range servers {
+	var count = make(map[string]int64)
+	for _, instance := range instances {
+		key := fmt.Sprintf("%s-%s", instance.McpName, instance.Version)
+		count[key] = int64(instance.Count)
+	}
+
+	for i, server := range servers {
+		if !req.UseRawEndpoint {
+			if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
+				return nil, err
+			}
 			servers[i].Endpoint = m.buildEndpoint(servers[i])
 		}
+		if count[fmt.Sprintf("%s-%s", server.Name, server.Version)] == 0 {
+			// if it has no instance, create it
+			c, err := m.createInstance(ctx, server.Name, server.Version, clientId)
+			if err != nil {
+				return nil, err
+			}
+			count[fmt.Sprintf("%s-%s", server.Name, server.Version)] += c
+		}
+		servers[i].InstanceCount = count[fmt.Sprintf("%s-%s", servers[i].Name, servers[i].Version)]
 	}
 
 	return &pb.MCPServerVersionResponse{
@@ -137,6 +169,18 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 }
 
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
+
+	var clientId = ""
+
+	if !auth.IsAdmin(ctx) {
+		id, ok := ctxhelper.GetClientId(ctx)
+		if !ok {
+			logrus.Error("client id should not be empty for non-admin")
+			return nil, errors.New("failed to get clientId")
+		}
+		clientId = id
+	}
+
 	var scopes = make(map[string]*cmspb.ScopeIdList)
 
 	if !auth.IsAdmin(ctx) && apis.GetInternalClient(ctx) == "" {
@@ -169,6 +213,21 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 		return nil, errors.New("no permission to access")
 	}
 
+	count, err := m.DAO.MCPServerConfigInstanceClient().Count(ctx, mcpServer.Name, mcpServer.Version, clientId)
+	if err != nil {
+		return nil, err
+	}
+
+	if count == 0 {
+		c, err := m.createInstance(ctx, mcpServer.Name, mcpServer.Version, clientId)
+		if err != nil {
+			return nil, err
+		}
+		count += c
+	}
+
+	mcpServer.InstanceCount = count
+
 	if !req.UseRawEndpoint {
 		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
@@ -180,16 +239,24 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 }
 
 func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*pb.MCPServerListResponse, error) {
+
+	var clientId = ""
+
+	if !auth.IsAdmin(ctx) {
+		id, ok := ctxhelper.GetClientId(ctx)
+		if !ok {
+			logrus.Error("client id should not be empty for non-admin")
+			return nil, errors.New("failed to get clientId")
+		}
+		clientId = id
+	}
+
 	var servers []*pb.MCPServer
 	var total int64
 
 	var scopes = make([]mcp_server.Scope, 0)
 
 	if !auth.IsAdmin(ctx) && apis.GetInternalClient(ctx) == "" {
-		clientId, ok := ctxhelper.GetClientId(ctx)
-		if !ok {
-			return nil, errors.New("clientId not found")
-		}
 
 		result, err := m.DAO.ClientMCPRelationClient().ListClientMCPScope(ctx, &cmspb.ListClientMCPScopeRequest{
 			ClientId: clientId,
@@ -234,14 +301,35 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		return nil, err
 	}
 
-	if !req.UseRawEndpoint {
-		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
-			return nil, err
-		}
+	// select instance count
+	instances, err := m.DAO.MCPServerConfigInstanceClient().CountAll(ctx, clientId)
+	if err != nil {
+		return nil, err
+	}
 
-		for i := range servers {
+	var count = make(map[string]int64)
+	for _, instance := range instances {
+		key := fmt.Sprintf("%s-%s", instance.McpName, instance.Version)
+		count[key] = int64(instance.Count)
+	}
+
+	for i, server := range servers {
+		if !req.UseRawEndpoint {
+			if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
+				return nil, err
+			}
 			servers[i].Endpoint = m.buildEndpoint(servers[i])
 		}
+		if count[fmt.Sprintf("%s-%s", server.Name, server.Version)] == 0 {
+			logrus.Errorf("server ====> %s/%s has no instance", server.Name, server.Version)
+			// if it has no instance, create it
+			c, err := m.createInstance(ctx, server.Name, server.Version, clientId)
+			if err != nil {
+				return nil, err
+			}
+			count[fmt.Sprintf("%s-%s", server.Name, server.Version)] += c
+		}
+		servers[i].InstanceCount = count[fmt.Sprintf("%s-%s", servers[i].Name, servers[i].Version)]
 	}
 
 	return &pb.MCPServerListResponse{
@@ -253,6 +341,34 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 func (m *MCPHandler) buildEndpoint(server *pb.MCPServer) string {
 	// http://127.0.0.1:8081/proxy/connect/demo/1.0.0
 	return m.McpProxyPublicURL + "/proxy/connect/" + server.Name + "/" + server.Version
+}
+
+func (m *MCPHandler) createInstance(ctx context.Context, mcpServer string, version string, clientId string) (int64, error) {
+	if clientId == "" {
+		return 0, nil
+	}
+	template, err := m.DAO.MCPServerTemplateClient().Get(ctx, mcpServer, version)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	if template.IsEmptyTemplate() {
+		_, err = m.DAO.MCPServerConfigInstanceClient().CreateOrUpdate(ctx, &mcp_server_config_instance.McpServerConfigInstance{
+			InstanceName: mcp_server_config_instance.DefaultInstanceName,
+			Version:      version,
+			ClientID:     clientId,
+			McpName:      template.McpName,
+			Config:       mcp_server_config_instance.EmptyConfig,
+		})
+		if err == nil {
+			return 1, nil
+		}
+		logrus.Errorf("create server instance [%s] failed: %v", mcpServer, err)
+	}
+
+	return 0, nil
 }
 
 func VerifyAddr(addr string) error {
