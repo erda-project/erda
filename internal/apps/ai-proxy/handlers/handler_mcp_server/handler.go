@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	cmspb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"

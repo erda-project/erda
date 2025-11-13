@@ -17,9 +17,10 @@ package mcp_server_template
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"strings"
 )
 
 type DBClient struct {
