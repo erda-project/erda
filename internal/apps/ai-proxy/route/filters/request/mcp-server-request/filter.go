@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"net/http/httputil"
@@ -38,6 +41,8 @@ import (
 const Name = "mcp-server-request"
 
 const TerminusRequestIdHeader = "Terminus-Request-Id"
+
+const NotificationInitializedMethod = "notifications/initialized"
 
 const (
 	portalHostHeader = "X-Portal-Host"
@@ -170,14 +175,21 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 
 	logger.Infof("server info: %+v", parsedEndpoint)
 
-	raw, err := io.ReadAll(req.Body)
+	rawBody, err := io.ReadAll(req.Body)
 	req.Body.Close()
 	if err != nil {
 		return err
 	}
 
-	if err = filterTerminusTraceId(raw, req); err != nil {
+	if err = filterTerminusTraceId(rawBody, req); err != nil {
 		logger.Errorf("filter terminus trace id failed: %v", err)
+		return err
+	}
+
+	// init configs by client id
+	rawBody, err = filterInitNotification(ctx, rawBody, client, name, tag)
+	if err != nil {
+		logger.Errorf("filter init notification failed: %v", err)
 		return err
 	}
 
@@ -189,12 +201,12 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 		ClusterName: clusterName,
 	})
 
-	logger.Infof("request body %s", string(raw))
+	logger.Infof("request body %s", string(rawBody))
 
-	reader := bytes.NewReader(raw)
+	reader := bytes.NewReader(rawBody)
 	closer := io.NopCloser(reader)
 	req.Body = closer
-	req.ContentLength = int64(len(raw))
+	req.ContentLength = int64(len(rawBody))
 
 	req.Host = endpoint
 	req.URL.Scheme = parsedEndpoint.Scheme
@@ -307,4 +319,41 @@ func filterTerminusTraceId(body []byte, rawReq *http.Request) error {
 	}
 
 	return nil
+}
+
+func filterInitNotification(ctx context.Context, body []byte, client dao.DAO, name string, tag string) ([]byte, error) {
+	var req request.Request
+	if err := json.Unmarshal(body, &req); err != nil {
+		return nil, err
+	}
+
+	if req.Method != NotificationInitializedMethod {
+		return body, nil
+	}
+
+	clientId, ok := ctxhelper.GetClientId(ctx)
+	if !ok && !auth.IsAdmin(ctx) {
+		return nil, errors.New("failed to get clientId")
+	}
+
+	instance, err := client.MCPServerConfigInstanceClient().Get(ctx, name, tag, clientId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New(fmt.Sprintf("instance %s:%s not found for clientId: %s", name, tag, clientId))
+		}
+		return nil, err
+	}
+
+	config := instance.Config
+	req.Params.Meta = make(map[string]any)
+	if err = json.Unmarshal([]byte(config), &req.Params.Meta); err != nil {
+		return nil, err
+	}
+
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonData, nil
 }
