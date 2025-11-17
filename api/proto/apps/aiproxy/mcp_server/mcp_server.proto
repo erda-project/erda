@@ -22,7 +22,7 @@ message MCPServer {
   bool isPublished = 11;
   string scopeType = 12;
   string scopeId = 13;
-  int64 InstanceCount = 14;
+  int64 instanceCount = 14;
 }
 
 message MCPServerConfig {
