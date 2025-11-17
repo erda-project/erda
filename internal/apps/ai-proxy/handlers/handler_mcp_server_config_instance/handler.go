@@ -22,7 +22,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	pb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_config_instance/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
@@ -32,18 +31,19 @@ import (
 )
 
 type MCPConfigInstanceHandler struct {
-	dao    dao.DAO
-	logger logs.Logger
+	dao dao.DAO
 }
 
-func NewMCPConfigInstanceHandler(dao dao.DAO, logger logs.Logger) *MCPConfigInstanceHandler {
-	return &MCPConfigInstanceHandler{dao: dao, logger: logger}
+func NewMCPConfigInstanceHandler(dao dao.DAO) *MCPConfigInstanceHandler {
+	return &MCPConfigInstanceHandler{dao: dao}
 }
 
 func (m *MCPConfigInstanceHandler) Get(ctx context.Context, request *pb.MCPServerConfigInstanceGetRequest) (*pb.MCPServerConfigInstanceGetResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	clientId, ok := ctxhelper.GetClientId(ctx)
 	if (!ok && !auth.IsAdmin(ctx)) || (auth.IsAdmin(ctx) && request.ClientId == nil) {
-		m.logger.Errorf("client id or client-id should not be empty")
+		logger.Errorf("client id or client-id should not be empty")
 		return nil, errors.New("failed to get clientId")
 	} else if auth.IsAdmin(ctx) {
 		clientId = *request.ClientId
@@ -51,7 +51,7 @@ func (m *MCPConfigInstanceHandler) Get(ctx context.Context, request *pb.MCPServe
 
 	instance, err := m.dao.MCPServerConfigInstanceClient().Get(ctx, request.McpName, request.Version, clientId)
 	if err != nil {
-		m.logger.Errorf("failed to get instance: %v", err)
+		logger.Errorf("failed to get instance: %v", err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &pb.MCPServerConfigInstanceGetResponse{
 				Data: &pb.MCPServerConfigInstanceItem{
@@ -70,12 +70,14 @@ func (m *MCPConfigInstanceHandler) Get(ctx context.Context, request *pb.MCPServe
 }
 
 func (m *MCPConfigInstanceHandler) List(ctx context.Context, request *pb.MCPServerConfigInstanceListRequest) (*pb.MCPServerConfigInstanceListResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	var clientId *string
 	if !auth.IsAdmin(ctx) {
 		if id, ok := ctxhelper.GetClientId(ctx); ok {
 			clientId = &id
 		} else {
-			m.logger.Errorf("client id or client-id should not be empty")
+			logger.Errorf("client id or client-id should not be empty")
 			return nil, errors.New("failed to get clientId")
 		}
 	}
@@ -86,7 +88,7 @@ func (m *MCPConfigInstanceHandler) List(ctx context.Context, request *pb.MCPServ
 		PageSize: int(request.PageSize),
 	})
 	if err != nil {
-		m.logger.Errorf("failed to list instance: %v", err)
+		logger.Errorf("failed to list instance: %v", err)
 		return nil, err
 	}
 	var instances = make([]*pb.MCPServerConfigInstanceItem, 0, len(list))
@@ -101,18 +103,20 @@ func (m *MCPConfigInstanceHandler) List(ctx context.Context, request *pb.MCPServ
 }
 
 func (m *MCPConfigInstanceHandler) Create(ctx context.Context, request *pb.MCPServerConfigInstanceCreateRequest) (*pb.MCPServerConfigInstanceCreateResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	var clientId = ""
 
 	if auth.IsAdmin(ctx) {
 		if request.ClientId == nil {
-			m.logger.Error("client id should not be empty for admin")
+			logger.Error("client id should not be empty for admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = *request.ClientId
 	} else {
 		id, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
-			m.logger.Error("client id should not be empty for non-admin")
+			logger.Error("client id should not be empty for non-admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = id
@@ -120,7 +124,7 @@ func (m *MCPConfigInstanceHandler) Create(ctx context.Context, request *pb.MCPSe
 
 	config, err := json.Marshal(request.Config)
 	if err != nil {
-		m.logger.Errorf("failed to marshal config: %v", err)
+		logger.Errorf("failed to marshal config: %v", err)
 		return nil, err
 	}
 
@@ -132,24 +136,26 @@ func (m *MCPConfigInstanceHandler) Create(ctx context.Context, request *pb.MCPSe
 		InstanceName: mcp_server_config_instance.DefaultInstanceName,
 	})
 	if err != nil {
-		m.logger.Errorf("failed to create instance: %v", err)
+		logger.Errorf("failed to create instance: %v", err)
 		return nil, err
 	}
 	return &pb.MCPServerConfigInstanceCreateResponse{Data: instance.ToProtobuf()}, nil
 }
 
 func (m *MCPConfigInstanceHandler) Update(ctx context.Context, request *pb.MCPServerConfigInstanceUpdateRequest) (*commonpb.VoidResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	var clientId = ""
 	if auth.IsAdmin(ctx) {
 		if request.ClientId == nil {
-			m.logger.Error("client id should not be empty for admin")
+			logger.Error("client id should not be empty for admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = *request.ClientId
 	} else {
 		id, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
-			m.logger.Error("client id should not be empty for non-admin")
+			logger.Error("client id should not be empty for non-admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = id
@@ -157,36 +163,38 @@ func (m *MCPConfigInstanceHandler) Update(ctx context.Context, request *pb.MCPSe
 
 	config, err := json.Marshal(request.Config)
 	if err != nil {
-		m.logger.Errorf("failed to marshal config: %v", err)
+		logger.Errorf("failed to marshal config: %v", err)
 		return nil, err
 	}
 
 	if err := m.dao.MCPServerConfigInstanceClient().UpdateConfig(ctx, request.McpName, request.Version, clientId, string(config)); err != nil {
-		m.logger.Errorf("failed to update instance: %v", err)
+		logger.Errorf("failed to update instance: %v", err)
 		return nil, err
 	}
 	return new(commonpb.VoidResponse), nil
 }
 
 func (m *MCPConfigInstanceHandler) Delete(ctx context.Context, request *pb.MCPServerConfigInstanceDeleteRequest) (*commonpb.VoidResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	var clientId = ""
 	if auth.IsAdmin(ctx) {
 		if request.ClientId == nil {
-			m.logger.Error("client id should not be empty for admin")
+			logger.Error("client id should not be empty for admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = *request.ClientId
 	} else {
 		id, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
-			m.logger.Error("client id should not be empty for non-admin")
+			logger.Error("client id should not be empty for non-admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = id
 	}
 
 	if err := m.dao.MCPServerConfigInstanceClient().Delete(ctx, request.McpName, request.Version, clientId); err != nil {
-		m.logger.Errorf("failed to delete instance: %v", err)
+		logger.Errorf("failed to delete instance: %v", err)
 		return nil, err
 	}
 	return new(commonpb.VoidResponse), nil

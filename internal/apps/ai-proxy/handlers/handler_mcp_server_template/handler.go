@@ -19,10 +19,8 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	pb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_template/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -32,21 +30,22 @@ import (
 )
 
 type MCPTemplateHandler struct {
-	dao    dao.DAO
-	logger logs.Logger
+	dao dao.DAO
 }
 
-func NewMcpTemplateHandler(dao dao.DAO, l logs.Logger) *MCPTemplateHandler {
-	return &MCPTemplateHandler{dao: dao, logger: l}
+func NewMcpTemplateHandler(dao dao.DAO) *MCPTemplateHandler {
+	return &MCPTemplateHandler{dao: dao}
 }
 
 func (m *MCPTemplateHandler) Get(ctx context.Context, request *pb.MCPServerTemplateGetRequest) (*pb.MCPServerTemplateGetResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	var clientId = ""
 
 	if !auth.IsAdmin(ctx) {
 		id, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
-			m.logger.Error("client id should not be empty for non-admin")
+			logger.Error("client id should not be empty for non-admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = id
@@ -54,14 +53,14 @@ func (m *MCPTemplateHandler) Get(ctx context.Context, request *pb.MCPServerTempl
 
 	template, err := m.dao.MCPServerTemplateClient().Get(ctx, request.McpName, request.Version)
 	if err != nil {
-		logrus.Errorf("failed to get mcp server template info, err: %v", err)
+		logger.Errorf("failed to get mcp server template info, err: %v", err)
 		return nil, err
 	}
 
 	count, err := m.dao.MCPServerConfigInstanceClient().Count(ctx, request.McpName, request.Version, clientId)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			m.logger.Errorf("failed to get mcp server config instance info, err: %v", err)
+			logger.Errorf("failed to get mcp server config instance info, err: %v", err)
 			return nil, err
 		}
 	}
@@ -75,7 +74,7 @@ func (m *MCPTemplateHandler) Get(ctx context.Context, request *pb.MCPServerTempl
 			InstanceName: mcp_server_config_instance.DefaultInstanceName,
 		})
 		if err != nil {
-			m.logger.Errorf("failed to create mcp server config instance info, err: %v", err)
+			logger.Errorf("failed to create mcp server config instance info, err: %v", err)
 			return nil, err
 		}
 		count++
@@ -87,12 +86,14 @@ func (m *MCPTemplateHandler) Get(ctx context.Context, request *pb.MCPServerTempl
 }
 
 func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemplateListRequest) (*pb.MCPServerTemplateListResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	var clientId = ""
 
 	if !auth.IsAdmin(ctx) {
 		id, ok := ctxhelper.GetClientId(ctx)
 		if !ok {
-			m.logger.Error("client id should not be empty for non-admin")
+			logger.Error("client id should not be empty for non-admin")
 			return nil, errors.New("failed to get clientId")
 		}
 		clientId = id
@@ -106,7 +107,7 @@ func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemp
 		IsExistInstance: request.IsExistInstance,
 	})
 	if err != nil {
-		m.logger.Errorf("failed to get mcp server template list, err: %v", err)
+		logger.Errorf("failed to get mcp server template list, err: %v", err)
 		return nil, err
 	}
 
@@ -127,7 +128,7 @@ func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemp
 				InstanceName: mcp_server_config_instance.DefaultInstanceName,
 			})
 			if err != nil {
-				m.logger.Errorf("failed to create mcp server config instance, err: %v", err)
+				logger.Errorf("failed to create mcp server config instance, err: %v", err)
 				continue
 			}
 			temp.InstanceCount++
@@ -154,9 +155,11 @@ func (m *MCPTemplateHandler) List(ctx context.Context, request *pb.MCPServerTemp
 }
 
 func (m *MCPTemplateHandler) Create(ctx context.Context, request *pb.MCPServerTemplateCreateRequest) (*pb.MCPServerTemplateCreateResponse, error) {
+	logger := ctxhelper.MustGetLogger(ctx)
+
 	created, err := m.dao.MCPServerTemplateClient().Create(ctx, request.Template, request.McpName, request.Version)
 	if err != nil {
-		logrus.Errorf("failed to create mcp server template, err: %v", err)
+		logger.Errorf("failed to create mcp server template, err: %v", err)
 		return nil, err
 	}
 	return &pb.MCPServerTemplateCreateResponse{Data: created.ToProtobuf()}, nil

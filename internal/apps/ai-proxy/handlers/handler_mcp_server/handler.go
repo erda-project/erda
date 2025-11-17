@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	cmspb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_mcp_relation/pb"
@@ -306,7 +305,6 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 			servers[i].Endpoint = m.buildEndpoint(servers[i])
 		}
 		if count[fmt.Sprintf("%s-%s", server.Name, server.Version)] == 0 {
-			logrus.Errorf("server ====> %s/%s has no instance", server.Name, server.Version)
 			// if it has no instance, create it
 			c, err := m.createInstance(ctx, server.Name, server.Version, clientId)
 			if err != nil {
@@ -350,7 +348,7 @@ func (m *MCPHandler) createInstance(ctx context.Context, mcpServer string, versi
 		if err == nil {
 			return 1, nil
 		}
-		logrus.Errorf("create server instance [%s] failed: %v", mcpServer, err)
+		ctxhelper.MustGetLogger(ctx).Errorf("create server instance [%s] failed: %v", mcpServer, err)
 	}
 
 	return 0, nil
