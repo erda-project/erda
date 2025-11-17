@@ -11,10 +11,10 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 message MCPServerConfigInstanceItem {
   string id = 1 [(validate.rules).string = {len: 36}];
-  string mcp_name = 3 [(validate.rules).string = {min_len: 1}];
-  string version = 4 [(validate.rules).string = {min_len: 1}];
-  string instance_name = 5;
-  map<string, google.protobuf.Value> config = 6;
+  string mcp_name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+  string instance_name = 4;
+  map<string, google.protobuf.Value> config = 5;
 }
 
 message MCPServerConfigInstanceGetRequest {
