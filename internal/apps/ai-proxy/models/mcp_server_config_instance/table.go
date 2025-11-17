@@ -50,7 +50,7 @@ func (m *McpServerConfigInstance) ToProtobuf() *pb.MCPServerConfigInstanceItem {
 	config := make(map[string]*structpb.Value)
 	if err := json.Unmarshal([]byte(m.Config), &config); err != nil {
 		// if unmarshal failed, use empty config
-		logrus.Errorf("unmarshal config failed, config:%v, err:%v", m.Config, err)
+		logrus.Errorf("unmarshal config failed, config: %v, err: %v", m.Config, err)
 	}
 
 	return &pb.MCPServerConfigInstanceItem{
