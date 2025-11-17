@@ -22,28 +22,20 @@ const (
 	// see: https://platform.openai.com/docs/api-reference/chat
 	APIStyleOpenAICompatible APIStyle = "OpenAI-Compatible"
 
-	// see: https://help.aliyun.com/zh/model-studio/use-qwen-by-calling-api
-	APIStyleAliyunDashScope APIStyle = "AliyunDashScope"
-
 	// see: https://docs.anthropic.com/en/api/messages
 	// see: https://docs.aws.amazon.com/zh_cn/bedrock/latest/APIReference/API_runtime_InvokeModel.html
 	APIStyleAnthropicCompatible APIStyle = "Anthropic-Compatible"
+
+	// see: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/quickstart
+	APIStyleGoogleVertexAI APIStyle = "Google-Vertex-AI"
 )
 
 func (s APIStyle) IsValid() bool {
 	switch s {
-	case APIStyleOpenAICompatible, APIStyleAliyunDashScope, APIStyleAnthropicCompatible:
+	case APIStyleOpenAICompatible, APIStyleAnthropicCompatible, APIStyleGoogleVertexAI:
 		return true
 	default:
 		return false
-	}
-}
-
-func AllAPIStyles() []APIStyle {
-	return []APIStyle{
-		APIStyleOpenAICompatible,
-		APIStyleAliyunDashScope,
-		APIStyleAnthropicCompatible,
 	}
 }
 

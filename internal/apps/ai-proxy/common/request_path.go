@@ -15,12 +15,12 @@
 package common
 
 const (
-	RequestPathPrefixV1ChatCompletions = "/v1/chat/completions"
-	RequestPathPrefixV1Completions     = "/v1/completions"
-	RequestPathPrefixV1Images          = "/v1/images"
-	RequestPathPrefixV1Audio           = "/v1/audio"
-	RequestPathPrefixV1Embeddings      = "/v1/embeddings"
-	RequestPathPrefixV1Moderations     = "/v1/moderations"
+	RequestPathPrefixV1ChatCompletions   = "/v1/chat/completions"
+	RequestPathPrefixV1ImagesGenerations = "/v1/images/generations"
+	RequestPathPrefixV1ImagesEdits       = "/v1/images/edits"
+	RequestPathPrefixV1Audio             = "/v1/audio"
+	RequestPathPrefixV1Embeddings        = "/v1/embeddings"
+	RequestPathPrefixV1Moderations       = "/v1/moderations"
 
 	RequestPathPrefixV1Files = "/v1/files"
 

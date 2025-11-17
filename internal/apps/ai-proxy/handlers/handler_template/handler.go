@@ -95,7 +95,7 @@ func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req 
 		if req.RenderTemplate {
 			params := make(map[string]string)
 			for _, placeholder := range spTemplate.Placeholders {
-				params[placeholder.Name] = strutil.FirstNoneEmpty(placeholder.Default, placeholder.Example)
+				params[placeholder.Name] = strutil.FirstNoneEmpty(stringPtrValue(placeholder.Default), placeholder.GetExample())
 			}
 			if err := template.RenderTemplate(name, spTemplate, params); err != nil {
 				return nil, err
@@ -203,7 +203,7 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 		if req.RenderTemplate {
 			params := make(map[string]string)
 			for _, placeholder := range modelTemplate.Placeholders {
-				params[placeholder.Name] = strutil.FirstNoneEmpty(placeholder.Default, placeholder.Example)
+				params[placeholder.Name] = strutil.FirstNoneEmpty(stringPtrValue(placeholder.Default), placeholder.GetExample())
 			}
 			if err := template.RenderTemplate(name, modelTemplate, params); err != nil {
 				return nil, err
@@ -258,10 +258,17 @@ func convertPlaceholdersForCreate(src []*pb.Placeholder) []*pb.PlaceholderForCre
 			Name:     placeholder.GetName(),
 			Required: placeholder.GetRequired(),
 			Desc:     placeholder.GetDesc(),
-			Default:  placeholder.GetDefault(),
+			Default:  placeholder.Default,
 			Example:  placeholder.GetExample(),
 			Mapping:  placeholder.GetMapping(),
 		})
 	}
 	return result
+}
+
+func stringPtrValue(val *string) string {
+	if val == nil {
+		return ""
+	}
+	return *val
 }

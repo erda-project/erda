@@ -42,6 +42,7 @@ func NewRegistry() *Registry {
 		&mp.OpenAIChatThinkingEncoder{},
 		&mp.OpenAIResponsesThinkingEncoder{},
 		&mp.BytedanceThinkingEncoder{},
+		&mp.GoogleThinkingEncoder{},
 	}
 
 	// sort by priority (lower number = higher priority)

@@ -92,11 +92,15 @@ func (p *JSONPathParser) Search(s string) []string {
 //   - context : model.metadata.public.api_version = ""
 //     provider.metadata.public.api_version = "2024-01-01"
 //     -> result: api-version=2024-01-01
-func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]any) string {
-	return p.re.ReplaceAllStringFunc(s, func(match string) string {
+func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]any) (string, error) {
+	var firstErr error
+	out := p.re.ReplaceAllStringFunc(s, func(match string) string {
 		groups := p.re.FindStringSubmatch(match)
 		if len(groups) < 2 {
-			return "" // no match found, return empty
+			if firstErr == nil {
+				firstErr = fmt.Errorf("invalid placeholder: %q", match)
+			}
+			return match
 		}
 		key := groups[1] // the first group is the key
 		values := strings.Split(key, p.MultiChoiceSplitter)
@@ -106,21 +110,44 @@ func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]a
 			}
 			value, err := p.getByJSONPath(v, availableValues)
 			if err != nil {
-				// log the error, but continue to try the next value
-				fmt.Printf("error getting value by JSON path %q: %v\n", v, err)
+				if firstErr == nil {
+					firstErr = fmt.Errorf("failed to resolve %q: %w", v, err)
+				}
 				continue
 			}
 			if value != "" {
 				return value // return the first non-empty value found
 			}
 		}
-		return ""
+		if firstErr == nil {
+			firstErr = fmt.Errorf("no value resolved for %q", key)
+		}
+		return match
 	})
+	if firstErr != nil {
+		return out, firstErr
+	}
+	return out, nil
+}
+
+// SearchAndReplaceStrict 会在无法解析占位符时返回错误。
+// 规则：
+// - 支持多路选择（a||b||c），按顺序尝试；
+// - 以 '@' 开头按 JSONPath 解析，否则视作字面量直接返回；
+// - 任一路获得非空字符串即成功；若全部失败，则返回错误。
+// Deprecated: SearchAndReplaceStrict is now the same as SearchAndReplace. Use SearchAndReplace instead.
+func (p *JSONPathParser) SearchAndReplaceStrict(s string, availableValues map[string]any) (string, error) {
+	return p.SearchAndReplace(s, availableValues)
 }
 
 func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]any) (string, error) {
-	// remove prefix `@` to `.`
-	jsonPath := "." + expr[1:]
+	// Normalize to a JSONPath starting with '$' and using bracket notation
+	// Keep root instead of converting to a leading dot to avoid jp parser errors
+	jsonPath := expr
+	if strings.HasPrefix(jsonPath, "@") {
+		jsonPath = "$" + jsonPath[1:]
+	}
+	jsonPath = DotToBracketJSONPath(jsonPath)
 	x, err := jp.ParseString(jsonPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse json path %q: %w", jsonPath, err)
@@ -130,4 +157,78 @@ func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]a
 		return strutil.String(out[0]), nil
 	}
 	return "", nil
+}
+
+// DotToBracketJSONPath 把类似 @.a.b.c 这种 dot 形式，转换成 @["a"]["b"]["c"] 形式。
+// 如果本来就包含 ["..."] 这种 bracket 形式，会原样保留。
+func DotToBracketJSONPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return path
+	}
+
+	// 支持 @ 或 $ 开头
+	prefix := ""
+	rest := path
+	if strings.HasPrefix(rest, "@") || strings.HasPrefix(rest, "$") {
+		prefix = rest[:1]
+		rest = rest[1:]
+	}
+
+	// 去掉紧随其后的可选点号：@.a.b.c / $.a.b.c / @a.b.c
+	if strings.HasPrefix(rest, ".") {
+		rest = rest[1:]
+	}
+
+	if rest == "" {
+		if prefix != "" {
+			return prefix
+		}
+		return path
+	}
+
+	// 将路径转换为完全的 bracket 形式，同时保留原有的 bracket 片段
+	var b strings.Builder
+	b.WriteString(prefix)
+
+	i := 0
+	for i < len(rest) {
+		switch rest[i] {
+		case '.':
+			// 跳过点号
+			i++
+		case '[':
+			// 直接保留现有的 bracket 片段，直到对应的 ']'
+			end := i + 1
+			depth := 1
+			for end < len(rest) && depth > 0 {
+				if rest[end] == '[' {
+					depth++
+				} else if rest[end] == ']' {
+					depth--
+				}
+				end++
+			}
+			b.WriteString(rest[i:end])
+			// 跳过紧随其后的点号
+			i = end
+			if i < len(rest) && rest[i] == '.' {
+				i++
+			}
+		default:
+			// 解析一个标识符直到下一个 '.' 或 '['
+			start := i
+			for i < len(rest) && rest[i] != '.' && rest[i] != '[' {
+				i++
+			}
+			if start < i {
+				b.WriteString(`["`)
+				b.WriteString(rest[start:i])
+				b.WriteString(`"]`)
+			}
+			// 点号在下一轮被跳过
+		}
+	}
+
+	return b.String()
 }

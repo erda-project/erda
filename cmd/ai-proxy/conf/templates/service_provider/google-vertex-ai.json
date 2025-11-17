@@ -1,0 +1,73 @@
+{
+  "google-vertex-ai": {
+    "placeholders": [
+      {
+        "name": "service-account-key-file-content",
+        "type": "string",
+        "desc": "whole content of the service account key file",
+        "required": true
+      },
+      {
+        "name": "location",
+        "type": "string",
+        "example": "us-central1",
+        "default": "global",
+        "required": false
+      }
+    ],
+    "metadata": {
+      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference"
+    },
+    "desc": "Google Vertex AI",
+    "config": {
+      "type": "${@template.name}",
+      "desc": "${@template.desc}",
+      "apiKey": "use:service-account",
+      "metadata": {
+        "public": {
+          "host": "aiplatform.googleapis.com",
+          "scheme": "https",
+          "api": {
+            "apiStyle": "google-vertex-ai",
+            "apiStyleConfigs": {
+              "POST:/v1/chat/completions": {
+                "headers": {
+                  "Authorization": [
+                    "set",
+                    "Bearer ${@provider.metadata.secret.gcp-sa-access-token}"
+                  ]
+                },
+                "host": "${@provider.metadata.public.host}",
+                "path": [
+                  "replace",
+                  "/v1",
+                  "/v1/projects/${@provider.metadata.public.gcp-project-id}/locations/${@template.placeholders.location}/endpoints/openapi"
+                ],
+                "queryParams": {},
+                "scheme": "${@provider.metadata.public.scheme}"
+              },
+              "POST:/v1/images/generations;POST:/v1/images/edits": {
+                "headers": {
+                  "Authorization": [
+                    "set",
+                    "Bearer ${@provider.metadata.secret.gcp-sa-access-token}"
+                  ]
+                },
+                "host": "${@provider.metadata.public.host}",
+                "path": [
+                  "set",
+                  "/v1/projects/${@provider.metadata.public.gcp-project-id}/locations/${@template.placeholders.location}/publishers/google/models/${@model.metadata.public.model_name}:generateContent"
+                ],
+                "queryParams": {},
+                "scheme": "${@provider.metadata.public.scheme}"
+              }
+            }
+          },
+          "location": "${@template.placeholders.location}"
+        },
+        "secret": {
+        }
+      }
+    }
+  }
+}

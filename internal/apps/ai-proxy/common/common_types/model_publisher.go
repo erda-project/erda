@@ -21,6 +21,7 @@ var (
 	ModelPublisherAnthropic ModelPublisher = "anthropic"
 	ModelPublisherQwen      ModelPublisher = "qwen"
 	ModelPublisherBytedance ModelPublisher = "bytedance" // Doubao
+	ModelPublisherGoogle    ModelPublisher = "google"
 )
 
 func (mp ModelPublisher) String() string { return string(mp) }

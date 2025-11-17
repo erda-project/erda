@@ -33,7 +33,7 @@ func (e *OpenAIChatThinkingEncoder) CanEncode(ctx context.Context) bool {
 	model := ctxhelper.MustGetModel(ctx)
 	pathMatcher := ctxhelper.MustGetPathMatcher(ctx)
 
-	return strings.EqualFold(model.Publisher, string(common_types.ModelPublisherOpenAI)) &&
+	return strings.EqualFold(model.Publisher, common_types.ModelPublisherOpenAI.String()) &&
 		pathMatcher.Match(common.RequestPathPrefixV1ChatCompletions)
 }
 

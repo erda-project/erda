@@ -1,0 +1,26 @@
+routes:
+  - path: /v1/images/generations
+    method: POST
+    request_filters:
+      - name: rate-limit
+      - name: auth
+      - name: context
+      - name: context-image
+      - name: openai-compatible-director
+      - name: google-vertex-ai-director
+      - name: set-response-chunk-splitter
+    response_filters:
+      - name: google-vertex-ai-director
+
+  - path: /v1/images/edits
+    method: POST
+    request_filters:
+      - name: rate-limit
+      - name: auth
+      - name: context
+      - name: context-image
+      - name: openai-compatible-director
+      - name: google-vertex-ai-director
+      - name: set-response-chunk-splitter
+    response_filters:
+      - name: google-vertex-ai-director

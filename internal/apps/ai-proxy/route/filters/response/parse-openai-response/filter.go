@@ -55,9 +55,6 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 }
 
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
-	if !f.Enable(resp) {
-		return chunk, nil
-	}
 	f.allChunks = append(f.allChunks, chunk...)
 
 	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
@@ -69,10 +66,6 @@ func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (ou
 }
 
 func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
-	if !f.Enable(resp) {
-		return nil, nil
-	}
-
 	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		var completion string
 		// routing by model type

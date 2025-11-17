@@ -56,8 +56,7 @@ type AnthropicCompatibleDirectorRequest struct {
 
 func (f *AnthropicCompatibleDirectorRequest) Enable(ctx context.Context) bool {
 	apiSegment := api_segment_getter.GetAPISegment(ctx)
-	return apiSegment != nil &&
-		strings.EqualFold(string(apiSegment.APIStyle), string(api_style.APIStyleAnthropicCompatible))
+	return apiSegment != nil && strings.EqualFold(string(apiSegment.APIStyle), string(api_style.APIStyleAnthropicCompatible))
 }
 
 func (f *AnthropicCompatibleDirectorRequest) OnProxyRequest(pr *httputil.ProxyRequest) error {
