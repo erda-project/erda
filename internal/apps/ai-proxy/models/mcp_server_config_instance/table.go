@@ -42,7 +42,6 @@ type McpServerConfigInstanceCountResult struct {
 	Count   int    `gorm:"column:count;type:int" json:"count"`
 }
 
-// TableName 指定表名
 func (*McpServerConfigInstance) TableName() string {
 	return "ai_proxy_mcp_server_config_instance"
 }
