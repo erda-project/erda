@@ -65,12 +65,7 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 	var clientId = ""
 
 	if !auth.IsAdmin(ctx) {
-		id, ok := ctxhelper.GetClientId(ctx)
-		if !ok {
-			logrus.Error("client id should not be empty for non-admin")
-			return nil, errors.New("failed to get clientId")
-		}
-		clientId = id
+		clientId = ctxhelper.MustGetClientId(ctx)
 	}
 
 	var servers []*pb.MCPServer
@@ -173,12 +168,7 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 	var clientId = ""
 
 	if !auth.IsAdmin(ctx) {
-		id, ok := ctxhelper.GetClientId(ctx)
-		if !ok {
-			logrus.Error("client id should not be empty for non-admin")
-			return nil, errors.New("failed to get clientId")
-		}
-		clientId = id
+		clientId = ctxhelper.MustGetClientId(ctx)
 	}
 
 	var scopes = make(map[string]*cmspb.ScopeIdList)
@@ -243,12 +233,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 	var clientId = ""
 
 	if !auth.IsAdmin(ctx) {
-		id, ok := ctxhelper.GetClientId(ctx)
-		if !ok {
-			logrus.Error("client id should not be empty for non-admin")
-			return nil, errors.New("failed to get clientId")
-		}
-		clientId = id
+		clientId = ctxhelper.MustGetClientId(ctx)
 	}
 
 	var servers []*pb.MCPServer
