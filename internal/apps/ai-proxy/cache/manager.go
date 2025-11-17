@@ -50,11 +50,11 @@ func NewCacheManager(dao dao.DAO, logger logs.Logger, templatesByType templatety
 		logger: logger,
 	}
 	manager.items[cachetypes.ItemTypeClient] = item_client.NewClientCacheItem(dao, cfg)
+	manager.items[cachetypes.ItemTypeClientToken] = item_clienttoken.NewClientTokenCacheItem(dao, cfg)
 	if !isMcpProxy {
 		manager.items[cachetypes.ItemTypeModel] = item_model.NewModelCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeProvider] = item_provider.NewProviderCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeClientModelRelation] = item_clientmodelrelation.NewClientModelRelationCacheItem(dao, cfg)
-		manager.items[cachetypes.ItemTypeClientToken] = item_clienttoken.NewClientTokenCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeTemplate] = item_template.NewTemplateCacheItem(dao, cfg, templatesByType)
 	}
 

@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.mcp_server_config_instance;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_config_instance/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+import "common/http.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+message MCPServerConfigInstanceItem {
+  string id = 1 [(validate.rules).string = {len: 36}];
+  string mcp_name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+  string instance_name = 4;
+  map<string, google.protobuf.Value> config = 5;
+}
+
+message MCPServerConfigInstanceGetRequest {
+  optional string client_id = 1;
+  string mcp_name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+}
+
+message MCPServerConfigInstanceGetResponse {
+  MCPServerConfigInstanceItem data = 1;
+}
+
+message MCPServerConfigInstanceListRequest {
+  uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+}
+
+message MCPServerConfigInstanceListResponse {
+  uint64 total = 1;
+  repeated MCPServerConfigInstanceItem list = 2;
+}
+
+message MCPServerConfigInstanceCreateRequest {
+  optional string client_id = 1;
+  string mcp_name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+  map<string, google.protobuf.Value> config = 4;
+}
+
+message MCPServerConfigInstanceCreateResponse {
+  MCPServerConfigInstanceItem data = 1;
+}
+
+message MCPServerConfigInstanceUpdateRequest {
+  optional string client_id = 1;
+  string mcp_name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+  map<string, google.protobuf.Value> config = 4;
+}
+
+message MCPServerConfigInstanceDeleteRequest {
+  optional string client_id = 1;
+  string mcp_name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+}
+
+service MCPServerConfigInstanceService {
+  rpc Get(MCPServerConfigInstanceGetRequest) returns(MCPServerConfigInstanceGetResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/configs/{mcp_name}?version={version}"
+    };
+  }
+
+  rpc List(MCPServerConfigInstanceListRequest) returns(MCPServerConfigInstanceListResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/configs?pageNum={pageNum}&pageSize={pageSize}"
+    };
+  }
+
+  rpc Create(MCPServerConfigInstanceCreateRequest) returns(MCPServerConfigInstanceCreateResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/mcp/configs"
+      body: "*"
+    };
+  }
+
+  rpc Update(MCPServerConfigInstanceUpdateRequest) returns(common.VoidResponse) {
+    option(google.api.http) = {
+      put: "/api/ai-proxy/mcp/configs/{mcp_name}"
+      body: "*"
+    };
+  }
+
+  rpc Delete(MCPServerConfigInstanceDeleteRequest) returns(common.VoidResponse) {
+    option(google.api.http) = {
+      delete: "/api/ai-proxy/mcp/configs/{mcp_name}?version={version}"
+    };
+  }
+}
