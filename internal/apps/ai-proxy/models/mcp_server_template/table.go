@@ -56,7 +56,7 @@ func (m *McpServerTemplate) ToProtobuf() *pb.MCPServerTemplateItem {
 		}
 	}
 
-	// TODO: Abstract the MCP provider,temporarily set the scopeId with value 0 to `Erda Platform`.
+	// TODO: Abstract the MCP provider, temporarily set the scopeId with value 0 to `Erda Platform`.
 	var provider = MCPUnknowProvider
 	if m.ScopeType == "platform" && m.ScopeID == "0" {
 		provider = MCPErdaProvider
