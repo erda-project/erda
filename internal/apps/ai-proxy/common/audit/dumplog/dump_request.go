@@ -22,8 +22,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
-const headerBodyDelimiter = "\r\n\r\n"
-
 func DumpRequestIn(in *http.Request) {
 	logger := ctxhelper.MustGetLoggerBase(in.Context())
 	contentType := in.Header.Get("Content-Type")

@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// jsonPathParser parse JSONPath-like template strings.
+// JSONPathParser parse JSONPath-like template strings.
 // e.g.,
 // - api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}
 //   - context(obj): model.metadata.public.api_version = ""
@@ -71,7 +71,7 @@ func (p *JSONPathParser) NeedDoReplace(s string) bool {
 	return len(p.Search(s)) > 0
 }
 
-// search return all matched keys. e.g.,
+// Search return all matched keys. e.g.,
 //   - api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}
 //     -> [ "@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview ]
 //   - text="${a||b||c} ${d}"
@@ -87,7 +87,7 @@ func (p *JSONPathParser) Search(s string) []string {
 	return keys
 }
 
-// searchAndReplace enforces strict placeholder rendering:
+// SearchAndReplace enforces strict placeholder rendering:
 // - supports multi-choice (a||b||c) and tries sequentially;
 // - entries starting with '@' are parsed via JSONPath, others are literals;
 // - returns the first non-empty value; errors when none resolve.
@@ -148,7 +148,7 @@ func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]a
 	return "", nil
 }
 
-// dotToBracketJSONPath converts @.a.b.c form into @["a"]["b"]["c"] form.
+// DotToBracketJSONPath converts @.a.b.c form into @["a"]["b"]["c"] form.
 // existing bracket segments like ["..."] are preserved.
 func DotToBracketJSONPath(path string) string {
 	path = strings.TrimSpace(path)

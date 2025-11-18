@@ -23,6 +23,8 @@ import (
 	"strings"
 )
 
+const headerBodyDelimiter = "\r\n\r\n"
+
 func sanitizeMultipartDump(dump []byte, contentType string) (string, error) {
 	header, body, ok := splitDumpHeaderBody(dump)
 	if !ok {
