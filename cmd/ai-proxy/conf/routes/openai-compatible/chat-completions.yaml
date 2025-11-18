@@ -11,7 +11,9 @@ routes:
       - name: thinking-handler
       - name: openai-compatible-director
       - name: anthropic-compatible-director
+      - name: google-vertex-ai-director
       - name: set-response-chunk-splitter
     response_filters:
       - name: anthropic-compatible-director
+      - name: google-vertex-ai-director
       - name: parse-openai-response

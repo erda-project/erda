@@ -64,5 +64,19 @@ func IsBinaryContentType(contentType string) bool {
 
 // ShouldDumpBody determines whether to dump body based on content-type
 func ShouldDumpBody(contentType string) bool {
+	if isMultipartFormData(contentType) {
+		return true
+	}
 	return !IsBinaryContentType(contentType)
+}
+
+func isMultipartFormData(contentType string) bool {
+	if contentType == "" {
+		return false
+	}
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data")
+	}
+	return strings.EqualFold(mediaType, "multipart/form-data")
 }

@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func SetBody(r *http.Request, newBody any) error {
@@ -39,6 +42,19 @@ func SetBody(r *http.Request, newBody any) error {
 		r.Body = v
 		r.ContentLength = -1
 		r.Header.Del("Content-Length")
+		return nil
+	case proto.Message:
+		// use protojson for pb message
+		b, err := (protojson.MarshalOptions{
+			UseProtoNames: false,
+		}).Marshal(v)
+		if err != nil {
+			return fmt.Errorf("failed to marshal proto message: %w", err)
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
+		r.ContentLength = int64(len(b))
+		r.Header.Set("Content-Length", fmt.Sprintf("%d", len(b)))
+		r.Header.Set("Content-Type", "application/json")
 		return nil
 	default:
 		b, err := json.Marshal(v)

@@ -36,10 +36,11 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 		var defaultStatus = http.StatusBadRequest
 		// check error at request rewrite stage
 		if rewriteErr, _ := ctxhelper.GetReverseProxyRequestRewriteError(r.Context()); rewriteErr != nil {
+			audithelper.Note(r.Context(), "request.rewrite.error.stage", rewriteErr.Stage)
 			audithelper.Note(r.Context(), "request.rewrite.error.filter", rewriteErr.FilterName)
 			audithelper.Note(r.Context(), "request.rewrite.error.message", rewriteErr.Error.Error())
 			if rewriteErr.FilterName != "" {
-				err = fmt.Errorf("%s: %w", rewriteErr.FilterName, rewriteErr.Error)
+				err = fmt.Errorf("%s: %s: %w", rewriteErr.Stage, rewriteErr.FilterName, rewriteErr.Error)
 			} else {
 				err = rewriteErr.Error
 			}
@@ -47,10 +48,11 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 
 		// check error at response modify stage
 		if responseErr, _ := ctxhelper.GetReverseProxyResponseModifyError(r.Context()); responseErr != nil {
+			audithelper.Note(r.Context(), "response.modify.error.stage", responseErr.Stage)
 			audithelper.Note(r.Context(), "response.modify.error.filter", responseErr.FilterName)
 			audithelper.Note(r.Context(), "response.modify.error.message", responseErr.Error.Error())
 			if responseErr.FilterName != "" {
-				err = fmt.Errorf("%s: %w", responseErr.FilterName, responseErr.Error)
+				err = fmt.Errorf("%s: %s: %w", responseErr.Stage, responseErr.FilterName, responseErr.Error)
 			} else {
 				err = responseErr.Error
 			}

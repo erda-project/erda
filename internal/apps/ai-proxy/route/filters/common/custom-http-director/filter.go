@@ -106,7 +106,11 @@ func methodDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) er
 	if apiStyleConfig.Method != "" {
 		method = apiStyleConfig.Method
 	}
-	method = handleJSONPathTemplate(r.Context(), method)
+	var err error
+	method, err = handleJSONPathTemplate(r.Context(), method)
+	if err != nil {
+		return err
+	}
 	r.Method = method
 	return nil
 }
@@ -117,7 +121,11 @@ func schemeDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) er
 	if apiStyleConfig.Scheme != "" {
 		scheme = apiStyleConfig.Scheme
 	}
-	scheme = handleJSONPathTemplate(r.Context(), scheme)
+	var err error
+	scheme, err = handleJSONPathTemplate(r.Context(), scheme)
+	if err != nil {
+		return err
+	}
 	r.URL.Scheme = scheme
 	return nil
 }
@@ -128,7 +136,11 @@ func hostDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) erro
 	if host == "" {
 		return fmt.Errorf("host is empty in APIStyleConfig")
 	}
-	host = handleJSONPathTemplate(r.Context(), host)
+	var err error
+	host, err = handleJSONPathTemplate(r.Context(), host)
+	if err != nil {
+		return err
+	}
 	r.Host = host
 	r.URL.Host = host
 	r.Header.Set("Host", host)
@@ -175,7 +187,11 @@ func pathDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) erro
 	default:
 		// if the operation is not recognized, we can just ignore it
 	}
-	newPath = handleJSONPathTemplate(r.Context(), newPath)
+	var err error
+	newPath, err = handleJSONPathTemplate(r.Context(), newPath)
+	if err != nil {
+		return err
+	}
 	r.URL.Path = newPath
 	r.URL.RawPath = ""
 	return nil
@@ -194,12 +210,18 @@ func queryParamsDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfi
 		switch op {
 		case "add":
 			for _, value := range values[1:] {
-				value = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
+				if err != nil {
+					return err
+				}
 				query.Add(key, value)
 			}
 		case "set":
 			for _, value := range values[1:] {
-				value = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
+				if err != nil {
+					return err
+				}
 				query.Set(key, value)
 			}
 		case "delete", "del", "remove":
@@ -224,12 +246,18 @@ func headersDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) e
 		switch op {
 		case "add":
 			for _, value := range values[1:] {
-				value = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
+				if err != nil {
+					return err
+				}
 				r.Header.Add(key, value)
 			}
 		case "set":
 			for _, value := range values[1:] {
-				value = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
+				if err != nil {
+					return err
+				}
 				r.Header.Set(key, value)
 			}
 		case "delete", "del", "remove":
@@ -241,10 +269,10 @@ func headersDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) e
 	return nil
 }
 
-func handleJSONPathTemplate(ctx context.Context, s string) string {
+func handleJSONPathTemplate(ctx context.Context, s string) (string, error) {
 	parser := api_style.MustNewJSONPathParser(api_style.DefaultRegexpPattern, api_style.DefaultMultiChoiceSplitter)
 	if !parser.NeedDoReplace(s) {
-		return s
+		return s, nil
 	}
 	provider := ctxhelper.MustGetServiceProvider(ctx)
 	model := ctxhelper.MustGetModel(ctx)
@@ -254,8 +282,11 @@ func handleJSONPathTemplate(ctx context.Context, s string) string {
 	}
 	var jsonMap map[string]any
 	cputil.MustObjJSONTransfer(&availableObjects, &jsonMap)
-	result := parser.SearchAndReplace(s, jsonMap)
-	return result
+	result, err := parser.SearchAndReplace(s, jsonMap)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
 func bodyDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) error {

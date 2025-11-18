@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package vars
 
 const (
-	RequestPathPrefixV1ChatCompletions = "/v1/chat/completions"
-	RequestPathPrefixV1Completions     = "/v1/completions"
-	RequestPathPrefixV1Images          = "/v1/images"
-	RequestPathPrefixV1Audio           = "/v1/audio"
-	RequestPathPrefixV1Embeddings      = "/v1/embeddings"
-	RequestPathPrefixV1Moderations     = "/v1/moderations"
-
-	RequestPathPrefixV1Files = "/v1/files"
-
-	RequestPathPrefixV1Assistants = "/v1/assistants"
-	RequestPathPrefixV1Responses  = "/v1/responses"
-	RequestPathPrefixV1Threads    = "/v1/threads"
+	RequestPathPrefixV1ChatCompletions   = "/v1/chat/completions"
+	RequestPathPrefixV1ImagesGenerations = "/v1/images/generations"
+	RequestPathPrefixV1ImagesEdits       = "/v1/images/edits"
+	RequestPathPrefixV1Audio             = "/v1/audio"
+	RequestPathPrefixV1Embeddings        = "/v1/embeddings"
+	RequestPathPrefixV1Responses         = "/v1/responses"
+	RequestPathPrefixV1Files             = "/v1/files"
 )

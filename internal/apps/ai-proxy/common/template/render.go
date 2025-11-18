@@ -17,6 +17,7 @@ package template
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -42,12 +43,12 @@ func RenderTemplate(templateName string, tpl *pb.Template, params map[string]str
 }
 
 // findAndReplacePlaceholders
-// Traverse every value in the config; if it is a slice or map, recurse until reaching leaf nodes.
-// For each leaf node, check whether the value matches the `${@template.placeholders.xxx}` format.
+// traverse every value in the config; if it is a slice or map, recurse until reaching leaf nodes.
+// for each leaf node, check whether the value matches the `${@template.placeholders.xxx}` format.
 // placeholderValues example:
 // - api-key: 1234
 // - another-api-key: 5678
-// The placeholders argument enables fine-grained rendering (e.g., required flags, defaults, etc.).
+// the placeholders argument enables fine-grained rendering (e.g., required flags, defaults, etc.).
 func findAndReplacePlaceholders(templateName, templateDesc string, placeholderDefines []*pb.Placeholder, cfgJSON []byte, placeholderValues map[string]string) ([]byte, error) {
 	var cfg interface{}
 	if err := json.Unmarshal(cfgJSON, &cfg); err != nil {
@@ -89,10 +90,6 @@ const (
 // context. Mapping rules can leverage it to select provider-specific values.
 const ServiceProviderTypeParamKey = "__service_provider_type__"
 
-type omissionSentinel struct{}
-
-var omitPlaceholder = &omissionSentinel{}
-
 func replacePlaceholdersRecursively(templateName, templateDesc string, value interface{}, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
 	switch typed := value.(type) {
 	case map[string]interface{}:
@@ -100,10 +97,6 @@ func replacePlaceholdersRecursively(templateName, templateDesc string, value int
 			replaced, err := replacePlaceholdersRecursively(templateName, templateDesc, v, placeholderDefines, placeholderValues)
 			if err != nil {
 				return nil, err
-			}
-			if replaced == omitPlaceholder {
-				delete(typed, key)
-				continue
 			}
 			typed[key] = replaced
 		}
@@ -115,30 +108,83 @@ func replacePlaceholdersRecursively(templateName, templateDesc string, value int
 			if err != nil {
 				return nil, err
 			}
-			if replaced == omitPlaceholder {
-				continue
-			}
 			result = append(result, replaced)
 		}
 		return result, nil
 	case string:
+		// exact match replacements preserve non-string types
 		if typed == templateNamePlaceholder {
 			return templateName, nil
 		}
 		if typed == TemplateDescPlaceholder {
 			return templateDesc, nil
 		}
-		if !strings.HasPrefix(typed, placeholderPrefix) || !strings.HasSuffix(typed, placeholderSuffix) {
-			return typed, nil
+		if strings.HasPrefix(typed, placeholderPrefix) && strings.HasSuffix(typed, placeholderSuffix) {
+			if len(typed) <= len(placeholderPrefix)+len(placeholderSuffix) {
+				return nil, fmt.Errorf("invalid placeholder format: %q", typed)
+			}
+			// exactly one placeholder and nothing else (starts with prefix and ends with suffix)
+			name := typed[len(placeholderPrefix) : len(typed)-len(placeholderSuffix)]
+			return resolvePlaceholderValue(templateName, templateDesc, name, placeholderDefines, placeholderValues)
 		}
-		if len(typed) <= len(placeholderPrefix)+len(placeholderSuffix) {
-			return nil, fmt.Errorf("invalid placeholder format: %q", typed)
+		// otherwise, support embedded placeholders inside strings
+		replaced, err := replaceEmbeddedTemplatePlaceholders(typed, templateName, templateDesc, placeholderDefines, placeholderValues)
+		if err != nil {
+			return nil, err
 		}
-		name := typed[len(placeholderPrefix) : len(typed)-len(placeholderSuffix)]
-		return resolvePlaceholderValue(templateName, templateDesc, name, placeholderDefines, placeholderValues)
+		return replaced, nil
 	default:
 		return value, nil
 	}
+}
+
+var embeddedTokenRe = regexp.MustCompile(`\$\{([^{}]+)\}`)
+
+// replaceEmbeddedTemplatePlaceholders scans a string for ${...} tokens and replaces
+// only template-related placeholders (e.g., ${@template.placeholders.name}, ${@template.name}, ${@template.desc}).
+// for embedded usage, values are coerced to strings. Unknown tokens are left as-is.
+func replaceEmbeddedTemplatePlaceholders(input, templateName, templateDesc string, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (string, error) {
+	var firstErr error
+	out := embeddedTokenRe.ReplaceAllStringFunc(input, func(tok string) string {
+		if firstErr != nil {
+			return tok
+		}
+		inner := tok[2 : len(tok)-1]
+		switch inner {
+		case "@template.name":
+			return templateName
+		case "@template.desc":
+			return templateDesc
+		default:
+			const pfx = "@template.placeholders."
+			if strings.HasPrefix(inner, pfx) {
+				name := inner[len(pfx):]
+				if name == "" {
+					firstErr = fmt.Errorf("invalid placeholder format: %q", tok)
+					return tok
+				}
+				val, err := resolvePlaceholderValue(templateName, templateDesc, name, placeholderDefines, placeholderValues)
+				if err != nil {
+					firstErr = err
+					return tok
+				}
+				// coerce to string for embedding
+				switch v := val.(type) {
+				case string:
+					return v
+				case []byte:
+					return string(v)
+				default:
+					return fmt.Sprintf("%v", v)
+				}
+			}
+			return tok
+		}
+	})
+	if firstErr != nil {
+		return "", firstErr
+	}
+	return out, nil
 }
 
 func resolvePlaceholderValue(templateName, templateDesc, name string, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
@@ -173,25 +219,26 @@ func resolvePlaceholderValue(templateName, templateDesc, name string, placeholde
 		return evaluateStringIfNeeded(defaultValue, templateName, templateDesc)
 	}
 
-	if definition.GetRequired() {
-		return nil, fmt.Errorf("missing required placeholder %q", name)
-	}
-
-	return omitPlaceholder, nil
+	// strict mode: any declared placeholder must render to a concrete value.
+	// if neither provided, nor mapped, nor defaulted -> error.
+	return nil, fmt.Errorf("missing value for placeholder %q", name)
 }
 
 func hasPlaceholderDefault(definition *pb.Placeholder) bool {
 	if definition == nil {
 		return false
 	}
-	return strings.TrimSpace(definition.GetDefault()) != ""
+	return definition.Default != nil
 }
 
 func coercePlaceholderDefault(definition *pb.Placeholder) (interface{}, error) {
 	if definition == nil {
 		return nil, nil
 	}
-	return coercePlaceholderValue(definition.GetDefault(), definition)
+	if definition.Default == nil {
+		return nil, nil
+	}
+	return coercePlaceholderValue(*definition.Default, definition)
 }
 
 func coercePlaceholderValue(raw interface{}, definition *pb.Placeholder) (interface{}, error) {
@@ -200,6 +247,15 @@ func coercePlaceholderValue(raw interface{}, definition *pb.Placeholder) (interf
 	}
 
 	typ := strings.ToLower(strings.TrimSpace(definition.GetType()))
+	if s, ok := raw.(string); ok && strings.TrimSpace(s) == "" {
+		switch typ {
+		case "", "string":
+			// allow empty strings for string targets
+		default:
+			return nil, fmt.Errorf("empty string is not a valid %q value for placeholder %q", typ, definition.GetName())
+		}
+	}
+
 	switch typ {
 	case "", "string":
 		switch v := raw.(type) {

@@ -17,7 +17,7 @@
       {
         "name": "azure-location",
         "type": "string",
-        "required": false
+        "required": true
       },
       {
         "name": "api-key",
@@ -27,6 +27,7 @@
       {
         "name": "another-api-key",
         "type": "string",
+        "default": "",
         "required": false
       }
     ],

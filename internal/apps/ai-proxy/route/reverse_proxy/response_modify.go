@@ -57,6 +57,7 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 				return
 			}
 			ctxhelper.PutReverseProxyResponseModifyError(resp.Request.Context(), &ctxhelper.ReverseProxyFilterError{
+				Stage:      "response",
 				FilterName: brokenFilterName,
 				Error:      _err,
 			})
@@ -97,6 +98,9 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 		for _, filter := range filters {
 			brokenFilterName = filter.Name
 			logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
+			if fe, ok := filter.Instance.(filter_define.ProxyResponseModiferEnabler); ok && !fe.Enable(resp) {
+				continue
+			}
 			if err := filter.Instance.OnHeaders(resp); err != nil {
 				return err
 			}
@@ -187,8 +191,12 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 				currentFilterName = filter.Name
 				m := filter.Instance
 				logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
+				if fe, ok := m.(filter_define.ProxyResponseModiferEnabler); ok && !fe.Enable(resp) {
+					continue
+				}
 				o, err := m.OnBodyChunk(resp, out, chunkIndex)
 				if err != nil {
+					errors.New(fmt.Sprintf("err: %w", err))
 					writeAndCloseWithErr(resp, pw, err)
 					return
 				}
@@ -209,7 +217,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		}
 
 		if rerr != nil { // EOF or real error
-			if rerr != io.EOF && rerr != context.Canceled {
+			if rerr != io.EOF && !errors.Is(rerr, context.Canceled) {
 				writeAndCloseWithErr(resp, pw, rerr)
 			}
 			// cleanup: call OnComplete; ensure call even if previous errors
@@ -218,6 +226,9 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 				currentFilterName = filter.Name
 				if m, ok := filter.Instance.(filter_define.ProxyResponseModifier); ok {
 					logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
+					if fe, ok := m.(filter_define.ProxyResponseModiferEnabler); ok && !fe.Enable(resp) {
+						continue
+					}
 					out, _ := m.OnComplete(resp)
 					if len(out) > 0 {
 						wholeHandledBody = append(wholeHandledBody, out...)

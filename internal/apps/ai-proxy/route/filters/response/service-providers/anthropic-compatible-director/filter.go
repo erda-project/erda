@@ -15,7 +15,6 @@
 package anthropic_compatible_director
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -48,23 +47,16 @@ type AnthropicCompatibleDirectorResponse struct {
 	AnthropicDirector *anthropic_official.AnthropicDirector
 }
 
-func (f *AnthropicCompatibleDirectorResponse) Enable(ctx context.Context) bool {
-	apiSegment := api_segment_getter.GetAPISegment(ctx)
-	return apiSegment != nil &&
-		strings.EqualFold(string(apiSegment.APIStyle), string(api_style.APIStyleAnthropicCompatible))
+func (f *AnthropicCompatibleDirectorResponse) Enable(resp *http.Response) bool {
+	apiSegment := api_segment_getter.GetAPISegment(resp.Request.Context())
+	return apiSegment != nil && strings.EqualFold(string(apiSegment.APIStyle), string(api_style.APIStyleAnthropicCompatible))
 }
 
 func (f *AnthropicCompatibleDirectorResponse) OnHeaders(resp *http.Response) error {
-	if !f.Enable(resp.Request.Context()) {
-		return nil
-	}
 	return nil
 }
 
 func (f *AnthropicCompatibleDirectorResponse) OnBodyChunk(resp *http.Response, chunk []byte, index int64) ([]byte, error) {
-	if !f.Enable(resp.Request.Context()) {
-		return chunk, nil
-	}
 	if resp.StatusCode != http.StatusOK {
 		return chunk, nil // do not process non-200 responses
 	}
@@ -80,9 +72,6 @@ func (f *AnthropicCompatibleDirectorResponse) OnBodyChunk(resp *http.Response, c
 }
 
 func (f *AnthropicCompatibleDirectorResponse) OnComplete(resp *http.Response) ([]byte, error) {
-	if !f.Enable(resp.Request.Context()) {
-		return nil, nil
-	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, nil
 	}

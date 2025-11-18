@@ -115,7 +115,9 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := NewJSONPathParser(tt.fields.RegexpPattern, tt.fields.MultiChoiceSplitter)
 			assert.NoError(t, err)
-			assert.Equalf(t, tt.want, p.SearchAndReplace(tt.args.s, tt.args.availableValues), "SearchAndReplace(%v, %v)", tt.args.s, tt.args.availableValues)
+			got, err := p.SearchAndReplace(tt.args.s, tt.args.availableValues)
+			assert.NoError(t, err)
+			assert.Equalf(t, tt.want, got, "SearchAndReplace(%v, %v)", tt.args.s, tt.args.availableValues)
 		})
 	}
 }
@@ -140,4 +142,73 @@ func TestGetByJSONPath(t *testing.T) {
 	value, err := parser.getByJSONPath("@model.metadata.public.api_version", m)
 	assert.NoError(t, err)
 	assert.Equal(t, "2025-05-28", value)
+}
+
+func TestDotToBracketJSONPath(t *testing.T) {
+	// dot -> bracket, keep prefix
+	assert.Equal(t, `@["a"]["b"]["c"]`, DotToBracketJSONPath(`@.a.b.c`))
+	assert.Equal(t, `$["a"]["b"]`, DotToBracketJSONPath(`$.a.b`))
+	// already bracket
+	assert.Equal(t, `@["a"]["b"]`, DotToBracketJSONPath(`@["a"]["b"]`))
+	// mix bracket and dot
+	assert.Equal(t, `@["a"]["b"]`, DotToBracketJSONPath(`@["a"].b`))
+	// hyphen key
+	assert.Equal(t, `@["provider"]["metadata"]["public"]["gcp-project-id"]`, DotToBracketJSONPath(`@provider.metadata.public.gcp-project-id`))
+}
+
+func TestGetByJSONPath_WithHyphenKey(t *testing.T) {
+	parser, err := NewJSONPathParser(DefaultRegexpPattern, DefaultMultiChoiceSplitter)
+	assert.NoError(t, err)
+
+	// available values with hyphenated key
+	availableValues := map[string]any{
+		"provider": map[string]any{
+			"metadata": map[string]any{
+				"public": map[string]any{
+					"gcp-project-id": "proj-123",
+					"scheme":         "https",
+					"host":           "example.com",
+				},
+				"secret": map[string]any{
+					"gcp-sa-access-token": "token-xyz",
+				},
+			},
+		},
+		"template": map[string]any{
+			"placeholders": map[string]any{
+				"location": "us-central1",
+			},
+		},
+	}
+
+	// Convert to generic map to mimic runtime behavior
+	var m map[string]any
+	cputil.MustObjJSONTransfer(&availableValues, &m)
+
+	// hyphenated key via dot notation (converted under the hood)
+	v, err := parser.getByJSONPath("@provider.metadata.public.gcp-project-id", m)
+	assert.NoError(t, err)
+	assert.Equal(t, "proj-123", v)
+
+	// same key via bracket notation
+	v, err = parser.getByJSONPath(`@["provider"]["metadata"]["public"]["gcp-project-id"]`, m)
+	assert.NoError(t, err)
+	assert.Equal(t, "proj-123", v)
+
+	// other fields without hyphens
+	v, err = parser.getByJSONPath("@provider.metadata.public.scheme", m)
+	assert.NoError(t, err)
+	assert.Equal(t, "https", v)
+
+	v, err = parser.getByJSONPath("@provider.metadata.public.host", m)
+	assert.NoError(t, err)
+	assert.Equal(t, "example.com", v)
+
+	v, err = parser.getByJSONPath("@template.placeholders.location", m)
+	assert.NoError(t, err)
+	assert.Equal(t, "us-central1", v)
+
+	v, err = parser.getByJSONPath("@provider.metadata.secret.gcp-sa-access-token", m)
+	assert.NoError(t, err)
+	assert.Equal(t, "token-xyz", v)
 }

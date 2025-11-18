@@ -79,7 +79,7 @@ func TestShouldDumpBody(t *testing.T) {
 		{"text/plain", true, "text should be dumped"},
 		{"audio/mpeg", false, "audio should not be dumped"},
 		{"image/png", false, "image should not be dumped"},
-		{"multipart/form-data", false, "multipart should not be dumped"},
+		{"multipart/form-data", true, "multipart should be dumped"},
 		{"", true, "empty content type should be dumped"},
 	}
 

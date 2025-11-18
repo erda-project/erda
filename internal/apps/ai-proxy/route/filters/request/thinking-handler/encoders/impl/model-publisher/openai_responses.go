@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/encoders"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 // OpenAIResponsesThinkingEncoder handles OpenAI Responses API thinking encoding
@@ -34,7 +34,7 @@ func (e *OpenAIResponsesThinkingEncoder) CanEncode(ctx context.Context) bool {
 	pathMatcher := ctxhelper.MustGetPathMatcher(ctx)
 
 	return strings.EqualFold(model.Publisher, string(common_types.ModelPublisherOpenAI)) &&
-		pathMatcher.Match(common.RequestPathPrefixV1Responses)
+		pathMatcher.Match(vars.RequestPathPrefixV1Responses)
 }
 
 func (e *OpenAIResponsesThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
