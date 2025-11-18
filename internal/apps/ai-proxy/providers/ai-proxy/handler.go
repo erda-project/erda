@@ -110,6 +110,7 @@ var setContextMap = func(p *provider) transport.ServiceOption {
 			ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 			ctxhelper.PutDBClient(ctx, p.Dao)
 			ctxhelper.PutCacheManager(ctx, p.cache)
+			ctxhelper.PutLogger(ctx, p.L)
 			return h(ctx, req)
 		}
 	})
