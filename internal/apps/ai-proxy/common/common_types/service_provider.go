@@ -23,6 +23,7 @@ const (
 	ServiceProviderTypeVolcengineArk    ServiceProviderType = "volcengine-ark"
 	ServiceProviderTypeAWSBedrock       ServiceProviderType = "aws-bedrock"
 	ServiceProviderTypeOpenAICompatible ServiceProviderType = "openai-compatible"
+	ServiceProviderTypeGoogleVertexAI   ServiceProviderType = "google-vertex-ai"
 )
 
 func (m ServiceProviderType) String() string { return string(m) }
@@ -33,7 +34,8 @@ func (m ServiceProviderType) IsValid() bool {
 		ServiceProviderTypeAliyunBailian,
 		ServiceProviderTypeVolcengineArk,
 		ServiceProviderTypeAWSBedrock,
-		ServiceProviderTypeOpenAICompatible:
+		ServiceProviderTypeOpenAICompatible,
+		ServiceProviderTypeGoogleVertexAI:
 		return true
 	}
 	return false

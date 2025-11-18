@@ -23,3 +23,7 @@ import (
 type ProxyRequestRewriter interface {
 	OnProxyRequest(pr *httputil.ProxyRequest) error
 }
+
+type ProxyRequestRewriterEnabler interface {
+	Enable(pr *httputil.ProxyRequest) bool
+}

@@ -27,7 +27,7 @@ message Placeholder {
     string name = 1;
     bool required = 2;
     string desc = 3;
-    string default = 4;
+    optional string default = 4;
     string example = 5;
 
     string type = 6; // target type
@@ -38,7 +38,7 @@ message PlaceholderForCreate {
     string name = 1;
     bool required = 2;
     string desc = 3;
-    string default = 4;
+    optional string default = 4;
     string example = 5;
     google.protobuf.Struct mapping = 6;
 }

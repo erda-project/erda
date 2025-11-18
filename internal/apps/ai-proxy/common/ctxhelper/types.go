@@ -25,6 +25,7 @@ type McpInfo struct {
 }
 
 type ReverseProxyFilterError struct {
+	Stage      string
 	FilterName string
 	Error      error
 }

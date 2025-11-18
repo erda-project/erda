@@ -52,6 +52,13 @@ var Creator filter_define.RequestRewriterCreator = func(names string, configJSON
 	return &cfg
 }
 
+func (f *Context) Enable(req *httputil.ProxyRequest) bool {
+	return strings.HasPrefix(
+		req.In.Header.Get(httperrorutil.HeaderKeyContentLength),
+		string(httperrorutil.ApplicationJson),
+	)
+}
+
 func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// check request
 	bodyCopy, err := body_util.SmartCloneBody(&pr.In.Body, body_util.MaxSample)

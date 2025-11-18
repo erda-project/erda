@@ -20,10 +20,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 const (
@@ -46,7 +46,7 @@ var Creator filter_define.RequestRewriterCreator = func(_ string, _ json.RawMess
 
 func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// upload file
-	if ctxhelper.MustGetPathMatcher(pr.In.Context()).Pattern == common.RequestPathPrefixV1Files && pr.In.Method == http.MethodPost {
+	if ctxhelper.MustGetPathMatcher(pr.In.Context()).Pattern == vars.RequestPathPrefixV1Files && pr.In.Method == http.MethodPost {
 		if err := onUploadFile(pr); err != nil {
 			return err
 		}

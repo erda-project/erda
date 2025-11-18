@@ -60,10 +60,17 @@ type ProxyResponseModifier interface {
 	OnComplete(resp *http.Response) (out []byte, err error)
 }
 
+type ProxyResponseModiferEnabler interface {
+	Enable(resp *http.Response) bool
+}
+
 // PassThroughResponseModifier passes response as-is to next Filter.
 // After embedding, just override specific methods as needed.
 type PassThroughResponseModifier struct{}
 
+func (m *PassThroughResponseModifier) Enable(resp *http.Response) bool {
+	return true
+}
 func (m *PassThroughResponseModifier) OnHeaders(resp *http.Response) error {
 	return nil
 }

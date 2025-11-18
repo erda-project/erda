@@ -31,4 +31,7 @@ const (
 	FieldEffort    = "effort"
 	// for openai chat-completions: https://platform.openai.com/docs/api-reference/chat/create#chat_create-reasoning_effort
 	FieldReasoningEffort = "reasoning_effort"
+
+	// for vertex-ai: https://cloud.google.com/vertex-ai/generative-ai/docs/thinking
+	FieldThinkingConfig = "thinking_config"
 )

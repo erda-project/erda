@@ -31,7 +31,7 @@ import (
 //     provider.metadata.public.api_version = "2024-01-01"
 //     -> result: api-version=2024-01-01
 //
-// More examples, see: #TestJSONPathParser_SearchAndReplace
+// more examples, see: #TestJSONPathParser_SearchAndReplace
 type JSONPathParser struct {
 	RegexpPattern string
 	re            *regexp.Regexp
@@ -87,16 +87,19 @@ func (p *JSONPathParser) Search(s string) []string {
 	return keys
 }
 
-// SearchAndReplace .
-// - api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}
-//   - context : model.metadata.public.api_version = ""
-//     provider.metadata.public.api_version = "2024-01-01"
-//     -> result: api-version=2024-01-01
-func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]any) string {
-	return p.re.ReplaceAllStringFunc(s, func(match string) string {
+// SearchAndReplace enforces strict placeholder rendering:
+// - supports multi-choice (a||b||c) and tries sequentially;
+// - entries starting with '@' are parsed via JSONPath, others are literals;
+// - returns the first non-empty value; errors when none resolve.
+func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]any) (string, error) {
+	var firstErr error
+	out := p.re.ReplaceAllStringFunc(s, func(match string) string {
 		groups := p.re.FindStringSubmatch(match)
 		if len(groups) < 2 {
-			return "" // no match found, return empty
+			if firstErr == nil {
+				firstErr = fmt.Errorf("invalid placeholder: %q", match)
+			}
+			return match
 		}
 		key := groups[1] // the first group is the key
 		values := strings.Split(key, p.MultiChoiceSplitter)
@@ -106,21 +109,34 @@ func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]a
 			}
 			value, err := p.getByJSONPath(v, availableValues)
 			if err != nil {
-				// log the error, but continue to try the next value
-				fmt.Printf("error getting value by JSON path %q: %v\n", v, err)
+				if firstErr == nil {
+					firstErr = fmt.Errorf("failed to resolve %q: %w", v, err)
+				}
 				continue
 			}
 			if value != "" {
 				return value // return the first non-empty value found
 			}
 		}
-		return ""
+		if firstErr == nil {
+			firstErr = fmt.Errorf("no value resolved for %q", key)
+		}
+		return match
 	})
+	if firstErr != nil {
+		return out, firstErr
+	}
+	return out, nil
 }
 
 func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]any) (string, error) {
-	// remove prefix `@` to `.`
-	jsonPath := "." + expr[1:]
+	// normalize to a JSONPath starting with '$' and using bracket notation
+	// keep root instead of converting to a leading dot to avoid jp parser errors
+	jsonPath := expr
+	if strings.HasPrefix(jsonPath, "@") {
+		jsonPath = "$" + jsonPath[1:]
+	}
+	jsonPath = DotToBracketJSONPath(jsonPath)
 	x, err := jp.ParseString(jsonPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse json path %q: %w", jsonPath, err)
@@ -130,4 +146,78 @@ func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]a
 		return strutil.String(out[0]), nil
 	}
 	return "", nil
+}
+
+// DotToBracketJSONPath converts @.a.b.c form into @["a"]["b"]["c"] form.
+// existing bracket segments like ["..."] are preserved.
+func DotToBracketJSONPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return path
+	}
+
+	// supports prefixes '@' or '$'
+	prefix := ""
+	rest := path
+	if strings.HasPrefix(rest, "@") || strings.HasPrefix(rest, "$") {
+		prefix = rest[:1]
+		rest = rest[1:]
+	}
+
+	// drop the optional dot after the prefix: @.a.b.c / $.a.b.c / @a.b.c
+	if strings.HasPrefix(rest, ".") {
+		rest = rest[1:]
+	}
+
+	if rest == "" {
+		if prefix != "" {
+			return prefix
+		}
+		return path
+	}
+
+	// convert the path to bracket notation while keeping existing bracket chunks
+	var b strings.Builder
+	b.WriteString(prefix)
+
+	i := 0
+	for i < len(rest) {
+		switch rest[i] {
+		case '.':
+			// skip dots
+			i++
+		case '[':
+			// keep existing bracket segment until the matching ']'
+			end := i + 1
+			depth := 1
+			for end < len(rest) && depth > 0 {
+				if rest[end] == '[' {
+					depth++
+				} else if rest[end] == ']' {
+					depth--
+				}
+				end++
+			}
+			b.WriteString(rest[i:end])
+			// skip dot right after the bracket block
+			i = end
+			if i < len(rest) && rest[i] == '.' {
+				i++
+			}
+		default:
+			// parse an identifier until the next '.' or '['
+			start := i
+			for i < len(rest) && rest[i] != '.' && rest[i] != '[' {
+				i++
+			}
+			if start < i {
+				b.WriteString(`["`)
+				b.WriteString(rest[start:i])
+				b.WriteString(`"]`)
+			}
+			// dots are skipped in the next iteration
+		}
+	}
+
+	return b.String()
 }

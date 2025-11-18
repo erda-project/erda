@@ -58,6 +58,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 				return
 			}
 			ctxhelper.PutReverseProxyRequestRewriteError(pr.In.Context(), &ctxhelper.ReverseProxyFilterError{
+				Stage:      "request",
 				FilterName: currentFilterName,
 				Error:      brokenInErr,
 			})
@@ -105,9 +106,12 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 			logutil.InjectLoggerWithFilterInfo(pr.In.Context(), filter)
 			if rewriter, ok := filter.Instance.(filter_define.ProxyRequestRewriter); ok {
 				pr.In = &inSnap // pr.In cannot be modified, so we always put original pr.In, discard changes by previous filters
+				if fe, ok := filter.Instance.(filter_define.ProxyRequestRewriterEnabler); ok && !fe.Enable(pr) {
+					continue
+				}
 				if err := rewriter.OnProxyRequest(pr); err != nil {
 					brokenInErr = err
-					break
+					return
 				}
 			}
 		}

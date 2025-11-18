@@ -21,11 +21,11 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -65,7 +65,7 @@ var Creator filter_define.RequestRewriterCreator = func(_ string, _ json.RawMess
 }
 
 func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
-	if ctxhelper.MustGetPathMatcher(pr.In.Context()).Pattern == common.RequestPathPrefixV1Responses && pr.In.Method == http.MethodPost {
+	if ctxhelper.MustGetPathMatcher(pr.In.Context()).Pattern == vars.RequestPathPrefixV1Responses && pr.In.Method == http.MethodPost {
 		bodyCopy, err := body_util.SmartCloneBody(&pr.In.Body, body_util.MaxSample)
 		if err != nil {
 			return fmt.Errorf("failed to clone request body: %w", err)

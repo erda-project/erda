@@ -26,6 +26,10 @@ import (
 
 const testTemplateDesc = "test-template-desc"
 
+func strPtr(v string) *string {
+	return &v
+}
+
 func TestFindAndReplacePlaceholders(t *testing.T) {
 	t.Run("successfully replaces placeholders", func(t *testing.T) {
 		cfg := map[string]interface{}{
@@ -91,7 +95,25 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 
 		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), `missing required placeholder "missing"`)
+		require.Contains(t, err.Error(), `missing value for placeholder "missing"`)
+	})
+
+	t.Run("missing placeholder inside slice returns error", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"endpoints": []interface{}{
+				"${@template.placeholders.endpoint}",
+			},
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		defs := []*pb.Placeholder{
+			{Name: "endpoint", Required: true},
+		}
+
+		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `missing value for placeholder "endpoint"`)
 	})
 
 	t.Run("invalid placeholder format returns error", func(t *testing.T) {
@@ -118,7 +140,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		defs := []*pb.Placeholder{
 			{
 				Name:    "host",
-				Default: "terminus.example.com",
+				Default: strPtr("terminus.example.com"),
 			},
 		}
 
@@ -146,7 +168,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.Equal(t, "awesome template desc", actual["desc"])
 	})
 
-	t.Run("omits optional placeholder without default", func(t *testing.T) {
+	t.Run("placeholder without default should error", func(t *testing.T) {
 		cfg := map[string]interface{}{
 			"secret": map[string]interface{}{
 				"anotherApiKey": "${@template.placeholders.another-api-key}",
@@ -156,18 +178,58 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.NoError(t, err)
 
 		defs := []*pb.Placeholder{
-			{Name: "another-api-key", Required: false},
+			{Name: "another-api-key"},
 		}
 
-		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
+		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing value for placeholder \"another-api-key\"")
+	})
+
+	t.Run("placeholder with explicit empty default renders empty string", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"secret": map[string]interface{}{
+				"anotherApiKey": "${@template.placeholders.another-api-key}",
+			},
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		defs := []*pb.Placeholder{
+			{Name: "another-api-key", Default: strPtr("")},
+		}
+
+		rendered, err := findAndReplacePlaceholders("test-template-empty-default", testTemplateDesc, defs, cfgJSON, map[string]string{})
 		require.NoError(t, err)
 
 		var actual map[string]interface{}
 		require.NoError(t, json.Unmarshal(rendered, &actual))
-
 		secret := actual["secret"].(map[string]interface{})
-		_, exists := secret["anotherApiKey"]
-		require.False(t, exists)
+		require.Equal(t, "", secret["anotherApiKey"])
+	})
+
+	t.Run("placeholder accepts explicit empty string value", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"secret": map[string]interface{}{
+				"token": "${@template.placeholders.token}",
+			},
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		defs := []*pb.Placeholder{
+			{Name: "token", Type: "string"},
+		}
+
+		rendered, err := findAndReplacePlaceholders("test-template-empty-input", testTemplateDesc, defs, cfgJSON, map[string]string{
+			"token": "",
+		})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		secret := actual["secret"].(map[string]interface{})
+		require.Equal(t, "", secret["token"])
 	})
 
 	t.Run("object placeholder default string converts to map", func(t *testing.T) {
@@ -185,7 +247,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			{
 				Name:    "context",
 				Type:    "object",
-				Default: `{"context_length": 131072, "max_completion_tokens": 16384, "max_prompt_tokens": 129024}`,
+				Default: strPtr(`{"context_length": 131072, "max_completion_tokens": 16384, "max_prompt_tokens": 129024}`),
 			},
 		}
 
@@ -262,7 +324,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			{
 				Name:    "target_model_name",
 				Type:    "string",
-				Default: "${@template.name}",
+				Default: strPtr("${@template.name}"),
 			},
 		}
 
@@ -315,11 +377,10 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 
 		defs := []*pb.Placeholder{
 			{
-				Name:     "target_model_name",
-				Type:     "string",
-				Default:  "should-not-use",
-				Mapping:  mapping,
-				Required: false,
+				Name:    "target_model_name",
+				Type:    "string",
+				Default: strPtr("should-not-use"),
+				Mapping: mapping,
 			},
 		}
 
@@ -367,7 +428,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 			{
 				Name:    "target_model_name",
 				Type:    "string",
-				Default: "placeholder-default",
+				Default: strPtr("placeholder-default"),
 				Mapping: mapping,
 			},
 		}
@@ -379,4 +440,67 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.NoError(t, json.Unmarshal(rendered, &actual))
 		require.Equal(t, "mapping-default", actual["model_name"])
 	})
+}
+
+func TestEmbeddedTemplatePlaceholderMustError(t *testing.T) {
+	cfg := map[string]interface{}{
+		"path": "/v1/projects/${@template.placeholders.opt}/endpoints",
+	}
+	cfgJSON, err := json.Marshal(cfg)
+	require.NoError(t, err)
+
+	defs := []*pb.Placeholder{
+		{Name: "opt", Type: "string"},
+	}
+
+	_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `missing value for placeholder "opt"`)
+}
+
+func TestFindAndReplacePlaceholders_GoogleVertexAI_APIStyleConfig(t *testing.T) {
+	// define minimal placeholder definitions that cover this case
+	defs := []*pb.Placeholder{
+		{Name: "service-account-key-file-content", Type: "string", Required: true},
+		{Name: "location", Type: "string", Default: strPtr("global")},
+	}
+
+	// inline the apiStyleConfig snippet used by POST:/v1/chat/completions
+	conf := map[string]interface{}{
+		"headers": map[string]interface{}{
+			"Authorization": []interface{}{
+				"set",
+				"Bearer ${@provider.metadata.secret.access-token}",
+			},
+		},
+		"host": "${@provider.metadata.public.host}",
+		"path": []interface{}{
+			"replace",
+			"/v1",
+			"/v1/projects/${@provider.metadata.public.gcp-project-id}/locations/${@template.placeholders.location}/endpoints/openapi",
+		},
+		"queryParams": map[string]interface{}{},
+		"scheme":      "${@provider.metadata.public.scheme}",
+	}
+
+	cfgJSON, err := json.Marshal(conf)
+	require.NoError(t, err)
+
+	rendered, err := findAndReplacePlaceholders("google-vertex-ai", "Google Vertex AI", defs, cfgJSON, map[string]string{})
+	require.NoError(t, err)
+
+	var out map[string]interface{}
+	require.NoError(t, json.Unmarshal(rendered, &out))
+
+	// 1) header Authorization still keeps provider placeholder
+	hdrs := out["headers"].(map[string]interface{})
+	auth := hdrs["Authorization"].([]interface{})[1].(string)
+	require.Contains(t, auth, "${@provider.metadata.secret.access-token}")
+
+	// 2) path third element renders template placeholder to global while provider placeholders stay untouched
+	path := out["path"].([]interface{})
+	require.Len(t, path, 3)
+	p := path[2].(string)
+	require.Contains(t, p, "/locations/global/")
+	require.Contains(t, p, "${@provider.metadata.public.gcp-project-id}")
 }

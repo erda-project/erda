@@ -23,23 +23,35 @@ import (
 )
 
 func DumpRequestIn(in *http.Request) {
+	logger := ctxhelper.MustGetLoggerBase(in.Context())
 	contentType := in.Header.Get("Content-Type")
 	shouldDumpBody := ShouldDumpBody(contentType)
 
 	dumpBytesIn, err := httputil.DumpRequest(in, shouldDumpBody)
 	if err != nil {
-		ctxhelper.MustGetLoggerBase(in.Context()).Warnf("failed to dump request in, err: %v", err)
+		logger.Warnf("failed to dump request in, err: %v", err)
 		return
 	}
 
+	dumpString := string(dumpBytesIn)
+	if shouldDumpBody && isMultipartFormData(contentType) {
+		sanitized, err := sanitizeMultipartDump(dumpBytesIn, contentType)
+		if err != nil {
+			logger.Warnf("failed to sanitize multipart request body, err: %v", err)
+			dumpString = "(multipart body sanitized failed)"
+		} else if sanitized != "" {
+			dumpString = sanitized
+		}
+	}
+
 	if shouldDumpBody {
-		ctxhelper.MustGetLoggerBase(in.Context()).Debugf("dump proxy request in:\n%s", string(dumpBytesIn))
+		logger.Debugf("dump proxy request in:\n%s", dumpString)
 	} else {
-		ctxhelper.MustGetLoggerBase(in.Context()).Debugf("dump proxy request in (body omitted due to binary content-type: %s):\n%s", contentType, string(dumpBytesIn))
+		logger.Debugf("dump proxy request in (body omitted due to binary content-type: %s):\n%s", contentType, dumpString)
 	}
 
 	// save to sink
-	audithelper.Note(in.Context(), "request_body", string(dumpBytesIn))
+	audithelper.Note(in.Context(), "request_body", dumpString)
 }
 
 func DumpRequestOut(out *http.Request) {
