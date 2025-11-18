@@ -210,8 +210,7 @@ func queryParamsDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfi
 		switch op {
 		case "add":
 			for _, value := range values[1:] {
-				var err error
-				value, err = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
 				if err != nil {
 					return err
 				}
@@ -219,8 +218,7 @@ func queryParamsDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfi
 			}
 		case "set":
 			for _, value := range values[1:] {
-				var err error
-				value, err = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
 				if err != nil {
 					return err
 				}
@@ -248,8 +246,7 @@ func headersDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) e
 		switch op {
 		case "add":
 			for _, value := range values[1:] {
-				var err error
-				value, err = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
 				if err != nil {
 					return err
 				}
@@ -257,8 +254,7 @@ func headersDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) e
 			}
 		case "set":
 			for _, value := range values[1:] {
-				var err error
-				value, err = handleJSONPathTemplate(r.Context(), value)
+				value, err := handleJSONPathTemplate(r.Context(), value)
 				if err != nil {
 					return err
 				}

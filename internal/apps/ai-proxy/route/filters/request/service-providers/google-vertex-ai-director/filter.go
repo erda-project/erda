@@ -29,13 +29,13 @@ import (
 	"google.golang.org/genai"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_segment_getter"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 const (
@@ -88,11 +88,11 @@ func (f *GoogleVertexAIDirector) OnProxyRequest(pr *httputil.ProxyRequest) error
 
 	// do custom mapping
 	pathMatcher := ctxhelper.MustGetPathMatcher(pr.In.Context())
-	if pathMatcher.Match(common.RequestPathPrefixV1ImagesGenerations) {
+	if pathMatcher.Match(vars.RequestPathPrefixV1ImagesGenerations) {
 		if err := mappingImageGenerationAPI(pr); err != nil {
 			return err
 		}
-	} else if pathMatcher.Match(common.RequestPathPrefixV1ImagesEdits) {
+	} else if pathMatcher.Match(vars.RequestPathPrefixV1ImagesEdits) {
 		if err := mappingImageEditAPI(pr); err != nil {
 			return err
 		}

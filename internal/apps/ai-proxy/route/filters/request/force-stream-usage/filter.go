@@ -22,10 +22,10 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -53,7 +53,7 @@ func (f *ForceStreamUsage) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	}
 
 	// only set stream_options for /v1/chat/completions
-	if !strings.HasPrefix(pr.Out.URL.Path, common.RequestPathPrefixV1ChatCompletions) {
+	if !strings.HasPrefix(pr.Out.URL.Path, vars.RequestPathPrefixV1ChatCompletions) {
 		return nil
 	}
 

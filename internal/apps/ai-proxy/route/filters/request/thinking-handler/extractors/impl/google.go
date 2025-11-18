@@ -19,20 +19,20 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/thinking-handler/types"
 )
 
-// GeminiThinkingExtractor handles gemini style thinking fields
+// GoogleThinkingExtractor handles google style thinking fields
 // Fields: thinking_config
-type GeminiThinkingExtractor struct{}
+type GoogleThinkingExtractor struct{}
 
-func (e *GeminiThinkingExtractor) ExtractMode(body map[string]any) (*types.CommonThinkingMode, error) {
+func (e *GoogleThinkingExtractor) ExtractMode(body map[string]any) (*types.CommonThinkingMode, error) {
 	return nil, nil
 }
 
-func (e *GeminiThinkingExtractor) ExtractEffort(body map[string]any) (*types.CommonThinkingEffort, error) {
+func (e *GoogleThinkingExtractor) ExtractEffort(body map[string]any) (*types.CommonThinkingEffort, error) {
 	// gemini doesn't have effort field
 	return nil, nil
 }
 
-func (e *GeminiThinkingExtractor) ExtractBudgetTokens(body map[string]any) (*int, error) {
+func (e *GoogleThinkingExtractor) ExtractBudgetTokens(body map[string]any) (*int, error) {
 	if thinkingObj, ok := body[types.FieldThinkingConfig]; ok {
 		if thinkingMap, ok := thinkingObj.(map[string]any); ok {
 			if budgetVal, ok := thinkingMap["thinking_budget"]; ok {
@@ -43,20 +43,20 @@ func (e *GeminiThinkingExtractor) ExtractBudgetTokens(body map[string]any) (*int
 	return nil, nil
 }
 
-func (e *GeminiThinkingExtractor) GetPriority() int {
+func (e *GoogleThinkingExtractor) GetPriority() int {
 	return 5
 }
 
-func (e *GeminiThinkingExtractor) GetName() string {
+func (e *GoogleThinkingExtractor) GetName() string {
 	return "gemini"
 }
 
-func (e *GeminiThinkingExtractor) CanExtract(body map[string]any) bool {
+func (e *GoogleThinkingExtractor) CanExtract(body map[string]any) bool {
 	_, hasReasoningEffort := body[types.FieldThinkingConfig]
 	return hasReasoningEffort
 }
 
-func (e *GeminiThinkingExtractor) RelatedFields(body map[string]any) map[string]any {
+func (e *GoogleThinkingExtractor) RelatedFields(body map[string]any) map[string]any {
 	result := make(map[string]any)
 	// extract thinking_config if present
 	if thinkingConfig, ok := body[types.FieldThinkingConfig]; ok {

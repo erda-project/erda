@@ -98,6 +98,24 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.Contains(t, err.Error(), `missing value for placeholder "missing"`)
 	})
 
+	t.Run("missing placeholder inside slice returns error", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"endpoints": []interface{}{
+				"${@template.placeholders.endpoint}",
+			},
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		defs := []*pb.Placeholder{
+			{Name: "endpoint", Required: true},
+		}
+
+		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `missing value for placeholder "endpoint"`)
+	})
+
 	t.Run("invalid placeholder format returns error", func(t *testing.T) {
 		cfg := map[string]interface{}{
 			"apiKey": "${@template.placeholders.}",
@@ -150,7 +168,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.Equal(t, "awesome template desc", actual["desc"])
 	})
 
-	t.Run("optional placeholder without default should error in strict mode", func(t *testing.T) {
+	t.Run("placeholder without default should error", func(t *testing.T) {
 		cfg := map[string]interface{}{
 			"secret": map[string]interface{}{
 				"anotherApiKey": "${@template.placeholders.another-api-key}",
@@ -160,7 +178,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.NoError(t, err)
 
 		defs := []*pb.Placeholder{
-			{Name: "another-api-key", Required: false},
+			{Name: "another-api-key"},
 		}
 
 		_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
@@ -168,7 +186,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.Contains(t, err.Error(), "missing value for placeholder \"another-api-key\"")
 	})
 
-	t.Run("optional placeholder with explicit empty default renders empty string", func(t *testing.T) {
+	t.Run("placeholder with explicit empty default renders empty string", func(t *testing.T) {
 		cfg := map[string]interface{}{
 			"secret": map[string]interface{}{
 				"anotherApiKey": "${@template.placeholders.another-api-key}",
@@ -178,7 +196,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.NoError(t, err)
 
 		defs := []*pb.Placeholder{
-			{Name: "another-api-key", Required: false, Default: strPtr("")},
+			{Name: "another-api-key", Default: strPtr("")},
 		}
 
 		rendered, err := findAndReplacePlaceholders("test-template-empty-default", testTemplateDesc, defs, cfgJSON, map[string]string{})
@@ -188,6 +206,30 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.NoError(t, json.Unmarshal(rendered, &actual))
 		secret := actual["secret"].(map[string]interface{})
 		require.Equal(t, "", secret["anotherApiKey"])
+	})
+
+	t.Run("placeholder accepts explicit empty string value", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"secret": map[string]interface{}{
+				"token": "${@template.placeholders.token}",
+			},
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		defs := []*pb.Placeholder{
+			{Name: "token", Type: "string"},
+		}
+
+		rendered, err := findAndReplacePlaceholders("test-template-empty-input", testTemplateDesc, defs, cfgJSON, map[string]string{
+			"token": "",
+		})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		secret := actual["secret"].(map[string]interface{})
+		require.Equal(t, "", secret["token"])
 	})
 
 	t.Run("object placeholder default string converts to map", func(t *testing.T) {
@@ -335,11 +377,10 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 
 		defs := []*pb.Placeholder{
 			{
-				Name:     "target_model_name",
-				Type:     "string",
-				Default:  strPtr("should-not-use"),
-				Mapping:  mapping,
-				Required: false,
+				Name:    "target_model_name",
+				Type:    "string",
+				Default: strPtr("should-not-use"),
+				Mapping: mapping,
 			},
 		}
 
@@ -401,7 +442,7 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 	})
 }
 
-func TestEmbeddedOptionalTemplatePlaceholderMustError(t *testing.T) {
+func TestEmbeddedTemplatePlaceholderMustError(t *testing.T) {
 	cfg := map[string]interface{}{
 		"path": "/v1/projects/${@template.placeholders.opt}/endpoints",
 	}
@@ -409,7 +450,7 @@ func TestEmbeddedOptionalTemplatePlaceholderMustError(t *testing.T) {
 	require.NoError(t, err)
 
 	defs := []*pb.Placeholder{
-		{Name: "opt", Type: "string", Required: false},
+		{Name: "opt", Type: "string"},
 	}
 
 	_, err = findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{})
@@ -418,13 +459,13 @@ func TestEmbeddedOptionalTemplatePlaceholderMustError(t *testing.T) {
 }
 
 func TestFindAndReplacePlaceholders_GoogleVertexAI_APIStyleConfig(t *testing.T) {
-	// 定义最小化的占位符定义，仅包含本用例需要的字段
+	// define minimal placeholder definitions that cover this case
 	defs := []*pb.Placeholder{
 		{Name: "service-account-key-file-content", Type: "string", Required: true},
-		{Name: "location", Type: "string", Default: strPtr("global"), Required: false},
+		{Name: "location", Type: "string", Default: strPtr("global")},
 	}
 
-	// 直接内嵌 apiStyleConfig 的这一段（POST:/v1/chat/completions）
+	// inline the apiStyleConfig snippet used by POST:/v1/chat/completions
 	conf := map[string]interface{}{
 		"headers": map[string]interface{}{
 			"Authorization": []interface{}{
@@ -451,12 +492,12 @@ func TestFindAndReplacePlaceholders_GoogleVertexAI_APIStyleConfig(t *testing.T) 
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(rendered, &out))
 
-	// 1) header Authorization 仍保留 provider 占位符
+	// 1) header Authorization still keeps provider placeholder
 	hdrs := out["headers"].(map[string]interface{})
 	auth := hdrs["Authorization"].([]interface{})[1].(string)
 	require.Contains(t, auth, "${@provider.metadata.secret.access-token}")
 
-	// 2) path 第三个元素中 template 占位符被渲染为默认值 global；provider 占位符保持不变
+	// 2) path third element renders template placeholder to global while provider placeholders stay untouched
 	path := out["path"].([]interface{})
 	require.Len(t, path, 3)
 	p := path[2].(string)

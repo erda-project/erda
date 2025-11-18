@@ -43,12 +43,12 @@ func RenderTemplate(templateName string, tpl *pb.Template, params map[string]str
 }
 
 // findAndReplacePlaceholders
-// Traverse every value in the config; if it is a slice or map, recurse until reaching leaf nodes.
-// For each leaf node, check whether the value matches the `${@template.placeholders.xxx}` format.
+// traverse every value in the config; if it is a slice or map, recurse until reaching leaf nodes.
+// for each leaf node, check whether the value matches the `${@template.placeholders.xxx}` format.
 // placeholderValues example:
 // - api-key: 1234
 // - another-api-key: 5678
-// The placeholders argument enables fine-grained rendering (e.g., required flags, defaults, etc.).
+// the placeholders argument enables fine-grained rendering (e.g., required flags, defaults, etc.).
 func findAndReplacePlaceholders(templateName, templateDesc string, placeholderDefines []*pb.Placeholder, cfgJSON []byte, placeholderValues map[string]string) ([]byte, error) {
 	var cfg interface{}
 	if err := json.Unmarshal(cfgJSON, &cfg); err != nil {
@@ -90,12 +90,6 @@ const (
 // context. Mapping rules can leverage it to select provider-specific values.
 const ServiceProviderTypeParamKey = "__service_provider_type__"
 
-type omissionSentinel struct{}
-
-// Strict mode: no omission allowed. Keep the type for backward compatibility,
-// but callers should never receive this sentinel any more.
-var omitPlaceholder = &omissionSentinel{}
-
 func replacePlaceholdersRecursively(templateName, templateDesc string, value interface{}, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
 	switch typed := value.(type) {
 	case map[string]interface{}:
@@ -103,10 +97,6 @@ func replacePlaceholdersRecursively(templateName, templateDesc string, value int
 			replaced, err := replacePlaceholdersRecursively(templateName, templateDesc, v, placeholderDefines, placeholderValues)
 			if err != nil {
 				return nil, err
-			}
-			if replaced == omitPlaceholder {
-				delete(typed, key)
-				continue
 			}
 			typed[key] = replaced
 		}
@@ -118,14 +108,11 @@ func replacePlaceholdersRecursively(templateName, templateDesc string, value int
 			if err != nil {
 				return nil, err
 			}
-			if replaced == omitPlaceholder {
-				continue
-			}
 			result = append(result, replaced)
 		}
 		return result, nil
 	case string:
-		// Exact match replacements preserve non-string types
+		// exact match replacements preserve non-string types
 		if typed == templateNamePlaceholder {
 			return templateName, nil
 		}
@@ -140,7 +127,7 @@ func replacePlaceholdersRecursively(templateName, templateDesc string, value int
 			name := typed[len(placeholderPrefix) : len(typed)-len(placeholderSuffix)]
 			return resolvePlaceholderValue(templateName, templateDesc, name, placeholderDefines, placeholderValues)
 		}
-		// Otherwise, support embedded placeholders inside strings
+		// otherwise, support embedded placeholders inside strings
 		replaced, err := replaceEmbeddedTemplatePlaceholders(typed, templateName, templateDesc, placeholderDefines, placeholderValues)
 		if err != nil {
 			return nil, err
@@ -155,7 +142,7 @@ var embeddedTokenRe = regexp.MustCompile(`\$\{([^{}]+)\}`)
 
 // replaceEmbeddedTemplatePlaceholders scans a string for ${...} tokens and replaces
 // only template-related placeholders (e.g., ${@template.placeholders.name}, ${@template.name}, ${@template.desc}).
-// For embedded usage, values are coerced to strings. Unknown tokens are left as-is.
+// for embedded usage, values are coerced to strings. Unknown tokens are left as-is.
 func replaceEmbeddedTemplatePlaceholders(input, templateName, templateDesc string, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (string, error) {
 	var firstErr error
 	out := embeddedTokenRe.ReplaceAllStringFunc(input, func(tok string) string {
@@ -181,12 +168,7 @@ func replaceEmbeddedTemplatePlaceholders(input, templateName, templateDesc strin
 					firstErr = err
 					return tok
 				}
-				// 在嵌入式场景，若占位符最终被判定为可省略(omit)，视为渲染失败，必须报错
-				if val == omitPlaceholder {
-					firstErr = fmt.Errorf("template placeholder %q omitted in embedded context", name)
-					return tok
-				}
-				// Coerce to string for embedding
+				// coerce to string for embedding
 				switch v := val.(type) {
 				case string:
 					return v
@@ -237,8 +219,8 @@ func resolvePlaceholderValue(templateName, templateDesc, name string, placeholde
 		return evaluateStringIfNeeded(defaultValue, templateName, templateDesc)
 	}
 
-	// Strict mode: any declared placeholder must render to a concrete value.
-	// If neither provided, nor mapped, nor defaulted -> error.
+	// strict mode: any declared placeholder must render to a concrete value.
+	// if neither provided, nor mapped, nor defaulted -> error.
 	return nil, fmt.Errorf("missing value for placeholder %q", name)
 }
 

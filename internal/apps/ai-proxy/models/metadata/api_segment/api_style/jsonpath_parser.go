@@ -24,14 +24,14 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// JSONPathParser parse JSONPath-like template strings.
+// jsonPathParser parse JSONPath-like template strings.
 // e.g.,
 // - api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}
 //   - context(obj): model.metadata.public.api_version = ""
 //     provider.metadata.public.api_version = "2024-01-01"
 //     -> result: api-version=2024-01-01
 //
-// More examples, see: #TestJSONPathParser_SearchAndReplace
+// more examples, see: #TestJSONPathParser_SearchAndReplace
 type JSONPathParser struct {
 	RegexpPattern string
 	re            *regexp.Regexp
@@ -71,7 +71,7 @@ func (p *JSONPathParser) NeedDoReplace(s string) bool {
 	return len(p.Search(s)) > 0
 }
 
-// Search return all matched keys. e.g.,
+// search return all matched keys. e.g.,
 //   - api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}
 //     -> [ "@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview ]
 //   - text="${a||b||c} ${d}"
@@ -87,11 +87,10 @@ func (p *JSONPathParser) Search(s string) []string {
 	return keys
 }
 
-// SearchAndReplace .
-// - api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}
-//   - context : model.metadata.public.api_version = ""
-//     provider.metadata.public.api_version = "2024-01-01"
-//     -> result: api-version=2024-01-01
+// searchAndReplace enforces strict placeholder rendering:
+// - supports multi-choice (a||b||c) and tries sequentially;
+// - entries starting with '@' are parsed via JSONPath, others are literals;
+// - returns the first non-empty value; errors when none resolve.
 func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]any) (string, error) {
 	var firstErr error
 	out := p.re.ReplaceAllStringFunc(s, func(match string) string {
@@ -130,19 +129,9 @@ func (p *JSONPathParser) SearchAndReplace(s string, availableValues map[string]a
 	return out, nil
 }
 
-// SearchAndReplaceStrict 会在无法解析占位符时返回错误。
-// 规则：
-// - 支持多路选择（a||b||c），按顺序尝试；
-// - 以 '@' 开头按 JSONPath 解析，否则视作字面量直接返回；
-// - 任一路获得非空字符串即成功；若全部失败，则返回错误。
-// Deprecated: SearchAndReplaceStrict is now the same as SearchAndReplace. Use SearchAndReplace instead.
-func (p *JSONPathParser) SearchAndReplaceStrict(s string, availableValues map[string]any) (string, error) {
-	return p.SearchAndReplace(s, availableValues)
-}
-
 func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]any) (string, error) {
-	// Normalize to a JSONPath starting with '$' and using bracket notation
-	// Keep root instead of converting to a leading dot to avoid jp parser errors
+	// normalize to a JSONPath starting with '$' and using bracket notation
+	// keep root instead of converting to a leading dot to avoid jp parser errors
 	jsonPath := expr
 	if strings.HasPrefix(jsonPath, "@") {
 		jsonPath = "$" + jsonPath[1:]
@@ -159,15 +148,15 @@ func (p *JSONPathParser) getByJSONPath(expr string, availableValues map[string]a
 	return "", nil
 }
 
-// DotToBracketJSONPath 把类似 @.a.b.c 这种 dot 形式，转换成 @["a"]["b"]["c"] 形式。
-// 如果本来就包含 ["..."] 这种 bracket 形式，会原样保留。
+// dotToBracketJSONPath converts @.a.b.c form into @["a"]["b"]["c"] form.
+// existing bracket segments like ["..."] are preserved.
 func DotToBracketJSONPath(path string) string {
 	path = strings.TrimSpace(path)
 	if path == "" {
 		return path
 	}
 
-	// 支持 @ 或 $ 开头
+	// supports prefixes '@' or '$'
 	prefix := ""
 	rest := path
 	if strings.HasPrefix(rest, "@") || strings.HasPrefix(rest, "$") {
@@ -175,7 +164,7 @@ func DotToBracketJSONPath(path string) string {
 		rest = rest[1:]
 	}
 
-	// 去掉紧随其后的可选点号：@.a.b.c / $.a.b.c / @a.b.c
+	// drop the optional dot after the prefix: @.a.b.c / $.a.b.c / @a.b.c
 	if strings.HasPrefix(rest, ".") {
 		rest = rest[1:]
 	}
@@ -187,7 +176,7 @@ func DotToBracketJSONPath(path string) string {
 		return path
 	}
 
-	// 将路径转换为完全的 bracket 形式，同时保留原有的 bracket 片段
+	// convert the path to bracket notation while keeping existing bracket chunks
 	var b strings.Builder
 	b.WriteString(prefix)
 
@@ -195,10 +184,10 @@ func DotToBracketJSONPath(path string) string {
 	for i < len(rest) {
 		switch rest[i] {
 		case '.':
-			// 跳过点号
+			// skip dots
 			i++
 		case '[':
-			// 直接保留现有的 bracket 片段，直到对应的 ']'
+			// keep existing bracket segment until the matching ']'
 			end := i + 1
 			depth := 1
 			for end < len(rest) && depth > 0 {
@@ -210,13 +199,13 @@ func DotToBracketJSONPath(path string) string {
 				end++
 			}
 			b.WriteString(rest[i:end])
-			// 跳过紧随其后的点号
+			// skip dot right after the bracket block
 			i = end
 			if i < len(rest) && rest[i] == '.' {
 				i++
 			}
 		default:
-			// 解析一个标识符直到下一个 '.' 或 '['
+			// parse an identifier until the next '.' or '['
 			start := i
 			for i < len(rest) && rest[i] != '.' && rest[i] != '[' {
 				i++
@@ -226,7 +215,7 @@ func DotToBracketJSONPath(path string) string {
 				b.WriteString(rest[start:i])
 				b.WriteString(`"]`)
 			}
-			// 点号在下一轮被跳过
+			// dots are skipped in the next iteration
 		}
 	}
 

@@ -25,7 +25,6 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_segment_getter"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
@@ -59,7 +58,7 @@ func (f *GoogleVertexAIDirectorResponse) OnBodyChunk(resp *http.Response, chunk 
 	pathMatcher := ctxhelper.MustGetPathMatcher(resp.Request.Context())
 
 	// openai-compatible
-	if pathMatcher.Match(common.RequestPathPrefixV1ChatCompletions) {
+	if pathMatcher.Match(vars.RequestPathPrefixV1ChatCompletions) {
 		return chunk, nil
 	}
 
@@ -69,7 +68,7 @@ func (f *GoogleVertexAIDirectorResponse) OnBodyChunk(resp *http.Response, chunk 
 	}
 
 	// convert google vertex ai response to openai style
-	if pathMatcher.Match(common.RequestPathPrefixV1ImagesGenerations) || pathMatcher.Match(common.RequestPathPrefixV1ImagesEdits) {
+	if pathMatcher.Match(vars.RequestPathPrefixV1ImagesGenerations) || pathMatcher.Match(vars.RequestPathPrefixV1ImagesEdits) {
 		return convertGenAIResponseToOpenAIImageGenerationResponse(chunk)
 	}
 	return nil, fmt.Errorf("unsupported path: %s", pathMatcher.Pattern)
