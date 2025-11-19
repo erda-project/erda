@@ -54,7 +54,7 @@ var Creator filter_define.RequestRewriterCreator = func(names string, configJSON
 
 func (f *Context) Enable(req *httputil.ProxyRequest) bool {
 	return strings.HasPrefix(
-		req.In.Header.Get(httperrorutil.HeaderKeyContentLength),
+		req.In.Header.Get(httperrorutil.HeaderKeyContentType),
 		string(httperrorutil.ApplicationJson),
 	)
 }
