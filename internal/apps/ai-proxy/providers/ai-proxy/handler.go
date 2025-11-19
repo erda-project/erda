@@ -101,6 +101,7 @@ func (p *provider) getProtoOptions(opts ...transport.ServiceOption) []transport.
 		reverseproxy.TrySetAuth(p.cache),
 		reverseproxy.TrySetLang(),
 		setContextMap(p),
+		apiinterceptor.WithLogger(p.L),
 	}
 	return append(unifiedOpts, opts...)
 }
@@ -111,7 +112,6 @@ var setContextMap = func(p *provider) transport.ServiceOption {
 			ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 			ctxhelper.PutDBClient(ctx, p.Dao)
 			ctxhelper.PutCacheManager(ctx, p.cache)
-			apiinterceptor.WithLogger(p.L)
 			return h(ctx, req)
 		}
 	})
