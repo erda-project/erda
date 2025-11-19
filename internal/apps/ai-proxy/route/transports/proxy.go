@@ -36,7 +36,7 @@ const (
 
 // shared base dialer for all outbound connections
 var baseDialer = &net.Dialer{
-	Timeout:   10 * time.Second, // Timeout for establishing a TCP connection, even when routing through proxies.
+	Timeout:   60 * time.Second, // Timeout for establishing a TCP connection, even when routing through proxies.
 	KeepAlive: 60 * time.Second, // Keep-alive interval to keep long-lived TCP connections reusable.
 }
 
