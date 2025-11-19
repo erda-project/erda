@@ -16,7 +16,6 @@ package ai_proxy
 
 import (
 	"context"
-	apiinterceptor "github.com/erda-project/erda/internal/apps/ai-proxy/interceptor"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
@@ -49,6 +48,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	apiinterceptor "github.com/erda-project/erda/internal/apps/ai-proxy/interceptor"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
