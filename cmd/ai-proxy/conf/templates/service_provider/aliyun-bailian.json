@@ -9,6 +9,7 @@
       {
         "name": "another-api-key",
         "type": "string",
+        "default": "",
         "required": false
       }
     ],
