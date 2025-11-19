@@ -68,7 +68,7 @@ func init() {
 
 	// if both are set and not equal, fail fast.
 	if httpProxy != "" && httpsProxy != "" && httpProxy != httpsProxy {
-		panic(fmt.Sprintf("FORWARD_HTTP_PROXY (%q) and FORWARD_HTTPS_PROXY (%q) must be equal when both are set", httpProxy, httpsProxy))
+		panic(fmt.Sprintf("%s (%q) and %s (%q) must be equal when both are set", envKeyForwardHttpProxy, envKeyForwardHttpsProxy, httpProxy, httpsProxy))
 	}
 
 	// normalize: if only one is set, copy it to the other so that the effective config is consistent.
