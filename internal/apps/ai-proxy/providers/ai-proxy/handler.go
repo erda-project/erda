@@ -16,6 +16,7 @@ package ai_proxy
 
 import (
 	"context"
+	apiinterceptor "github.com/erda-project/erda/internal/apps/ai-proxy/interceptor"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
@@ -110,7 +111,7 @@ var setContextMap = func(p *provider) transport.ServiceOption {
 			ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 			ctxhelper.PutDBClient(ctx, p.Dao)
 			ctxhelper.PutCacheManager(ctx, p.cache)
-			ctxhelper.PutLogger(ctx, p.L)
+			apiinterceptor.WithLogger(p.L)
 			return h(ctx, req)
 		}
 	})
