@@ -66,12 +66,12 @@ func init() {
 	httpProxy := os.Getenv(envKeyForwardHttpProxy)
 	httpsProxy := os.Getenv(envKeyForwardHttpsProxy)
 
-	// If both are set and not equal, fail fast.
+	// if both are set and not equal, fail fast.
 	if httpProxy != "" && httpsProxy != "" && httpProxy != httpsProxy {
 		panic(fmt.Sprintf("FORWARD_HTTP_PROXY (%q) and FORWARD_HTTPS_PROXY (%q) must be equal when both are set", httpProxy, httpsProxy))
 	}
 
-	// Normalize: if only one is set, copy it to the other so that the effective config is consistent.
+	// normalize: if only one is set, copy it to the other so that the effective config is consistent.
 	if httpProxy == "" {
 		httpProxy = httpsProxy
 	}
@@ -86,7 +86,7 @@ func init() {
 		CGI:        os.Getenv("REQUEST_METHOD") != "",
 	}
 
-	// Initialize SOCKS5 dialer if the effective proxy is socks5://
+	// initialize SOCKS5 dialer if the effective proxy is socks5://
 	raw := httpsProxy
 	if raw == "" {
 		raw = httpProxy
@@ -109,7 +109,7 @@ func init() {
 		}
 	}
 
-	// Print final proxy configuration at startup.
+	// print final proxy configuration at startup.
 	socksEnabled := socksProxyEnabled()
 	logrus.Infof(
 		"ai-proxy forward proxy config: HTTP=%q HTTPS=%q NO_PROXY=%q SOCKS5_ENABLED=%t SOCKS5_URL=%v HOSTS=%v",

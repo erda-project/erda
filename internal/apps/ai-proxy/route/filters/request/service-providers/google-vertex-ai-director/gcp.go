@@ -32,10 +32,11 @@ import (
 )
 
 var (
-	// gcpProjectIDCache caches parsed project_id values keyed by the service-account key file content.
+	// gcpProjectIDCache caches parsed project_id values keyed by the service-account key file content hash
 	gcpProjectIDCache sync.Map // map[string]string
 
-	// gcpTokenSourceCache caches oauth2.TokenSource instances keyed by service-account key content and scope.
+	// gcpTokenSourceCache caches oauth2.TokenSource instances keyed by service-account key content hash and scope.
+	// so we can get token from token-store directly without more http-invoking for each request if token not expired.
 	gcpTokenSourceCache sync.Map // map[string]oauth2.TokenSource
 )
 
@@ -86,9 +87,9 @@ func getGCPAccessToken(ctx context.Context, sp *providerpb.ServiceProvider) (str
 		return "", fmt.Errorf("service-account-key-file-content not found in template params")
 	}
 
-	// Build a proxy-aware HTTP client for oauth2 token exchange
+	// build a proxy-aware HTTP client for oauth2 token exchange
 	oauthHTTPClient := &http.Client{Transport: transports.BaseTransport}
-	// Inject the client so oauth2 and google auth flows respect the proxy
+	// inject the client so oauth2 and google auth flows respect the proxy
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, oauthHTTPClient)
 
 	// 2. use SA JSON to create or reuse a TokenSource (cloud-platform scope)
