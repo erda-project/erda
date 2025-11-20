@@ -50,7 +50,6 @@ require (
 	github.com/erda-project/erda-infra v1.0.10-0.20250818092705-c6933a1cdf22
 	github.com/erda-project/erda-infra/tools v0.0.0-20240613021434-6a57addb81b3
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
-	github.com/erda-project/erda-proto-go v1.4.0
 	github.com/erda-project/erda-sourcecov v0.1.0
 	github.com/fatih/color v1.16.0
 	github.com/fntlnz/mountinfo v0.0.0-20171106231217-40cb42681fad
@@ -161,9 +160,9 @@ require (
 	go.opentelemetry.io/proto/otlp v1.3.1
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.38.0
-	golang.org/x/sync v0.12.0
-	golang.org/x/text v0.23.0
+	golang.org/x/net v0.47.0
+	golang.org/x/sync v0.18.0
+	golang.org/x/text v0.31.0
 	golang.org/x/time v0.6.0
 	google.golang.org/genai v1.35.0
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1 // indirect
@@ -286,7 +285,6 @@ require (
 	github.com/elastic/go-ucfg v0.8.6 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
@@ -469,13 +467,13 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0
 	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
-	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/mod v0.19.0 // indirect
+	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/oauth2 v0.33.0
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/tools v0.23.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
@@ -498,6 +496,11 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
+)
+
+require (
+	github.com/iancoleman/strcase v0.3.0 // indirect
+	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
 )
 
 replace (
