@@ -92,11 +92,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) registerMcpProxyManageAPI() {
 	// for legacy reason, mcp-list api is provided by ai-proxy, so we need to register it for both ai-proxy and mcp-proxy
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMCPPerm)
+	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyPublicURL), p.getProtoOptions(permission.CheckMCPPerm)...)
 
-	mtpb.RegisterMCPServerTemplateServiceImp(p, handler_mcp_server_template.NewMcpTemplateHandler(p.Dao), apis.Options(), reverseproxy.TrySetAuth(p.cache), permission.CheckMcpTemplatePerm)
+	mtpb.RegisterMCPServerTemplateServiceImp(p, handler_mcp_server_template.NewMcpTemplateHandler(p.Dao), p.getProtoOptions(permission.CheckMcpTemplatePerm)...)
 
-	mcipb.RegisterMCPServerConfigInstanceServiceImp(p, handler_mcp_server_config_instance.NewMCPConfigInstanceHandler(p.Dao), reverseproxy.TrySetAuth(p.cache), permission.CheckMcpConfigInstancePerm)
+	mcipb.RegisterMCPServerConfigInstanceServiceImp(p, handler_mcp_server_config_instance.NewMCPConfigInstanceHandler(p.Dao), p.getProtoOptions(permission.CheckMcpConfigInstancePerm)...)
 }
 
 func (p *provider) Run(ctx context.Context) error {

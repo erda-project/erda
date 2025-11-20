@@ -48,6 +48,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	apiinterceptor "github.com/erda-project/erda/internal/apps/ai-proxy/interceptor"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -100,6 +101,7 @@ func (p *provider) getProtoOptions(opts ...transport.ServiceOption) []transport.
 		reverseproxy.TrySetAuth(p.cache),
 		reverseproxy.TrySetLang(),
 		setContextMap(p),
+		apiinterceptor.WithLogger(p.L),
 	}
 	return append(unifiedOpts, opts...)
 }
