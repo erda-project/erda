@@ -16,18 +16,18 @@ package transports
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"golang.org/x/net/http/httpproxy"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
@@ -95,30 +95,46 @@ func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, err
 	return t.Inner.RoundTrip(req)
 }
 
-// ProxyConfig is forward proxy configuration, i.e., proxy configuration for transport outbound traffic
-var ProxyConfig = &httpproxy.Config{
-	HTTPProxy:  os.Getenv("FORWARD_HTTP_PROXY"),
-	HTTPSProxy: os.Getenv("FORWARD_HTTPS_PROXY"),
-	NoProxy:    os.Getenv("NO_PROXY"),
-	CGI:        os.Getenv("REQUEST_METHOD") != "",
-}
-
 // BaseTransport returns a basic http.RoundTripper. It checks whether the host requested by *http.Request is in the FORWARD_PROXY_HOSTS list,
 // if it is in the list, it uses ProxyConfig's proxy configuration, if not in the list, it uses the default proxy configuration http.ProxyFromEnvironment.
 var BaseTransport http.RoundTripper = &http.Transport{
 	Proxy: func(req *http.Request) (*url.URL, error) {
-		hosts := strings.Split(os.Getenv("FORWARD_PROXY_HOSTS"), ",")
-		for _, host := range hosts {
-			if req.Host == host || req.URL.Host == host {
-				return ProxyConfig.ProxyFunc()(req.URL)
+		// Only use HTTP/HTTPS proxy here. If a SOCKS5 proxy is configured, we rely on DialContext instead.
+		for _, host := range forwardProxyHosts {
+			if strings.HasSuffix(req.Host, host) || strings.HasSuffix(req.URL.Host, host) {
+				if socksProxyEnabled() {
+					// For SOCKS, do not configure an HTTP proxy; DialContext will route via SOCKS5.
+					return nil, nil
+				}
+				proxyURL, err := ProxyConfig.ProxyFunc()(req.URL)
+				if err != nil {
+					return nil, err
+				}
+				logrus.Debugf("%s use http proxy, proxyURL: %s", host, proxyURL)
+				return proxyURL, nil
 			}
 		}
 		return http.ProxyFromEnvironment(req)
 	},
-	DialContext: (&net.Dialer{
-		Timeout:   60 * time.Second,
-		KeepAlive: 60 * time.Second,
-	}).DialContext,
+	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// When SOCKS5 is enabled and the destination host matches FORWARD_PROXY_HOSTS,
+		// route the connection through the SOCKS5 proxy.
+		if socksProxyEnabled() {
+			host, _, err := net.SplitHostPort(addr)
+			if err != nil {
+				host = addr
+			}
+			for _, h := range forwardProxyHosts {
+				if strings.HasSuffix(host, h) {
+					logrus.Debugf("%s use socks5 dialer via %s", host, socksProxyURL)
+					// x/net/proxy.Dialer does not have a context-aware API;
+					// we ignore ctx here and rely on underlying dialer timeouts.
+					return socksDialer.Dial(network, addr)
+				}
+			}
+		}
+		return baseDialer.DialContext(ctx, network, addr)
+	},
 	TLSHandshakeTimeout:   10 * time.Second,
 	MaxIdleConns:          100,
 	IdleConnTimeout:       90 * time.Second,
