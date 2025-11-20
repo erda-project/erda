@@ -179,35 +179,32 @@ func validateImageResponse(t *testing.T, imageResp *openai.ImageResponse, model 
 
 	// Validate each image data
 	for i, imageData := range imageResp.Data {
-		// Validate different response formats based on model type
-		if strings.Contains(strings.ToLower(model), "gpt-image-1") {
-			// gpt-image-1 should return base64 data
-			if imageData.B64JSON == "" {
-				t.Errorf("✗ Empty base64 image data for image %d from gpt-image-1", i)
+		hasB64 := imageData.B64JSON != ""
+		hasURL := imageData.URL != ""
+
+		// B64 data and URL cannot both exist or both be empty
+		switch {
+		case !hasB64 && !hasURL:
+			t.Errorf("✗ Image %d missing both base64 data and URL", i)
+		case hasB64 && hasURL:
+			t.Errorf("✗ Image %d contains both base64 data and URL", i)
+		case hasB64:
+			if validateBase64ImageData(imageData.B64JSON) {
+				t.Logf("  ✓ Image %d base64 data is valid (%d bytes)", i, len(imageData.B64JSON))
 			} else {
-				// Validate base64 data format
-				if validateBase64ImageData(imageData.B64JSON) {
-					t.Logf("  ✓ Image %d base64 data is valid (%d bytes)", i, len(imageData.B64JSON))
-				} else {
-					t.Errorf("✗ Invalid base64 image data for image %d", i)
-				}
+				t.Errorf("✗ Invalid base64 image data for image %d", i)
 			}
-		} else {
-			// Other models should return URL
-			if imageData.URL == "" {
-				t.Errorf("✗ Empty image URL for image %d", i)
+		case hasURL:
+			// Validate URL format
+			if !strings.HasPrefix(imageData.URL, "http") {
+				t.Errorf("✗ Invalid image URL format for image %d: %s", i, imageData.URL)
+				break
+			}
+			// Optional: test URL accessibility
+			if validateImageURL(imageData.URL) {
+				t.Logf("  ✓ Image %d URL is accessible: %s", i, truncateString(imageData.URL, 80))
 			} else {
-				// Validate URL format
-				if !strings.HasPrefix(imageData.URL, "http") {
-					t.Errorf("✗ Invalid image URL format for image %d: %s", i, imageData.URL)
-				} else {
-					// Optional: test URL accessibility
-					if validateImageURL(imageData.URL) {
-						t.Logf("  ✓ Image %d URL is accessible: %s", i, truncateString(imageData.URL, 80))
-					} else {
-						t.Logf("  ⚠ Image %d URL may not be immediately accessible: %s", i, truncateString(imageData.URL, 80))
-					}
-				}
+				t.Logf("  ⚠ Image %d URL may not be immediately accessible: %s", i, truncateString(imageData.URL, 80))
 			}
 		}
 
