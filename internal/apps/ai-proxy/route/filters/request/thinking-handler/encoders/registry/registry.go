@@ -36,13 +36,13 @@ func NewRegistry() *Registry {
 		// service provider
 		&sp.VolcengineThinkingEncoder{},
 		&sp.BailianThinkingEncoder{},
+		&sp.GoogleVertexAIThinkingEncoder{},
 		// model publisher
 		&mp.AnthropicThinkingEncoder{},
 		&mp.QwenThinkingEncoder{},
 		&mp.OpenAIChatThinkingEncoder{},
 		&mp.OpenAIResponsesThinkingEncoder{},
 		&mp.BytedanceThinkingEncoder{},
-		&mp.GoogleThinkingEncoder{},
 	}
 
 	// sort by priority (lower number = higher priority)

@@ -19,7 +19,7 @@
       "recommended_service_provider_templates": [
         "google-vertex-ai"
       ],
-      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite"
+      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-image"
     },
     "desc": "Gemini 2.5 Flash-Lite is a lightweight reasoning model in the Gemini 2.5 family, optimized for ultra-low latency and cost efficiency. It offers improved throughput, faster token generation, and better performance across common benchmarks compared to earlier Flash models. By default, \\\"thinking\\\" (i.e. multi-pass reasoning) is disabled to prioritize speed, but developers can enable it via the [Reasoning API parameter](https://openrouter.ai/docs/use-cases/reasoning-tokens) to selectively trade off cost for intelligence.",
     "config": {
@@ -31,40 +31,31 @@
         "public": {
           "abilities": {
             "abilities": [
-              "tool",
-              "reasoning",
-              "image_recognition",
-              "video_recognition",
-              "reasoning",
-              "enable_thinking",
-              "structured_output"
+              "image_recognition"
             ],
             "input_modalities": [
               "text",
-              "image",
-              "video",
-              "audio"
+              "image"
             ],
             "output_modalities": [
-              "text"
+              "text",
+              "image"
             ]
           },
           "context": {
-            "context_length": 1048576,
-            "max_completion_tokens": 65535,
-            "max_prompt_tokens": 1048576
+            "context_length": 32768,
+            "max_prompt_tokens": 32768,
+            "max_completion_tokens": 32768
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "prompt": "0.0000001",
-            "completion": "0.0000004",
+            "prompt": "0.0000003",
+            "completion": "0.0000025",
             "request": "0",
-            "image": "0",
-            "image_output": "0",
+            "image": "0.001238",
+            "image_output": "0.00003",
             "web_search": "0",
             "internal_reasoning": "0",
-            "input_cache_read": "0.00000001",
-            "input_cache_write": "0.0000001833",
             "unit": "USD"
           }
         },

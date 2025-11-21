@@ -23,6 +23,18 @@ import (
 type OpenAIChatThinkingExtractor struct{}
 
 func (e *OpenAIChatThinkingExtractor) ExtractMode(body map[string]any) (*types.CommonThinkingMode, error) {
+	if reasoningEffort, ok := body[types.FieldReasoningEffort]; ok {
+		if effortStr, ok := reasoningEffort.(string); ok {
+			if types.IsValidEffort(effortStr) {
+				switch effortStr {
+				case types.EffortNone.String():
+					return types.ModePtr(types.ModeOff), nil
+				default:
+					return types.ModePtr(types.ModeOn), nil
+				}
+			}
+		}
+	}
 	return nil, nil
 }
 

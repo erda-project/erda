@@ -1,0 +1,73 @@
+{
+  "gemini-3-pro-preview": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "mapping": {
+          "by": {
+            "service_provider_type": {
+              "google-vertex-ai": "google/gemini-3-pro-preview"
+            }
+          },
+          "default": "${@template.name}"
+        }
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "google-vertex-ai"
+      ],
+      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro"
+    },
+    "desc": "Gemini 3 Pro is our most advanced reasoning Gemini model, capable of solving complex problems. Gemini 3 Pro can comprehend vast datasets and challenging problems from different information sources, including text, audio, images, video, PDFs, and even entire code repositories with its 1M token context window.",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "google",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "image_recognition",
+              "video_recognition",
+              "reasoning",
+              "structured_output"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1048576,
+            "max_completion_tokens": 65535,
+            "max_prompt_tokens": 1048576
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "prompt": "0.000002",
+            "completion": "0.000012",
+            "request": "0",
+            "image": "0.008256",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.0000002",
+            "input_cache_write": "0.000002375",
+            "unit": "USD"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
