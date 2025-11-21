@@ -33,5 +33,10 @@ const (
 	FieldReasoningEffort = "reasoning_effort"
 
 	// for vertex-ai: https://cloud.google.com/vertex-ai/generative-ai/docs/thinking
-	FieldThinkingConfig = "thinking_config"
+	FieldExtraBody        = "extra_body"
+	FieldGoogle           = "google"
+	FieldThinkingConfig   = "thinking_config"
+	FieldIncludeThoughts  = "include_thoughts"
+	FieldThoughtTagMarker = "thought_tag_marker"
+	FieldThinkingLevel    = "thinking_level"
 )
