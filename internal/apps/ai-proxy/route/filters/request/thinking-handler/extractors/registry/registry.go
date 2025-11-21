@@ -35,7 +35,6 @@ func NewRegistry() *Registry {
 		&impl.QwenThinkingExtractor{},
 		&impl.OpenAIResponsesThinkingExtractor{},
 		&impl.OpenAIChatThinkingExtractor{},
-		&impl.GoogleThinkingExtractor{},
 	}
 
 	// sort by priority

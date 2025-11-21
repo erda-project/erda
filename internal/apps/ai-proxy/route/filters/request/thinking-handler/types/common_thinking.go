@@ -82,12 +82,15 @@ const (
 
 type CommonThinkingEffort string
 
+func (e CommonThinkingEffort) String() string { return string(e) }
+
 // Effort levels
 const (
 	EffortMinimal CommonThinkingEffort = "minimal"
 	EffortLow     CommonThinkingEffort = "low"
 	EffortMedium  CommonThinkingEffort = "medium"
 	EffortHigh    CommonThinkingEffort = "high"
+	EffortNone    CommonThinkingEffort = "none"
 )
 
 // ModePtr returns a pointer to CommonThinkingMode
@@ -103,7 +106,7 @@ func EffortPtr(effort CommonThinkingEffort) *CommonThinkingEffort {
 // IsValidEffort checks if a string is a valid effort level
 func IsValidEffort(effort string) bool {
 	switch CommonThinkingEffort(effort) {
-	case EffortMinimal, EffortLow, EffortMedium, EffortHigh:
+	case EffortMinimal, EffortLow, EffortMedium, EffortHigh, EffortNone:
 		return true
 	}
 	return false
