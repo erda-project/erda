@@ -297,9 +297,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		task.Extra.Image = action.Image
 	}
 	// 将 action dice.yml 中声明的 envs 注入运行时
-	for k, v := range diceYmlJob.Envs {
-		task.Extra.PrivateEnvs[k] = v
-	}
+	setDiceYmlJobEnvs(task.Extra.PrivateEnvs, diceYmlJob.Envs)
 	// 将 action dice.yml 中声明的 labels 注入运行时
 	for k, v := range diceYmlJob.Labels {
 		task.Extra.Labels[k] = v
@@ -570,6 +568,16 @@ func existContinuePrivateEnv(privateEnvs map[string]string, key string) bool {
 		return true
 	}
 	return false
+}
+
+func setDiceYmlJobEnvs(privateEnvs map[string]string, diceYmlJobEnvs map[string]string) {
+	for k, v := range diceYmlJobEnvs {
+		// diceymljob.env's priority is lower than action.params
+		if _, ok := privateEnvs[k]; ok {
+			continue
+		}
+		privateEnvs[k] = v
+	}
 }
 
 func handleAccessTokenExpiredIn(task *spec.PipelineTask) string {
