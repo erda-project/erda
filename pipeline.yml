@@ -121,19 +121,6 @@ stages:
             cpu: 1
             mem: 2048
       - custom-script:
-          alias: build-monitor-injector
-          image: registry.erda.cloud/erda-actions/custom-script:2.1
-          commands:
-            - cd ${{ dirs.erda-java-extensions }}
-            - mkdir -p /root/.m2 && cp maven-settings-template.xml /root/.m2/settings.xml
-            - make ci-build-local -e SKIP_TEST=true
-            - cd ${{ dirs.erda }}
-            - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
-            - MODULE_PATH=monitor/agent-injector make buildkit-image
-          resources:
-            cpu: 1
-            mem: 1024
-      - custom-script:
           alias: build-diagnotor-agent
           image: registry.erda.cloud/erda-actions/custom-script:2.1
           commands:
@@ -254,7 +241,6 @@ stages:
               gittar: ${{ outputs.build-erda.image }}
               hepa: ${{ outputs.build-erda.image }}
               log-service: ${{ outputs.build-erda.image }}
-              monitor-agent-injector: ${build-monitor-injector:OUTPUT:image}
               monitor: ${{ outputs.build-erda.image }}
               orchestrator: ${{ outputs.build-erda.image }}
               pipeline: ${{ outputs.build-erda.image }}
