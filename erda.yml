@@ -173,38 +173,6 @@ services:
       container:
         securityContext:
           privileged: true
-  monitor-agent-injector:
-    cmd: /erda/cmd/monitor/agent-injector/bin
-    ports:
-      - port: 8443
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 8080
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 7080
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      DEBUG: "false"
-    resources:
-      cpu: ${request_cpu:0.5}
-      max_cpu: 0.5
-      mem: ${request_mem:1024}
-      max_mem: 1024
-      network:
-        mode: "container"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "dice"
-    health_check:
-      http:
-        port: 8080
-        path: "/health"
-        duration: 120
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/erda:/etc/server/certs:ro"
   collector:
     labels:
       cpu_bound: "true"
