@@ -133,6 +133,52 @@ func Test_existContinuePrivateEnv(t *testing.T) {
 	}
 }
 
+func Test_setDiceYmlJobEnvs(t *testing.T) {
+	tests := []struct {
+		name         string
+		privateEnvs  map[string]string
+		diceYmlEnvs  map[string]string
+		expectResult map[string]string
+	}{
+		{
+			name: "override prevented",
+			privateEnvs: map[string]string{
+				"KEEP": "value",
+				"k1":   "old",
+			},
+			diceYmlEnvs: map[string]string{
+				"k1": "new",
+				"k2": "v2",
+			},
+			expectResult: map[string]string{
+				"KEEP": "value",
+				"k1":   "old",
+				"k2":   "v2",
+			},
+		},
+		{
+			name: "empty private envs",
+			privateEnvs: map[string]string{
+				"exist": "1",
+			},
+			diceYmlEnvs: map[string]string{
+				"add": "2",
+			},
+			expectResult: map[string]string{
+				"exist": "1",
+				"add":   "2",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setDiceYmlJobEnvs(tt.privateEnvs, tt.diceYmlEnvs)
+			assert.Equal(t, tt.expectResult, tt.privateEnvs)
+		})
+	}
+}
+
 func Test_handleAccessTokenExpiredIn(t *testing.T) {
 	tests := []struct {
 		name    string
