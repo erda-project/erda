@@ -152,7 +152,7 @@ func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.Templa
 	if req.CheckInstance {
 		var modelInstances []*modelpb.Model
 		if req.ClientId != "" {
-			allClientModels, err := cachehelpers.ListAllClientModels(ctx, req.ClientId)
+			allClientModels, err := cachehelpers.ListAllClientModels(ctx, req.ClientId, nil)
 			if err != nil {
 				return nil, err
 			}
