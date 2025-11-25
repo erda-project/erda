@@ -60,7 +60,7 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 		client = _client
 	}
 
-	allModels, err := cachehelpers.ListAllClientModels(ctx, client.Id)
+	allModels, err := cachehelpers.ListAllClientModels(ctx, client.Id, nil)
 	if err != nil {
 		return nil, err
 	}

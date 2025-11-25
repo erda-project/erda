@@ -26,6 +26,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
+func boolPtr(v bool) *bool {
+	return &v
+}
+
 // mockManager implements cachetypes.Manager for testing
 type mockManager struct {
 	listAll map[cachetypes.ItemType]struct {
@@ -93,9 +97,9 @@ func withCacheManager(t *testing.T, m cachetypes.Manager) context.Context {
 func Test_listAllClientBelongedModels_Success(t *testing.T) {
 	mm := newMockManager()
 	models := []*modelpb.Model{
-		{Id: "m1", ClientId: "c1", ProviderId: "p1"},
-		{Id: "m2", ClientId: "c1", ProviderId: "p2"},
-		{Id: "m3", ClientId: "c2", ProviderId: "p1"},
+		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)},
+		{Id: "m2", ClientId: "c1", ProviderId: "p2", IsEnabled: boolPtr(true)},
+		{Id: "m3", ClientId: "c2", ProviderId: "p1", IsEnabled: boolPtr(true)},
 	}
 	mm.listAll[cachetypes.ItemTypeModel] = struct {
 		total uint64
@@ -189,9 +193,9 @@ func TestListAllClientModels_Success_WithDedupProviderFetch(t *testing.T) {
 	mm := newMockManager()
 	// All models in cache (used by belonged function)
 	models := []*modelpb.Model{
-		{Id: "m1", ClientId: "c1", ProviderId: "p1"}, // belonged
-		{Id: "m2", ClientId: "c1", ProviderId: "p2"}, // belonged
-		{Id: "m3", ClientId: "c2", ProviderId: "p1"}, // for assignment
+		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)}, // belonged
+		{Id: "m2", ClientId: "c1", ProviderId: "p2", IsEnabled: boolPtr(true)}, // belonged
+		{Id: "m3", ClientId: "c2", ProviderId: "p1", IsEnabled: boolPtr(true)}, // for assignment
 	}
 	mm.listAll[cachetypes.ItemTypeModel] = struct {
 		total uint64
@@ -227,7 +231,7 @@ func TestListAllClientModels_Success_WithDedupProviderFetch(t *testing.T) {
 	}
 
 	ctx := withCacheManager(t, mm)
-	got, err := ListAllClientModels(ctx, "c1")
+	got, err := ListAllClientModels(ctx, "c1", nil)
 	if err != nil {
 		t.Fatalf("ListAllClientModels error: %v", err)
 	}
@@ -258,7 +262,7 @@ func TestListAllClientModels_Success_WithDedupProviderFetch(t *testing.T) {
 func TestListAllClientModels_ErrorOnProviderFetch(t *testing.T) {
 	mm := newMockManager()
 	models := []*modelpb.Model{
-		{Id: "m1", ClientId: "c1", ProviderId: "pX"},
+		{Id: "m1", ClientId: "c1", ProviderId: "pX", IsEnabled: boolPtr(true)},
 	}
 	mm.listAll[cachetypes.ItemTypeModel] = struct {
 		total uint64
@@ -278,7 +282,7 @@ func TestListAllClientModels_ErrorOnProviderFetch(t *testing.T) {
 		"pX": {err: errors.New("provider not found")},
 	}
 	ctx := withCacheManager(t, mm)
-	if _, err := ListAllClientModels(ctx, "c1"); err == nil {
+	if _, err := ListAllClientModels(ctx, "c1", nil); err == nil {
 		t.Fatalf("expected error, got nil")
 	}
 }
@@ -286,8 +290,8 @@ func TestListAllClientModels_ErrorOnProviderFetch(t *testing.T) {
 func TestGetOneClientModel_Success(t *testing.T) {
 	mm := newMockManager()
 	models := []*modelpb.Model{
-		{Id: "m1", ClientId: "c1", ProviderId: "p1"},
-		{Id: "m2", ClientId: "c1", ProviderId: "p2"},
+		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)},
+		{Id: "m2", ClientId: "c1", ProviderId: "p2", IsEnabled: boolPtr(true)},
 	}
 	mm.listAll[cachetypes.ItemTypeModel] = struct {
 		total uint64
@@ -307,7 +311,7 @@ func TestGetOneClientModel_Success(t *testing.T) {
 		"p2": {value: &providerpb.ServiceProvider{Id: "p2"}},
 	}
 	ctx := withCacheManager(t, mm)
-	got, err := GetOneClientModel(ctx, "c1", "m2")
+	got, err := GetOneClientModel(ctx, "c1", "m2", nil)
 	if err != nil {
 		t.Fatalf("GetOneClientModel error: %v", err)
 	}
@@ -341,7 +345,88 @@ func TestGetOneClientModel_NotFound(t *testing.T) {
 		"p1": {value: &providerpb.ServiceProvider{Id: "p1"}},
 	}
 	ctx := withCacheManager(t, mm)
-	if _, err := GetOneClientModel(ctx, "c1", "not-exist"); err == nil {
+	if _, err := GetOneClientModel(ctx, "c1", "not-exist", nil); err == nil {
 		t.Fatalf("expected error, got nil")
+	}
+}
+
+func TestListAllClientModels_OnlyEnabled_Config(t *testing.T) {
+	mm := newMockManager()
+	models := []*modelpb.Model{
+		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)},
+		{Id: "m2", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(false)},
+		{Id: "m3", ClientId: "other", ProviderId: "p1", IsEnabled: boolPtr(true)},
+	}
+	mm.listAll[cachetypes.ItemTypeModel] = struct {
+		total uint64
+		value any
+		err   error
+	}{value: models}
+	mm.listAll[cachetypes.ItemTypeClientModelRelation] = struct {
+		total uint64
+		value any
+		err   error
+	}{value: []*clientmodelrelationpb.ClientModelRelation{}}
+	mm.getByID[cachetypes.ItemTypeProvider] = map[string]struct {
+		value any
+		err   error
+	}{
+		"p1": {value: &providerpb.ServiceProvider{Id: "p1"}},
+	}
+
+	ctx := withCacheManager(t, mm)
+
+	// default: all models for the client (enabled + disabled)
+	gotAll, err := ListAllClientModels(ctx, "c1", nil)
+	if err != nil {
+		t.Fatalf("ListAllClientModels default config error: %v", err)
+	}
+	if len(gotAll) != 2 {
+		t.Fatalf("expected 2 models for client c1, got %d", len(gotAll))
+	}
+
+	// with OnlyEnabled=true: only enabled models for the client
+	gotEnabledOnly, err := ListAllClientModels(ctx, "c1", &ClientModelConfig{OnlyEnabled: true})
+	if err != nil {
+		t.Fatalf("ListAllClientModels OnlyEnabled config error: %v", err)
+	}
+	if len(gotEnabledOnly) != 1 || gotEnabledOnly[0].Id != "m1" {
+		t.Fatalf("expected only enabled model m1 with OnlyEnabled=true, got: %+v", gotEnabledOnly)
+	}
+}
+
+func TestGetOneClientModel_OnlyEnabled_Config(t *testing.T) {
+	mm := newMockManager()
+	models := []*modelpb.Model{
+		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)},
+		{Id: "m2", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(false)},
+	}
+	mm.listAll[cachetypes.ItemTypeModel] = struct {
+		total uint64
+		value any
+		err   error
+	}{value: models}
+	mm.listAll[cachetypes.ItemTypeClientModelRelation] = struct {
+		total uint64
+		value any
+		err   error
+	}{value: []*clientmodelrelationpb.ClientModelRelation{}}
+	mm.getByID[cachetypes.ItemTypeProvider] = map[string]struct {
+		value any
+		err   error
+	}{
+		"p1": {value: &providerpb.ServiceProvider{Id: "p1"}},
+	}
+
+	ctx := withCacheManager(t, mm)
+
+	// default: disabled model should be returned
+	if got, err := GetOneClientModel(ctx, "c1", "m2", nil); err != nil || got == nil || got.Id != "m2" {
+		t.Fatalf("expected disabled model m2 with default config, got: %+v, err=%v", got, err)
+	}
+
+	// with OnlyEnabled=true: disabled model should not be returned
+	if got, err := GetOneClientModel(ctx, "c1", "m2", &ClientModelConfig{OnlyEnabled: true}); err == nil || got != nil {
+		t.Fatalf("expected no result for disabled model with OnlyEnabled=true, got: %+v, err=%v", got, err)
 	}
 }
