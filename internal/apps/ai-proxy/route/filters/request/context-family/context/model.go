@@ -45,7 +45,7 @@ func findModel(req *http.Request, requestCtx any, client *clientpb.Client) (*mod
 	// If there's a specific UUID, get model directly
 	if identifier.ID != "" {
 		// check permission
-		model, err := cachehelpers.GetOneClientModel(req.Context(), client.Id, identifier.ID, nil)
+		model, err := cachehelpers.GetOneClientModel(req.Context(), client.Id, identifier.ID, &cachehelpers.ClientModelConfig{OnlyEnabled: true})
 		if err != nil {
 			return nil, fmt.Errorf("invalid model id or permission denied: %v", err)
 		}
@@ -70,7 +70,7 @@ func findModel(req *http.Request, requestCtx any, client *clientpb.Client) (*mod
 }
 
 func getOneModelByNameAndPublisher(ctx context.Context, inputModelName string, inputModelPublisher string, clientID string) (*modelpb.Model, error) {
-	allClientModels, err := cachehelpers.ListAllClientModels(ctx, clientID, nil)
+	allClientModels, err := cachehelpers.ListAllClientModels(ctx, clientID, &cachehelpers.ClientModelConfig{OnlyEnabled: true})
 	if err != nil {
 		return nil, err
 	}

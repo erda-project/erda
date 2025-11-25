@@ -350,7 +350,7 @@ func TestGetOneClientModel_NotFound(t *testing.T) {
 	}
 }
 
-func TestListAllClientModels_IncludeDisabled_Config(t *testing.T) {
+func TestListAllClientModels_OnlyEnabled_Config(t *testing.T) {
 	mm := newMockManager()
 	models := []*modelpb.Model{
 		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)},
@@ -376,33 +376,26 @@ func TestListAllClientModels_IncludeDisabled_Config(t *testing.T) {
 
 	ctx := withCacheManager(t, mm)
 
-	// default: only enabled models for the client
-	gotEnabledOnly, err := ListAllClientModels(ctx, "c1", nil)
+	// default: all models for the client (enabled + disabled)
+	gotAll, err := ListAllClientModels(ctx, "c1", nil)
 	if err != nil {
 		t.Fatalf("ListAllClientModels default config error: %v", err)
-	}
-	if len(gotEnabledOnly) != 1 || gotEnabledOnly[0].Id != "m1" {
-		t.Fatalf("expected only enabled model m1, got: %+v", gotEnabledOnly)
-	}
-
-	// with IncludeDisabled=true: include both enabled and disabled for the client
-	gotAll, err := ListAllClientModels(ctx, "c1", &ClientModelConfig{IncludeDisabled: true})
-	if err != nil {
-		t.Fatalf("ListAllClientModels IncludeDisabled config error: %v", err)
 	}
 	if len(gotAll) != 2 {
 		t.Fatalf("expected 2 models for client c1, got %d", len(gotAll))
 	}
-	var ids []string
-	for _, m := range gotAll {
-		ids = append(ids, m.Id)
+
+	// with OnlyEnabled=true: only enabled models for the client
+	gotEnabledOnly, err := ListAllClientModels(ctx, "c1", &ClientModelConfig{OnlyEnabled: true})
+	if err != nil {
+		t.Fatalf("ListAllClientModels OnlyEnabled config error: %v", err)
 	}
-	if !( (ids[0] == "m1" && ids[1] == "m2") || (ids[0] == "m2" && ids[1] == "m1") ) {
-		t.Fatalf("expected models m1 and m2, got ids=%v", ids)
+	if len(gotEnabledOnly) != 1 || gotEnabledOnly[0].Id != "m1" {
+		t.Fatalf("expected only enabled model m1 with OnlyEnabled=true, got: %+v", gotEnabledOnly)
 	}
 }
 
-func TestGetOneClientModel_IncludeDisabled_Config(t *testing.T) {
+func TestGetOneClientModel_OnlyEnabled_Config(t *testing.T) {
 	mm := newMockManager()
 	models := []*modelpb.Model{
 		{Id: "m1", ClientId: "c1", ProviderId: "p1", IsEnabled: boolPtr(true)},
@@ -427,20 +420,13 @@ func TestGetOneClientModel_IncludeDisabled_Config(t *testing.T) {
 
 	ctx := withCacheManager(t, mm)
 
-	// default: disabled model should not be returned
-	if got, err := GetOneClientModel(ctx, "c1", "m2", nil); err == nil || got != nil {
-		t.Fatalf("expected no result for disabled model with default config, got: %+v, err=%v", got, err)
+	// default: disabled model should be returned
+	if got, err := GetOneClientModel(ctx, "c1", "m2", nil); err != nil || got == nil || got.Id != "m2" {
+		t.Fatalf("expected disabled model m2 with default config, got: %+v, err=%v", got, err)
 	}
 
-	// with IncludeDisabled=true: disabled model should be retrievable
-	got, err := GetOneClientModel(ctx, "c1", "m2", &ClientModelConfig{IncludeDisabled: true})
-	if err != nil {
-		t.Fatalf("GetOneClientModel with IncludeDisabled config error: %v", err)
-	}
-	if got == nil || got.Id != "m2" {
-		t.Fatalf("expected disabled model m2, got: %+v", got)
-	}
-	if got.Provider == nil || got.Provider.Id != "p1" {
-		t.Fatalf("expected provider p1 for model m2, got: %+v", got.Provider)
+	// with OnlyEnabled=true: disabled model should not be returned
+	if got, err := GetOneClientModel(ctx, "c1", "m2", &ClientModelConfig{OnlyEnabled: true}); err == nil || got != nil {
+		t.Fatalf("expected no result for disabled model with OnlyEnabled=true, got: %+v, err=%v", got, err)
 	}
 }

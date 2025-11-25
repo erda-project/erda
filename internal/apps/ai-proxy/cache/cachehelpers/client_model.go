@@ -26,7 +26,9 @@ import (
 )
 
 type ClientModelConfig struct {
-	IncludeDisabled bool // default: false
+	// OnlyEnabled when true, returns only enabled models.
+	// Default (false) returns both enabled and disabled models.
+	OnlyEnabled bool
 }
 
 // ModelWithProvider combines model with its provider information
@@ -65,15 +67,15 @@ func ListAllClientModels(ctx context.Context, clientID string, cfg *ClientModelC
 
 	// all
 	allModels := append(assignedModels, belongedModels...)
-	includeDisabled := cfg != nil && cfg.IncludeDisabled
-	if !includeDisabled {
-		onlyEnabled := make([]*modelpb.Model, 0, len(allModels))
+	onlyEnabled := cfg != nil && cfg.OnlyEnabled
+	if onlyEnabled {
+		enabledModels := make([]*modelpb.Model, 0, len(allModels))
 		for _, model := range allModels {
 			if model.GetIsEnabled() {
-				onlyEnabled = append(onlyEnabled, model)
+				enabledModels = append(enabledModels, model)
 			}
 		}
-		allModels = onlyEnabled
+		allModels = enabledModels
 	}
 
 	providerIDMap := make(map[string]struct{})
