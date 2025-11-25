@@ -37,7 +37,7 @@ func (h *ModelHandler) pagingViaDB(ctx context.Context, req *pb.ModelPagingReque
 }
 
 func (h *ModelHandler) pagingViaCache(ctx context.Context, req *pb.ModelPagingRequest) (*pb.ModelPagingResponse, error) {
-	allClientModels, err := cachehelpers.ListAllClientModels(ctx, req.ClientId)
+	allClientModels, err := cachehelpers.ListAllClientModels(ctx, req.ClientId, nil)
 	if err != nil {
 		return nil, err
 	}

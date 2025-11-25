@@ -25,14 +25,18 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
+type ClientModelConfig struct {
+	IncludeDisabled bool // default: false
+}
+
 // ModelWithProvider combines model with its provider information
 type ModelWithProvider struct {
 	*modelpb.Model
 	Provider *providerpb.ServiceProvider
 }
 
-func GetOneClientModel(ctx context.Context, clientID, modelID string) (*ModelWithProvider, error) {
-	allClientModels, err := ListAllClientModels(ctx, clientID)
+func GetOneClientModel(ctx context.Context, clientID, modelID string, cfg *ClientModelConfig) (*ModelWithProvider, error) {
+	allClientModels, err := ListAllClientModels(ctx, clientID, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +48,7 @@ func GetOneClientModel(ctx context.Context, clientID, modelID string) (*ModelWit
 	return nil, fmt.Errorf("failed to get model by id: %s", modelID)
 }
 
-func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProvider, error) {
+func ListAllClientModels(ctx context.Context, clientID string, cfg *ClientModelConfig) ([]*ModelWithProvider, error) {
 	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
 
 	// platform-assigned models
@@ -61,6 +65,17 @@ func ListAllClientModels(ctx context.Context, clientID string) ([]*ModelWithProv
 
 	// all
 	allModels := append(assignedModels, belongedModels...)
+	includeDisabled := cfg != nil && cfg.IncludeDisabled
+	if !includeDisabled {
+		onlyEnabled := make([]*modelpb.Model, 0, len(allModels))
+		for _, model := range allModels {
+			if model.GetIsEnabled() {
+				onlyEnabled = append(onlyEnabled, model)
+			}
+		}
+		allModels = onlyEnabled
+	}
+
 	providerIDMap := make(map[string]struct{})
 	providerMap := make(map[string]*providerpb.ServiceProvider)
 	for _, model := range allModels {

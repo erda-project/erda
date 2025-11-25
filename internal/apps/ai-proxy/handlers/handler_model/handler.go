@@ -100,7 +100,7 @@ func (h *ModelHandler) Create(ctx context.Context, req *pb.ModelCreateRequest) (
 }
 
 func (h *ModelHandler) Get(ctx context.Context, req *pb.ModelGetRequest) (*pb.Model, error) {
-	clientModel, err := cachehelpers.GetOneClientModel(ctx, req.ClientId, req.Id)
+	clientModel, err := cachehelpers.GetOneClientModel(ctx, req.ClientId, req.Id, nil)
 	if err != nil {
 		return nil, err
 	}
