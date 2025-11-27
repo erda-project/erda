@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
@@ -166,17 +167,27 @@ func reconstructMultipartBody(r *http.Request) (*bytes.Buffer, error) {
 	return newBody, nil
 }
 
-func getMultipartBoundary(contentType string) (boundary string, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			boundary = ""
-			err = fmt.Errorf("failed to get multipart boundary: %v", r)
-		}
-		if boundary == "" {
-			err = fmt.Errorf("failed to get multipart boundary")
-		}
-	}()
-	boundary = strings.SplitN(contentType, ";", 2)[1]
-	boundary = strings.SplitN(boundary, "=", 2)[1]
+func getMultipartBoundary(contentType string) (string, error) {
+	if contentType == "" {
+		return "", fmt.Errorf("empty Content-Type header")
+	}
+
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse Content-Type %q: %w", contentType, err)
+	}
+
+	if !strings.HasPrefix(strings.ToLower(mediaType), "multipart/") {
+		return "", fmt.Errorf("unexpected media type %q, want multipart/*", mediaType)
+	}
+
+	boundary, ok := params["boundary"]
+	if !ok || boundary == "" {
+		return "", fmt.Errorf("no boundary parameter found in Content-Type %q", contentType)
+	}
+
+	// Be tolerant of optional quotes/spaces around the boundary value
+	boundary = strings.Trim(boundary, "\" ")
+
 	return boundary, nil
 }
