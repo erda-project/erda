@@ -58,6 +58,38 @@ func Test_getMultipartBoundary(t *testing.T) {
 			wantBoundary: "",
 			wantErr:      true,
 		},
+		{
+			name: "charset before boundary",
+			args: args{
+				contentType: "multipart/form-data; charset=ISO-8859-1; boundary=a280vn9C0nIXdKhgKiepwuQnj8bM6rWUE49esIq",
+			},
+			wantBoundary: "a280vn9C0nIXdKhgKiepwuQnj8bM6rWUE49esIq",
+			wantErr:      false,
+		},
+		{
+			name: "quoted boundary",
+			args: args{
+				contentType: `multipart/form-data; boundary="----WebKitFormBoundaryABC123"`,
+			},
+			wantBoundary: "----WebKitFormBoundaryABC123",
+			wantErr:      false,
+		},
+		{
+			name: "mixed case multipart",
+			args: args{
+				contentType: "Multipart/Form-Data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
+			},
+			wantBoundary: "----WebKitFormBoundary7MA4YWxkTrZu0gW",
+			wantErr:      false,
+		},
+		{
+			name: "empty boundary param",
+			args: args{
+				contentType: "multipart/form-data; boundary=",
+			},
+			wantBoundary: "",
+			wantErr:      true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
