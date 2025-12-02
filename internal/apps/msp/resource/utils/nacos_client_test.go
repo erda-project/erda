@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -122,6 +123,7 @@ func TestLoginTokenVariants(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var gotAuthHeader string
+			var gotQuery url.Values
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case loginPath:
@@ -129,6 +131,7 @@ func TestLoginTokenVariants(t *testing.T) {
 					_ = json.NewEncoder(w).Encode(tt.loginPayload)
 				case namespacesPath:
 					gotAuthHeader = r.Header.Get("Authorization")
+					gotQuery = r.URL.Query()
 					resp := map[string]interface{}{
 						"data": []map[string]string{
 							{"namespaceShowName": "test-ns", "namespace": tt.expectNamespaceID},
@@ -164,6 +167,10 @@ func TestLoginTokenVariants(t *testing.T) {
 			}
 			if tt.expectNamespaceID != "" && gotAuthHeader != "Bearer "+tt.expectedToken {
 				t.Fatalf("Authorization header mismatch: got %q, want %q", gotAuthHeader, "Bearer "+tt.expectedToken)
+			}
+			// Params should not be set for GetNamespaceId.
+			if gotQuery != nil && len(gotQuery) != 0 {
+				t.Fatalf("unexpected query params on namespace GET: %v", gotQuery.Encode())
 			}
 		})
 	}

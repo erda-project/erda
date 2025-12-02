@@ -110,8 +110,7 @@ func (c *NacosClient) CreateNamespace(namespaceName string) (string, error) {
 	params.Set("namespaceName", namespaceName)
 	params.Set("namespaceDesc", namespaceName)
 	params.Set("customNamespaceId", namespaceName)
-	path := namespacesPath + "?" + params.Encode()
-	resp, err := hc.Post(c.addr).Path(path).Do().DiscardBody()
+	resp, err := hc.Post(c.addr).Path(namespacesPath).Params(params).Do().DiscardBody()
 	if err != nil {
 		return "", err
 	}
@@ -133,8 +132,7 @@ func (c *NacosClient) SaveConfig(tenantName string, groupName string, dataId str
 	params.Set("group", groupName)
 	params.Set("content", content)
 	params.Set("tenant", tenantName)
-	path := configsPath + "?" + params.Encode()
-	resp, err := hc.Post(c.addr).Path(path).Do().DiscardBody()
+	resp, err := hc.Post(c.addr).Path(configsPath).Params(params).Do().DiscardBody()
 	if err != nil {
 		return err
 	}
@@ -154,8 +152,7 @@ func (c *NacosClient) DeleteConfig(tenantName string, groupName string) error {
 	params.Set("dataId", "application.yml")
 	params.Set("group", groupName)
 	params.Set("tenant", tenantName)
-	path := configsPath + "?" + params.Encode()
-	resp, err := hc.Delete(c.addr).Path(path).Do().DiscardBody()
+	resp, err := hc.Delete(c.addr).Path(configsPath).Params(params).Do().DiscardBody()
 	if err != nil {
 		return err
 	}
