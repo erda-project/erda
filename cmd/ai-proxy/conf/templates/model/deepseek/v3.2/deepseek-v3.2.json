@@ -1,0 +1,61 @@
+{
+  "deepseek-v3.2": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://api-docs.deepseek.com/zh-cn/news/news251201",
+      "website_bailian": "https://bailian.console.aliyun.com/?tab=model#/model-market/detail/deepseek-v3.2"
+    },
+    "desc": "DeepSeek-V3.2是引入DeepSeek Sparse Attention（一种稀疏注意力机制）的正式版模型，也是DeepSeek推出的首个将思考融入工具使用的模型，同时支持思考模式与非思考模式的工具调用。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "deepseek",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool",
+              "enable_thinking"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 131072,
+            "max_prompt_tokens": 98304,
+            "max_completion_tokens": 65536
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000003",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000002",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
