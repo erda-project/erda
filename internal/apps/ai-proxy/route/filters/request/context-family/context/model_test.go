@@ -66,8 +66,9 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 	models := []*cachehelpers.ModelWithProvider{
 		{
 			Model: &modelpb.Model{
-				Name:      "GPT-3.5 Turbo",
-				Publisher: "openai",
+				Name:       "GPT-3.5 Turbo",
+				Publisher:  "openai",
+				TemplateId: "gpt-35-template",
 				Metadata: &metadatapb.Metadata{
 					Public: map[string]*structpb.Value{
 						"publisher":  publisherValue,
@@ -85,11 +86,18 @@ func Test_getMapOfAvailableNameWithModels(t *testing.T) {
 	result := getMapOfAvailableNameWithModels(models)
 
 	// Test that all expected keys exist based on current implementation logic
-	// The function generates keys based on: ${publisher}/${model.name}, ${model.name}, and ${provider.type}/${model.name}
+	// The function generates keys based on:
+	//   ${publisher}/${model.name}
+	//   ${model.name}
+	//   ${provider.type}/${model.name}
+	//   ${publisher}/${model.templateId}
+	//   ${model.templateId}
 	expectedKeys := []string{
-		"openai/GPT-3.5 Turbo", // publisher/model.name
-		"GPT-3.5 Turbo",        // model.name
-		"Azure/GPT-3.5 Turbo",  // provider.type/model.name (same as publisher in this case)
+		"openai/GPT-3.5 Turbo",   // publisher/model.name
+		"GPT-3.5 Turbo",          // model.name
+		"Azure/GPT-3.5 Turbo",    // provider.type/model.name (same as publisher in this case)
+		"openai/gpt-35-template", // publisher/model.templateId
+		"gpt-35-template",        // model.templateId
 	}
 
 	for _, key := range expectedKeys {
