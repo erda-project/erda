@@ -12,3 +12,7 @@
 # build output
 /bin
 bin
+
+# go cache
+.gocache/
+.gomodcache/
