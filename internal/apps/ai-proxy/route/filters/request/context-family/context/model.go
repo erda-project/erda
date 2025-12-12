@@ -125,6 +125,8 @@ func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
 // - ${publisher}/${model.name}
 // - ${model.name}
 // - ${model.provider.type}/${model.name}
+// - ${publisher}/${model.templateId}
+// - ${model.templateId}
 func getMapOfAvailableNameWithModels(clientModels []*cachehelpers.ModelWithProvider) map[string][]*modelpb.Model {
 	modelsMap := make(map[string][]*modelpb.Model)
 	for _, model := range clientModels {
@@ -134,6 +136,12 @@ func getMapOfAvailableNameWithModels(clientModels []*cachehelpers.ModelWithProvi
 			model.Name,
 			fmt.Sprintf("%s/%s", model.Provider.Type, model.Name), // compatible with old format: model.Name + provider.Type
 		)
+		if model.TemplateId != "" {
+			keys = append(keys,
+				fmt.Sprintf("%s/%s", publisher, model.TemplateId),
+				model.TemplateId,
+			)
+		}
 		for _, key := range keys {
 			if key == "" || key == "/" {
 				continue
