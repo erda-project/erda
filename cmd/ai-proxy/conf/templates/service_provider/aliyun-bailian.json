@@ -37,6 +37,22 @@
                   "/compatible-mode/v1"
                 ],
                 "scheme": "https"
+              },
+              "*:/proxy/bailian/*": {
+                "headers": {
+                  "Authorization": [
+                    "Set",
+                    "Bearer ${@provider.apiKey}"
+                  ]
+                },
+                "host": "dashscope.aliyuncs.com",
+                "path": [
+                  "replace",
+                  "/proxy/bailian/",
+                  "/"
+                ],
+                "queryParams": {},
+                "scheme": "https"
               }
             }
           },
