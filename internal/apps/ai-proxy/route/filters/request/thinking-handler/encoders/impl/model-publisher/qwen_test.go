@@ -31,11 +31,13 @@ func TestQwenThinkingEncoder_Encode(t *testing.T) {
 		expected map[string]any
 	}{
 		{
-			name: "mode off - should return nil",
+			name: "mode off - should disable thinking",
 			input: types.CommonThinking{
 				Mode: types.ModePtr(types.ModeOff),
 			},
-			expected: nil,
+			expected: map[string]any{
+				types.FieldEnableThinking: false,
+			},
 		},
 		{
 			name: "mode auto - should return nil",
