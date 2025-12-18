@@ -34,9 +34,14 @@ func (e *QwenThinkingEncoder) CanEncode(ctx context.Context) bool {
 }
 
 func (e *QwenThinkingEncoder) Encode(ctx context.Context, ct types.CommonThinking) (map[string]any, error) {
-	if ct.MustGetMode() != types.ModeOn {
+	switch ct.MustGetMode() {
+	case types.ModeAuto:
 		return nil, nil
+	case types.ModeOff:
+		return map[string]any{types.FieldEnableThinking: false}, nil
 	}
+
+	// mode on
 
 	appendBodyMap := map[string]any{
 		types.FieldEnableThinking: true,
