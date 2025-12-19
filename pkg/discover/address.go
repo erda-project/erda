@@ -45,6 +45,7 @@ const (
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
 	EnvFDPMaster      = "FDP_MASTER_ADDR"
+	EnvDCMaster       = "DC_MASTER_ADDR"
 	EnvErdaServer     = "ERDA_SERVER_ADDR"
 	EnvAIProxy        = "AI_PROXY_ADDR"
 )
@@ -76,6 +77,7 @@ const (
 	SvcClusterManager = "cluster-manager"
 	SvcClusterDialer  = "cluster-dialer"
 	SvcFDPMaster      = "fdp-master"
+	SvcDCMaster       = "dc-master"
 	SvcErdaServer     = "erda-server"
 	SvcAdmin          = "admin"
 	SvcGallery        = "gallery"
@@ -107,6 +109,7 @@ var ServicesEnvKeys = map[string]string{
 	SvcClusterManager: EnvClusterManager,
 	SvcClusterDialer:  EnvClusterDialer,
 	SvcFDPMaster:      EnvFDPMaster,
+	SvcDCMaster:       EnvDCMaster,
 	SvcErdaServer:     EnvErdaServer,
 	SvcOpenapi:        EnvOpenapi,
 	SvcAIProxy:        EnvAIProxy,
