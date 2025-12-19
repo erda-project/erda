@@ -65,7 +65,7 @@ func (h *ServiceProviderHandler) Create(ctx context.Context, req *pb.ServiceProv
 
 	c := pb.ServiceProvider{
 		Name:           req.Name,
-		Desc:           strutil.FirstNoneEmpty(req.Desc, rawProviderTemplate.Desc),
+		Desc:           strutil.FirstNotEmpty(req.Desc, rawProviderTemplate.Desc),
 		Type:           renderedProviderTemplate.Type, // use rendered value for paging
 		ApiKey:         rawProviderTemplate.ApiKey,
 		Metadata:       req.Metadata, // only store requested metadata; all metadata will be merged when display or use

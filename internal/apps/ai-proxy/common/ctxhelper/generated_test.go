@@ -73,4 +73,3 @@ func TestGeneratedFunctionsPanic(t *testing.T) {
 
 	MustGetRequestID(ctx)
 }
-

@@ -82,7 +82,7 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 		storageURL = strings.Replace(storageURL, convertURL.Path, filepath.Join(mountPoint, convertURL.Path), -1)
 	}
 
-	arch := strutil.FirstNoneEmpty(clusterInfo.CM.Get(apistructs.DICE_ARCH), s.Cfg.DefaultDiceArch, "amd64")
+	arch := strutil.FirstNotEmpty(clusterInfo.CM.Get(apistructs.DICE_ARCH), s.Cfg.DefaultDiceArch, "amd64")
 
 	r = map[string]string{
 		// dice version

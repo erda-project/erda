@@ -79,7 +79,7 @@ func (h *ModelHandler) Create(ctx context.Context, req *pb.ModelCreateRequest) (
 
 	model := &pb.Model{
 		Name:           req.Name,
-		Desc:           strutil.FirstNoneEmpty(req.Desc, rawModelTemplate.Desc),
+		Desc:           strutil.FirstNotEmpty(req.Desc, rawModelTemplate.Desc),
 		Type:           renderedModelTemplate.Type, // use rendered value for paging
 		ProviderId:     req.ProviderId,
 		ApiKey:         rawModelTemplate.ApiKey,
@@ -207,6 +207,10 @@ func (h *ModelHandler) Paging(ctx context.Context, req *pb.ModelPagingRequest) (
 
 func (h *ModelHandler) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.ModelAbilitiesInfoUpdateRequest) (*commonpb.VoidResponse, error) {
 	return h.DAO.ModelClient().UpdateModelAbilitiesInfo(ctx, req)
+}
+
+func (h *ModelHandler) LabelModel(ctx context.Context, req *pb.ModelLabelRequest) (*pb.Model, error) {
+	return h.DAO.ModelClient().LabelModel(ctx, req)
 }
 
 func desensitizeModel(ctx context.Context, item *pb.Model) {

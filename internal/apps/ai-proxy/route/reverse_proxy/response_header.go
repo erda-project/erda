@@ -22,12 +22,14 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
+	policy_group "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
+	_handlePolicyTraceHeader(resp)
 	_handleRequestIdHeaders(resp)
 	_handleRequestBodyTransformHeaders(resp)
 	_handleRequestThinkingTransformHeaders(resp)
@@ -45,6 +47,22 @@ func _handleModelHeaders(resp *http.Response) {
 			resp.Header.Set(vars.XAIProxyProviderName, provider.Name)
 		}
 	}
+}
+
+func _handlePolicyTraceHeader(resp *http.Response) {
+	traceVal, ok := ctxhelper.GetPolicyTrace(resp.Request.Context())
+	if !ok || traceVal == nil {
+		return
+	}
+	trace, ok := traceVal.(*policy_group.RouteTrace)
+	if !ok {
+		return
+	}
+	b, err := json.Marshal(trace)
+	if err != nil {
+		return
+	}
+	resp.Header.Set(vars.XAIProxyPolicyGroupTrace, string(b))
 }
 
 // _handleRequestIdHeaders handles request ID related header settings

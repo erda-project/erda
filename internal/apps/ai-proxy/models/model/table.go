@@ -37,6 +37,7 @@ type Model struct {
 	TemplateID     string            `gorm:"column:template_id;type:varchar(64)" json:"templateID" yaml:"templateID"`
 	TemplateParams map[string]string `gorm:"column:template_params;type:jsonb;serializer:json" json:"templateParams" yaml:"templateParams"`
 	IsEnabled      *bool             `gorm:"column:is_enabled;type:bool;not null;default:1" json:"isEnabled" yaml:"isEnabled"`
+	Labels         map[string]string `gorm:"column:labels;type:jsonb;serializer:json" json:"labels" yaml:"labels"`
 }
 
 func (*Model) TableName() string { return "ai_proxy_model" }
@@ -58,6 +59,7 @@ func (m *Model) ToProtobuf() *pb.Model {
 		TemplateId:     m.TemplateID,
 		TemplateParams: m.TemplateParams,
 		IsEnabled:      m.IsEnabled,
+		Labels:         m.Labels,
 		Metadata:       pbMetadata,
 	}
 }

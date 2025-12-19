@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_service_provider"
@@ -42,4 +43,5 @@ type Handlers struct {
 	AuditHandler               *handler_audit.AuditHandler
 	TokenUsageHandler          *handler_token_usage.TokenUsageHandler
 	TemplateHandler            *handler_template.TemplateHandler
+	PolicyGroupHandler         *handler_policy_group.Handler
 }

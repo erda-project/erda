@@ -45,6 +45,7 @@ const (
 
 	XAIProxyRequestBodyTransform     = "X-AI-Proxy-Request-Body-Transform"
 	XAIProxyRequestThinkingTransform = "X-AI-Proxy-Request-Thinking-Transform"
+	XAIProxyPolicyGroupTrace         = "X-AI-Proxy-Policy-Group-Trace"
 
 	UIValueUndefined = "undefined"
 )

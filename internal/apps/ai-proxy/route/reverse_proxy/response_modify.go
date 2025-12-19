@@ -196,7 +196,6 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 				}
 				o, err := m.OnBodyChunk(resp, out, chunkIndex)
 				if err != nil {
-					errors.New(fmt.Sprintf("err: %w", err))
 					writeAndCloseWithErr(resp, pw, err)
 					return
 				}
