@@ -16,7 +16,7 @@ package state_store
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -87,6 +87,6 @@ func (s *RedisStateStore) counterKey(key CounterKey) string {
 }
 
 func hashSticky(v string) string {
-	h := sha1.Sum([]byte(v))
+	h := sha256.Sum256([]byte(v))
 	return hex.EncodeToString(h[:])[:16]
 }
