@@ -26,6 +26,7 @@ const (
 	ItemTypeClient
 	ItemTypeClientToken
 	ItemTypeTemplate
+	ItemTypePolicyGroup
 )
 
 func (itemType ItemType) String() string {
@@ -42,6 +43,8 @@ func (itemType ItemType) String() string {
 		return "clientToken"
 	case ItemTypeTemplate:
 		return "template"
+	case ItemTypePolicyGroup:
+		return "policyGroup"
 	default:
 		return fmt.Sprintf("unknown(%d)", itemType)
 	}

@@ -112,7 +112,7 @@ func createLabelIfNotExistsForImport(data *vars.DataForFulfill, labelsNeedCreate
 		newLabel := dao.Label{
 			Name:      label.Name,
 			Type:      apistructs.ProjectLabelType(label.Type.String()),
-			Color:     strutil.FirstNoneEmpty(label.Color, randomColor()),
+			Color:     strutil.FirstNotEmpty(label.Color, randomColor()),
 			ProjectID: data.ProjectID,
 			Creator:   label.Creator,
 		}

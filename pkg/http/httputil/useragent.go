@@ -21,7 +21,7 @@ import (
 )
 
 func GetUserAgent(header http.Header) string {
-	return strutil.FirstNoneEmpty(
+	return strutil.FirstNotEmpty(
 		header.Get(HeaderKeyUserAgent),
 		header.Get("X-User-Agent"),
 		header.Get("X-Device-User-Agent"),

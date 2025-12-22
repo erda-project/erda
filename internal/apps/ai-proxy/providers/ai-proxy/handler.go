@@ -27,6 +27,7 @@ import (
 	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	policypb "github.com/erda-project/erda-proto-go/apps/aiproxy/policy_group/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
@@ -41,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_service_provider"
@@ -69,6 +71,7 @@ func (p *provider) initHandlers(templates templatetypes.TemplatesByType) {
 		AuditHandler:               &handler_audit.AuditHandler{DAO: p.Dao},
 		TokenUsageHandler:          &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache},
 		TemplateHandler:            &handler_template.TemplateHandler{Cache: p.cache},
+		PolicyGroupHandler:         &handler_policy_group.Handler{DAO: p.Dao},
 	}
 }
 
@@ -87,6 +90,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, p.getProtoOptions(permission.CheckAuditPerm)...)
 	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, p.getProtoOptions(permission.CheckTokenUsagePerm)...)
 	templatepb.RegisterTemplateServiceImp(register, p.handlers.TemplateHandler, p.getProtoOptions(permission.CheckTemplatePerm)...)
+	policypb.RegisterPolicyGroupServiceImp(register, p.handlers.PolicyGroupHandler, p.getProtoOptions(permission.CheckPolicyGroupPerm)...)
 }
 
 func (p *provider) registerMcpProxyManageAPI() {

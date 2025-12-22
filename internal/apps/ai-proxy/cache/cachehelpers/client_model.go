@@ -51,8 +51,6 @@ func GetOneClientModel(ctx context.Context, clientID, modelID string, cfg *Clien
 }
 
 func ListAllClientModels(ctx context.Context, clientID string, cfg *ClientModelConfig) ([]*ModelWithProvider, error) {
-	cache := ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager)
-
 	// platform-assigned models
 	assignedModels, err := _listAllClientAssignedModels(ctx, clientID)
 	if err != nil {
@@ -86,11 +84,11 @@ func ListAllClientModels(ctx context.Context, clientID string, cfg *ClientModelC
 			continue
 		}
 		providerIDMap[model.ProviderId] = struct{}{}
-		providerV, err := cache.GetByID(ctx, cachetypes.ItemTypeProvider, model.ProviderId)
+		provider, err := GetRenderedServiceProviderByID(ctx, model.ProviderId)
 		if err != nil {
 			return nil, err
 		}
-		providerMap[model.ProviderId] = providerV.(*providerpb.ServiceProvider)
+		providerMap[model.ProviderId] = provider
 	}
 	var allModelsWithProvider []*ModelWithProvider
 	for _, model := range allModels {
@@ -112,6 +110,10 @@ func _listAllClientBelongedModels(ctx context.Context, clientID string) ([]*mode
 	allModels := allModelsV.([]*modelpb.Model)
 	allClientBelongsModels := make([]*modelpb.Model, 0, len(allModels))
 	for _, model := range allModels {
+		if clientID == "" && ctxhelper.MustGetIsAdmin(ctx) {
+			allClientBelongsModels = append(allClientBelongsModels, model)
+			continue
+		}
 		if model.ClientId == clientID {
 			allClientBelongsModels = append(allClientBelongsModels, model)
 		}

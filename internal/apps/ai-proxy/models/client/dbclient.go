@@ -121,7 +121,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ClientPagingReques
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.WithContext(ctx).Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
+	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -66,7 +67,7 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	}
 
 	// find model
-	model, err := findModel(pr.In, pr.In.Context(), ctxhelper.MustGetClient(ctx))
+	model, err := findModel(pr.In, ctxhelper.MustGetClient(ctx))
 	if err != nil {
 		l.Errorf("failed to request model, err: %v", err)
 		return http_error.NewHTTPError(ctx, http.StatusBadRequest, fmt.Sprintf("Model is invalid: %v", err))
@@ -117,6 +118,15 @@ func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
 		audithelper.Note(ctx, "session_id", session.Id)
 	}
 	audithelper.Note(ctx, "source", vars.GetFromHeader(pr.Out.Header, vars.XAIProxySource))
+
+	// policy group related
+	if traceVal, ok := ctxhelper.GetPolicyTrace(ctx); ok && traceVal != nil {
+		if trace, ok := traceVal.(*policygroup.RouteTrace); ok {
+			audithelper.Note(ctx, "policy_group.name", trace.Group.Name)
+			audithelper.Note(ctx, "policy_group.source", trace.Group.Source)
+			audithelper.Note(ctx, "policy_group.branch_name", trace.Branch.Name)
+		}
+	}
 
 	return nil
 }

@@ -1,0 +1,228 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.policy_group;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/policy_group/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service PolicyGroupService {
+    rpc Create(PolicyGroupCreateRequest) returns (PolicyGroup) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/policy-groups"
+        };
+    }
+
+    rpc Get(PolicyGroupGetRequest) returns (PolicyGroup) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/policy-groups/{id}"
+        };
+    }
+
+    rpc Update(PolicyGroupUpdateRequest) returns (PolicyGroup) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/policy-groups/{id}"
+        };
+    }
+
+    rpc Delete(PolicyGroupDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/policy-groups/{id}"
+        };
+    }
+
+    rpc Paging(PolicyGroupPagingRequest) returns (PolicyGroupPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/policy-groups"
+        };
+    }
+
+    // Create or update a policy group for a model template with a simplified payload.
+    rpc UpsertForModelTemplate(PolicyGroupForModelTemplateUpsertRequest) returns (PolicyGroupForModelTemplateResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/policy-groups/actions/for-model-template"
+        };
+    }
+
+    rpc GetForModelTemplate(PolicyGroupForModelTemplateGetRequest) returns (PolicyGroupForModelTemplateResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/policy-groups/actions/for-model-template"
+        };
+    }
+
+    // List all official (built-in) label keys for policy groups.
+    rpc ListAllOfficialLabels(ListOfficialPolicyGroupLabelsRequest) returns (ListOfficialPolicyGroupLabelsResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/policy-groups/actions/list-all-official-labels"
+        };
+    }
+
+    // Preview policy group label-based grouping result for current client models.
+    rpc PreviewLabelGroups(PreviewLabelGroupsRequest) returns (PreviewLabelGroupsResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/policy-groups/actions/preview-label-groups"
+        };
+    }
+}
+
+message PolicyGroup {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string clientId = 5;
+    string name = 6;
+    string desc = 7;
+    string mode = 8 [(validate.rules).string = {in: ["weighted", "priority"]}];
+    string stickyKey = 9;
+    string source = 10 [(validate.rules).string = {in: ["user_defined", "for_model_template", "runtime_internal"]}];
+    repeated PolicyBranch branches = 11;
+}
+
+message PolicyBranch {
+    string name = 1 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string desc = 2 [(validate.rules).string = {ignore_empty: true, max_len: 1024}];
+    uint64 weight = 3;
+    uint64 priority = 4;
+    string strategy = 5 [(validate.rules).string = {in: ["round_robin", "consistent_hash"]}];
+    PolicySelector selector = 6;
+}
+
+message PolicySelector {
+    repeated PolicyRequirement requirements = 1;
+}
+
+message LabelRequirement {
+    string key = 1 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string operator = 2 [(validate.rules).string = {in: ["In", "NotIn", "Exists", "DoesNotExist"]}];
+    repeated string values = 3 [(validate.rules).repeated = {min_items:1, ignore_empty: true}];
+}
+
+message PolicyRequirement {
+    string type = 1 [(validate.rules).string = {in: ["label"]}];
+    LabelRequirement label = 2;
+}
+
+message PolicyGroupCreateRequest {
+    string name = 1 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string desc = 2 [(validate.rules).string = {ignore_empty: true, max_len: 1024}];
+    string mode = 3 [(validate.rules).string = {in: ["weighted", "priority"]}];
+    string stickyKey = 4 [(validate.rules).string = {ignore_empty: true, max_len: 191}];
+    repeated PolicyBranch branches = 5 [(validate.rules).repeated = {min_items: 1}];
+    string source = 6 [(validate.rules).string = {in: ["user_defined"], ignore_empty: true}];
+
+    // auto-injected for auth
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PolicyGroupUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+
+    optional string name = 2 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    optional string desc = 3 [(validate.rules).string = {max_len: 1024}];
+    optional string mode = 4 [(validate.rules).string = {in: ["weighted", "priority"]}];
+    optional string stickyKey = 5 [(validate.rules).string = {max_len: 191}];
+    repeated PolicyBranch branches = 6 [(validate.rules).repeated = {}];
+    optional string source = 7 [(validate.rules).string = {in: ["user_defined", "for_model_template"]}];
+
+    // auto-injected for auth
+    string clientId = 8 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PolicyGroupDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PolicyGroupGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PolicyGroupPagingRequest {
+    uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+    uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 100}];
+    string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 1, max_len: 191}];
+    string mode = 4 [(validate.rules).string = {in: ["weighted", "priority"], ignore_empty: true}];
+    repeated string orderBys = 5 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+    string source = 6 [(validate.rules).string = {ignore_empty: true, in: ["user_defined", "for_model_template"]}];
+
+    // auto-injected for auth
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string nameFull = 8 [(validate.rules).string = {ignore_empty: true, max_len: 191}];
+}
+
+message PolicyGroupPagingResponse {
+    int64 total = 1;
+    repeated PolicyGroup list = 2;
+}
+
+message PolicyGroupForModelTemplateUpsertRequest {
+    string templateId = 1 [(validate.rules).string = {min_len: 1, max_len: 191}]; // 逻辑模型/模板名，直接作为策略组名
+    string stickyHeaderKey = 2 [(validate.rules).string = {ignore_empty: true, max_len: 191}]; // e.g. x-request-id
+    repeated PolicyGroupInstanceWeight instances = 3 [(validate.rules).repeated = {min_items: 1}]; // 简化：直接声明实例与权重
+
+    // auto-injected to restrict instanceCount
+    string clientId = 4 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PolicyGroupInstanceWeight {
+    string modelInstanceId = 1 [(validate.rules).string = {len: 36}]; // UUID
+    uint64 weight = 2 [(validate.rules).uint64.gt = 0];
+}
+
+message PolicyGroupForModelTemplateInstance {
+    string modelInstanceId = 1;
+    uint64 weight = 2;
+}
+
+message PolicyGroupForModelTemplateResponse {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+
+    string templateId = 4;
+    string policyGroupName = 5;
+    string mode = 6;
+    string stickyHeaderKey = 7;
+
+    repeated PolicyGroupForModelTemplateInstance instances = 8;
+}
+
+message PolicyGroupForModelTemplateGetRequest {
+    string templateId = 1 [(validate.rules).string = {min_len: 1, max_len: 191}];
+
+    // auto-injected for auth
+    string clientId = 2 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PreviewLabelGroupsRequest {
+    PolicySelector baseSelector = 1;
+    string simpleOperator = 2 [(validate.rules).string = {in: ["group-by", "filter", "split"]}];
+    string labelKey = 3 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string labelValue = 4 [(validate.rules).string = {ignore_empty: true, max_len: 191}];
+
+    // auto-injected for auth
+    string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message PreviewLabelGroup {
+    string displayName = 1;
+    int64 instanceCount = 2;
+    repeated string instanceIds = 3;
+    string sampleInstanceId = 4;
+    PolicySelector selector = 5; // this selector can be `AND` merged with baseSelector
+}
+
+message PreviewLabelGroupsResponse {
+    repeated PreviewLabelGroup groups = 1;
+}
+
+message ListOfficialPolicyGroupLabelsRequest {}
+
+message ListOfficialPolicyGroupLabelsResponse {
+    repeated string labelKeys = 1;
+}

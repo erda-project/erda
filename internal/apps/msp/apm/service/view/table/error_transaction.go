@@ -156,7 +156,7 @@ func (t *ErrorTransactionTableBuilder) GetTable(ctx context.Context) (*Table, er
 		transRow := &ErrorTransactionTableRow{
 			OccurTime: time.Unix(0, int64(row.Values[0].GetNumberValue())).Format("2006-01-02 15:04:05"),
 			Duration:  fmt.Sprintf("%s%s", strutil.String(d), u),
-			TraceId:   strutil.FirstNoneEmpty(row.Values[2].GetStringValue(), row.Values[3].GetStringValue(), "-"),
+			TraceId:   strutil.FirstNotEmpty(row.Values[2].GetStringValue(), row.Values[3].GetStringValue(), "-"),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}

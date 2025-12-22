@@ -10,6 +10,8 @@ erda.app.reverse-proxy:
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
+  lb_state_store_type: ${LB_STATE_STORE_TYPE:memory} # memory / redis / etcd
+  lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}

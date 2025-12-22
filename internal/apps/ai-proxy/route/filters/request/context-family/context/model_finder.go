@@ -22,26 +22,14 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
-	openai_v1_models "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/openai-v1-models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/strutil"
 )
-
-// ModelIdentifier contains model identification information
-type ModelIdentifier struct {
-	ID   string
-	Name string
-}
 
 // ModelFinder defines the interface for finding model identifiers
 type ModelFinder interface {
-	Find(req *http.Request, ctx *ModelFinderContext) (*ModelIdentifier, error)
-}
-
-// ModelFinderContext provides additional context information
-type ModelFinderContext struct {
-	// Original request context, used to get path parameters, etc.
-	RequestContext interface{}
+	Find(req *http.Request) (string, error)
 }
 
 // BodyModelFinder defines the interface for finding model identifiers from request body
@@ -153,54 +141,31 @@ func getStandardFinderByContentType(contentType string) BodyModelFinder {
 // HeaderFinder finds model identifier from request headers
 type HeaderFinder struct{}
 
-func (f *HeaderFinder) Find(req *http.Request, ctx *ModelFinderContext) (*ModelIdentifier, error) {
-	// Check Model ID first
-	if modelID := req.Header.Get(vars.XAIProxyModelId); modelID != "" {
-		return &ModelIdentifier{ID: modelID}, nil
-	}
-
-	// Check Model Name
-	if modelName := req.Header.Get(vars.XAIProxyModel); modelName != "" {
-		// Try to parse [ID:xxx] format
-		if uuid := openai_v1_models.ParseModelUUIDFromDisplayName(modelName); uuid != "" {
-			return &ModelIdentifier{ID: uuid, Name: modelName}, nil
-		}
-		return &ModelIdentifier{Name: modelName}, nil
-	}
-
-	if modelName := req.Header.Get(vars.XAIProxyModelName); modelName != "" {
-		// Try to parse [ID:xxx] format
-		if uuid := openai_v1_models.ParseModelUUIDFromDisplayName(modelName); uuid != "" {
-			return &ModelIdentifier{ID: uuid, Name: modelName}, nil
-		}
-		return &ModelIdentifier{Name: modelName}, nil
-	}
-
-	return nil, nil
+func (f *HeaderFinder) Find(req *http.Request) (string, error) {
+	return strutil.FirstNotEmpty(
+		req.Header.Get(vars.XAIProxyModelId),
+		req.Header.Get(vars.XAIProxyModel),
+		req.Header.Get(vars.XAIProxyModelName),
+	), nil
 }
 
 // PathFinder finds model identifier from path parameters
 type PathFinder struct{}
 
-func (f *PathFinder) Find(req *http.Request, ctx *ModelFinderContext) (*ModelIdentifier, error) {
+func (f *PathFinder) Find(req *http.Request) (string, error) {
 	// Try to get path parameters from request context
 	modelName, ok := ctxhelper.GetPathParam(req.Context(), "model")
 	if !ok {
-		return nil, nil
+		return "", nil
 	}
 
-	// Try to parse [ID:xxx] format
-	if uuid := openai_v1_models.ParseModelUUIDFromDisplayName(modelName); uuid != "" {
-		return &ModelIdentifier{ID: uuid, Name: modelName}, nil
-	}
-
-	return &ModelIdentifier{Name: modelName}, nil
+	return modelName, nil
 }
 
 // BodyFinder finds model identifier from request body
 type BodyFinder struct{}
 
-func (f *BodyFinder) Find(req *http.Request, ctx *ModelFinderContext) (*ModelIdentifier, error) {
+func (f *BodyFinder) Find(req *http.Request) (string, error) {
 	var finder BodyModelFinder
 	var method, path string
 
@@ -209,23 +174,19 @@ func (f *BodyFinder) Find(req *http.Request, ctx *ModelFinderContext) (*ModelIde
 		path = req.URL.Path
 	}
 
-	// 1. First check if there is a special finder
+	// 1. first check if there is a special finder
 	if customFinder := getCustomBodyModelNameFinderByMethodAndPath(method, path); customFinder != nil {
 		modelName, err := customFinder.FindModelName(req, "model")
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		if modelName != "" {
-			// Try to parse [ID:xxx] format
-			if uuid := openai_v1_models.ParseModelUUIDFromDisplayName(modelName); uuid != "" {
-				return &ModelIdentifier{ID: uuid, Name: modelName}, nil
-			}
-			return &ModelIdentifier{Name: modelName}, nil
+			return modelName, nil
 		}
-		return nil, nil
+		return "", nil
 	}
 
-	// 2. Select standard finder based on Content-Type
+	// 2. select standard finder based on Content-Type
 	contentType := req.Header.Get("Content-Type")
 	finder = getStandardFinderByContentType(contentType)
 
@@ -237,28 +198,19 @@ func (f *BodyFinder) Find(req *http.Request, ctx *ModelFinderContext) (*ModelIde
 
 	modelName, err := finder.FindModelName(req, fieldKey)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if modelName != "" {
-		// Try to parse [ID:xxx] format
-		if uuid := openai_v1_models.ParseModelUUIDFromDisplayName(modelName); uuid != "" {
-			return &ModelIdentifier{ID: uuid, Name: modelName}, nil
-		}
-		return &ModelIdentifier{Name: modelName}, nil
+		return modelName, nil
 	}
 
-	return nil, nil
+	return "", nil
 }
 
 // findModelIdentifier unified model identifier lookup function
-func findModelIdentifier(req *http.Request, requestCtx interface{}) (*ModelIdentifier, error) {
-	// Create model finder context
-	ctx := &ModelFinderContext{
-		RequestContext: requestCtx,
-	}
-
-	// Search in priority order
+func findModelIdentifier(req *http.Request) (string, error) {
+	// search in priority order
 	finders := []ModelFinder{
 		&HeaderFinder{},
 		&PathFinder{},
@@ -266,14 +218,14 @@ func findModelIdentifier(req *http.Request, requestCtx interface{}) (*ModelIdent
 	}
 
 	for _, finder := range finders {
-		identifier, err := finder.Find(req, ctx)
+		identifier, err := finder.Find(req)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		if identifier != nil && (identifier.ID != "" || identifier.Name != "") {
+		if identifier != "" {
 			return identifier, nil
 		}
 	}
 
-	return nil, nil
+	return "", nil
 }

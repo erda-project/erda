@@ -15,169 +15,85 @@
 package context
 
 import (
-	"bytes"
-	"context"
-	"io"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"testing"
-	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
+	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 )
 
-// createProxyRequest creates a ProxyRequest for testing
-func createProxyRequest(req *http.Request) *httputil.ProxyRequest {
-	// Set default values
-	if req.Method == "" {
-		req.Method = "POST"
+func Test_buildLabels(t *testing.T) {
+	labelsValue, _ := structpb.NewValue(map[string]any{"country": "JP", "template": "gpt-4o-chat"})
+	countryValue, _ := structpb.NewValue("US")
+	locationValue, _ := structpb.NewValue("earth")
+	regionValue, _ := structpb.NewValue("us-east-1")
+	providerCountryValue, _ := structpb.NewValue("JP")
+	providerLocationValue, _ := structpb.NewValue("mars")
+	providerRegionValue, _ := structpb.NewValue("ap-southeast-1")
+
+	model := &modelpb.Model{
+		Id:         "m1",
+		Name:       "gpt-4o-azure",
+		Publisher:  "openai",
+		TemplateId: "tpl-1",
+		Metadata: &metadatapb.Metadata{
+			Public: map[string]*structpb.Value{
+				"country":  countryValue,
+				"location": locationValue,
+				"region":   regionValue,
+				"labels":   labelsValue,
+			},
+		},
 	}
-	if req.URL == nil {
-		req.URL = &url.URL{Path: "/test"}
+	provider := &providerpb.ServiceProvider{
+		Type: "azure",
+		Metadata: &metadatapb.Metadata{
+			Public: map[string]*structpb.Value{
+				"country":  providerCountryValue,
+				"location": providerLocationValue,
+				"region":   providerRegionValue,
+			},
+		},
 	}
 
-	// Ensure Out request has correct Body
-	clonedReq := req.Clone(req.Context())
-	if req.Body != nil {
-		// Read original body
-		bodyBytes, _ := io.ReadAll(req.Body)
-		// Reset body for both requests
-		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-		clonedReq.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	result := policygroup.BuildLabels(model, provider)
+
+	if result[common_types.PolicyLabelKeyModelInstanceID] != "m1" {
+		t.Fatalf("expected instance-id m1, got %s", result[common_types.PolicyLabelKeyModelInstanceID])
 	}
-	return &httputil.ProxyRequest{
-		In:  req,
-		Out: clonedReq,
+	if result[common_types.PolicyLabelKeyServiceProviderType] != "azure" {
+		t.Fatalf("expected provider-type azure, got %s", result[common_types.PolicyLabelKeyServiceProviderType])
+	}
+	if result["country"] != "US" {
+		t.Fatalf("expected country US from metadata, got %s", result["country"])
+	}
+	if result[common_types.PolicyLabelKeyTemplate] != "tpl-1" {
+		t.Fatalf("expected template tpl-1, got %s", result[common_types.PolicyLabelKeyTemplate])
+	}
+	if result[common_types.PolicyLabelKeyTemplate] == "" || result[common_types.PolicyLabelKeyModelPublisherModelTemplateID] == "" {
+		t.Fatalf("expected publisher-model and template labels populated")
 	}
 }
 
-func Test_getMapOfAvailableNameWithModels(t *testing.T) {
-	publisherValue, _ := structpb.NewValue("openai")
-	modelIDValue, _ := structpb.NewValue("gpt-35-turbo")
-	modelNameValue, _ := structpb.NewValue("gpt-3.5-turbo")
+func Test_buildRequestMeta(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("X-Request-Id", "req-1")
+	headers.Set("X-AI-Proxy-Generated-Call-Id", "call-1")
+	headers.Set("User-Id", "u1")
 
-	models := []*cachehelpers.ModelWithProvider{
-		{
-			Model: &modelpb.Model{
-				Name:       "GPT-3.5 Turbo",
-				Publisher:  "openai",
-				TemplateId: "gpt-35-template",
-				Metadata: &metadatapb.Metadata{
-					Public: map[string]*structpb.Value{
-						"publisher":  publisherValue,
-						"model_id":   modelIDValue,
-						"model_name": modelNameValue,
-					},
-				},
-			},
-			Provider: &providerpb.ServiceProvider{
-				Type: "Azure",
-			},
-		},
+	meta := policygroup.BuildRequestMetaFromHeader(headers)
+	if meta.Keys[common_types.StickyKeyOfXRequestID] != "req-1" {
+		t.Fatalf("expected x-request-id to be lowercased, got %s", meta.Keys[common_types.StickyKeyOfXRequestID])
 	}
-
-	result := getMapOfAvailableNameWithModels(models)
-
-	// Test that all expected keys exist based on current implementation logic
-	// The function generates keys based on:
-	//   ${publisher}/${model.name}
-	//   ${model.name}
-	//   ${provider.type}/${model.name}
-	//   ${publisher}/${model.templateId}
-	//   ${model.templateId}
-	expectedKeys := []string{
-		"openai/GPT-3.5 Turbo",   // publisher/model.name
-		"GPT-3.5 Turbo",          // model.name
-		"Azure/GPT-3.5 Turbo",    // provider.type/model.name (same as publisher in this case)
-		"openai/gpt-35-template", // publisher/model.templateId
-		"gpt-35-template",        // model.templateId
+	if meta.Keys[common_types.StickyKeyPrefixFromReqHeader+"user-id"] != "u1" {
+		t.Fatalf("expected user-id to be kept, got %s", meta.Keys[common_types.StickyKeyPrefixFromReqHeader+"user-id"])
 	}
-
-	for _, key := range expectedKeys {
-		if _, exists := result[key]; !exists {
-			t.Errorf("Expected key %s not found in result", key)
-		}
-	}
-
-	// Test that empty keys should not exist
-	if _, exists := result[""]; exists {
-		t.Error("Empty key should not exist in result")
-	}
-	if _, exists := result["/"]; exists {
-		t.Error("Slash-only key should not exist in result")
-	}
-}
-
-func Test_modelGetter(t *testing.T) {
-	ctx := context.Background()
-	now := time.Now()
-	older := now.Add(-time.Hour)
-
-	tests := []struct {
-		name     string
-		models   []*modelpb.Model
-		expected *modelpb.Model
-	}{
-		{
-			name:     "empty models",
-			models:   []*modelpb.Model{},
-			expected: nil,
-		},
-		{
-			name: "single model",
-			models: []*modelpb.Model{
-				{
-					Id:        "model1",
-					UpdatedAt: timestamppb.New(now),
-				},
-			},
-			expected: &modelpb.Model{
-				Id:        "model1",
-				UpdatedAt: timestamppb.New(now),
-			},
-		},
-		{
-			name: "multiple models - should return latest",
-			models: []*modelpb.Model{
-				{
-					Id:        "model1",
-					UpdatedAt: timestamppb.New(older),
-				},
-				{
-					Id:        "model2",
-					UpdatedAt: timestamppb.New(now),
-				},
-			},
-			expected: &modelpb.Model{
-				Id:        "model2",
-				UpdatedAt: timestamppb.New(now),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := modelGetter(ctx, tt.models)
-			if tt.expected == nil {
-				if result != nil {
-					t.Errorf("Expected nil, got %v", result)
-				}
-			} else {
-				if result == nil {
-					t.Errorf("Expected model, got nil")
-					return
-				}
-				if result.Id != tt.expected.Id {
-					t.Errorf("Expected model ID %s, got %s", tt.expected.Id, result.Id)
-				}
-			}
-		})
+	if meta.Keys[common_types.StickyKeyPrefixFromReqHeader+"x-ai-proxy-generated-call-id"] != "call-1" {
+		t.Fatalf("expected call id captured, got %s", meta.Keys[common_types.StickyKeyPrefixFromReqHeader+"x-ai-proxy-generated-call-id"])
 	}
 }

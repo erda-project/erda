@@ -47,6 +47,13 @@ service ModelService {
             post: "/api/ai-proxy/models/{id}/actions/update-abilities-info"
         };
     }
+
+    // LabelModel always do override operation.
+    rpc LabelModel(ModelLabelRequest) returns (Model) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/models/{id}/actions/label-model"
+        };
+    }
 }
 
 message Model {
@@ -67,6 +74,7 @@ message Model {
     string templateId = 13;
     map<string, string> templateParams = 14;
     optional bool isEnabled = 15;
+    map<string, string> labels = 16;
 }
 
 enum ModelType {
@@ -153,4 +161,12 @@ message ModelAbilitiesInfoUpdateRequest {
 
     // auto-injected to restrict data permission
     string clientId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message ModelLabelRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    map<string, string> labels = 2;
+
+    // auto-injected to restrict data permission
+    string clientId = 3 [(validate.rules).string = {len: 36, ignore_empty: true}];
 }

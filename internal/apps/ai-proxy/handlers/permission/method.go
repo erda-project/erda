@@ -25,6 +25,7 @@ import (
 	mcipb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_config_instance/pb"
 	mtpb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server_template/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	policypb "github.com/erda-project/erda-proto-go/apps/aiproxy/policy_group/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
@@ -55,6 +56,7 @@ var CheckModelPerm = CheckPermissions(
 	&MethodPermission{Method: modelpb.ModelServiceServer.Delete, AdminOrClient: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Paging, LoggedIn: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.UpdateModelAbilitiesInfo, AdminOrClient: true},
+	&MethodPermission{Method: modelpb.ModelServiceServer.LabelModel, AdminOrClient: true},
 )
 
 var CheckClientModelRelationPerm = CheckPermissions(
@@ -141,4 +143,16 @@ var CheckTokenUsagePerm = CheckPermissions(
 var CheckTemplatePerm = CheckPermissions(
 	&MethodPermission{Method: templatepb.TemplateServiceServer.ListServiceProviderTemplates, LoggedIn: true},
 	&MethodPermission{Method: templatepb.TemplateServiceServer.ListModelTemplates, LoggedIn: true},
+)
+
+var CheckPolicyGroupPerm = CheckPermissions(
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.Create, AdminOrClient: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.Get, LoggedIn: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.Update, AdminOrClient: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.Delete, AdminOrClient: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.Paging, LoggedIn: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.UpsertForModelTemplate, AdminOrClient: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.GetForModelTemplate, LoggedIn: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.PreviewLabelGroups, LoggedIn: true},
+	&MethodPermission{Method: policypb.PolicyGroupServiceServer.ListAllOfficialLabels, LoggedIn: true},
 )

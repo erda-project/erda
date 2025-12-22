@@ -131,7 +131,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ClientTokenUpdateR
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ClientTokenPagingRequest) (*pb.ClientTokenPagingResponse, error) {
 	c := &ClientToken{ClientID: req.ClientId, UserID: req.UserId, Token: req.Token}
-	sql := dbClient.DB.Model(c).Where(c)
+	sql := dbClient.DB.Model(c)
 	var (
 		total int64
 		list  ClientTokens
@@ -143,7 +143,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ClientTokenPagingR
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err := sql.WithContext(ctx).Where(c).Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

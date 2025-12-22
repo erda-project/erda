@@ -24,6 +24,7 @@ import (
 	item_clienttoken "github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_clientmodelrelation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_model"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
@@ -56,6 +57,7 @@ func NewCacheManager(dao dao.DAO, logger logs.Logger, templatesByType templatety
 		manager.items[cachetypes.ItemTypeProvider] = item_provider.NewProviderCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeClientModelRelation] = item_clientmodelrelation.NewClientModelRelationCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeTemplate] = item_template.NewTemplateCacheItem(dao, cfg, templatesByType)
+		manager.items[cachetypes.ItemTypePolicyGroup] = item_policy_group.NewPolicyGroupCacheItem(dao, cfg)
 	}
 
 	// start background refresh goroutine only if cache is enabled

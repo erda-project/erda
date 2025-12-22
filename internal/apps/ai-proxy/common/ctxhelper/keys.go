@@ -89,6 +89,8 @@ type (
 	mapKeyRequestThinkingTransformChanges struct{ any }
 
 	mapKeyRequestBeginAt struct{ time.Time }
+
+	mapKeyPolicyTrace struct{ any }
 )
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)
