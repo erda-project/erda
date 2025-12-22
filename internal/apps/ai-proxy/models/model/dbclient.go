@@ -44,6 +44,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.Model) (*pb.Model,
 		TemplateID:     req.TemplateId,
 		TemplateParams: req.TemplateParams,
 		IsEnabled:      req.IsEnabled,
+		Labels:         req.Labels,
 		Metadata:       metadata.FromProtobuf(req.Metadata),
 	}
 	if err := dbClient.DB.WithContext(ctx).Model(c).Create(c).Error; err != nil {
@@ -72,6 +73,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.Model) (*pb.Model,
 		APIKey:         req.ApiKey,
 		TemplateParams: req.TemplateParams,
 		IsEnabled:      req.IsEnabled,
+		Labels:         req.Labels,
 		Metadata:       metadata.FromProtobuf(req.Metadata),
 	}
 	whereC := &Model{
@@ -107,7 +109,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 		TemplateID: req.TemplateId,
 		IsEnabled:  req.IsEnabled,
 	}
-	sql := dbClient.DB.Model(c).Where(c)
+	sql := dbClient.DB.Model(c)
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
 	}
@@ -136,7 +138,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.WithContext(ctx).Where(c).Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}
@@ -163,10 +165,21 @@ func (dbClient *DBClient) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.
 	meta.Public = publicMeta
 
 	c := &Model{BaseModel: common.BaseModelWithID(req.Id)}
-	if err := dbClient.DB.Model(c).UpdateColumn("metadata", meta).Error; err != nil {
+	if err := dbClient.DB.WithContext(ctx).Model(c).UpdateColumn("metadata", meta).Error; err != nil {
 		return nil, err
 	}
 	return &commonpb.VoidResponse{}, nil
+}
+
+func (dbClient *DBClient) LabelModel(ctx context.Context, req *pb.ModelLabelRequest) (*pb.Model, error) {
+	if req.Id == "" {
+		return nil, gorm.ErrPrimaryKeyRequired
+	}
+	c := &Model{BaseModel: common.BaseModelWithID(req.Id), Labels: req.Labels}
+	if err := dbClient.DB.WithContext(ctx).Model(c).Select("labels").Updates(c).Error; err != nil {
+		return nil, err
+	}
+	return dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id, ClientId: req.ClientId})
 }
 
 func (dbClient *DBClient) GetClientModelIDs(ctx context.Context, clientId string) ([]string, error) {

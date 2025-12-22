@@ -39,7 +39,7 @@
               }
             }
           },
-          "location": "cnbeijing"
+          "location": "cn"
         },
         "secret": {
           "anotherApiKey": "${@template.placeholders.another-api-key}"

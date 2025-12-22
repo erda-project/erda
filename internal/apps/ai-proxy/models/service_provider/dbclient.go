@@ -103,7 +103,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ServiceProviderPag
 		TemplateID: req.TemplateId,
 		IsEnabled:  req.IsEnabled,
 	}
-	sql := dbClient.DB.WithContext(ctx).Model(c).Where(c)
+	sql := dbClient.DB.WithContext(ctx).Model(c)
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
 	}
@@ -126,7 +126,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ServiceProviderPag
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.Where(c).Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

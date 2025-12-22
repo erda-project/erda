@@ -33,7 +33,7 @@ func TestHeaderFinder_Find(t *testing.T) {
 	tests := []struct {
 		name           string
 		headers        map[string]string
-		expectedResult *ModelIdentifier
+		expectedResult string
 		expectedError  bool
 	}{
 		{
@@ -41,28 +41,28 @@ func TestHeaderFinder_Find(t *testing.T) {
 			headers: map[string]string{
 				vars.XAIProxyModelId: "model-uuid-123",
 			},
-			expectedResult: &ModelIdentifier{ID: "model-uuid-123"},
+			expectedResult: "model-uuid-123",
 		},
 		{
 			name: "find model by model name header",
 			headers: map[string]string{
 				vars.XAIProxyModel: "gpt-4",
 			},
-			expectedResult: &ModelIdentifier{Name: "gpt-4"},
+			expectedResult: "gpt-4",
 		},
 		{
 			name: "find model by model name header with UUID format",
 			headers: map[string]string{
 				vars.XAIProxyModel: "gpt-4 [ID:uuid-456]",
 			},
-			expectedResult: &ModelIdentifier{ID: "uuid-456", Name: "gpt-4 [ID:uuid-456]"},
+			expectedResult: "gpt-4 [ID:uuid-456]",
 		},
 		{
 			name: "find model by model name header (alternative)",
 			headers: map[string]string{
 				vars.XAIProxyModelName: "claude-3",
 			},
-			expectedResult: &ModelIdentifier{Name: "claude-3"},
+			expectedResult: "claude-3",
 		},
 		{
 			name: "priority test - model id takes precedence",
@@ -71,14 +71,14 @@ func TestHeaderFinder_Find(t *testing.T) {
 				vars.XAIProxyModel:     "gpt-4",
 				vars.XAIProxyModelName: "claude-3",
 			},
-			expectedResult: &ModelIdentifier{ID: "uuid-priority"},
+			expectedResult: "uuid-priority",
 		},
 		{
 			name: "no model headers",
 			headers: map[string]string{
 				"Authorization": "Bearer token",
 			},
-			expectedResult: nil,
+			expectedResult: "",
 		},
 	}
 
@@ -90,7 +90,7 @@ func TestHeaderFinder_Find(t *testing.T) {
 			}
 
 			finder := &HeaderFinder{}
-			result, err := finder.Find(req, nil)
+			result, err := finder.Find(req)
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -106,7 +106,7 @@ func TestPathFinder_Find(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupContext   func() context.Context
-		expectedResult *ModelIdentifier
+		expectedResult string
 		expectedError  bool
 	}{
 		{
@@ -119,7 +119,7 @@ func TestPathFinder_Find(t *testing.T) {
 				ctxhelper.PutPathMatcher(ctx, pm)
 				return ctx
 			},
-			expectedResult: &ModelIdentifier{Name: "gpt-4"},
+			expectedResult: "gpt-4",
 		},
 		{
 			name: "find model with UUID format from path",
@@ -130,7 +130,7 @@ func TestPathFinder_Find(t *testing.T) {
 				ctxhelper.PutPathMatcher(ctx, pm)
 				return ctx
 			},
-			expectedResult: &ModelIdentifier{ID: "uuid-789", Name: "gpt-4 [ID:uuid-789]"},
+			expectedResult: "gpt-4 [ID:uuid-789]",
 		},
 		{
 			name: "no model in path parameters",
@@ -141,14 +141,14 @@ func TestPathFinder_Find(t *testing.T) {
 				ctxhelper.PutPathMatcher(ctx, pm)
 				return ctx
 			},
-			expectedResult: nil,
+			expectedResult: "",
 		},
 		{
 			name: "no path matcher in context",
 			setupContext: func() context.Context {
 				return context.Background()
 			},
-			expectedResult: nil,
+			expectedResult: "",
 		},
 	}
 
@@ -159,7 +159,7 @@ func TestPathFinder_Find(t *testing.T) {
 			req = req.WithContext(ctx)
 
 			finder := &PathFinder{}
-			result, err := finder.Find(req, nil)
+			result, err := finder.Find(req)
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -360,7 +360,7 @@ func TestBodyFinder_Find(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupRequest   func() *http.Request
-		expectedResult *ModelIdentifier
+		expectedResult string
 		expectedError  bool
 	}{
 		{
@@ -370,7 +370,7 @@ func TestBodyFinder_Find(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			},
-			expectedResult: &ModelIdentifier{Name: "gpt-4"},
+			expectedResult: "gpt-4",
 		},
 		{
 			name: "find model from form body",
@@ -379,7 +379,7 @@ func TestBodyFinder_Find(t *testing.T) {
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				return req
 			},
-			expectedResult: &ModelIdentifier{Name: "claude-3"},
+			expectedResult: "claude-3",
 		},
 		{
 			name: "no model in body",
@@ -388,7 +388,7 @@ func TestBodyFinder_Find(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			},
-			expectedResult: nil,
+			expectedResult: "",
 		},
 		{
 			name: "model with UUID format",
@@ -397,7 +397,7 @@ func TestBodyFinder_Find(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			},
-			expectedResult: &ModelIdentifier{ID: "uuid-123", Name: "gpt-4 [ID:uuid-123]"},
+			expectedResult: "gpt-4 [ID:uuid-123]",
 		},
 	}
 
@@ -406,7 +406,7 @@ func TestBodyFinder_Find(t *testing.T) {
 			req := tt.setupRequest()
 
 			finder := &BodyFinder{}
-			result, err := finder.Find(req, nil)
+			result, err := finder.Find(req)
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -422,8 +422,7 @@ func TestFindModelIdentifier(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupRequest   func() *http.Request
-		requestCtx     interface{}
-		expectedResult *ModelIdentifier
+		expectedResult string
 		expectedError  bool
 	}{
 		{
@@ -434,7 +433,7 @@ func TestFindModelIdentifier(t *testing.T) {
 				req.Header.Set(vars.XAIProxyModelId, "header-uuid")
 				return req
 			},
-			expectedResult: &ModelIdentifier{ID: "header-uuid"},
+			expectedResult: "header-uuid",
 		},
 		{
 			name: "find model from path when no header",
@@ -449,7 +448,7 @@ func TestFindModelIdentifier(t *testing.T) {
 				req = req.WithContext(ctx)
 				return req
 			},
-			expectedResult: &ModelIdentifier{Name: "path-model"},
+			expectedResult: "path-model",
 		},
 		{
 			name: "find model from body when no header or path",
@@ -458,7 +457,7 @@ func TestFindModelIdentifier(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			},
-			expectedResult: &ModelIdentifier{Name: "body-model"},
+			expectedResult: "body-model",
 		},
 		{
 			name: "no model found",
@@ -467,7 +466,7 @@ func TestFindModelIdentifier(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			},
-			expectedResult: nil,
+			expectedResult: "",
 		},
 	}
 
@@ -475,7 +474,7 @@ func TestFindModelIdentifier(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := tt.setupRequest()
 
-			result, err := findModelIdentifier(req, tt.requestCtx)
+			result, err := findModelIdentifier(req)
 
 			if tt.expectedError {
 				assert.Error(t, err)
