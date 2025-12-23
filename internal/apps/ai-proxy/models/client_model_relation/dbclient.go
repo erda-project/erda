@@ -73,7 +73,9 @@ func (dbClient *DBClient) UnAllocate(ctx context.Context, req *pb.AllocateReques
 		return nil, err
 	}
 	// do unallocate
-	if err := tx.Model(&ClientModelRelation{ClientID: req.ClientId}).
+	c := &ClientModelRelation{ClientID: req.ClientId}
+	if err := tx.Model(c).
+		Where(c).
 		Where("model_id in (?)", req.ModelIds).
 		Delete(nil).Error; err != nil {
 		tx.Rollback()
