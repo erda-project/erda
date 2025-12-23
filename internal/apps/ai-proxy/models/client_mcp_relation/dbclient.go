@@ -91,7 +91,9 @@ func (dbClient *DBClient) UnAllocate(ctx context.Context, req *pb.AllocateReques
 	}
 
 	// do unallocate
-	if err := tx.Model(&ClientMcpRelation{ClientID: req.ClientId}).
+	c := &ClientMcpRelation{ClientID: req.ClientId}
+	if err := tx.Model(c).
+		Where(c).
 		Where("scope_id in (?)", req.ScopeIds).
 		Where("scope_type = ?", req.ScopeType).
 		Delete(nil).Error; err != nil {
