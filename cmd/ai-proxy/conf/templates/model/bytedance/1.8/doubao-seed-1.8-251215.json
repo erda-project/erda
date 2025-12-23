@@ -1,19 +1,20 @@
 {
-  "doubao-seed-1.8-preview": {
+  "doubao-seed-1.8-251215": {
     "placeholders": [
       {
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "doubao-seed-1-8-preview"
+        "default": "doubao-seed-1-8-251215"
       }
     ],
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ]
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1-8"
     },
-    "desc": "非公开模型，doubao-seed-1.8-preview 251115",
+    "desc": "更强Agent能力：Tool Use能力、复杂指令遵循能力、OS Agent能力都实现了大幅增强。\n多模态理解升级：大幅提升了视觉理解的基础能力，可以低帧率理解超长视频。此外在视频运动理解、复杂空间理解、文档结构化解析能力上也都有所提升。\n原生支持智能上下文管理：可以配置上下文压缩策略，当任务轮次过长时，模型会根据策略智能清除低价值的历史工具调用信息，确保多步骤任务稳定完成。",
     "config": {
       "desc": "${@template.desc}",
       "apiKey": "",
@@ -43,7 +44,7 @@
           },
           "context": {
             "context_length": 256000,
-            "max_completion_tokens": 64000,
+            "max_completion_tokens": 32000,
             "max_prompt_tokens": 224000
           },
           "model_name": "${@template.placeholders.target-model-name}",
