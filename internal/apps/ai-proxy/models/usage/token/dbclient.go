@@ -22,10 +22,9 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda/pkg/common/pbutil"
-
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
 type DBClient struct {
