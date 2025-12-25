@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 )
 
 func TestJsonRawMessage(t *testing.T) {
