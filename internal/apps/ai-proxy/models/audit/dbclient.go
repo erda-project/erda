@@ -16,6 +16,7 @@ package audit
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -33,22 +34,32 @@ type DBClient struct {
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest) (*pb.AuditPagingResponse, error) {
-	c := &Audit{}
-	// auth_key
-	if req.AuthKey != "" {
-		c.AuthKey = req.AuthKey
+	c := &Audit{
+		AuthKey:    req.AuthKey,
+		XRequestID: req.XRequestId,
+		CallID:     req.CallId,
+		ClientID:   req.ClientId,
+		ModelID:    req.ModelId,
+		Username:   req.Username,
 	}
-	// x-request-id
-	if req.XRequestId != "" {
-		c.XRequestID = req.XRequestId
+	sql := dbClient.DB.Model(c)
+	// prompt
+	if req.Prompt != "" {
+		sql = sql.Where("prompt LIKE ?", "%"+req.Prompt+"%")
 	}
-	// call-id
-	if req.CallId != "" {
-		c.CallID = req.CallId
+	// operation_id
+	if req.OperationId != "" {
+		sql = sql.Where("operation_id LIKE ?", "%"+req.OperationId+"%")
 	}
 
-	sql := dbClient.DB.Model(c)
-	sql = sql.Where(c).Unscoped()
+	before, after, err := ValidateAndGetTimeRange(req)
+	if err != nil {
+		return nil, err
+	}
+	sql = sql.Where("created_at <= ?", before)
+	sql = sql.Where("created_at >= ?", after)
+
+	sql = sql.WithContext(ctx).Where(c).Unscoped()
 
 	var (
 		total int64
@@ -67,7 +78,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest
 	sql = sql.Count(&total)
 	// order by
 	sql = sql.Order("created_at DESC")
-	err := sql.Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +86,34 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest
 		Total: total,
 		List:  list.ToProtobuf(),
 	}, nil
+}
+
+func ValidateAndGetTimeRange(req *pb.AuditPagingRequest) (time.Time, time.Time, error) {
+	// time range
+	var before, after time.Time
+	if req.TimeRangeBeforeMs == 0 && req.TimeRangeAfterMs == 0 {
+		before = time.Now()
+		after = before.AddDate(0, 0, -1)
+	} else if req.TimeRangeBeforeMs != 0 && req.TimeRangeAfterMs != 0 {
+		var ok bool
+		before, ok = pbutil.TimeFromMillis(req.TimeRangeBeforeMs)
+		if !ok {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid TimeRangeBeforeMs")
+		}
+		after, ok = pbutil.TimeFromMillis(req.TimeRangeAfterMs)
+		if !ok {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid TimeRangeAfterMs")
+		}
+	} else {
+		return time.Time{}, time.Time{}, fmt.Errorf("TimeRangeBeforeMs and TimeRangeAfterMs must be passed together")
+	}
+	if before.Sub(after) > 24*time.Hour {
+		return time.Time{}, time.Time{}, fmt.Errorf("time range span cannot exceed one day")
+	}
+	if before.Sub(after) < 0 {
+		return time.Time{}, time.Time{}, fmt.Errorf("TimeRangeBeforeMs must be after TimeRangeAfterMs")
+	}
+	return before, after, nil
 }
 
 func (dbClient *DBClient) CreateWhenReceived(ctx context.Context, req *pb.AuditCreateRequestWhenReceived) (*pb.Audit, error) {

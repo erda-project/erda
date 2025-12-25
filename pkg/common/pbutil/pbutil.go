@@ -15,6 +15,7 @@
 package pbutil
 
 import (
+	"math"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -59,4 +60,18 @@ func GetTimeInLocal(t *timestamppb.Timestamp) *time.Time {
 	}
 	v := t.AsTime().In(time.Local)
 	return &v
+}
+
+func TimeFromMillis(ms uint64) (time.Time, bool) {
+	if ms == 0 {
+		return time.Time{}, false
+	}
+	if ms > math.MaxInt64 {
+		return time.Time{}, false
+	}
+	t := time.UnixMilli(int64(ms)).UTC()
+	if err := timestamppb.New(t).CheckValid(); err != nil {
+		return time.Time{}, false
+	}
+	return t, true
 }

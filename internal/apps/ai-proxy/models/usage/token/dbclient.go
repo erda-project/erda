@@ -17,15 +17,14 @@ package token
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
 type DBClient struct {
@@ -72,10 +71,10 @@ func (db *DBClient) Paging(ctx context.Context, req *usagepb.TokenUsagePagingReq
 	}
 
 	// time range
-	if before, ok := timeFromMillis(req.TimeRangeBeforeMs); ok {
+	if before, ok := pbutil.TimeFromMillis(req.TimeRangeBeforeMs); ok {
 		query = query.Where("created_at <= ?", before)
 	}
-	if after, ok := timeFromMillis(req.TimeRangeAfterMs); ok {
+	if after, ok := pbutil.TimeFromMillis(req.TimeRangeAfterMs); ok {
 		query = query.Where("created_at >= ?", after)
 	}
 
@@ -128,8 +127,8 @@ func enforceTimeRangeWithin(req *usagepb.TokenUsagePagingRequest, maxSpan time.D
 		return nil
 	}
 
-	after, hasAfter := timeFromMillis(req.TimeRangeAfterMs)
-	before, hasBefore := timeFromMillis(req.TimeRangeBeforeMs)
+	after, hasAfter := pbutil.TimeFromMillis(req.TimeRangeAfterMs)
+	before, hasBefore := pbutil.TimeFromMillis(req.TimeRangeBeforeMs)
 
 	if hasAfter && hasBefore {
 		if before.Before(after) {
@@ -146,20 +145,6 @@ func enforceTimeRangeWithin(req *usagepb.TokenUsagePagingRequest, maxSpan time.D
 	}
 
 	return fmt.Errorf("time range must be specified")
-}
-
-func timeFromMillis(ms uint64) (time.Time, bool) {
-	if ms == 0 {
-		return time.Time{}, false
-	}
-	if ms > math.MaxInt64 {
-		return time.Time{}, false
-	}
-	t := time.UnixMilli(int64(ms)).UTC()
-	if err := timestamppb.New(t).CheckValid(); err != nil {
-		return time.Time{}, false
-	}
-	return t, true
 }
 
 func createRequestToRecord(req *usagepb.TokenUsageCreateRequest) *TokenUsage {

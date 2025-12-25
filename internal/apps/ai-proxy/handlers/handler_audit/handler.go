@@ -33,9 +33,9 @@ func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (
 	if err != nil {
 		return nil, err
 	}
-	if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
-		return nil, err
-	}
+	//if err := requireXRequestIdOrCallIdForNonAdmin(ctx, req); err != nil {
+	//	return nil, err
+	//}
 
 	pagingResult, err := a.DAO.AuditClient().Paging(ctx, req)
 	if err != nil {
