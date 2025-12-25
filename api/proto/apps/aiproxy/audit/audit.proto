@@ -12,7 +12,7 @@ import "common/http.proto";
 service AuditService {
     rpc Paging(AuditPagingRequest) returns (AuditPagingResponse) {
         option(google.api.http) = {
-            get: "/api/ai-proxy/audits?x_request_id={xRequestId}&auth_key={authKey}"
+            get: "/api/ai-proxy/audits"
         };
     }
 }
@@ -77,12 +77,23 @@ message AuditCreateRequestWhenReceived {
 }
 
 message AuditPagingRequest {
-    int64 pageNum = 1;
-    int64 pageSize = 2;
+    uint64 pageNum = 1;
+    uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 10}];
 
     string authKey = 3 [(validate.rules).string = {min_len: 32, max_len:36, ignore_empty: true}];
     string xRequestId = 4 [(validate.rules).string = {min_len: 0, max_len: 64}];
     string callId = 5 [(validate.rules).string = {len: 36, ignore_empty: true}];
+
+    string prompt = 6 [(validate.rules).string = {max_len: 512}];
+    string clientId = 7 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string modelId = 8 [(validate.rules).string = {len: 36, ignore_empty: true}];
+    string username = 9 [(validate.rules).string = {max_len: 128}];
+    string operationId = 10 [(validate.rules).string = {min_len: 4, max_len: 128, ignore_empty: true}];
+
+    // time range
+    // unix milliseconds, used for http query parsing convenience
+    uint64 timeRangeAfterMs = 11 [(validate.rules).uint64 = {ignore_empty: true, gte: 0}];
+    uint64 timeRangeBeforeMs = 12 [(validate.rules).uint64 = {ignore_empty: true, gte: 0}];
 }
 
 message AuditPagingResponse {
