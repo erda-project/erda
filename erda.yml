@@ -260,6 +260,7 @@ services:
     envs:
       GITTAR_BRANCH_FILTER: "master,develop,feature/*,support/*,release/*,hotfix/*"
       GITTAR_PORT: "5566"
+      GITTAR_RPC_METRICS_ENABLED: "true"
       UC_CLIENT_ID: "dice"
       UC_CLIENT_SECRET: "secret"
     resources:
@@ -281,7 +282,10 @@ services:
     expose:
       - 5566
     health_check:
-      http: { }
+      http:
+        port: 5566
+        path: "/_api/health"
+        duration: 120
       exec: { }
   hepa:
     cmd: /erda/cmd/hepa/bin

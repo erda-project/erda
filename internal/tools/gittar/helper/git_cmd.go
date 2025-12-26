@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,21 +36,25 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/rpcmetrics"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
-func recycleChildProcess() {
-	//是init进程
+func StartZombieReaper() {
+	// only run if we are the init process (PID 1) within the container
 	if os.Getpid() == 1 {
-		sc := make(chan os.Signal)
+		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, syscall.SIGCHLD)
-		//回收被kill的进程的子进程
+		// reap child processes
 		go func() {
 			var status syscall.WaitStatus
 			for range sc {
-				wpid, err := syscall.Wait4(-1, &status, syscall.WNOHANG, nil)
-				if err == nil {
-					logrus.Infof("wait child process success %s", strconv.Itoa(wpid))
+				for {
+					wpid, err := syscall.Wait4(-1, &status, syscall.WNOHANG, nil)
+					if wpid <= 0 || err != nil {
+						break
+					}
+					logrus.Infof("reaped zombie process %d", wpid)
 				}
 			}
 		}()
@@ -101,7 +106,7 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		stderr.Close()
 		return
 	}
-	logrus.Infof("command %v processId:%s", cmd.Args, strconv.Itoa(cmd.Process.Pid))
+	logrus.Infof("command %v processId: %s", cmd.Args, strconv.Itoa(cmd.Process.Pid))
 
 	for _, v := range readers {
 		_, err := io.Copy(stdin, v)
@@ -129,25 +134,47 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 
 }
 
+func shouldRecordGitService(service string) bool {
+	switch service {
+	case "receive-pack", "upload-pack":
+		return true
+	default:
+		return false
+	}
+}
+
 // RunAdvertisement command
 func RunAdvertisement(service string, c *webcontext.Context) {
 	version := c.MustGet("gitProtocol").(string)
+
+	var (
+		shouldRecord = rpcmetrics.Enabled() && shouldRecordGitService(service)
+		writer       = c.GetWriter()
+		reqBody      = c.GetRequestBody()
+	)
+
+	if shouldRecord {
+		var done func(error)
+		reqBody, writer, done = wrapWithMetrics(c, service, version, reqBody, writer)
+		defer done(nil)
+	}
+
 	headerNoCache(c)
 	c.Header("Content-type", fmt.Sprintf("application/x-git-%s-advertisement", service))
 
 	c.Status(http.StatusOK)
 	if len(version) == 0 {
-		c.GetWriter().Write(packetWrite("# service=git-" + service + "\n"))
-		c.GetWriter().Write(packetFlush())
+		writer.Write(packetWrite("# service=git-" + service + "\n"))
+		writer.Write(packetFlush())
 	}
 
-	runCommand2(c.GetWriter(), gitCommand(
+	runCommand2(writer, gitCommand(
 		version,
 		service,
 		"--stateless-rpc",
 		"--advertise-refs",
 		c.Repository.DiskPath(),
-	), c.GetRequestBody())
+	), reqBody)
 }
 
 // RunProcess command
@@ -158,18 +185,28 @@ func RunProcess(service string, c *webcontext.Context) {
 	headerNoCache(c)
 
 	var (
-		reqBody = c.GetRequestBody()
-		err     error
+		shouldRecord = rpcmetrics.Enabled() && shouldRecordGitService(service)
+		reqBody      = c.GetRequestBody()
+		writer       = c.GetWriter()
+		err          error
+		errMsg       string
 	)
 
-	// Handle GZIP
+	// handle GZIP early so we can parse uncompressed upload-pack commands.
 	if c.GetHeader("Content-Encoding") == "gzip" {
 		reqBody, err = gzip.NewReader(reqBody)
 		if err != nil {
 			logrus.Errorf("HTTP.Get: fail to create gzip reader: %v", err)
+			errMsg = err.Error()
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
+	}
+
+	if shouldRecord {
+		var done func(error)
+		reqBody, writer, done = wrapWithMetricsProcess(c, service, version, reqBody, writer)
+		defer func() { done(errors.New(errMsg)) }()
 	}
 	defer reqBody.Close()
 
@@ -179,10 +216,11 @@ func RunProcess(service string, c *webcontext.Context) {
 		header, err := ReadGitSendPackHeader(reqBody)
 		if err != nil {
 			logrus.Errorf("receive-pack error %v", err)
+			errMsg = err.Error()
 			c.AbortWithStatus(500)
 			return
 		}
-		logrus.Infof("push header:" + string(header))
+		logrus.Infof("push header: %s", header)
 		re := regexp.MustCompile(
 			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/\S*)`,
 		)
@@ -206,21 +244,23 @@ func RunProcess(service string, c *webcontext.Context) {
 			// Only when one branch is created will it be written to the writer
 			// Refer to github
 			if len(pushEvents) == 1 && pushEvents[0].IsCreateNewBranch() {
-				c.GetWriter().Write(NewReportStatus(
+				writer.Write(NewReportStatus(
 					"unpack ok",
 					"ok "+pushEvents[0].Ref,
 					makeCreatePipelineLink(pushEvents[0].Ref[len(gitmodule.BRANCH_PREFIX):], c.Repository.OrgName, c.Repository.ProjectId)))
 			}
-			runCommand2(c.GetWriter(), gitCommand(
+			runCommand2(writer, gitCommand(
 				version,
 				service,
 				"--stateless-rpc",
 				repository.DiskPath(),
 			), bytes.NewReader(header), reqBody)
 			go PostReceiveHook(pushEvents, c)
+		} else {
+			errMsg = "pre_receive_hook_rejected"
 		}
 	} else {
-		runCommand2(c.GetWriter(), gitCommand(
+		runCommand2(writer, gitCommand(
 			version,
 			service,
 			"--stateless-rpc",
