@@ -16,6 +16,7 @@ package conf
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -67,6 +68,13 @@ type Conf struct {
 	// AI
 	AIProxyURL      string `env:"AI_PROXY_URL"`
 	AIProxyClientAK string `env:"AI_PROXY_CLIENT_AK"`
+
+	// git rpc metrics (json lines file)
+	GitRPCMetricsEnabled bool   `env:"GITTAR_RPC_METRICS_ENABLED" default:"true"`
+	GitRPCMetricsPath    string `env:"GITTAR_RPC_METRICS_PATH"`
+	GitRPCMetricsBuffer  int    `env:"GITTAR_RPC_METRICS_BUFFER" default:"2048"`
+	// retention days for directory mode, 0 disables cleanup
+	GitRPCMetricsRetentionDays int `env:"GITTAR_RPC_METRICS_RETENTION_DAYS" default:"7"`
 }
 
 var cfg Conf
@@ -227,4 +235,24 @@ func MetricTargetBranches() []string {
 
 func DiceCluster() string {
 	return os.Getenv(apistructs.DICE_CLUSTER_NAME.String())
+}
+
+func GitRPCMetricsEnabled() bool {
+	return cfg.GitRPCMetricsEnabled
+}
+
+func GitRPCMetricsPath() string {
+	if cfg.GitRPCMetricsPath != "" {
+		return cfg.GitRPCMetricsPath
+	}
+	// Default to a directory. rpcmetrics will write daily jsonl files under it.
+	return filepath.Join(cfg.RepoRoot, ".gittar", "rpc-metrics")
+}
+
+func GitRPCMetricsBuffer() int {
+	return cfg.GitRPCMetricsBuffer
+}
+
+func GitRPCMetricsRetentionDays() int {
+	return cfg.GitRPCMetricsRetentionDays
 }

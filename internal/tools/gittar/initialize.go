@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/labstack/echo"
@@ -34,16 +35,18 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/auth"
 	"github.com/erda-project/erda/internal/tools/gittar/cache"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
+	"github.com/erda-project/erda/internal/tools/gittar/helper"
 	"github.com/erda-project/erda/internal/tools/gittar/metrics"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/admin_token"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gc"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/internal/tools/gittar/profiling"
+	"github.com/erda-project/erda/internal/tools/gittar/rpcmetrics"
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/pkg/discover"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 func init() {
@@ -51,12 +54,15 @@ func init() {
 }
 
 // Initialize 初始化应用启动服务.
-func (p *provider) Initialize() error {
+func (p *provider) Initialize(ctx context.Context) error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debug("DEBUG MODE")
 	}
+
+	// Start zombie process reaper (only active if PID 1)
+	helper.StartZombieReaper()
 
 	if _, err := os.Stat(conf.RepoRoot()); os.IsNotExist(err) {
 		logrus.Infof("repository folder is not exist, will auto create later")
@@ -66,6 +72,14 @@ func (p *provider) Initialize() error {
 		}
 		logrus.Infof("repository folder created!")
 	}
+
+	tok, err := admin_token.InitAdminAuthToken(filepath.Join(conf.RepoRoot(), ".gittar", "auth_token"))
+	if err != nil {
+		panic(err)
+	}
+	logrus.Infof("gittar admin auth token: %s", tok)
+
+	p.initGitRPCMetrics()
 
 	gitmodule.Setting.MaxGitDiffLineCharacters = conf.GitMaxDiffLineCharacters()
 	gitmodule.Setting.MaxGitDiffSize = conf.GitMaxDiffSize()
@@ -88,22 +102,6 @@ func (p *provider) Initialize() error {
 	}
 	uc.InitializeUcClient(p.Identity)
 
-	svc := models.NewService(dbClient, diceBundle, p.I18n, nil)
-	collector := metrics.NewCollector(svc)
-	go func() {
-		<-time.NewTimer(time.Duration(rand.Intn(5)) * time.Minute).C
-		rutil.ContinueWorking(context.Background(), p.Log, func(ctx context.Context) rutil.WaitDuration {
-			logrus.Infof("start refresh personal contributors")
-			if err := collector.RefreshPersonalContributions(); err != nil {
-				logrus.Errorf("failed to refresh personal contributors, err: %v", err)
-			}
-
-			return rutil.ContinueWorkingWithDefaultInterval
-		}, rutil.WithContinueWorkingDefaultRetryInterval(conf.RefreshPersonalContributorDuration()))
-	}()
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(collector)
-
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)
 	webcontext.WithUCAuth(ucUserAuth)
@@ -113,28 +111,14 @@ func (p *provider) Initialize() error {
 	webcontext.WithI18n(p.I18n)
 
 	e := echo.New()
-	e.GET("/metrics", func(ctx echo.Context) error {
-		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(ctx.Response(), ctx.Request())
-		return nil
-	})
-	e.POST("/personal-contribution", webcontext.WrapHandler(func(c *webcontext.Context) {
-		var req apistructs.GittarListRepoRequest
-		err := c.BindJSON(&req)
-		if err != nil {
-			c.AbortWithStatus(400, fmt.Errorf("request body parse failed, err: %v", err))
-			return
-		}
 
-		contributors, err := collector.IterateRepos(req)
-		if err != nil {
-			c.AbortWithStatus(400, fmt.Errorf("failed to list personal contributors, err: %v", err))
-			return
-		}
-		c.Success(contributors)
-	}))
+	svc := models.NewService(dbClient, diceBundle, p.I18n, nil)
+	p.initLegacyMetrics(e, svc)
+
 	systemGroup := e.Group("/_system")
 	{
 		systemGroup.GET("/cache/stats", webcontext.WrapHandler(api.ShowCacheStats))
+		systemGroup.GET("/rpc-metrics", webcontext.WrapHandler(api.RPCMetrics))
 		systemGroup.POST("/hooks", webcontext.WrapHandler(api.AddSystemHook))
 		systemGroup.POST("/repos", webcontext.WrapHandler(api.CreateRepo))
 		systemGroup.DELETE("/repos/:id", webcontext.WrapHandler(api.DeleteRepo))
@@ -173,25 +157,6 @@ func (p *provider) Initialize() error {
 	logger := middleware.Logger()
 	e.Use(logger)
 
-	// requestHistogram := promxp.RegisterHistogram(
-	// 	"request_duration",
-	// 	"gittar API请求耗时",
-	// 	map[string]string{}, // labels
-	// 	[]float64{0.001, 0.01, 0.1, 1, 3, 5, 10},
-	// )
-	// e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-	// 	return func(c echo.Context) error {
-	// 		start := time.Now()
-	// 		if err := next(c); err != nil {
-	// 			return err
-	// 		}
-	// 		requestHistogram.Observe(time.Since(start).Seconds())
-	// 		return nil
-	// 	}
-	// })
-	// monitor
-	// e.GET("/metrics", echo.WrapHandler(promxp.Handler("gittar")))
-
 	gitmodule.Setting.RepoStatsCache = cache.NewMysqlCache("repo-stats", dbClient)
 
 	// cron task to git gc all repository
@@ -199,6 +164,15 @@ func (p *provider) Initialize() error {
 
 	// start hook task consumer
 	models.Init(dbClient)
+
+	// graceful shutdown
+	go func() {
+		<-ctx.Done()
+		logrus.Infof("shutting down http server...")
+		if err := e.Shutdown(context.Background()); err != nil {
+			logrus.Errorf("failed to shutdown http server: %v", err)
+		}
+	}()
 
 	return e.Start(":" + conf.ListenPort())
 }
@@ -243,7 +217,7 @@ func addApiRoutes(g *echo.Group) {
 
 	g.GET("/diff-file", webcontext.WrapHandlerWithRepoCheck(api.DiffFile))
 
-	//merge request
+	// merge request
 	g.GET("/merge-stats", webcontext.WrapHandler(api.CheckMergeStatus))
 	g.GET("/merge-templates", webcontext.WrapHandler(api.GetMergeTemplates))
 	g.GET("/merge-requests/:id", webcontext.WrapHandler(api.GetMergeRequestDetail))
@@ -275,4 +249,62 @@ func addApiRoutes(g *echo.Group) {
 	g.DELETE("/backup/*", webcontext.WrapHandler(api.DeleteBackup))
 	g.GET("/archive/*", webcontext.WrapHandlerWithRepoCheck(api.GetArchive))
 
+}
+
+func (p *provider) initGitRPCMetrics() {
+	err := rpcmetrics.Init(rpcmetrics.Config{
+		Enabled:       conf.GitRPCMetricsEnabled(),
+		Path:          conf.GitRPCMetricsPath(),
+		BufferSize:    conf.GitRPCMetricsBuffer(),
+		FlushInterval: 1 * time.Second,
+	})
+	if err != nil {
+		logrus.Errorf("failed to init git rpc metrics writer: %v", err)
+		return
+	}
+
+	// When metrics enabled and writing to a directory, start an internal cleanup loop.
+	// It removes daily files older than retention days every 6 hours.
+	retentionDays := conf.GitRPCMetricsRetentionDays()
+	if conf.GitRPCMetricsEnabled() && retentionDays > 0 && rpcmetrics.IsDirPath(conf.GitRPCMetricsPath()) {
+		rpcmetrics.StartCleanupLoop(rpcmetrics.CleanupConfig{
+			Dir:      conf.GitRPCMetricsPath(),
+			KeepDays: retentionDays,
+			Interval: 6 * time.Hour,
+		})
+	}
+}
+
+func (p *provider) initLegacyMetrics(e *echo.Echo, svc *models.Service) {
+	collector := metrics.NewCollector(svc)
+	go func() {
+		<-time.NewTimer(time.Duration(rand.Intn(5)) * time.Minute).C
+		rutil.ContinueWorking(context.Background(), p.Log, func(ctx context.Context) rutil.WaitDuration {
+			logrus.Infof("start refresh personal contributors")
+			if err := collector.RefreshPersonalContributions(); err != nil {
+				logrus.Errorf("failed to refresh personal contributors, err: %v", err)
+			}
+			return rutil.ContinueWorkingWithDefaultInterval
+		}, rutil.WithContinueWorkingDefaultRetryInterval(conf.RefreshPersonalContributorDuration()))
+	}()
+
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(collector)
+	e.GET("/metrics", func(ctx echo.Context) error {
+		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(ctx.Response(), ctx.Request())
+		return nil
+	})
+	e.POST("/personal-contribution", webcontext.WrapHandler(func(c *webcontext.Context) {
+		var req apistructs.GittarListRepoRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.AbortWithStatus(400, fmt.Errorf("request body parse failed, err: %v", err))
+			return
+		}
+		contributors, err := collector.IterateRepos(req)
+		if err != nil {
+			c.AbortWithStatus(400, fmt.Errorf("failed to list personal contributors, err: %v", err))
+			return
+		}
+		c.Success(contributors)
+	}))
 }

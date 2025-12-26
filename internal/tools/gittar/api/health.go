@@ -15,6 +15,10 @@
 package api
 
 import (
+	"context"
+	"net/http"
+	"time"
+
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
@@ -42,12 +46,28 @@ func Health(ctx *webcontext.Context) {
 			"version":  version.Version,
 		},
 	}
-	ctx.EchoContext.JSON(200, health)
+	httpStatus := http.StatusOK
+	if status != apistructs.HealthStatusOk {
+		httpStatus = http.StatusServiceUnavailable
+	}
+	ctx.EchoContext.JSON(httpStatus, health)
 }
 
 // mysqlHealth check mysql health
 func mysqlHealth(ctx *webcontext.Context, modules *[]apistructs.Module) (status apistructs.HealthStatus) {
-	if err := ctx.DBClient.Ping(); err != nil {
+	if ctx.DBClient == nil || ctx.DBClient.DB == nil {
+		status = apistructs.HealthStatusFail
+		*modules = append(*modules, apistructs.Module{
+			Name:    MysqlName,
+			Status:  status,
+			Message: "db client not initialized",
+		})
+		return
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx.EchoContext.Request().Context(), 3*time.Second)
+	defer cancel()
+	if err := ctx.DBClient.DB.DB().PingContext(pingCtx); err != nil {
 		status = apistructs.HealthStatusFail
 		*modules = append(*modules, apistructs.Module{
 			Name:    MysqlName,

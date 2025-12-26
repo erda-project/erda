@@ -42,7 +42,7 @@ type provider struct {
 	I18n         i18n.Translator `translator:"common"`
 }
 
-func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
+func (p *provider) Run(ctx context.Context) error { return p.Initialize(ctx) }
 
 func init() {
 	servicehub.Register("gittar", &servicehub.Spec{
