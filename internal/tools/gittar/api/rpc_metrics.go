@@ -102,7 +102,7 @@ func RPCMetrics(ctx *webcontext.Context) {
 }
 
 func verifyAdminAuthToken(ctx *webcontext.Context) bool {
-	// Strict check: only accept valid Bearer token from .gittar/auth_token
+	// strict check: only accept valid Bearer token from .gittar/auth_token
 	auth := ctx.GetHeader("Authorization")
 	if auth == "" {
 		ctx.AbortWithStatus(http.StatusUnauthorized, errors.New("unauthorized: no admin permission"))

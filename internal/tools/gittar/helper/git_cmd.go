@@ -106,7 +106,7 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		stderr.Close()
 		return
 	}
-	logrus.Infof("command %v processId:%s", cmd.Args, strconv.Itoa(cmd.Process.Pid))
+	logrus.Infof("command %v processId: %s", cmd.Args, strconv.Itoa(cmd.Process.Pid))
 
 	for _, v := range readers {
 		_, err := io.Copy(stdin, v)
@@ -220,7 +220,7 @@ func RunProcess(service string, c *webcontext.Context) {
 			c.AbortWithStatus(500)
 			return
 		}
-		logrus.Infof("push header:%s", header)
+		logrus.Infof("push header: %s", header)
 		re := regexp.MustCompile(
 			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/\S*)`,
 		)
