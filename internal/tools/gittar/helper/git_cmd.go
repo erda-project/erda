@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,27 +30,33 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/util/guid"
+	"github.com/erda-project/erda/internal/tools/gittar/rpcmetrics"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
-func recycleChildProcess() {
-	//是init进程
+func StartZombieReaper() {
+	// only run if we are the init process (PID 1) within the container
 	if os.Getpid() == 1 {
-		sc := make(chan os.Signal)
+		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, syscall.SIGCHLD)
-		//回收被kill的进程的子进程
+		// reap child processes
 		go func() {
 			var status syscall.WaitStatus
 			for range sc {
-				wpid, err := syscall.Wait4(-1, &status, syscall.WNOHANG, nil)
-				if err == nil {
-					logrus.Infof("wait child process success %s", strconv.Itoa(wpid))
+				for {
+					wpid, err := syscall.Wait4(-1, &status, syscall.WNOHANG, nil)
+					if wpid <= 0 || err != nil {
+						break
+					}
+					logrus.Infof("reaped zombie process %d", wpid)
 				}
 			}
 		}()
@@ -129,25 +136,45 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 
 }
 
+func shouldRecordGitService(service string) bool {
+	switch service {
+	case "receive-pack", "upload-pack":
+		return true
+	default:
+		return false
+	}
+}
+
 // RunAdvertisement command
 func RunAdvertisement(service string, c *webcontext.Context) {
 	version := c.MustGet("gitProtocol").(string)
+
+	writer := c.GetWriter()
+	reqBody := c.GetRequestBody()
+
+	shouldRecord := rpcmetrics.Enabled() && shouldRecordGitService(service)
+	if shouldRecord {
+		var done func(error)
+		reqBody, writer, done = wrapWithMetrics(c, service, version, reqBody, writer)
+		defer done(nil)
+	}
+
 	headerNoCache(c)
 	c.Header("Content-type", fmt.Sprintf("application/x-git-%s-advertisement", service))
 
 	c.Status(http.StatusOK)
 	if len(version) == 0 {
-		c.GetWriter().Write(packetWrite("# service=git-" + service + "\n"))
-		c.GetWriter().Write(packetFlush())
+		writer.Write(packetWrite("# service=git-" + service + "\n"))
+		writer.Write(packetFlush())
 	}
 
-	runCommand2(c.GetWriter(), gitCommand(
+	runCommand2(writer, gitCommand(
 		version,
 		service,
 		"--stateless-rpc",
 		"--advertise-refs",
 		c.Repository.DiskPath(),
-	), c.GetRequestBody())
+	), reqBody)
 }
 
 // RunProcess command
@@ -157,19 +184,27 @@ func RunProcess(service string, c *webcontext.Context) {
 	c.Header("Content-Type", fmt.Sprintf("application/x-git-%s-result", service))
 	headerNoCache(c)
 
-	var (
-		reqBody = c.GetRequestBody()
-		err     error
-	)
+	reqBody := c.GetRequestBody()
+	writer := c.GetWriter()
+	var err error
+	var errMsg string
 
-	// Handle GZIP
+	// Handle GZIP early so we can parse uncompressed upload-pack commands.
 	if c.GetHeader("Content-Encoding") == "gzip" {
 		reqBody, err = gzip.NewReader(reqBody)
 		if err != nil {
 			logrus.Errorf("HTTP.Get: fail to create gzip reader: %v", err)
+			errMsg = err.Error()
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
+	}
+
+	shouldRecord := rpcmetrics.Enabled() && shouldRecordGitService(service)
+	if shouldRecord {
+		var done func(error)
+		reqBody, writer, done = wrapWithMetricsProcess(c, service, version, reqBody, writer)
+		defer func() { done(errors.New(errMsg)) }()
 	}
 	defer reqBody.Close()
 
@@ -179,10 +214,11 @@ func RunProcess(service string, c *webcontext.Context) {
 		header, err := ReadGitSendPackHeader(reqBody)
 		if err != nil {
 			logrus.Errorf("receive-pack error %v", err)
+			errMsg = err.Error()
 			c.AbortWithStatus(500)
 			return
 		}
-		logrus.Infof("push header:" + string(header))
+		logrus.Infof("push header:%s", header)
 		re := regexp.MustCompile(
 			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/\S*)`,
 		)
@@ -206,27 +242,143 @@ func RunProcess(service string, c *webcontext.Context) {
 			// Only when one branch is created will it be written to the writer
 			// Refer to github
 			if len(pushEvents) == 1 && pushEvents[0].IsCreateNewBranch() {
-				c.GetWriter().Write(NewReportStatus(
+				writer.Write(NewReportStatus(
 					"unpack ok",
 					"ok "+pushEvents[0].Ref,
 					makeCreatePipelineLink(pushEvents[0].Ref[len(gitmodule.BRANCH_PREFIX):], c.Repository.OrgName, c.Repository.ProjectId)))
 			}
-			runCommand2(c.GetWriter(), gitCommand(
+			runCommand2(writer, gitCommand(
 				version,
 				service,
 				"--stateless-rpc",
 				repository.DiskPath(),
 			), bytes.NewReader(header), reqBody)
 			go PostReceiveHook(pushEvents, c)
+		} else {
+			errMsg = "pre_receive_hook_rejected"
 		}
 	} else {
-		runCommand2(c.GetWriter(), gitCommand(
+		runCommand2(writer, gitCommand(
 			version,
 			service,
 			"--stateless-rpc",
 			c.MustGet("repository").(*gitmodule.Repository).DiskPath(),
 		), reqBody)
 	}
+}
+
+func wrapWithMetrics(c *webcontext.Context, service, version string, reqBody io.ReadCloser, writer io.Writer) (io.ReadCloser, io.Writer, func(error)) {
+	return wrapWithMetricsInternal(c, service, version, "advertise", reqBody, writer, nil)
+}
+
+func wrapWithMetricsProcess(c *webcontext.Context, service, version string, reqBody io.ReadCloser, writer io.Writer) (io.ReadCloser, io.Writer, func(error)) {
+	var cmdCapture *rpcmetrics.LimitedBuffer
+	if service == "upload-pack" {
+		cmdCapture = rpcmetrics.NewLimitedBuffer(64 * 1024)
+		reqBody = rpcmetrics.NewCaptureReadCloser(reqBody, cmdCapture)
+	}
+	return wrapWithMetricsInternal(c, service, version, "rpc", reqBody, writer, cmdCapture)
+}
+
+func wrapWithMetricsInternal(c *webcontext.Context, service, version, phase string, reqBody io.ReadCloser, writer io.Writer, cmdCapture *rpcmetrics.LimitedBuffer) (io.ReadCloser, io.Writer, func(error)) {
+	startTime := time.Now()
+	userID := ""
+	if c.User != nil {
+		userID = c.User.Id
+	}
+	spanID := guid.NewString()
+
+	reqCounter := rpcmetrics.NewCountingReadCloser(reqBody)
+	respCounter := rpcmetrics.NewCountingWriter(writer)
+	// wrapped
+	reqBody = reqCounter
+	writer = respCounter
+
+	rpcmetrics.Record(rpcmetrics.Event{
+		Timestamp:   startTime,
+		Event:       "start",
+		ID:          spanID,
+		Service:     service,
+		Phase:       phase,
+		Method:      c.HttpRequest().Method,
+		Path:        c.HttpRequest().URL.Path,
+		RepoID:      c.Repository.ID,
+		RepoPath:    c.Repository.Path,
+		OrgID:       c.Repository.OrgId,
+		OrgName:     c.Repository.OrgName,
+		ProjectID:   c.Repository.ProjectId,
+		Project:     c.Repository.ProjectName,
+		AppID:       c.Repository.ApplicationId,
+		App:         c.Repository.ApplicationName,
+		GitProtocol: version,
+		RemoteIP:    c.EchoContext.RealIP(),
+		UserAgent:   c.HttpRequest().UserAgent(),
+		UserID:      userID,
+	})
+
+	done := func(err error) {
+		status := c.EchoContext.Response().Status
+		if status == 0 {
+			status = http.StatusOK
+		}
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+
+		event := rpcmetrics.Event{
+			Timestamp:      time.Now(),
+			Event:          "end",
+			ID:             spanID,
+			Service:        service,
+			Phase:          phase,
+			Method:         c.HttpRequest().Method,
+			Path:           c.HttpRequest().URL.Path,
+			RepoID:         c.Repository.ID,
+			RepoPath:       c.Repository.Path,
+			OrgID:          c.Repository.OrgId,
+			OrgName:        c.Repository.OrgName,
+			ProjectID:      c.Repository.ProjectId,
+			Project:        c.Repository.ProjectName,
+			AppID:          c.Repository.ApplicationId,
+			App:            c.Repository.ApplicationName,
+			GitProtocol:    version,
+			StartTimestamp: startTime,
+			Status:         status,
+			DurationMS:     time.Since(startTime).Milliseconds(),
+			Error:          errMsg,
+		}
+		if service == "upload-pack" && cmdCapture != nil {
+			event.Cmd, event.CmdParams = rpcmetrics.ParseUploadPackCmd(cmdCapture.Bytes())
+		}
+		if c.User != nil {
+			event.UserID = c.User.Id
+		}
+		if reqCounter != nil {
+			event.ReqBytes = reqCounter.Bytes()
+		}
+		if respCounter != nil {
+			event.RespBytes = respCounter.Bytes()
+		}
+		event.RemoteIP = c.EchoContext.RealIP()
+		event.UserAgent = c.HttpRequest().UserAgent()
+		rpcmetrics.Record(event)
+	}
+
+	if service == "upload-pack" && cmdCapture != nil {
+		go func(id string, buf *rpcmetrics.LimitedBuffer) {
+			for i := 0; i < 20; i++ {
+				if len(buf.Bytes()) > 0 {
+					break
+				}
+				time.Sleep(50 * time.Millisecond)
+			}
+			cmd, params := rpcmetrics.ParseUploadPackCmd(buf.Bytes())
+			rpcmetrics.UpdateActiveCmd(id, cmd, params)
+		}(spanID, cmdCapture)
+	}
+
+	return reqBody, writer, done
 }
 
 // removeEndMarkerFromHeader remove end marker '0000' from header
