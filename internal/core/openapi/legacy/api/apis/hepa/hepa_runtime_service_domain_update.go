@@ -24,5 +24,6 @@ var HEPA_RUNTIME_SERVICE_DOMAIN_UPDATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         `更新 Runtime 内指定service的域名`,
 }
