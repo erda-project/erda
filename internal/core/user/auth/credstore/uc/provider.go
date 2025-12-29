@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iam
+package uc
 
 import (
 	"reflect"
+	"time"
+
+	"github.com/go-redis/redis"
+	"github.com/recallsong/go-utils/logs"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
@@ -23,24 +27,25 @@ import (
 )
 
 type Config struct {
-	BackendHost     string `file:"host"`
-	ClientID        string `file:"client_id"`
-	ApplicationName string `file:"application_name" default:"erda"`
+	CookieName string        `file:"cookie_name"`
+	Expire     time.Duration `file:"expire"`
 }
 
 type provider struct {
-	Cfg *Config
+	Redis  *redis.Client
+	Log    logs.Logger
+	Config *Config
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	legacycontainer.Register[domain.Identity](p)
+	legacycontainer.Register[domain.CredentialStore](p)
 	return nil
 }
 
 func init() {
-	servicehub.Register("erda.core.user.identity.iam", &servicehub.Spec{
-		Services:   []string{"erda.core.user.identity"},
-		Types:      []reflect.Type{reflect.TypeOf((*domain.Identity)(nil)).Elem()},
+	servicehub.Register("erda.core.user.credstore.uc", &servicehub.Spec{
+		Services:   []string{"erda.core.user.credstore"},
+		Types:      []reflect.Type{reflect.TypeOf((*domain.CredentialStore)(nil)).Elem()},
 		ConfigFunc: func() interface{} { return &Config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}

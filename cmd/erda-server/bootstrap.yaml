@@ -76,35 +76,41 @@ erda.core.messenger.notifygroup: { }
 erda.core.messenger.notifychannel: { }
 erda.core.token: { }
 erda.core.org: { }
+
 erda.core.user:
   oauth_provider: "${OAUTH_PROVIDER:iam}"
-  #  TODO: change to standard env name
-  oauth_client_id: "${OAUTH_CLIENT_ID}"
-  oauth_client_secret: "${OAUTH_CLIENT_SECRET}"
-  openapi_public_url: "${SELF_PUBLIC_URL}"
-  host: "${IAM_ADDR}"
-  iam_addr: "${IAM_ADDR}"
-  uc_addr: "${UC_ADDR}"
-
-erda.core.user.identity.iam:
-  host: "${IAM_ADDR}"
-  oauth_client_id: "${OAUTH_CLIENT_ID}"
-
-erda.core.user.oauth.iam:
-  frontend_url: "${IAM_PUBLIC_URL}"
-  host: "${IAM_ADDR}"
-  oauth_client_id: "${OAUTH_CLIENT_ID}"
-  oauth_client_secret: "${OAUTH_CLIENT_SECRET}"
-  redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
-
-erda.core.user.credstore.iam:
-  cookie_name: "${SESSION_COOKIE_NAME}"
-
+# iam user services server
 erda.core.user.iam:
   _enabled: "${IAM_ENABLED:true}"
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   client_secret: "${OAUTH_CLIENT_SECRET}"
+# iam identity
+erda.core.user.identity.iam:
+  _enabled: "${IAM_ENABLED:true}"
+  host: "${IAM_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  application_name: "${IAM_APPLICATION_NAME:erda}"
+# iam oauth impl
+erda.core.user.oauth.iam:
+  _enabled: "${IAM_ENABLED:true}"
+  frontend_url: "${IAM_PUBLIC_URL}"
+  host: "${IAM_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
+# iam user credential store
+erda.core.user.credstore.iam:
+  _enabled: "${IAM_ENABLED:true}"
+  cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
+
+# uc user services server
+erda.core.user.uc:
+  _enabled: "${UC_ENABLED:true}"
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+
 erda.core.file: { }
 
 ############# dicehub
@@ -189,18 +195,8 @@ openapi-auth-session:
   platform_protocol: "${DICE_PROTOCOL:https}"
   weight: 100
   redirect_after_login: "${UI_PUBLIC_ADDR}"
-  platform_domain: "${UI_PUBLIC_ADDR}"
+  platform_root_domain: "${DICE_ROOT_DOMAIN}"
   allowed_referrers: "${ALLOWED_REFERRERS}"
-  client_id: "${UC_CLIENT_ID:dice}"
-  # oauth
-  oauth_provider: "${OAUTH_PROVIDER:iam}"
-  oauth_redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
-  # oauth uc
-  uc_public_addr: "${UC_PUBLIC_ADDR}"
-  uc_redirect_addrs: "${SELF_PUBLIC_ADDR}"
-  # oauth iam
-  iam_public_url: "${IAM_PUBLIC_URL}"
-  iam_client_id: "${IAM_CLIENT_ID}"
   session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
   session_cookie_domain: "${COOKIE_DOMAIN}"
   cookie_max_age: "${UC_COOKIE_MAX_AGE:168h}"
@@ -318,8 +314,6 @@ erda-discover:
   urls:
     example: "http://localhost:8080"
     erda.example: "http://localhost:8080"
-
-uc-adaptor:
 
 ########### dop
 dop: { }
@@ -668,5 +662,3 @@ erda.app.ai-function:
   openaiAddr: ${AI_PROXY_ADDR:http://ai-proxy:8081}
   modelIds:
     gpt-4: ${AI_PROXY_CHATGPT4_MODEL_ID}
-#erda.core.user.credstore.cookie:
-#  cookie_name: "t_iam_dev"

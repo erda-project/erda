@@ -22,7 +22,8 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
 
-// 获取备份列表
+// GetBackupList
+// TODO: remove uc_user dependencies
 func (svc *Service) GetBackupList(pageNo, pageSize int, repo *gitmodule.Repository) (*apistructs.BackupListResponse, error) {
 	var res apistructs.BackupListResponse
 	offset := (pageNo - 1) * pageSize

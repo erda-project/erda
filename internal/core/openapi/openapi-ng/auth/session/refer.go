@@ -15,6 +15,7 @@
 package oauth
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -28,10 +29,11 @@ type referMatcher struct {
 
 func (p *provider) buildReferMatcher() *referMatcher {
 	r := referMatcher{
-		allowedSuffixes: make([]string, 0),
+		allowedSuffixes: []string{
+			fmt.Sprintf(".%s", p.Cfg.PlatformRootDomain),
+		},
 		exactDomains: map[string]struct{}{
-			p.Cfg.PlatformDomain: {},
-			p.Cfg.IAMPublicURL:   {},
+			p.Cfg.PlatformRootDomain: {},
 		},
 	}
 	for _, refer := range p.Cfg.AllowedReferrers {

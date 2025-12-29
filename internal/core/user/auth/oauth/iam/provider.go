@@ -34,8 +34,8 @@ const (
 type Config struct {
 	FrontendURL  string `file:"frontend_url"`
 	BackendHost  string `file:"host"`
-	ClientID     string `file:"oauth_client_id"`
-	ClientSecret string `file:"oauth_client_secret"`
+	ClientID     string `file:"client_id"`
+	ClientSecret string `file:"client_secret"`
 	// Optional, only needed for authorization_code grant types
 	RedirectURI string `file:"redirect_uri"`
 }

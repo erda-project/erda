@@ -798,20 +798,9 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		logrus.Debugf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
-		if err := m.firstUserBecomeAdmin(userID); err != nil {
-			return false
-		}
-		return true
+		return false
 	}
 	return true
-}
-
-func (m *Member) firstUserBecomeAdmin(userID string) error {
-	return m.db.Create(&model.Member{
-		ScopeType: apistructs.SysScope,
-		UserID:    userID,
-	}).Error
 }
 
 // ListByScopeTypeAndUser 根据scopeType & user 获取成员
