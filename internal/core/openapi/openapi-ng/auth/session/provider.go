@@ -15,12 +15,9 @@
 package oauth
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -35,38 +32,25 @@ type config struct {
 	Weight               int64         `file:"weight" default:"100"`
 	PlatformProtocol     string        `file:"platform_protocol" default:"https"`
 	RedirectAfterLogin   string        `file:"redirect_after_login"`
-	PlatformDomain       string        `file:"platform_domain"`
+	PlatformRootDomain   string        `file:"platform_root_domain"`
 	AllowedReferrers     []string      `file:"allowed_referrers"`
 	SessionCookieName    string        `file:"session_cookie_name"`
 	SessionCookieDomains []string      `file:"session_cookie_domain"`
 	CookieMaxAge         time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the cookie. optional."`
 	// CookieSameSite default set to 2, which is `lax`, more options see https://github.com/golang/go/blob/619b419a4b1506bde1aa7e833898f2f67fd0e83e/src/net/http/cookie.go#L52-L57
 	CookieSameSite int `file:"cookie_same_site" default:"2" desc:"indicates if cookie is SameSite. optional."`
-	// oauth
-	OAuthProvider    string `file:"oauth_provider"`
-	OAuthRedirectURI string `file:"oauth_redirect_uri"`
-	// oauth uc
-	UCPublicAddr    string   `file:"uc_public_addr"`
-	UCRedirectAddrs []string `file:"uc_redirect_addrs"`
-	UCClientID      string   `file:"uc_client_id" default:"dice"`
-	UCClientSecret  string   `file:"uc_client_secret" default:"secret"`
-	// oauth iam
-	IAMPublicURL string `file:"iam_public_url"`
-	IAMClientID  string `file:"iam_client_id"`
 }
 
 // +provider
 type provider struct {
-	Cfg    *config
-	Log    logs.Logger
-	Router openapi.Interface `autowired:"openapi-router"`
-	Redis  *redis.Client     `autowired:"redis-client"`
-	Org    org.Interface
-
-	OAuthLoginFlowProvider domain.OAuthLoginFlow `autowired:"erda.core.user.oauth"`
-	referMatcher           *referMatcher
-	Settings               settings.OpenapiSettings `autowired:"openapi-settings"`
-	CredStore              domain.CredentialStore   `autowired:"erda.core.user.credstore"`
+	Cfg                  *config
+	Log                  logs.Logger
+	Router               openapi.Interface           `autowired:"openapi-router"`
+	Settings             settings.OpenapiSettings    `autowired:"openapi-settings"`
+	OAuthSessionProvider domain.OAuthSessionProvider `autowired:"erda.core.user.oauth"`
+	CredStore            domain.CredentialStore      `autowired:"erda.core.user.credstore"`
+	Org                  org.Interface
+	referMatcher         *referMatcher
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -81,10 +65,6 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	router.Add(http.MethodPost, "/api/openapi/logout", p.Logout)
 	router.Add(http.MethodPost, "/logout", p.Logout)
 	p.addUserInfoAPI(router)
-
-	if p.Redis == nil {
-		return fmt.Errorf("redis-client cannot be empty")
-	}
 	return nil
 }
 

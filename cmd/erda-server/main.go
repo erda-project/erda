@@ -127,9 +127,6 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/openapi-v1"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/proto"
 
-	// uc-adaptor
-	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
-
 	// dop
 	_ "github.com/erda-project/erda/internal/apps/devflow/flow"
 	_ "github.com/erda-project/erda/internal/apps/devflow/issuerelation"

@@ -18,12 +18,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
-	"sync"
 
+	"github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
@@ -33,39 +37,6 @@ import (
 const (
 	CtxKeyOauth2JwtKeyPayload = "oauth2-jwt-token-payload"
 )
-
-// var ucTokenAuth *uc.UCTokenAuth
-var once sync.Once
-
-// 获取 dice 自己的token
-//func GetDiceClientToken() (uc.OAuthToken, error) {
-//	once.Do(func() {
-//		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-//	})
-//	otoken, err := ucTokenAuth.GetServerToken(false)
-//	if err != nil {
-//		logrus.Error(err)
-//		return uc.OAuthToken{}, err
-//	}
-//	return otoken, nil
-//}
-
-// @return example:
-// {"id":7,"userId":null,"clientId":"dice-test","clientName":"dice测试应用","clientLogoUrl":null,"clientSecret":null,"autoApprove":false,"scope":["public_profile","email"],"resourceIds":["shinda-maru"],"authorizedGrantTypes":["client_credentials"],"registeredRedirectUris":[],"autoApproveScopes":[],"authorities":["ROLE_CLIENT"],"accessTokenValiditySeconds":433200,"refreshTokenValiditySeconds":433200,"additionalInformation":{}}
-//func VerifyUCClientToken(token string) (uc.TokenClient, error) {
-//	once.Do(func() {
-//		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-//	})
-//	return ucTokenAuth.Auth(token)
-//}
-
-//func NewUCTokenClient(req *uc.NewClientRequest) (*uc.NewClientResponse, error) {
-//	//once.Do(func() {
-//	//	ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-//	//})
-//	//return ucTokenAuth.NewClient(req)
-//	return nil, errors.New("todo")
-//}
 
 // OAuth2APISpec .
 type OAuth2APISpec interface {
@@ -163,6 +134,20 @@ func VerifyOpenapiOAuth2Token(o *oauth2.OAuth2Server, spec OAuth2APISpec, r *htt
 		}
 	}
 
+	// fallback to use org name
+	if orgName := r.Header.Get(httputil.OrgNameHeader); r.Header.Get(httputil.OrgHeader) == "" && orgName != "" {
+		orgResponse, err := org.MustGetOrg().GetOrg(
+			apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi),
+			&pb.GetOrgRequest{
+				IdOrName: orgName,
+			},
+		)
+		if err != nil {
+			return TokenClient{}, err
+		}
+		r.Header.Set(httputil.OrgHeader, strconv.FormatUint(orgResponse.Data.ID, 10))
+	}
+
 	// inject metadata into header
 	for k, v := range claims.Payload.Metadata {
 		r.Header.Set(k, v)
@@ -196,7 +181,7 @@ func VerifyAccessKey(tokenService tokenpb.TokenServiceServer, r *http.Request) (
 	if resp.Total == 0 {
 		return TokenClient{}, fmt.Errorf("auth failed, access key: %s", token)
 	} else if resp.Total > 1 {
-		return TokenClient{}, fmt.Errorf("auth failed, duplidate data")
+		return TokenClient{}, fmt.Errorf("auth failed, duplicate data")
 	}
 	scopeId := resp.Data[0].ScopeId
 	if resp.Data[0].ScopeId != "" {

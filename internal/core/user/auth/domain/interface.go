@@ -25,11 +25,12 @@ import (
 
 type OAuthProvider interface {
 	OAuthTokenProvider
-	OAuthLoginFlow
+	OAuthSessionProvider
 }
 
-type OAuthLoginFlow interface {
+type OAuthSessionProvider interface {
 	AuthURL(ctx context.Context, referer string) (string, error)
+	LogoutURL(ctx context.Context, referer string) (string, error)
 }
 
 type OAuthTokenProvider interface {

@@ -69,9 +69,10 @@ type IAMCookieConfig struct {
 }
 
 type IAMUserCreate struct {
-	UserName string `json:"username"`
-	NickName string `json:"nickname"`
-	Email    string `json:"email"`
-	Mobile   string `json:"mobile,omitempty"`
-	Password string `json:"password"`
+	UserName          string `json:"username"`
+	NickName          string `json:"nickname"`
+	Email             string `json:"email"`
+	Mobile            string `json:"mobile,omitempty"`
+	Password          string `json:"password"`
+	NeedResetPassword bool   `json:"needResetPassword,omitempty"`
 }

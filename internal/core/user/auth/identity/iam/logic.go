@@ -82,7 +82,7 @@ func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*
 
 func (p *provider) getUserByAuthToken(authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
 	var (
-		reqPath = fmt.Sprintf("/%s/iam/api/v1/admin/user/find-by-token", p.Cfg.ClientID)
+		reqPath = fmt.Sprintf("/%s/iam/api/v1/admin/user/find-by-token", p.Cfg.ApplicationName)
 		body    bytes.Buffer
 	)
 

@@ -57,8 +57,9 @@ type UserInfo struct {
 }
 
 type SessionRefresh struct {
-	Token  string       `json:"token"`
-	Cookie *http.Cookie `json:"cookie,omitempty"`
+	Token     string       `json:"token"`
+	SessionID string       `json:"sessionID"`
+	Cookie    *http.Cookie `json:"cookie,omitempty"`
 }
 
 type USERID string

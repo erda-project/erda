@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
@@ -199,7 +200,9 @@ func (a *Auth) whichCheck(req *http.Request, spec *spec.Spec) (checkType, error)
 func (a *Auth) checkToken(spec *spec.Spec, req *http.Request) (TokenClient, AuthResult) {
 	// 1. openapi oauth2 token
 	oauth2TC, err := VerifyOpenapiOAuth2Token(a.OAuth2Server, &OpenapiSpec{Spec: spec}, req)
-	if err == nil {
+	if err != nil {
+		logrus.Errorf("failed to verify openapi oauth token, %v", err)
+	} else {
 		return oauth2TC, AuthResult{AuthSucc, ""}
 	}
 	// 2. access key

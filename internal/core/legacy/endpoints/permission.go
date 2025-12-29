@@ -185,6 +185,8 @@ func (e *Endpoints) ScopeRoleAccess(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrAccessPermission.InternalError(err).ToResp(), nil
 	}
 
+	fmt.Println("------>", permission.Access == true, len(permission.PermissionList))
+
 	// 若无权访问，返回对应 scope 的管理员信息，用于提示
 	if !permission.Access {
 		members, err := e.member.GetScopeManagersByScopeID(accessReq.Scope.Type, scopeID)

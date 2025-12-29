@@ -112,3 +112,22 @@ func (p *provider) AuthURL(_ context.Context, referer string) (string, error) {
 	baseURL.RawQuery = q.Encode()
 	return baseURL.String(), nil
 }
+
+func (p *provider) LogoutURL(ctx context.Context, referer string) (string, error) {
+	redirectURL, err := p.AuthURL(ctx, referer)
+	if err != nil {
+		return "", err
+	}
+
+	q := make(url.Values)
+	q.Set("redirectUrl", redirectURL)
+
+	baseURL, err := url.Parse(p.Config.FrontendURL)
+	if err != nil {
+		return "", err
+	}
+
+	baseURL.Path = "logout"
+	baseURL.RawQuery = q.Encode()
+	return baseURL.String(), nil
+}

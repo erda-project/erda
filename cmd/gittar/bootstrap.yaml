@@ -41,9 +41,10 @@ ai-proxy-client:
 erda.core.user.oauth.iam:
   frontend_url: "${IAM_PUBLIC_URL}"
   host: "${IAM_ADDR}"
-  oauth_client_id: "${OAUTH_CLIENT_ID}"
-  oauth_client_secret: "${OAUTH_CLIENT_SECRET}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
 
 erda.core.user.identity.iam:
   host: "${IAM_ADDR}"
-  oauth_client_id: "${OAUTH_CLIENT_ID}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  application_name: "${IAM_APPLICATION_NAME:erda}"

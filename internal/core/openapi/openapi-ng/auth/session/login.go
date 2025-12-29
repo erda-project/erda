@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -34,7 +33,7 @@ func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
 		referer = p.Cfg.RedirectAfterLogin
 	}
 
-	authURL, err := p.OAuthLoginFlowProvider.AuthURL(context.Background(), referer)
+	authURL, err := p.OAuthSessionProvider.AuthURL(r.Context(), referer)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,16 +102,16 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 		Secure:   scheme == "https",
 	})
 
-	redirectURL, err := p.OAuthLoginFlowProvider.AuthURL(context.Background(), referer)
+	logoutURL, err := p.OAuthSessionProvider.LogoutURL(r.Context(), referer)
 	if err != nil {
-		p.Log.Errorf("failed to get oauth url, %v", err)
+		p.Log.Errorf("failed to get logout url, %v", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: fmt.Sprintf("%s/logout?redirectUrl=%s", p.Cfg.IAMPublicURL, url.QueryEscape(redirectURL)),
+		URL: logoutURL,
 	})
 }
 
@@ -156,26 +155,4 @@ func (p *provider) getSessionDomain(host string) string {
 		}
 	}
 	return ""
-}
-
-func (p *provider) getUCRedirectHost(referer, host string) string {
-	for _, addr := range p.Cfg.UCRedirectAddrs {
-		domain := addr
-		// ignore service port
-		for _, v := range []string{addr, host} {
-			if h, _, err := net.SplitHostPort(v); err == nil {
-				domain = h
-			}
-		}
-		domains := strings.SplitN(domain, ".", -1)
-		l := len(domains)
-		if l < 2 {
-			continue
-		}
-		rootDomain := domains[l-2] + "." + domains[l-1]
-		if strings.Contains(referer, rootDomain) {
-			return addr
-		}
-	}
-	return host
 }

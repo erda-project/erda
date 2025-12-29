@@ -24,6 +24,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
@@ -31,11 +33,12 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/settings"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	identity "github.com/erda-project/erda/internal/core/user/common"
+	oatuh2TokenStore "github.com/erda-project/erda/pkg/oauth2/clientstore/mysqlclientstore"
 )
 
 type config struct {
-	Weight int64 `file:"weight" default:"50"`
+	Weight               int64  `file:"weight" default:"50"`
+	AccessTokenExpiredIn string `file:"access_token_expred_in" default:"1h"`
 }
 
 // +provider
@@ -47,38 +50,50 @@ type provider struct {
 	Org       org.Interface
 	Settings  settings.OpenapiSettings `autowired:"openapi-settings"`
 	CredStore domain.CredentialStore   `autowired:"erda.core.user.credstore"`
+	Identity  domain.Identity          `autowired:"erda.core.user.identity"`
+	Bdl       *bundle.Bundle
+	// openapi token
+	openapiToken *oatuh2TokenStore.ClientStoreItem
 }
 
-func (p *provider) Init(ctx servicehub.Context) (err error) {
+func (p *provider) Init(_ servicehub.Context) error {
+	p.Bdl = bundle.New(bundle.WithErdaServer())
+	// router
 	p.Router.Add(http.MethodPost, "/login", p.Login)
+
+	// get openapi oauth token pair
+	repo, err := NewOAuth2Repo()
+	if err != nil {
+		return err
+	}
+	p.openapiToken, err = repo.GetOrCreateOpenAPIClient()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-
+	var loginParams LoginParams
 	switch contentType := strings.ToLower(r.Header.Get("content-type")); {
 	case strings.HasPrefix(contentType, "application/json"):
-		if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&loginParams); err != nil {
 			http.Error(rw, err.Error(), http.StatusUnauthorized)
 			return
 		}
 	default:
-		r.ParseForm()
-		params.Username = r.FormValue("username")
-		params.Password = r.FormValue("password")
+		_ = r.ParseForm()
+		loginParams.Username = r.FormValue("username")
+		loginParams.Password = r.FormValue("password")
 	}
 
-	if params.Username == "" || params.Password == "" {
+	if loginParams.Username == "" || loginParams.Password == "" {
 		http.Error(rw, "username or password is required", http.StatusUnauthorized)
 		return
 	}
 
 	user := auth.NewUser(p.CredStore)
-	err := user.PwdLogin(params.Username, params.Password)
+	err := user.PwdLogin(loginParams.Username, loginParams.Password)
 	if err != nil {
 		err := fmt.Errorf("failed to PwdLogin: %v", err)
 		p.Log.Error(err)
@@ -89,19 +104,31 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 	if authr.Code != auth.AuthSucc {
 		err := fmt.Errorf("failed to GetInfo: %v", authr.Detail)
 		p.Log.Error(err)
-		http.Error(rw, err.Error(), authr.Code)
+		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	//writer, ok := p.CredStore.(identity.RefreshWriter)
-	//if ok {
-	//	writer.WriteRefresh(rw, r)
-	//}
+	token, err := p.Bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
+		ClientID:     p.openapiToken.ID,
+		ClientSecret: p.openapiToken.Secret,
+		Payload: apistructs.OAuth2TokenPayload{
+			AccessTokenExpiredIn: p.Cfg.AccessTokenExpiredIn,
+			AllowAccessAllAPIs:   true,
+			Metadata: map[string]string{
+				"User-ID": string(info.ID),
+			},
+		},
+	})
+	if err != nil {
+		err := fmt.Errorf("failed to get oauth2 token with client id %s, %v", p.openapiToken.ID, err)
+		p.Log.Error(err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	common.ResponseJSON(rw, &struct {
-		identity.UserInfo
-	}{
-		UserInfo: info,
+	common.ResponseJSON(rw, &LoginResponse{
+		User:  &info,
+		Token: token,
 	})
 }
 

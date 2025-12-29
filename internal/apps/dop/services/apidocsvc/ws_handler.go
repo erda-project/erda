@@ -33,6 +33,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/websocket"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 const (
@@ -302,9 +304,11 @@ func (h *APIDocWSHandler) handleCommit(tx *dbclient.TX, w websocket.ResponseWrit
 func (h *APIDocWSHandler) setLockedUser(userID string) {
 	h.lockUserID = userID
 
-	getUserResp, err := h.userService.GetUser(context.Background(), &userpb.GetUserRequest{
-		UserID: userID,
-	})
+	getUserResp, err := h.userService.GetUser(
+		apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&userpb.GetUserRequest{
+			UserID: userID,
+		})
 	if err == nil {
 		h.lockUserNick = getUserResp.Data.Nick
 	}

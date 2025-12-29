@@ -212,11 +212,12 @@ func (p *provider) UserCreate(_ context.Context, req *pb.UserCreateRequest) (*pb
 	for _, user := range req.Users {
 		r, err := client.Post(p.Cfg.Host).Path(path).
 			JSONBody(&common.IAMUserCreate{
-				UserName: user.Name,
-				NickName: user.Nick,
-				Email:    user.Email,
-				Mobile:   user.Phone,
-				Password: user.Password,
+				UserName:          user.Name,
+				NickName:          user.Nick,
+				Email:             user.Email,
+				Mobile:            user.Phone,
+				Password:          user.Password,
+				NeedResetPassword: false,
 			}).
 			Do().Body(&resp)
 		if err != nil {
