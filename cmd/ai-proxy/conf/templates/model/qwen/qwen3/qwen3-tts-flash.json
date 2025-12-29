@@ -33,9 +33,9 @@
             ]
           },
           "context": {
-            "context_length": 10000,
+            "context_length": 600,
             "max_completion_tokens": 0,
-            "max_prompt_tokens": 0
+            "max_prompt_tokens": 600
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
@@ -44,9 +44,9 @@
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000014",
+            "prompt": "0.00008",
             "request": "0",
-            "unit": "USD",
+            "unit": "CNY",
             "web_search": "0"
           }
         },
