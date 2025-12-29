@@ -12,3 +12,15 @@ routes:
           defaultOpenAIAudioModel: whisper-1
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
+
+  - path: /v1/audio/speech
+    method: POST
+    request_filters:
+      - name: rate-limit
+      - name: auth
+      - name: context
+      - name: openai-compatible-director
+      - name: qwen-tts-converter
+      - name: set-response-chunk-splitter
+    response_filters:
+      - name: qwen-tts-converter
