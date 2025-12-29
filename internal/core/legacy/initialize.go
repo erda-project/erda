@@ -74,8 +74,6 @@ func (p *provider) Initialize() error {
 		bundle.WithCollector(),
 	)
 
-	go ep.UserSvc().UcUserMigration()
-
 	server := httpserver.New("")
 	server.RegisterEndpoint(ep.Routes())
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
@@ -195,6 +193,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	)
 	notifyService := notify.New(
 		notify.WithDBClient(db),
+		notify.WithUserService(p.UserSvc),
 	)
 
 	// init activity service

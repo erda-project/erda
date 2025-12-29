@@ -15,21 +15,21 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/monitor"
 	"github.com/erda-project/erda/internal/core/openapi/settings"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 
@@ -51,28 +51,25 @@ const (
 )
 
 const (
-	HeaderAuthorization             = "Authorization"
-	HeaderAuthorizationBearerPrefix = "Bearer "
+	HeaderAuthorization                = "Authorization"
+	HeaderAuthorizationBearerPrefix    = "Bearer "
+	HeaderAuthorizationBasicAuthPrefix = "Basic "
 )
 
 type Auth struct {
-	RedisCli     *redis.Client
 	OAuth2Server *oauth2.OAuth2Server
 	TokenService tokenpb.TokenServiceServer
 	Settings     settings.OpenapiSettings
+	CredStore    domain.CredentialStore
 }
 
 func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer, settings settings.OpenapiSettings) (*Auth, error) {
-	sentinelAddrs := strings.Split(conf.RedisSentinelAddrs(), ",")
-	RedisCli := redis.NewFailoverClient(&redis.FailoverOptions{
-		MasterName:    conf.RedisMasterName(),
-		SentinelAddrs: sentinelAddrs,
-		Password:      conf.RedisPwd(),
-	})
-	if _, err := RedisCli.Ping().Result(); err != nil {
-		return nil, err
-	}
-	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server, TokenService: token, Settings: settings}, nil
+	return &Auth{
+		OAuth2Server: oauth2server,
+		TokenService: token,
+		Settings:     settings,
+		CredStore:    legacycontainer.Get[domain.CredentialStore](),
+	}, nil
 }
 
 func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
@@ -82,13 +79,15 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			monitor.Notify(monitor.Info{
 				Tp: monitor.AuthFail, Detail: r.Detail,
 			})
+		} else {
+			monitor.Notify(monitor.Info{
+				Tp: monitor.AuthSucc, Detail: "",
+			})
 		}
-		monitor.Notify(monitor.Info{
-			Tp: monitor.AuthSucc, Detail: "",
-		})
 	}()
+
 	var t checkType
-	t, err := whichCheck(req, spec)
+	t, err := a.whichCheck(req, spec)
 	if err != nil {
 		return AuthResult{Unauthed, err.Error()}
 	}
@@ -96,63 +95,69 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 	case NONE:
 		break
 	case LOGIN:
-		user := NewUser(a.RedisCli, a.Settings.GetSessionExpire())
-		if r = a.checkLogin(req, user, spec); r.Code != AuthSucc {
+		user := NewUser(a.CredStore)
+		if r = user.IsLogin(req); r.Code != AuthSucc {
 			return r
 		}
-		if r = setUserInfoHeaders(req, user); r.Code != AuthSucc {
+		if r = applyUserIdentity(req, user); r.Code != AuthSucc {
 			return r
 		}
 	case TRY_LOGIN:
-		user := NewUser(a.RedisCli, a.Settings.GetSessionExpire())
-		if r := a.checkLogin(req, user, spec); r.Code != AuthSucc {
+		user := NewUser(a.CredStore)
+		if r := user.IsLogin(req); r.Code != AuthSucc {
 			break
 		}
-		if r := setUserInfoHeaders(req, user); r.Code != AuthSucc {
+		if r := applyUserIdentity(req, user); r.Code != AuthSucc {
 			break
 		}
 	case BASICAUTH:
-		user := NewUser(a.RedisCli, a.Settings.GetSessionExpire())
+		user := NewUser(a.CredStore)
 		if r = a.checkBasicAuth(req, user); r.Code != AuthSucc {
 			return r
 		}
-		if r = setUserInfoHeaders(req, user); r.Code != AuthSucc {
+		if r = applyUserIdentity(req, user); r.Code != AuthSucc {
 			return r
 		}
-
 	case TOKEN:
-		var client TokenClient
-		client, r = a.checkToken(spec, req)
+		var tokenClient TokenClient
+		tokenClient, r = a.checkToken(spec, req)
 		if r.Code != AuthSucc {
 			return r
 		}
-		req.Header.Set("Client-ID", client.ClientID)
-		req.Header.Set("Client-Name", client.ClientName)
+		req.Header.Set("Client-ID", tokenClient.ClientID)
+		req.Header.Set("Client-Name", tokenClient.ClientName)
 	}
 	return r
 }
 
-func setUserInfoHeaders(req *http.Request, user *User) AuthResult {
-	var userinfo identity.UserInfo
-	r := AuthResult{AuthSucc, ""}
+func applyUserIdentity(req *http.Request, user *User) AuthResult {
+	var (
+		userinfo identity.UserInfo
+		r        = AuthResult{AuthSucc, ""}
+	)
+
 	userinfo, r = user.GetInfo(req)
 	if r.Code != AuthSucc {
 		return r
 	}
+
 	// set User-ID
 	req.Header.Set("User-ID", string(userinfo.ID))
-	if _, err := req.Cookie(conf.SessionCookieName()); err != nil {
-		req.AddCookie(&http.Cookie{Name: conf.SessionCookieName(), Value: user.sessionID})
+
+	// with session refresh context
+	if newCtx := WithSessionRefresh(req.Context(), userinfo.SessionRefresh); newCtx != req.Context() {
+		*req = *req.WithContext(newCtx)
 	}
 
-	var scopeinfo ScopeInfo
-	scopeinfo, r = user.GetScopeInfo(req)
+	var scopeInfo ScopeInfo
+	scopeInfo, r = user.GetScopeInfo(req)
 	if r.Code != AuthSucc {
 		return r
 	}
+
 	// set Org-ID
-	if scopeinfo.OrgID != 0 {
-		req.Header.Set("Org-ID", strconv.FormatUint(scopeinfo.OrgID, 10))
+	if scopeInfo.OrgID != 0 {
+		req.Header.Set("Org-ID", strconv.FormatUint(scopeInfo.OrgID, 10))
 	}
 	return r
 }
@@ -167,13 +172,13 @@ const (
 	NONE
 )
 
-func whichCheck(req *http.Request, spec *spec.Spec) (checkType, error) {
-	session := req.Context().Value("session")
-	if spec.CheckLogin && session != nil {
+func (a *Auth) whichCheck(req *http.Request, spec *spec.Spec) (checkType, error) {
+	cred, _ := a.CredStore.Load(context.TODO(), req)
+	if spec.CheckLogin && cred != nil {
 		return LOGIN, nil
 	}
-	auth := req.Header.Get("Authorization")
-	if spec.CheckBasicAuth && strings.HasPrefix(auth, "Basic ") {
+	auth := req.Header.Get(HeaderAuthorization)
+	if spec.CheckBasicAuth && strings.HasPrefix(auth, HeaderAuthorizationBasicAuthPrefix) {
 		return BASICAUTH, nil
 	}
 	if spec.CheckToken && auth != "" {
@@ -188,52 +193,48 @@ func whichCheck(req *http.Request, spec *spec.Spec) (checkType, error) {
 	return NONE, errors.New("lack of required auth header")
 }
 
-func (a *Auth) checkLogin(req *http.Request, user *User, spec *spec.Spec) AuthResult {
-	return user.IsLogin(req)
-}
-
 // checkToken try:
-// 1. uc token
-// 2. openapi oauth2 token
-// 3. access key
+// 1. openapi oauth2 token
+// 2. access key
 func (a *Auth) checkToken(spec *spec.Spec, req *http.Request) (TokenClient, AuthResult) {
-	// 1. uc token
-	ucTC, err := VerifyUCClientToken(req.Header.Get(HeaderAuthorization))
-	if err == nil {
-		return TokenClient{
-			ClientID:   ucTC.ClientID,
-			ClientName: ucTC.ClientName,
-		}, AuthResult{AuthSucc, ""}
-	}
-	// 2. openapi oauth2 token
+	// 1. openapi oauth2 token
 	oauth2TC, err := VerifyOpenapiOAuth2Token(a.OAuth2Server, &OpenapiSpec{Spec: spec}, req)
 	if err == nil {
 		return oauth2TC, AuthResult{AuthSucc, ""}
 	}
-	// 3. access key
-	accesskey, err := VerifyAccessKey(a.TokenService, req)
+	// 2. access key
+	ak, err := VerifyAccessKey(a.TokenService, req)
 	if err != nil {
 		return TokenClient{}, AuthResult{AuthFail, err.Error()}
 	}
-	return accesskey, AuthResult{AuthSucc, ""}
+	return ak, AuthResult{AuthSucc, ""}
 }
 
 func (a *Auth) checkBasicAuth(req *http.Request, user *User) AuthResult {
-	auth := req.Header.Get("Authorization")
-	auth = strings.TrimPrefix(auth, "Basic ")
-	userNameAndPwd, err := base64.StdEncoding.DecodeString(auth)
-	if err != nil {
-		return AuthResult{AuthFail,
-			fmt.Sprintf("checkBasicAuth: decode base64 fail: %v", err)}
+	auth := req.Header.Get(HeaderAuthorization)
+	if auth == "" {
+		return AuthResult{AuthFail, "missing Authorization header"}
 	}
-	splitted := strings.SplitN(string(userNameAndPwd), ":", 2)
-	if len(splitted) != 2 {
-		return AuthResult{AuthFail,
-			fmt.Sprintf("checkBasicAuth: split username and password fail: %v", userNameAndPwd)}
+
+	if !strings.HasPrefix(auth, HeaderAuthorizationBasicAuthPrefix) {
+		return AuthResult{AuthFail, "Authorization is not Basic"}
 	}
-	_, err = user.PwdLogin(splitted[0], splitted[1], a.Settings.GetSessionExpire())
+
+	auth = strings.TrimPrefix(auth, HeaderAuthorizationBasicAuthPrefix)
+
+	raw, err := base64.StdEncoding.DecodeString(auth)
 	if err != nil {
+		return AuthResult{AuthFail, "invalid base64 basic auth"}
+	}
+
+	parts := strings.SplitN(string(raw), ":", 2)
+	if len(parts) != 2 {
+		return AuthResult{AuthFail, "invalid basic auth format"}
+	}
+
+	if err := user.PwdLogin(parts[0], parts[1]); err != nil {
 		return AuthResult{Unauthed, err.Error()}
 	}
-	return AuthResult{AuthFail, err.Error()}
+
+	return AuthResult{AuthSucc, ""}
 }

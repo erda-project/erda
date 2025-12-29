@@ -16,21 +16,17 @@
 package endpoints
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gorilla/schema"
-	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/service/adaptor"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
 	bdl                *bundle.Bundle
-	ucAdaptor          *adaptor.Adaptor
 	queryStringDecoder *schema.Decoder
 }
 
@@ -61,13 +57,6 @@ func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	}
 }
 
-// WithUcAdaptor 配置数据库
-func WithUcAdaptor(ucAdaptor *adaptor.Adaptor) Option {
-	return func(e *Endpoints) {
-		e.ucAdaptor = ucAdaptor
-	}
-}
-
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
@@ -80,15 +69,4 @@ var queryStringDecoder *schema.Decoder
 func init() {
 	queryStringDecoder = schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
-}
-
-// ListSyncRecord 查看uc同步历史记录
-func (e *Endpoints) ListSyncRecord(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	records, err := e.ucAdaptor.ListSyncRecord()
-	if err != nil {
-		return nil, errors.Errorf("list uc sync record err: %v", err)
-	}
-
-	return httpserver.OkResp(records)
 }

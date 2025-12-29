@@ -507,7 +507,7 @@ require (
 	k8s.io/component-base v0.30.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99 // indirect
 	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
-	moul.io/http2curl v1.0.0 // indirect
+	moul.io/http2curl v1.0.0
 	oras.land/oras-go v1.2.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.29.0 // indirect
 	sigs.k8s.io/cli-utils v0.35.0 // indirect

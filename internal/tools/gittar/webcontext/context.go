@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
@@ -43,25 +43,27 @@ import (
 )
 
 type Context struct {
-	EchoContext  echo.Context
-	Repository   *gitmodule.Repository
-	User         *models.User
-	Service      *models.Service
-	DBClient     *models.DBClient
-	Bundle       *bundle.Bundle
-	UCAuth       *uc.UCUserAuth
-	next         bool
-	EtcdClient   *clientv3.Client
-	TokenService tokenpb.TokenServiceServer
-	orgClient    org.ClientInterface
-	i18nTran     i18n.Translator
+	EchoContext        echo.Context
+	Repository         *gitmodule.Repository
+	User               *models.User
+	Service            *models.Service
+	DBClient           *models.DBClient
+	Bundle             *bundle.Bundle
+	OAuthTokenProvider domain.OAuthTokenProvider
+	Identity           domain.Identity
+	next               bool
+	EtcdClient         *clientv3.Client
+	TokenService       tokenpb.TokenServiceServer
+	orgClient          org.ClientInterface
+	i18nTran           i18n.Translator
 }
 
 type ContextHandlerFunc func(*Context)
 
 var dbClientInstance *models.DBClient
 var diceBundleInstance *bundle.Bundle
-var ucAuthInstance *uc.UCUserAuth
+var oauthTokenProvider domain.OAuthTokenProvider
+var identity domain.Identity
 var etcdClientInstance *clientv3.Client
 var tokenServiceInstance *tokenpb.TokenServiceServer
 var orgClient org.ClientInterface
@@ -75,8 +77,12 @@ func WithBundle(diceBundle *bundle.Bundle) {
 	diceBundleInstance = diceBundle
 }
 
-func WithUCAuth(ucAuth *uc.UCUserAuth) {
-	ucAuthInstance = ucAuth
+func WithOAuthTokenProvider(p domain.OAuthTokenProvider) {
+	oauthTokenProvider = p
+}
+
+func WithIdentity(i domain.Identity) {
+	identity = i
 }
 
 func WithEtcdClient(client *clientv3.Client) {
@@ -160,16 +166,17 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		user = userValue.(*models.User)
 	}
 	return &Context{
-		Repository:   repository.(*gitmodule.Repository),
-		EchoContext:  c,
-		User:         user,
-		Service:      models.NewService(db, diceBundleInstance, i18nTran, apis.HTTPLanguage(c.Request())),
-		DBClient:     db,
-		UCAuth:       ucAuthInstance,
-		Bundle:       diceBundleInstance,
-		EtcdClient:   etcdClientInstance,
-		TokenService: *tokenServiceInstance,
-		orgClient:    orgClient,
+		Repository:         repository.(*gitmodule.Repository),
+		EchoContext:        c,
+		User:               user,
+		Service:            models.NewService(db, diceBundleInstance, i18nTran, apis.HTTPLanguage(c.Request())),
+		DBClient:           db,
+		OAuthTokenProvider: oauthTokenProvider,
+		Identity:           identity,
+		Bundle:             diceBundleInstance,
+		EtcdClient:         etcdClientInstance,
+		TokenService:       *tokenServiceInstance,
+		orgClient:          orgClient,
 	}
 }
 

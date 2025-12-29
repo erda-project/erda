@@ -17,12 +17,14 @@
 package assetsvc
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
-	"github.com/erda-project/erda/internal/apps/dop/services/uc"
 )
 
 // 通知消息中的 action 参数
@@ -56,14 +58,17 @@ func (svc *Service) CheckClientIDSecret(orgID, userID, clientID, clientSecret st
 }
 
 func (svc *Service) EmailNotify(title, templateName string, params map[string]string, locale string, orgID uint64, userIDs []string) error {
-	users, err := uc.GetUsers(userIDs)
+	findUsersResp, err := svc.userService.FindUsers(context.Background(), &userpb.FindUsersRequest{
+		IDs: userIDs,
+	})
+
 	if err != nil {
 		return errors.Wrap(err, "failed to GetUsers")
 	}
 	var emails []string
-	for _, v := range users {
-		if v.Email != nil && *v.Email != "" {
-			emails = append(emails, *v.Email)
+	for _, v := range findUsersResp.Data {
+		if v.Email != "" {
+			emails = append(emails, v.Email)
 		}
 	}
 	if params != nil {

@@ -56,13 +56,13 @@ type clientToken struct {
 // 3. access key
 func (p *provider) checkToken(opts openapiauth.Options, req *http.Request, token string) (clientToken, error) {
 	// 1. uc token
-	ucToken, err := auth.VerifyUCClientToken(token)
-	if err == nil {
-		return clientToken{
-			ClientID:   ucToken.ClientID,
-			ClientName: ucToken.ClientName,
-		}, nil
-	}
+	//ucToken, err := auth.VerifyUCClientToken(token)
+	//if err == nil {
+	//	return clientToken{
+	//		ClientID:   ucToken.ClientID,
+	//		ClientName: ucToken.ClientName,
+	//	}, nil
+	//}
 	// 2. openapi oauth2 token
 	oauthToken, err := auth.VerifyOpenapiOAuth2Token(p.oauth2server, &OAuth2APISpec{opts}, req)
 	if err == nil {

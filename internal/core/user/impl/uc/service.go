@@ -109,8 +109,7 @@ func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.Get
 }
 
 func (p *provider) findUsersByQuery(query string, idOrder ...string) ([]common.User, error) {
-	// 获取token
-	token, err := p.ucTokenAuth.GetServerToken(false)
+	token, err := p.OAuthTokenProvider.ExchangeClientCredentials(context.Background(), false, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get token when finding users")
 	}
@@ -167,9 +166,9 @@ func userMapper(user *UcUser) *common.User {
 }
 
 func (p *provider) getUser(userID string) (*common.User, error) {
-	token, err := p.ucTokenAuth.GetServerToken(false)
+	token, err := p.OAuthTokenProvider.ExchangeClientCredentials(context.Background(), false, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding user")
+		return nil, errors.Wrap(err, "failed to get token when get user")
 	}
 
 	var user UcUser
@@ -183,7 +182,7 @@ func (p *provider) getUser(userID string) (*common.User, error) {
 
 	if !r.IsOK() {
 		if r.StatusCode() == http.StatusUnauthorized {
-			p.InvalidateServerToken()
+			//p.InvalidateServerToken()
 		}
 		return nil, errors.Errorf("failed to find user, status code: %d", r.StatusCode())
 	}

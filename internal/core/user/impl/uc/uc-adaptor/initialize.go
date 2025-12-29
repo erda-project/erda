@@ -20,10 +20,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/conf"
-	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/dao"
 	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/endpoints"
-	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/service/adaptor"
-	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/ucclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	// "terminus.io/dice/telemetry/promxp"
 )
@@ -58,31 +55,14 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		bundle.WithErdaServer(),
 	)
 
-	// init uc client
-	uc := ucclient.NewUCClient()
-
-	// init db
-	db, err := dao.Open()
-	if err != nil {
-		return nil, err
-	}
-
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
-
-	// ucAdaptor
-	ucAdaptor := adaptor.New(
-		adaptor.WithDBClient(db),
-		adaptor.WithBundle(bdl),
-		adaptor.WithUCClient(uc),
-	)
 
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithUcAdaptor(ucAdaptor),
 	)
 
 	return ep, nil

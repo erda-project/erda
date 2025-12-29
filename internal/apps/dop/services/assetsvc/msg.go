@@ -22,9 +22,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
-	"github.com/erda-project/erda/internal/apps/dop/services/uc"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -214,13 +214,14 @@ func (svc *Service) contractMsgToManager(ctx context.Context, orgID uint64, cont
 	autoed bool) {
 
 	var username = contractUserID
-	users, err := uc.GetUsers([]string{contractUserID, access.CreatorID})
+
+	getUserResp, err := svc.userService.GetUser(ctx, &userpb.GetUserRequest{
+		UserID: contractUserID,
+	})
 	if err != nil {
 		logrus.Errorf("failed to GetUsers, err: %v", err)
 	}
-	if user, ok := users[contractUserID]; ok {
-		username = user.Nick
-	}
+	username = getUserResp.Data.Nick
 
 	org, err := svc.getOrg(context.Background(), orgID)
 	if err != nil {

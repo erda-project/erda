@@ -33,6 +33,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
@@ -316,16 +317,18 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, repoName string) (*ide
 }
 
 func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*identity.UserInfo, error) {
-	token, err := c.UCAuth.PwdAuth(username, passwd)
+	oauthToken, err := c.OAuthTokenProvider.ExchangePassword(context.Background(), username, passwd, nil)
 	if err != nil {
 		return nil, err
 	}
 	logrus.Debugf("login success username: %s", username)
-	userInfo, err := c.UCAuth.GetUserInfo(token)
+	userInfo, err := c.Identity.Me(context.Background(), &applier.BearerTokenAuth{
+		Token: oauthToken.AccessToken,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return &userInfo, nil
+	return userInfo, nil
 }
 
 func ValidaUserRepoWithCache(c *webcontext.Context, userId string, repo *models.Repo) (*AuthResp, error) {
