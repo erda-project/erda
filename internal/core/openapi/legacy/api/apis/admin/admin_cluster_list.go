@@ -26,6 +26,7 @@ var ADMIN_CLUSTER_LIST = apis.ApiSpec{
 	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ClusterListRequest{},
 	ResponseType: apistructs.ClusterListResponse{},
 	Doc:          "summary: 集群列表",

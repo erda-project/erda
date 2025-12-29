@@ -27,6 +27,7 @@ var HEPA_RUNTIME_DOMAIN_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DomainListRequest{},
 	ResponseType: apistructs.DomainListResponse{},
 	Doc:          `获取 Runtime 域名`,
