@@ -18,23 +18,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/textproto"
+	"net/url"
 	"strconv"
-	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/util"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	identity "github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -69,117 +66,85 @@ type ScopeInfo struct {
 }
 
 type User struct {
-	sessionID     string
-	token         uc.OAuthToken
-	info          identity.UserInfo
-	scopeInfo     ScopeInfo
-	state         GetUserState
-	redisCli      *redis.Client
-	ucUserAuth    *uc.UCUserAuth
-	sessionExpire time.Duration
+	credStore          domain.CredentialStore
+	authenticator      domain.RequestAuthenticator
+	oauthTokenProvider domain.OAuthTokenProvider
+	identity           domain.Identity
+	info               *identity.UserInfo
+	scopeInfo          ScopeInfo
+	state              GetUserState
 
 	bundle *bundle.Bundle
 }
 
-var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
-
-func NewUser(redisCli *redis.Client, expire time.Duration) *User {
-	ucUserAuth := uc.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		ucUserAuth.ClientID = conf.OryCompatibleClientID()
-		ucUserAuth.UCHost = conf.OryKratosAddr()
+func NewUser(store domain.CredentialStore) *User {
+	return &User{
+		state:              GetInit,
+		credStore:          store,
+		oauthTokenProvider: legacycontainer.Get[domain.OAuthTokenProvider](),
+		identity:           legacycontainer.Get[domain.Identity](),
+		bundle:             bundle.New(bundle.WithErdaServer(), bundle.WithDOP()),
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client, sessionExpire: expire}
 }
 
-func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
-	switch u.state {
-	case GetInit:
-		session := req.Context().Value("session")
-		if session == nil {
-			return nil, AuthResult{Unauthed, "User:GetInit"}
-		}
-		u.sessionID = session.(string)
-		u.state = GotSessionID
-		fallthrough
-	case GotSessionID:
-		token, err := u.redisCli.Get(MkSessionKey(u.sessionID)).Result()
-		if conf.OryEnabled() {
-			// TODO: remove useless `token`
-			token = u.sessionID
-			err = nil
-		}
-		if errors.Is(err, redis.Nil) {
-			return nil, AuthResult{AuthFail,
-				errors.Wrap(ErrNotExist, "User:GetInfo:GotSessionID:not exist: "+u.sessionID).Error()}
-		} else if err != nil {
-			return nil, AuthResult{InternalAuthErr,
-				errors.Wrap(err, "User:GetInfo:GotSessionID").Error()}
-		}
-		u.token = uc.OAuthToken{AccessToken: token}
-		u.state = GotToken
-		fallthrough
-	case GotToken:
-		if state == GotToken {
-			return nil, AuthResult{AuthSucc, ""}
-		}
-		cookieExtract := req.Header[textproto.CanonicalMIMEHeaderKey("cookie")]
-		var info identity.UserInfo
-		var err error
-		//useToken, _ := strconv.ParseBool(req.Header.Get("USE-TOKEN"))
-		// if len(cookieExtract) > 0 && !useToken {
-		cookie := map[string][]string{"cookie": cookieExtract}
-		user, err := u.ucUserAuth.GetCurrentUser(cookie)
-		// } else {
-		info, err = u.ucUserAuth.GetUserInfo(u.token)
-		info.LastLoginAt = user.LastLoginAt
-		// }
-		if err != nil {
-			return nil, AuthResult{Unauthed, err.Error()}
-		}
-		info.Token = u.token.AccessToken
-		u.info = info
-		u.state = GotInfo
-		fallthrough
-	case GotInfo:
-		if state == GotInfo {
-			return u.info, AuthResult{AuthSucc, ""}
-		}
-		orgHeader := req.Header.Get("org")
-		domainHeader := req.Header.Get("domain")
-		orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
-		if err != nil {
-			return nil, AuthResult{InternalAuthErr, err.Error()}
-		}
-		if orgID > 0 {
-			role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
-				Scope: apistructs.Scope{
-					Type: apistructs.OrgScope,
-					ID:   strconv.FormatUint(orgID, 10),
-				},
-			})
+func (u *User) get(req *http.Request, targetState GetUserState) (interface{}, AuthResult) {
+	ctx := req.Context()
+	for {
+		switch u.state {
+		case GetInit:
+			credential, err := u.credStore.Load(ctx, req)
+			if err != nil {
+				logrus.WithField("state", u.state).Errorf("failed to load token, %v", err)
+				return nil, AuthResult{Unauthed, "User:GetInit"}
+			}
+			u.authenticator = credential.Authenticator
+			u.state = GotToken
+		case GotToken:
+			if targetState == GotToken {
+				return nil, AuthResult{AuthSucc, ""}
+			}
+			userInfo, err := u.identity.Me(req.Context(), u.authenticator)
+			if err != nil {
+				return nil, AuthResult{Unauthed, err.Error()}
+			}
+			u.info = userInfo
+			u.state = GotInfo
+		case GotInfo:
+			if targetState == GotInfo {
+				return u.info, AuthResult{AuthSucc, ""}
+			}
+			orgHeader := req.Header.Get("org")
+			domainHeader := req.Header.Get("domain")
+			orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
 			if err != nil {
 				return nil, AuthResult{InternalAuthErr, err.Error()}
 			}
-			if !role.Access {
-				return nil, AuthResult{AuthFail, fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
+			if orgID > 0 {
+				role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
+					Scope: apistructs.Scope{
+						Type: apistructs.OrgScope,
+						ID:   strconv.FormatUint(orgID, 10),
+					},
+				})
+				if err != nil {
+					return nil, AuthResult{InternalAuthErr, err.Error()}
+				}
+				if !role.Access {
+					return nil, AuthResult{AuthFail, fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
+				}
+				var scopeInfo ScopeInfo
+				scopeInfo.OrgID = orgID
+				u.scopeInfo = scopeInfo
 			}
-			var scopeinfo ScopeInfo
-			scopeinfo.OrgID = orgID
-			u.scopeInfo = scopeinfo
-		}
-		u.state = GotScopeInfo
-		fallthrough
-	case GotScopeInfo:
-		if state == GotScopeInfo {
-			// if sessionExpire is less than or equal to zero, it means no need to renew session in Redis
-			if u.sessionExpire > 0 {
-				u.redisCli.Expire(MkSessionKey(u.sessionID), u.sessionExpire)
+			u.state = GotScopeInfo
+		case GotScopeInfo:
+			if targetState == GotScopeInfo {
+				return u.scopeInfo, AuthResult{AuthSucc, ""}
 			}
-			return u.scopeInfo, AuthResult{AuthSucc, ""}
+		default:
+			panic("invalid state")
 		}
 	}
-	panic("unreachable")
 }
 
 func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error) {
@@ -215,94 +180,63 @@ func (u *User) IsLogin(req *http.Request) AuthResult {
 	return authr
 }
 
-// 获取用户信息
 func (u *User) GetInfo(req *http.Request) (identity.UserInfo, AuthResult) {
 	info, authr := u.get(req, GotInfo)
 	if authr.Code != AuthSucc {
 		return identity.UserInfo{}, authr
 	}
-	return info.(identity.UserInfo), authr
+	userInfo := info.(*identity.UserInfo)
+	return *userInfo, authr
 }
 
-// 获取用户orgID
 func (u *User) GetScopeInfo(req *http.Request) (ScopeInfo, AuthResult) {
-	scopeinfo, authr := u.get(req, GotScopeInfo)
+	scopeInfo, authr := u.get(req, GotScopeInfo)
 	if authr.Code != AuthSucc {
 		return ScopeInfo{}, authr
 	}
-	return scopeinfo.(ScopeInfo), authr
+	return scopeInfo.(ScopeInfo), authr
 }
 
-// return (token, expiredays, err)
-func (u *User) Login(uccode string, redirectURI string, expiration time.Duration) (string, int, error) {
-	u.ucUserAuth.RedirectURI = redirectURI
-	otoken, err := u.ucUserAuth.Login(uccode)
-	expireDays := int(expiration / (time.Hour * 24))
+func (u *User) Login(code string, queryValues url.Values) error {
+	oauthToken, err := u.oauthTokenProvider.ExchangeCode(context.Background(), code, queryValues)
 	if err != nil {
-		logrus.Error(err)
-		return "", expireDays, err
-	}
-	u.token = otoken
-	userInfo, err := u.ucUserAuth.GetUserInfo(u.token)
-	if err != nil {
-		return "", expireDays, err
-	}
-	u.info = userInfo
-	u.state = GotInfo
-	if err := u.storeSession(otoken.AccessToken, expiration); err != nil {
-		err_ := errors.Wrap(err, "login: storeSession fail")
-		logrus.Error(err_)
-		return "", expireDays, err_
-	}
-	return u.sessionID, expireDays, nil
-}
-
-func (u *User) PwdLogin(username, password string, expiration time.Duration) (string, error) {
-	otoken, err := u.ucUserAuth.PwdAuth(username, password)
-	if err != nil {
-		logrus.Error(err)
-		return "", err
-	}
-	u.token = otoken
-	userInfo, err := u.ucUserAuth.GetUserInfo(u.token)
-	if err != nil {
-		return "", err
-	}
-	u.info = userInfo
-	u.state = GotInfo
-	if err := u.storeSession(otoken.AccessToken, expiration); err != nil {
-		err_ := errors.Wrap(err, "pwdlogin: storeSession fail")
-		logrus.Error(err_)
-		return "", err_
-	}
-	return u.sessionID, nil
-}
-
-func (u *User) storeSession(token string, expiration time.Duration) error {
-	u.sessionID = genSessionID()
-	_, err := u.redisCli.Set(MkSessionKey(u.sessionID), token, expiration).Result()
-	if err != nil {
-		err_ := errors.Wrap(err, "storeSession: store redis fail")
-		return err_
-	}
-	return nil
-}
-
-func (u *User) Logout(req *http.Request) error {
-	c := req.Context().Value("session")
-	if c == nil {
-		return fmt.Errorf("not provide session")
-	}
-	if _, err := u.redisCli.Del(MkSessionKey(c.(string))).Result(); err != nil {
+		logrus.Errorf("failed to login with exchange code, %v", err)
 		return err
 	}
+	persistedCredential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
+		OAuthToken: oauthToken,
+	})
+	if err != nil {
+		return err
+	}
+	u.authenticator = persistedCredential.Authenticator
+	userInfo, err := u.identity.Me(context.Background(), u.authenticator)
+	if err != nil {
+		return err
+	}
+	u.info = userInfo
+	u.state = GotInfo
 	return nil
 }
 
-func MkSessionKey(sessionID string) string {
-	return "openapi:sessionid:" + sessionID
-}
-
-func genSessionID() string {
-	return uuid.NewV4().String()
+func (u *User) PwdLogin(username, password string) error {
+	oauthToken, err := u.oauthTokenProvider.ExchangePassword(context.Background(), username, password, nil)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	persistedCredential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
+		OAuthToken: oauthToken,
+	})
+	if err != nil {
+		return err
+	}
+	u.authenticator = persistedCredential.Authenticator
+	userInfo, err := u.identity.Me(context.Background(), u.authenticator)
+	if err != nil {
+		return err
+	}
+	u.info = userInfo
+	u.state = GotInfo
+	return nil
 }

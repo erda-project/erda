@@ -131,16 +131,6 @@ func (e *Endpoints) GetCurrentUser(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(*convertToUserInfo(resp.Data, false))
 }
 
-func (e *Endpoints) GetUcUserID(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	id := r.URL.Query().Get("id")
-	userID, err := e.db.GetUcUserID(id)
-	if err != nil {
-		return apierrors.ErrGetUser.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp(userID)
-}
-
 func convertToUserInfo(user *userpb.User, plaintext bool) *apistructs.UserInfo {
 	if !plaintext {
 		user.Phone = desensitize.Mobile(user.Phone)

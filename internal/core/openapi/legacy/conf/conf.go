@@ -36,10 +36,17 @@ type Conf struct {
 	RedisAddr          string `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
 	RedisPwd           string `default:"anywhere" env:"REDIS_PASSWORD"`
 
-	UCAddrFront        string `default:"" env:"UC_PUBLIC_ADDR"`
-	UCRedirectHost     string `default:"openapi.test.terminus.io" env:"SELF_PUBLIC_ADDR"`
-	UCClientID         string `default:"dice" env:"UC_CLIENT_ID"`
-	UCClientSecret     string `default:"secret" env:"UC_CLIENT_SECRET"`
+	OpenAPIPublicAddr string `env:"SELF_PUBLIC_ADDR"`
+	OpenAPIPublicURL  string `env:"SELF_PUBLIC_URL"`
+	// oauth provider
+	OAuthProvider string `default:"uc" env:"OAUTH_PROVIDER"`
+	// oauth provider uc
+	UCAddr         string `env:"UC_ADDR"`
+	UCClientID     string `default:"dice" env:"UC_CLIENT_ID"`
+	UCClientSecret string `default:"secret" env:"UC_CLIENT_SECRET"`
+	// token store
+	IAMTokenCookieName string `env:"OAUTH_COOKIE_NAME"`
+
 	RedirectAfterLogin string `default:"//dice.test.terminus.io/" env:"UI_PUBLIC_ADDR"`
 	CookieDomain       string `default:".terminus.io,.erda.cloud" env:"COOKIE_DOMAIN"`
 	OldCookieDomain    string `default:"" env:"OLD_COOKIE_DOMAIN"`
@@ -60,11 +67,6 @@ type Conf struct {
 	OAuth2NetdataDir string `env:"OAUTH2_NETDATA_DIR" default:"/oauth2/"`
 
 	CSRFWhiteList string `env:"CSRF_WHITE_LIST"`
-
-	// ory/kratos config
-	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos-public" env:"ORY_KRATOS_ADDR"`
-	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 
 	// Allow people who are not admin to create org
 	CreateOrgEnabled bool `default:"false" env:"CREATE_ORG_ENABLED"`
@@ -107,36 +109,16 @@ func RedisSentinelAddrs() string {
 	return cfg.RedisSentinelAddrs
 }
 
-func RedisAddr() string {
-	return cfg.RedisAddr
-}
-
 func RedisPwd() string {
 	return cfg.RedisPwd
 }
 
-func UCAddrFront() string {
-	return cfg.UCAddrFront
+func OAuthProvider() string {
+	return cfg.OAuthProvider
 }
 
-func UCRedirectHost() string {
-	return cfg.UCRedirectHost
-}
-
-func UCClientID() string {
-	return cfg.UCClientID
-}
-
-func UCClientSecret() string {
-	return cfg.UCClientSecret
-}
-
-func RedirectAfterLogin() string {
-	return cfg.RedirectAfterLogin
-}
-
-func CookieDomain() string {
-	return cfg.CookieDomain
+func IAMTokenCookieName() string {
+	return cfg.IAMTokenCookieName
 }
 
 func OldCookieDomain() string {
@@ -147,60 +129,12 @@ func SessionCookieName() string {
 	return cfg.SessionCookieName
 }
 
-func CSRFCookieDomain() string {
-	return cfg.CSRFCookieDomain
-}
-
 func UseK8S() bool {
 	return cfg.UseK8S == "kubernetes"
 }
 
 func SurveyDingding() string {
 	return cfg.SurveyDingding
-}
-
-func DiceProtocol() string {
-	return cfg.DiceProtocol
-}
-
-func OAuth2NetdataDir() string {
-	return cfg.OAuth2NetdataDir
-}
-
-func CSRFWhiteList() []string {
-	return strutil.Split(cfg.CSRFWhiteList, ",", true)
-}
-
-func OryEnabled() bool {
-	return cfg.OryEnabled
-}
-
-func OryKratosAddr() string {
-	return cfg.OryKratosAddr
-}
-
-func OryKratosPrivateAddr() string {
-	return cfg.OryKratosPrivateAddr
-}
-
-func OryLoginURL() string {
-	return "/uc/login"
-}
-
-func OryLogoutURL() string {
-	return "/.ory/kratos/public/self-service/browser/flows/logout"
-}
-
-func OryCompatibleClientID() string {
-	return "kratos"
-}
-
-func OryCompatibleClientSecret() string {
-	return ""
-}
-
-func CustomNamespace() string {
-	return cfg.CustomNamespace
 }
 
 func SelfPublicURL() string {
@@ -213,38 +147,6 @@ func ExportUserWithRole() bool {
 
 func ErdaSystemFQDN() string {
 	return cfg.ErdaSystemFQDN
-}
-
-func CreateOrgEnabled() bool {
-	return cfg.CreateOrgEnabled
-}
-
-func MySQLHost() string {
-	return cfg.MySQLHost
-}
-
-func MySQLPort() string {
-	return cfg.MySQLPort
-}
-
-func MySQLUsername() string {
-	return cfg.MySQLUsername
-}
-
-func MySQLPassword() string {
-	return cfg.MySQLPassword
-}
-
-func MySQLDatabase() string {
-	return cfg.MySQLDatabase
-}
-
-func MySQLLoc() string {
-	return cfg.MySQLLoc
-}
-
-func Debug() bool {
-	return cfg.Debug
 }
 
 func RootDomainList() []string {
@@ -273,28 +175,6 @@ func GetDomain(host, confDomain string) (string, error) {
 	}
 
 	return "", err
-}
-
-// GetUCRedirectHost get a uc redirect host by referer
-func GetUCRedirectHost(referer string) string {
-	rh := strings.SplitN(UCRedirectHost(), ",", -1)
-	for _, v := range rh {
-		domainSlice := strings.SplitN(v, ".", -1)
-		l := len(domainSlice)
-		if l < 2 {
-			return ""
-		}
-		if strings.Contains(domainSlice[l-1], ":") {
-			domainSlice[l-1] = strings.SplitN(domainSlice[l-1], ":", -1)[0]
-		}
-		domain := domainSlice[l-2] + "." + domainSlice[l-1]
-		logrus.Infof("redirect domain is: %s", domain)
-		if strings.Contains(referer, domain) {
-			return v
-		}
-	}
-
-	return ""
 }
 
 type ServiceHostPort struct {

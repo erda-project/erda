@@ -62,27 +62,6 @@ func New(options ...Option) *Adaptor {
 	return a
 }
 
-// WithDBClient 配置 Issue 数据库选项
-func WithDBClient(db *dao.DBClient) Option {
-	return func(adaptor *Adaptor) {
-		adaptor.db = db
-	}
-}
-
-// WithUCClient 配置 uc client
-func WithUCClient(uc *ucclient.UCClient) Option {
-	return func(adaptor *Adaptor) {
-		adaptor.uc = uc
-	}
-}
-
-// WithBundle 配置 bundle
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(adaptor *Adaptor) {
-		adaptor.bdl = bdl
-	}
-}
-
 // RegistryReceiver 注册uc审计事件的接收者
 func (a *Adaptor) RegistryReceiver(receiver ...Receiver) {
 	a.receivers = append(a.receivers, receiver...)

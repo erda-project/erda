@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/common"
 	"github.com/erda-project/erda/internal/core/openapi/settings"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 )
 
@@ -39,12 +40,13 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Router   openapi.Interface `autowired:"openapi-router"`
-	Redis    *redis.Client     `autowired:"redis-client"`
-	Org      org.Interface
-	Settings settings.OpenapiSettings `autowired:"openapi-settings"`
+	Cfg       *config
+	Log       logs.Logger
+	Router    openapi.Interface `autowired:"openapi-router"`
+	Redis     *redis.Client     `autowired:"redis-client"`
+	Org       org.Interface
+	Settings  settings.OpenapiSettings `autowired:"openapi-settings"`
+	CredStore domain.CredentialStore   `autowired:"erda.core.user.credstore"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -75,27 +77,31 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := auth.NewUser(p.Redis, p.Settings.GetSessionExpire())
-	sessionID, err := user.PwdLogin(params.Username, params.Password, p.Settings.GetSessionExpire())
+	user := auth.NewUser(p.CredStore)
+	err := user.PwdLogin(params.Username, params.Password)
 	if err != nil {
 		err := fmt.Errorf("failed to PwdLogin: %v", err)
 		p.Log.Error(err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	info, authr := user.GetInfo(nil)
+	info, authr := user.GetInfo(r)
 	if authr.Code != auth.AuthSucc {
 		err := fmt.Errorf("failed to GetInfo: %v", authr.Detail)
 		p.Log.Error(err)
 		http.Error(rw, err.Error(), authr.Code)
 		return
 	}
+
+	//writer, ok := p.CredStore.(identity.RefreshWriter)
+	//if ok {
+	//	writer.WriteRefresh(rw, r)
+	//}
+
 	common.ResponseJSON(rw, &struct {
-		SessionID string `json:"sessionid"`
 		identity.UserInfo
 	}{
-		SessionID: sessionID,
-		UserInfo:  info,
+		UserInfo: info,
 	})
 }
 

@@ -472,6 +472,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	filetreeSvc := apidocsvc.New(
 		apidocsvc.WithBranchRuleSvc(branchRule),
 		apidocsvc.WithTrans(p.APIMTrans),
+		apidocsvc.WithUserService(p.UserSvc),
 	)
 
 	env := environment.New(
@@ -648,6 +649,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 			assetsvc.WithI18n(p.APIMTrans),
 			assetsvc.WithBundle(bdl.Bdl),
 			assetsvc.WithOrg(p.Org),
+			assetsvc.WithUserService(p.UserSvc),
 		)),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 		endpoints.WithProject(proj),

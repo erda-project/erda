@@ -14,51 +14,28 @@
 
 package prehandle
 
-import (
-	"context"
-	"net/http"
-	"strings"
-	"sync"
-
-	"github.com/go-redis/redis"
-
-	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
-)
-
-var filterCookieLock sync.Once
-var rediscli *redis.Client
-
-// filter session cookie which is exist in redis, put it at req.context
-func FilterCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
-	filterCookieLock.Do(func() {
-		rediscli = redis.NewFailoverClient(&redis.FailoverOptions{
-			MasterName:    conf.RedisMasterName(),
-			SentinelAddrs: strings.Split(conf.RedisSentinelAddrs(), ","),
-			Password:      conf.RedisPwd(),
-		})
-	})
-	cs := req.Cookies()
-	sessions := []*http.Cookie{}
-	for _, c := range cs {
-		if c.Name == conf.SessionCookieName() {
-			sessions = append(sessions, c)
-		}
-	}
-	if len(sessions) >= 1 {
-		for _, session := range sessions {
-			if conf.OryEnabled() {
-				// TODO
-				*req = *(req.WithContext(context.WithValue(req.Context(), "session", session.Value)))
-				return
-			}
-			if _, err := rediscli.Get(auth.MkSessionKey(session.Value)).Result(); err == redis.Nil {
-				continue
-			} else if err != nil {
-				continue
-			}
-			*req = *(req.WithContext(context.WithValue(req.Context(), "session", session.Value)))
-			return
-		}
-	}
-}
+//var filterCookieLock sync.Once
+//var rediscli *redis.Client
+//var credStore common.CredentialStore
+//
+//// filter session cookie which is exist in redis, put it at req.context
+//func FilterCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
+//	filterCookieLock.Do(func() {
+//		rediscli = redis.NewFailoverClient(&redis.FailoverOptions{
+//			MasterName:    conf.RedisMasterName(),
+//			SentinelAddrs: strings.Split(conf.RedisSentinelAddrs(), ","),
+//			Password:      conf.RedisPwd(),
+//		})
+//		credStore = ucstore.New(&ucstore.Config{
+//			Redis:      rediscli,
+//			CookieName: conf.SessionCookieName(),
+//			Expire:     0, // only need Load
+//		})
+//	})
+//	if credStore != nil {
+//		if cred, err := credStore.Load(ctx, req); err == nil && cred != nil && cred.SessionID != "" {
+//			*req = *(req.WithContext(context.WithValue(req.Context(), "session", cred.SessionID)))
+//			return
+//		}
+//	}
+//}

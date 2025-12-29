@@ -122,7 +122,7 @@ func (c *UCClient) GetUser(userID string) (*User, error) {
 func (c *UCClient) ListUCAuditsByLastID(ucAuditReq apistructs.UCAuditsListRequest) (*apistructs.UCAuditsListResponse, error) {
 	token, err := c.ucTokenAuth.GetServerToken(false)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding user")
+		return nil, errors.Wrap(err, "failed to get token when list uc audits by last id")
 	}
 
 	var getResp apistructs.UCAuditsListResponse
@@ -144,7 +144,7 @@ func (c *UCClient) ListUCAuditsByLastID(ucAuditReq apistructs.UCAuditsListReques
 func (c *UCClient) ListUCAuditsByEventTime(ucAuditReq apistructs.UCAuditsListRequest) (*apistructs.UCAuditsListResponse, error) {
 	token, err := c.ucTokenAuth.GetServerToken(false)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding user")
+		return nil, errors.Wrap(err, "failed to get token when list uc audits by event time")
 	}
 
 	var getResp apistructs.UCAuditsListResponse
@@ -165,7 +165,7 @@ func (c *UCClient) ListUCAuditsByEventTime(ucAuditReq apistructs.UCAuditsListReq
 func (c *UCClient) getUser(userID string) (*User, error) {
 	token, err := c.ucTokenAuth.GetServerToken(false)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding user")
+		return nil, errors.Wrap(err, "failed to get token when get user")
 	}
 
 	var user User

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
@@ -30,6 +31,7 @@ type Service struct {
 	bdl           *bundle.Bundle
 	branchRuleSvc *branchrule.BranchRule
 	trans         i18n.Translator
+	UserService   userpb.UserServiceServer
 }
 
 type Option func(service *Service)
@@ -63,6 +65,12 @@ func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 func WithTrans(trans i18n.Translator) Option {
 	return func(svc *Service) {
 		svc.trans = trans
+	}
+}
+
+func WithUserService(userService userpb.UserServiceServer) Option {
+	return func(svc *Service) {
+		svc.UserService = userService
 	}
 }
 

@@ -21,14 +21,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
-	"github.com/erda-project/erda/internal/core/user/impl/uc"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
@@ -39,44 +34,38 @@ const (
 	CtxKeyOauth2JwtKeyPayload = "oauth2-jwt-token-payload"
 )
 
-var ucTokenAuth *uc.UCTokenAuth
+// var ucTokenAuth *uc.UCTokenAuth
 var once sync.Once
 
 // 获取 dice 自己的token
-func GetDiceClientToken() (uc.OAuthToken, error) {
-	// TODO kratos will not use it
-	if conf.OryEnabled() {
-		return uc.OAuthToken{
-			AccessToken: conf.OryKratosPrivateAddr(),
-			TokenType:   conf.OryCompatibleClientID(),
-		}, nil
-	}
-	once.Do(func() {
-		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	})
-	otoken, err := ucTokenAuth.GetServerToken(false)
-	if err != nil {
-		logrus.Error(err)
-		return uc.OAuthToken{}, err
-	}
-	return otoken, nil
-}
+//func GetDiceClientToken() (uc.OAuthToken, error) {
+//	once.Do(func() {
+//		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+//	})
+//	otoken, err := ucTokenAuth.GetServerToken(false)
+//	if err != nil {
+//		logrus.Error(err)
+//		return uc.OAuthToken{}, err
+//	}
+//	return otoken, nil
+//}
 
 // @return example:
 // {"id":7,"userId":null,"clientId":"dice-test","clientName":"dice测试应用","clientLogoUrl":null,"clientSecret":null,"autoApprove":false,"scope":["public_profile","email"],"resourceIds":["shinda-maru"],"authorizedGrantTypes":["client_credentials"],"registeredRedirectUris":[],"autoApproveScopes":[],"authorities":["ROLE_CLIENT"],"accessTokenValiditySeconds":433200,"refreshTokenValiditySeconds":433200,"additionalInformation":{}}
-func VerifyUCClientToken(token string) (uc.TokenClient, error) {
-	once.Do(func() {
-		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	})
-	return ucTokenAuth.Auth(token)
-}
+//func VerifyUCClientToken(token string) (uc.TokenClient, error) {
+//	once.Do(func() {
+//		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+//	})
+//	return ucTokenAuth.Auth(token)
+//}
 
-func NewUCTokenClient(req *uc.NewClientRequest) (*uc.NewClientResponse, error) {
-	once.Do(func() {
-		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	})
-	return ucTokenAuth.NewClient(req)
-}
+//func NewUCTokenClient(req *uc.NewClientRequest) (*uc.NewClientResponse, error) {
+//	//once.Do(func() {
+//	//	ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+//	//})
+//	//return ucTokenAuth.NewClient(req)
+//	return nil, errors.New("todo")
+//}
 
 // OAuth2APISpec .
 type OAuth2APISpec interface {

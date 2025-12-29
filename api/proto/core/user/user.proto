@@ -3,10 +3,20 @@ syntax = "proto3";
 package erda.core.user;
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+import "common/openapi.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/user/pb";
 
 service UserService {
+  option (erda.common.openapi_service) = {
+    service: "erda-server",
+  };
+
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
     option (google.api.http) = {
       get: "/api/internal-users/{userID}",
@@ -23,7 +33,225 @@ service UserService {
     option (google.api.http) = {
       get: "/api/internal-users/actions/find-users-by-key",
     };
+  };
+
+  rpc UserPaging (UserPagingRequest) returns (UserPagingResponse) {
+    option (google.api.http) = {
+      get: "/api/users/actions/paging",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/paging",
+      auth: {
+        check_login: true,
+        check_token: true,
+      },
+      doc: "summary: 用户分页",
+    };
+  };
+
+  rpc UserListLoginMethod (UserListLoginMethodRequest) returns (UserListLoginMethodResponse) {
+    option (google.api.http) = {
+      get: "/api/users/actions/list-login-method",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/list-login-method",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 获取当前环境支持的登录方式",
+    };
   }
+
+  rpc PwdSecurityConfigGet (PwdSecurityConfigGetRequest) returns (PwdSecurityConfigGetResponse) {
+    option (google.api.http) = {
+      get: "/api/users/actions/get-pwd-security-config",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/get-pwd-security-config",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 查询密码安全配置",
+    };
+  };
+
+  rpc PwdSecurityConfigUpdate (PwdSecurityConfigUpdateRequest) returns (PwdSecurityConfigUpdateResponse) {
+    option (google.api.http) = {
+      post: "/api/users/actions/update-pwd-security-config",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/update-pwd-security-config",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 更新密码安全配置",
+    };
+  };
+
+  rpc UserBatchFreeze (UserBatchFreezeRequest) returns (UserBatchFreezeResponse) {
+    option (google.api.http) = {
+      put: "/api/users/actions/batch-freeze",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/batch-freeze",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 批量用户冻结",
+    };
+  };
+
+  rpc UserBatchUnfreeze (UserBatchUnFreezeRequest) returns (UserBatchUnFreezeResponse) {
+    option (google.api.http) = {
+      put: "/api/users/actions/batch-unfreeze",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/batch-unfreeze",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 批量用户解冻",
+    };
+  };
+
+  rpc UserBatchUpdateLoginMethod (UserBatchUpdateLoginMethodRequest) returns (UserBatchUpdateLoginMethodResponse) {
+    option (google.api.http) = {
+      post: "/api/users/actions/batch-update-login-method",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/batch-update-login-method",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 批量修改用户登录方式",
+    };
+  };
+
+  rpc UserCreate (UserCreateRequest) returns (UserCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/users",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 用户创建",
+    };
+  };
+
+  rpc UserExport (UserPagingRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      get: "/api/users/actions/export",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/actions/export",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 导出用户",
+    };
+  };
+
+  rpc UserFreeze (UserFreezeRequest) returns (UserFreezeResponse) {
+    option (google.api.http) = {
+      put: "/api/users/{userID}/actions/freeze",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/{userID}/actions/freeze",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 用户冻结",
+    };
+  };
+
+  rpc UserUnfreeze (UserUnfreezeRequest) returns (UserUnfreezeResponse) {
+    option (google.api.http) = {
+      put: "/api/users/{userID}/actions/unfreeze",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/{userID}/actions/unfreeze",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 用户解冻",
+    };
+  };
+
+  rpc UserUpdateLoginMethod (UserUpdateLoginMethodRequest) returns (UserUpdateLoginMethodResponse) {
+    option (google.api.http) = {
+      post: "/api/users/{userID}/actions/update-login-method",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/{userID}/actions/update-login-method",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 修改用户登录方式",
+    };
+  };
+
+  rpc UserUpdateUserinfo (UserUpdateInfoRequest) returns (UserUpdateInfoResponse) {
+    option (google.api.http) = {
+      put: "/api/user/admin/update-userinfo",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/user/admin/update-userinfo",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 更新用户信息",
+    };
+  };
 }
 
 message GetUserRequest {
@@ -44,6 +272,20 @@ message User {
   string state = 7;
 }
 
+message ManagedUser {
+  string id = 1;
+  string name = 2;
+  string nick = 3;
+  string avatar = 4;
+  string phone = 5;
+  string email = 6;
+  string token = 7;
+  google.protobuf.Timestamp lastLoginAt = 8;
+  google.protobuf.Timestamp pwdExpireAt = 9;
+  string source = 10;
+  bool locked = 11;
+}
+
 message FindUsersRequest {
   repeated string IDs = 1 [json_name = "ids"];
 }
@@ -58,4 +300,127 @@ message FindUsersByKeyRequest {
 
 message FindUsersByKeyResponse {
   repeated User data = 1;
+}
+
+message UserPagingRequest {
+  string name = 1;
+  string nick = 2;
+  string phone = 3;
+  string email = 4;
+  bool locked = 5;
+  string source = 6;
+  int64 pageNo = 7;
+  int64 pageSize = 8;
+}
+
+message UserPagingResponse {
+  int64 total = 1;
+  repeated ManagedUser list = 2;
+}
+
+message UserLoginMethod {
+  string displayName = 1;
+  string value = 2;
+}
+
+message UserListLoginMethodRequest {
+}
+
+message UserListLoginMethodResponse{
+  repeated UserLoginMethod data = 1;
+}
+
+message UserBatchFreezeRequest {
+  repeated string userIDs = 1;
+}
+message UserBatchFreezeResponse {
+}
+message UserBatchUnFreezeRequest {
+  repeated string userIDs = 1;
+}
+
+message UserBatchUnFreezeResponse {
+}
+
+message UserBatchUpdateLoginMethodRequest {
+  repeated string userIDs = 1;
+  string source = 2;
+}
+
+message UserBatchUpdateLoginMethodResponse {
+}
+
+message UserCreateItem {
+  string name = 1;
+  string nick = 2;
+  string phone = 3;
+  string email = 4;
+  string password = 5;
+}
+
+message UserCreateRequest {
+  repeated UserCreateItem users = 1;
+}
+
+message UserCreateResponse {
+}
+
+message UserFreezeRequest {
+  string userID = 1;
+}
+
+message UserFreezeResponse {
+}
+
+message UserListLoginMethodData {
+  string displayName = 1;
+  string value = 2;
+}
+
+message UserUnfreezeRequest {
+  string userID = 1;
+}
+
+message UserUnfreezeResponse {
+}
+
+message UserUpdateInfoRequest {
+  string userID = 1 [json_name = "userId"];
+  string name = 2;
+  string nick = 3;
+  string mobile = 4;
+  string email = 5;
+}
+
+message UserUpdateInfoResponse {
+}
+
+message UserUpdateLoginMethodRequest {
+  string ID = 1 [json_name = "id"];
+  string source = 2;
+  string userID = 3; // generated from path variable: userID. You should change the proto type if necessary.
+}
+
+message UserUpdateLoginMethodResponse {
+}
+
+message PwdSecurityConfigGetRequest {
+}
+
+message PwdSecurityConfig {
+  int64 captchaChallengeNumber = 1;
+  int64 continuousPwdErrorNumber = 2;
+  int64 maxPwdErrorNumber = 3;
+  int64 resetPassWordPeriod = 4;
+}
+
+message PwdSecurityConfigGetResponse {
+  PwdSecurityConfig data = 1;
+}
+
+message PwdSecurityConfigUpdateRequest {
+  PwdSecurityConfig pwdSecurityConfig = 1;
+}
+
+message PwdSecurityConfigUpdateResponse {
 }

@@ -15,6 +15,7 @@
 package apidocsvc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,11 +27,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/internal/apps/dop/services/uc"
 	"github.com/erda-project/erda/internal/apps/dop/services/websocket"
 )
 
@@ -66,6 +67,7 @@ type APIDocWSHandler struct {
 	ft           *bundle.GittarFileTree
 	trans        i18n.Translator
 	codes        i18n.LanguageCodes
+	userService  userpb.UserServiceServer
 }
 
 // 每个消息的通用处理过程: 确认是否持有锁; 如未持有锁则尝试抢占; 锁定文档锁所在的行; 更新过期时效
@@ -299,10 +301,12 @@ func (h *APIDocWSHandler) handleCommit(tx *dbclient.TX, w websocket.ResponseWrit
 
 func (h *APIDocWSHandler) setLockedUser(userID string) {
 	h.lockUserID = userID
-	if users, _ := uc.GetUsers([]string{userID}); len(users) > 0 {
-		if user := users[userID]; user != nil {
-			h.lockUserNick = user.Nick
-		}
+
+	getUserResp, err := h.userService.GetUser(context.Background(), &userpb.GetUserRequest{
+		UserID: userID,
+	})
+	if err == nil {
+		h.lockUserNick = getUserResp.Data.Nick
 	}
 }
 

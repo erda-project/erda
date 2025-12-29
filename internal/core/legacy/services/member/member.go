@@ -798,32 +798,13 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		logrus.Debugf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
-		// TODO: some risk
-		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
-		if len(userID) > 11 && m.noOneAdminForKratos() { // len > 11 imply that is kratos user
-			logrus.Debugf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
-			if err := m.firstUserBecomeAdmin(userID); err != nil {
-				return false
-			}
-			return true
+		logrus.Debugf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
+		if err := m.firstUserBecomeAdmin(userID); err != nil {
+			return false
 		}
-		return false
+		return true
 	}
 	return true
-}
-
-func (m *Member) noOneAdminForKratos() bool {
-	cnt := 1
-	if err := m.db.Model(&model.Member{}).
-		// only kratos user_id length greater than 11, add this check to prevent init sql's data: user_id=1 admin
-		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
-		Where("scope_type = ? AND length(user_id) > 11", apistructs.SysScope).
-		Count(&cnt).Error; err != nil {
-		return false
-	}
-	logrus.Debugf("CAUTION: there are %d admins", cnt)
-	return cnt == 0
 }
 
 func (m *Member) firstUserBecomeAdmin(userID string) error {
