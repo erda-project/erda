@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -71,10 +72,7 @@ func (c *NacosClient) Login() (string, error) {
 }
 
 func (c *NacosClient) GetNamespaceId(namespaceName string) (string, error) {
-	hc, err := c.authedClient()
-	if err != nil {
-		return "", err
-	}
+	hc := c.tryGetAuthedClient()
 
 	path := namespacesPath
 	var result struct {
@@ -101,10 +99,7 @@ func (c *NacosClient) GetNamespaceId(namespaceName string) (string, error) {
 }
 
 func (c *NacosClient) CreateNamespace(namespaceName string) (string, error) {
-	hc, err := c.authedClient()
-	if err != nil {
-		return "", err
-	}
+	hc := c.tryGetAuthedClient()
 
 	params := url.Values{}
 	params.Set("namespaceName", namespaceName)
@@ -122,10 +117,7 @@ func (c *NacosClient) CreateNamespace(namespaceName string) (string, error) {
 }
 
 func (c *NacosClient) SaveConfig(tenantName string, groupName string, dataId string, content string) error {
-	hc, err := c.authedClient()
-	if err != nil {
-		return err
-	}
+	hc := c.tryGetAuthedClient()
 
 	params := url.Values{}
 	params.Set("dataId", dataId)
@@ -143,10 +135,7 @@ func (c *NacosClient) SaveConfig(tenantName string, groupName string, dataId str
 }
 
 func (c *NacosClient) DeleteConfig(tenantName string, groupName string) error {
-	hc, err := c.authedClient()
-	if err != nil {
-		return err
-	}
+	hc := c.tryGetAuthedClient()
 
 	params := url.Values{}
 	params.Set("dataId", "application.yml")
@@ -163,11 +152,12 @@ func (c *NacosClient) DeleteConfig(tenantName string, groupName string) error {
 	return nil
 }
 
-func (c *NacosClient) authedClient() (*httpclient.HTTPClient, error) {
+func (c *NacosClient) tryGetAuthedClient() *httpclient.HTTPClient {
 	if _, err := c.ensureToken(); err != nil {
-		return nil, err
+		logrus.Warnf("Nacos failed authentication; authentication may not be enabled. error: %v", err)
+		return c.client()
 	}
-	return c.client().BearerTokenAuth(c.bearerToken), nil
+	return c.client().BearerTokenAuth(c.bearerToken)
 }
 
 func (c *NacosClient) ensureToken() (string, error) {
