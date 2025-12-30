@@ -19,8 +19,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 const (
