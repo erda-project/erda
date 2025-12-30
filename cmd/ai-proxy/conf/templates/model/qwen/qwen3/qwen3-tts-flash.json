@@ -1,0 +1,57 @@
+{
+  "qwen3-tts-flash": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "desc": "Qwen3 TTS Flash is a high-speed, cost-effective text-to-speech model.",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "audio",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "text_to_speech"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "audio"
+            ]
+          },
+          "context": {
+            "context_length": 600,
+            "max_completion_tokens": 0,
+            "max_prompt_tokens": 600
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.00008",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

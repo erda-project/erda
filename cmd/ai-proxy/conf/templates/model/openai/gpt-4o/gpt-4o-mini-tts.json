@@ -1,0 +1,59 @@
+{
+  "gpt-4o-mini-tts": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-4o-mini-tts"
+    },
+    "desc": "GPT-4o Mini TTS",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "audio",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "text_to_speech"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "audio"
+            ]
+          },
+          "context": {
+            "context_length": 2000,
+            "max_completion_tokens": 0,
+            "max_prompt_tokens": 2000
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000012",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.0000006",
+            "request": "0",
+            "unit": "USD",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
