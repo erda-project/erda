@@ -49,6 +49,7 @@ type provider struct {
 	Settings             settings.OpenapiSettings    `autowired:"openapi-settings"`
 	OAuthSessionProvider domain.OAuthSessionProvider `autowired:"erda.core.user.oauth"`
 	CredStore            domain.CredentialStore      `autowired:"erda.core.user.credstore"`
+	UserAuth             domain.UserAuthFacade       `autowired:"erda.core.user.auth.facade"`
 	Org                  org.Interface
 	referMatcher         *referMatcher
 }

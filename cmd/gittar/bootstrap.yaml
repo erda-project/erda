@@ -38,12 +38,13 @@ ai-proxy-client:
   url: "${AI_PROXY_URL:http://ai-proxy:8082}"
   client_ak: "${AI_PROXY_CLIENT_AK:}"
 
+# oauth, exchange password
 erda.core.user.oauth.iam:
-  frontend_url: "${IAM_PUBLIC_URL}"
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   client_secret: "${OAUTH_CLIENT_SECRET}"
 
+# identity
 erda.core.user.identity.iam:
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"

@@ -111,6 +111,9 @@ erda.core.user.uc:
   client_id: "${OAUTH_CLIENT_ID}"
   client_secret: "${OAUTH_CLIENT_SECRET}"
 
+# user auth facade
+erda.core.user.auth.facade: { }
+
 erda.core.file: { }
 
 ############# dicehub

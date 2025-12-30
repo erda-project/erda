@@ -14,9 +14,18 @@
 
 package domain
 
+import "net/http"
+
 const (
 	OAuthProviderUC  = "uc"
 	OAuthProviderIAM = "iam"
+)
+
+const (
+	Unauthed        = http.StatusUnauthorized
+	AuthFail        = http.StatusForbidden
+	InternalAuthErr = http.StatusInternalServerError
+	AuthSuccess     = http.StatusOK
 )
 
 type OAuthToken struct {
@@ -38,4 +47,9 @@ type PersistedCredential struct {
 	AccessToken   string
 	// Optional
 	SessionID string
+}
+
+type UserAuthResult struct {
+	Code   int
+	Detail string
 }

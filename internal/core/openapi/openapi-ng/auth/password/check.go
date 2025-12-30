@@ -21,8 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 func (p *provider) Weight() int64 { return p.Cfg.Weight }
@@ -47,34 +48,34 @@ func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Opt
 	if len(parts) != 2 || len(parts[0]) <= 0 || len(parts[1]) <= 0 {
 		return false, r, fmt.Errorf("miss username or password")
 	}
-	user := auth.NewUser(p.CredStore)
+	user := p.UserAuth.NewUserState()
 	err = user.PwdLogin(parts[0], parts[1])
 	if err != nil {
 		return false, r, nil
 	}
 	result := setUserInfoHeaders(r, user)
-	if result.Code != auth.AuthSucc {
+	if result.Code != domain.AuthSuccess {
 		return false, r, nil
 	}
 	return true, r, nil
 }
 
-func setUserInfoHeaders(req *http.Request, user *auth.User) auth.AuthResult {
+func setUserInfoHeaders(req *http.Request, user domain.UserAuthState) domain.UserAuthResult {
 	userinfo, r := user.GetInfo(req)
-	if r.Code != auth.AuthSucc {
+	if r.Code != domain.AuthSuccess {
 		return r
 	}
 	// set User-ID
 	req.Header.Set("User-ID", string(userinfo.ID))
 
-	var scopeinfo auth.ScopeInfo
+	var scopeinfo common.UserScopeInfo
 	scopeinfo, r = user.GetScopeInfo(req)
-	if r.Code != auth.AuthSucc {
+	if r.Code != domain.AuthSuccess {
 		return r
 	}
 	// set Org-ID
 	if scopeinfo.OrgID != 0 {
 		req.Header.Set("Org-ID", strconv.FormatUint(scopeinfo.OrgID, 10))
 	}
-	return auth.AuthResult{Code: auth.AuthSucc}
+	return domain.UserAuthResult{Code: domain.AuthSuccess}
 }

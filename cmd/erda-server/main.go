@@ -51,6 +51,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/project"
 	_ "github.com/erda-project/erda/internal/core/user"
 	_ "github.com/erda-project/erda/internal/core/user/auth/credstore/iam"
+	_ "github.com/erda-project/erda/internal/core/user/auth/facade"
 	_ "github.com/erda-project/erda/internal/core/user/auth/identity/iam"
 	_ "github.com/erda-project/erda/internal/core/user/auth/oauth/iam"
 

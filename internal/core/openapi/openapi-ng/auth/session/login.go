@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/common"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 )
@@ -57,7 +56,7 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 		redirectAfterLogin = referer
 	}
 
-	user := auth.NewUser(p.CredStore)
+	user := p.UserAuth.NewUserState()
 	if err := user.Login(code, queryValues); err != nil {
 		p.Log.Errorf("failed to login: %v", err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)

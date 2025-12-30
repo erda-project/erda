@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package facade
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
@@ -30,8 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/util"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	identity "github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/legacycontainer"
+	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -41,53 +39,25 @@ type SetUserState int
 
 const (
 	GetInit GetUserState = iota
-	GotSessionID
 	GotToken
 	GotInfo
 	GotScopeInfo
 )
 
-const (
-	SetInit SetUserState = iota
-	SetSessionID
-)
+type userState struct {
+	info          *common.UserInfo
+	scopeInfo     common.UserScopeInfo
+	state         GetUserState
+	authenticator domain.RequestAuthenticator
 
-const (
-	SessionExpireDays = 5
-)
-
-var (
-	ErrNotExist = errors.New("session not exist")
-)
-
-type ScopeInfo struct {
-	OrgID uint64 `json:"orgId"`
-	// dont care other fields
-}
-
-type User struct {
-	credStore          domain.CredentialStore
-	authenticator      domain.RequestAuthenticator
+	// dependencies
 	oauthTokenProvider domain.OAuthTokenProvider
 	identity           domain.Identity
-	info               *identity.UserInfo
-	scopeInfo          ScopeInfo
-	state              GetUserState
-
-	bundle *bundle.Bundle
+	bundle             *bundle.Bundle
+	credStore          domain.CredentialStore
 }
 
-func NewUser(store domain.CredentialStore) *User {
-	return &User{
-		state:              GetInit,
-		credStore:          store,
-		oauthTokenProvider: legacycontainer.Get[domain.OAuthTokenProvider](),
-		identity:           legacycontainer.Get[domain.Identity](),
-		bundle:             bundle.New(bundle.WithErdaServer(), bundle.WithDOP()),
-	}
-}
-
-func (u *User) get(req *http.Request, targetState GetUserState) (interface{}, AuthResult) {
+func (u *userState) get(req *http.Request, targetState GetUserState) (interface{}, domain.UserAuthResult) {
 	ctx := req.Context()
 	for {
 		switch u.state {
@@ -95,29 +65,29 @@ func (u *User) get(req *http.Request, targetState GetUserState) (interface{}, Au
 			credential, err := u.credStore.Load(ctx, req)
 			if err != nil {
 				logrus.WithField("state", u.state).Errorf("failed to load token, %v", err)
-				return nil, AuthResult{Unauthed, "User:GetInit"}
+				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: "User:State:GetInit"}
 			}
 			u.authenticator = credential.Authenticator
 			u.state = GotToken
 		case GotToken:
 			if targetState == GotToken {
-				return nil, AuthResult{AuthSucc, ""}
+				return nil, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
 			userInfo, err := u.identity.Me(req.Context(), u.authenticator)
 			if err != nil {
-				return nil, AuthResult{Unauthed, err.Error()}
+				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: err.Error()}
 			}
 			u.info = userInfo
 			u.state = GotInfo
 		case GotInfo:
 			if targetState == GotInfo {
-				return u.info, AuthResult{AuthSucc, ""}
+				return u.info, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
 			orgHeader := req.Header.Get("org")
 			domainHeader := req.Header.Get("domain")
 			orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
 			if err != nil {
-				return nil, AuthResult{InternalAuthErr, err.Error()}
+				return nil, domain.UserAuthResult{Code: domain.InternalAuthErr, Detail: err.Error()}
 			}
 			if orgID > 0 {
 				role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
@@ -127,19 +97,22 @@ func (u *User) get(req *http.Request, targetState GetUserState) (interface{}, Au
 					},
 				})
 				if err != nil {
-					return nil, AuthResult{InternalAuthErr, err.Error()}
+					return nil, domain.UserAuthResult{Code: domain.InternalAuthErr, Detail: err.Error()}
 				}
 				if !role.Access {
-					return nil, AuthResult{AuthFail, fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
+					return nil, domain.UserAuthResult{
+						Code:   domain.AuthFail,
+						Detail: fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID),
+					}
 				}
-				var scopeInfo ScopeInfo
+				var scopeInfo common.UserScopeInfo
 				scopeInfo.OrgID = orgID
 				u.scopeInfo = scopeInfo
 			}
 			u.state = GotScopeInfo
 		case GotScopeInfo:
 			if targetState == GotScopeInfo {
-				return u.scopeInfo, AuthResult{AuthSucc, ""}
+				return u.scopeInfo, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
 		default:
 			panic("invalid state")
@@ -147,7 +120,7 @@ func (u *User) get(req *http.Request, targetState GetUserState) (interface{}, Au
 	}
 }
 
-func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error) {
+func (u *userState) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error) {
 	logrus.Debugf("orgHeader: %v, domainHeader: %v", orgHeader, domainHeader)
 	var orgName string
 	// try to get from org header firstly
@@ -175,29 +148,29 @@ func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err err
 	return orgResp.Data.ID, nil
 }
 
-func (u *User) IsLogin(req *http.Request) AuthResult {
+func (u *userState) IsLogin(req *http.Request) domain.UserAuthResult {
 	_, authr := u.get(req, GotToken)
 	return authr
 }
 
-func (u *User) GetInfo(req *http.Request) (identity.UserInfo, AuthResult) {
+func (u *userState) GetInfo(req *http.Request) (common.UserInfo, domain.UserAuthResult) {
 	info, authr := u.get(req, GotInfo)
-	if authr.Code != AuthSucc {
-		return identity.UserInfo{}, authr
+	if authr.Code != domain.AuthSuccess {
+		return common.UserInfo{}, authr
 	}
-	userInfo := info.(*identity.UserInfo)
+	userInfo := info.(*common.UserInfo)
 	return *userInfo, authr
 }
 
-func (u *User) GetScopeInfo(req *http.Request) (ScopeInfo, AuthResult) {
+func (u *userState) GetScopeInfo(req *http.Request) (common.UserScopeInfo, domain.UserAuthResult) {
 	scopeInfo, authr := u.get(req, GotScopeInfo)
-	if authr.Code != AuthSucc {
-		return ScopeInfo{}, authr
+	if authr.Code != domain.AuthSuccess {
+		return common.UserScopeInfo{}, authr
 	}
-	return scopeInfo.(ScopeInfo), authr
+	return scopeInfo.(common.UserScopeInfo), authr
 }
 
-func (u *User) Login(code string, queryValues url.Values) error {
+func (u *userState) Login(code string, queryValues url.Values) error {
 	oauthToken, err := u.oauthTokenProvider.ExchangeCode(context.Background(), code, queryValues)
 	if err != nil {
 		logrus.Errorf("failed to login with exchange code, %v", err)
@@ -219,7 +192,7 @@ func (u *User) Login(code string, queryValues url.Values) error {
 	return nil
 }
 
-func (u *User) PwdLogin(username, password string) error {
+func (u *userState) PwdLogin(username, password string) error {
 	oauthToken, err := u.oauthTokenProvider.ExchangePassword(context.Background(), username, password, nil)
 	if err != nil {
 		logrus.Error(err)

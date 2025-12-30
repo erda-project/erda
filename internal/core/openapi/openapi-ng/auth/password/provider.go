@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/common"
@@ -51,6 +50,7 @@ type provider struct {
 	Settings  settings.OpenapiSettings `autowired:"openapi-settings"`
 	CredStore domain.CredentialStore   `autowired:"erda.core.user.credstore"`
 	Identity  domain.Identity          `autowired:"erda.core.user.identity"`
+	UserAuth  domain.UserAuthFacade    `autowired:"erda.core.user.auth.facade"`
 	Bdl       *bundle.Bundle
 	// openapi token
 	openapiToken *oatuh2TokenStore.ClientStoreItem
@@ -92,7 +92,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := auth.NewUser(p.CredStore)
+	user := p.UserAuth.NewUserState()
 	err := user.PwdLogin(loginParams.Username, loginParams.Password)
 	if err != nil {
 		err := fmt.Errorf("failed to PwdLogin: %v", err)
@@ -101,7 +101,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	info, authr := user.GetInfo(r)
-	if authr.Code != auth.AuthSucc {
+	if authr.Code != domain.AuthSuccess {
 		err := fmt.Errorf("failed to GetInfo: %v", authr.Detail)
 		p.Log.Error(err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
