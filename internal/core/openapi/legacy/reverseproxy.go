@@ -60,7 +60,7 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	if authr := r.auth.Auth(spec, req); authr.Code != auth.AuthSucc {
+	if authr := r.auth.Auth(spec, req); authr.Code != domain.AuthSuccess {
 		errStr := fmt.Sprintf("auth failed: %v", authr.Detail)
 		logrus.Error(errStr)
 		http.Error(rw, errStr, authr.Code)

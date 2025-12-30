@@ -60,3 +60,16 @@ type RefreshWriter interface {
 type SessionRevoker interface {
 	Revoke(ctx context.Context, sessionID string) error
 }
+
+type UserAuthFacade interface {
+	NewUserState() UserAuthState
+}
+
+type UserAuthState interface {
+	GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error)
+	IsLogin(req *http.Request) UserAuthResult
+	GetInfo(req *http.Request) (common.UserInfo, UserAuthResult)
+	GetScopeInfo(req *http.Request) (common.UserScopeInfo, UserAuthResult)
+	Login(code string, queryValues url.Values) error
+	PwdLogin(username, password string) error
+}

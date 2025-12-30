@@ -75,7 +75,7 @@ func (p *provider) ExchangeClientCredentials(_ context.Context, refresh bool, _ 
 		p.Log.Warnf("failed to set token with expire %s, %v", expireTime.String(), err)
 	}
 
-	p.Log.Infof("new server token with expire time %s", expireTime.String())
+	p.Log.Infof("grant new client_credential token with expire time %s", expireTime.String())
 	return serverToken, nil
 }
 
