@@ -268,7 +268,7 @@ func (p *provider) UserUpdateLoginMethod(ctx context.Context, req *pb.UserUpdate
 	return &pb.UserUpdateLoginMethodResponse{}, nil
 }
 
-func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInfoRequset) (*pb.UserUpdateInfoResponse, error) {
+func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInfoRequest) (*pb.UserUpdateInfoResponse, error) {
 	token, err := p.OAuthTokenProvider.ExchangeClientCredentials(context.Background(), false, nil)
 	if err != nil {
 		return nil, err
@@ -477,7 +477,7 @@ type ucUpdateUserInfoReq struct {
 	Email    string `json:"email,omitempty"`
 }
 
-func (p *provider) handleUpdateUserInfo(req *pb.UserUpdateInfoRequset, operatorID string, token *domain.OAuthToken) error {
+func (p *provider) handleUpdateUserInfo(req *pb.UserUpdateInfoRequest, operatorID string, token *domain.OAuthToken) error {
 	body, err := getUCUpdateUserInfoReq(req)
 	if err != nil {
 		return apierrors.ErrUpdateUserInfo.InternalError(err)
@@ -507,7 +507,7 @@ func (p *provider) handleUpdateUserInfo(req *pb.UserUpdateInfoRequset, operatorI
 	return nil
 }
 
-func getUCUpdateUserInfoReq(req *pb.UserUpdateInfoRequset) (*ucUpdateUserInfoReq, error) {
+func getUCUpdateUserInfoReq(req *pb.UserUpdateInfoRequest) (*ucUpdateUserInfoReq, error) {
 	if req.UserID == "" {
 		return nil, perrors.New("user id is empty")
 	}

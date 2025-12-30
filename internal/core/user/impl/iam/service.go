@@ -252,7 +252,7 @@ func (p *provider) UserUpdateLoginMethod(ctx context.Context, req *pb.UserUpdate
 	return &pb.UserUpdateLoginMethodResponse{}, nil
 }
 
-func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInfoRequset) (*pb.UserUpdateInfoResponse, error) {
+func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInfoRequest) (*pb.UserUpdateInfoResponse, error) {
 	if req.UserID == "" {
 		return nil, errors.New("must provide user id")
 	}

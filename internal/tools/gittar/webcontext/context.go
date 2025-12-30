@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
@@ -62,8 +63,6 @@ type ContextHandlerFunc func(*Context)
 
 var dbClientInstance *models.DBClient
 var diceBundleInstance *bundle.Bundle
-var oauthTokenProvider domain.OAuthTokenProvider
-var identity domain.Identity
 var etcdClientInstance *clientv3.Client
 var tokenServiceInstance *tokenpb.TokenServiceServer
 var orgClient org.ClientInterface
@@ -75,14 +74,6 @@ func WithDB(db *models.DBClient) {
 
 func WithBundle(diceBundle *bundle.Bundle) {
 	diceBundleInstance = diceBundle
-}
-
-func WithOAuthTokenProvider(p domain.OAuthTokenProvider) {
-	oauthTokenProvider = p
-}
-
-func WithIdentity(i domain.Identity) {
-	identity = i
 }
 
 func WithEtcdClient(client *clientv3.Client) {
@@ -171,8 +162,8 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		User:               user,
 		Service:            models.NewService(db, diceBundleInstance, i18nTran, apis.HTTPLanguage(c.Request())),
 		DBClient:           db,
-		OAuthTokenProvider: oauthTokenProvider,
-		Identity:           identity,
+		OAuthTokenProvider: legacycontainer.Get[domain.OAuthTokenProvider](),
+		Identity:           legacycontainer.Get[domain.Identity](),
 		Bundle:             diceBundleInstance,
 		EtcdClient:         etcdClientInstance,
 		TokenService:       *tokenServiceInstance,
