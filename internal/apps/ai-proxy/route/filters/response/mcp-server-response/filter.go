@@ -15,10 +15,10 @@
 package mcp_server_response
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -74,32 +74,52 @@ func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (ou
 
 	logger.Infof("[Proxy Info] mcp server connect success %v", sessionId)
 
-	return buildMessage(&info, sessionId, router), nil
+	return buildMessage(&info, router, chunk), nil
 }
 
-func buildMessage(info *ctxhelper.McpInfo, id string, router string) []byte {
+func buildMessage(info *ctxhelper.McpInfo, router string, chunk []byte) []byte {
+	// prefix：/proxy/message/{name}/{tag}
+	prefix := fmt.Sprintf("/proxy/message/%s/%s", info.Name, info.Version)
+	prefix = strings.Trim(prefix, "/")
 	router = strings.Trim(router, "/")
-	buffer := bytes.Buffer{}
 
-	// /proxy/message/{name}/{tag}/{sub-router}?sessionId={sessionId}
-	buffer.WriteString("data: /proxy/message/")
-	buffer.WriteString(info.Name)
-	buffer.WriteString("/")
-	buffer.WriteString(info.Version)
-	buffer.WriteString("/")
-	buffer.WriteString(router)
-	buffer.WriteString("?sessionId=")
-	buffer.WriteString(id)
-	buffer.WriteString("\n")
+	// newRouter：/proxy/message/{name}/{tag}/{router}
+	newRouter := "/" + prefix
+	if router != "" {
+		newRouter = newRouter + "/" + router
+	}
 
-	return buffer.Bytes()
+	raw := strings.TrimSpace(string(chunk))
+
+	hasDataPrefix := strings.HasPrefix(raw, "data:")
+	if hasDataPrefix {
+		raw = strings.TrimSpace(strings.TrimPrefix(raw, "data:"))
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return chunk
+	}
+
+	u.Path = newRouter
+
+	out := u.String()
+	if hasDataPrefix {
+		out = "data: " + out
+	}
+	return []byte(out)
 }
 
 func parseSessionId(message string) (router, sessionId string, err error) {
-	re := regexp.MustCompile(`^data:\s*(\/[^\s\?]+)\?sessionId=([0-9a-fA-F-]+)\s*$`)
-	matches := re.FindStringSubmatch(message)
-	if matches == nil || len(matches) < 3 {
+	re := regexp.MustCompile(`^(?:data:\s*)?(\/?[^\s\?]+)\?(?:[^ \t\r\n]*&)?(?:sessionId|session_id)=([0-9a-fA-F-]+)(?:&[^\s]*)?\s*$`)
+	matches := re.FindStringSubmatch(strings.TrimSpace(message))
+	if len(matches) < 3 {
 		return "", "", fmt.Errorf("[Proxy Error] failed to parse sessionId")
 	}
-	return matches[1], matches[2], nil
+
+	router, sessionId = matches[1], matches[2]
+	if router != "" && router[0] != '/' {
+		router = "/" + router
+	}
+	return router, sessionId, nil
 }
