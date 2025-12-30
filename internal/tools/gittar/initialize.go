@@ -30,7 +30,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	ucidentity "github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/api"
 	"github.com/erda-project/erda/internal/tools/gittar/auth"
 	"github.com/erda-project/erda/internal/tools/gittar/cache"
@@ -46,7 +45,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
-	"github.com/erda-project/erda/pkg/discover"
 )
 
 func init() {
@@ -87,11 +85,6 @@ func (p *provider) Initialize(ctx context.Context) error {
 	gitmodule.Setting.MaxGitDiffFiles = conf.GitMaxDiffFiles()
 	gitmodule.Setting.MaxGitDiffLines = conf.GitMaxDiffLines()
 
-	ucUserAuth := ucidentity.NewUCUserAuth("", discover.UC(), "", conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		ucUserAuth.ClientID = conf.OryCompatibleClientID()
-		ucUserAuth.UCHost = conf.OryKratosAddr()
-	}
 	diceBundle := bundle.New(
 		bundle.WithErdaServer(),
 	)
@@ -100,11 +93,10 @@ func (p *provider) Initialize(ctx context.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	uc.InitializeUcClient(p.Identity)
+	uc.InitializeUcClient(p.UserSvc)
 
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)
-	webcontext.WithUCAuth(ucUserAuth)
 	webcontext.WithEtcdClient(p.EtcdClient)
 	webcontext.WithTokenService(&p.TokenService)
 	webcontext.WithOrgClient(p.Org)

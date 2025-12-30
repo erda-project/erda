@@ -132,6 +132,7 @@ func (p *provider) getUserByAuthToken(authCtx domain.RequestAuthenticator) (*com
 		Email:          pointer.StringDeref(userInfo.Email, ""),
 		Phone:          userInfo.Mobile,
 		UserName:       userInfo.Username,
+		AvatarUrl:      pointer.StringDeref(userInfo.Avatar, ""),
 		NickName:       userInfo.Nickname,
 		LastLoginAt:    userInfo.LastLoginAt,
 		SessionRefresh: refresh,

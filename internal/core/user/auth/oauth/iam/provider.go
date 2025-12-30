@@ -16,19 +16,17 @@ package iam
 
 import (
 	"reflect"
-	"sync"
-	"time"
+
+	"github.com/bluele/gcache"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/legacycontainer"
-	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 const (
-	jsonStoreCacheTimeout = 60
-	tokenRefreshMargin    = 60 * time.Second
+	serverTokenCacheKey = "server-token"
 )
 
 type Config struct {
@@ -43,26 +41,13 @@ type Config struct {
 type provider struct {
 	Log    logs.Logger
 	Config *Config
-	mu     sync.Mutex
 
-	// server token
-	serverToken           *domain.OAuthToken
-	serverTokenExpireTime time.Time
-
-	// client token cache
-	clientTokenCache jsonstore.JsonStore
+	serverTokenCache gcache.Cache
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	clientTokenCache, err := jsonstore.New(
-		jsonstore.UseMemStore(),
-		jsonstore.UseTimeoutStore(jsonStoreCacheTimeout),
-	)
-	if err != nil {
-		return err
-	}
-	p.clientTokenCache = clientTokenCache
 	legacycontainer.Register[domain.OAuthTokenProvider](p)
+	p.serverTokenCache = gcache.New(1).Build()
 	return nil
 }
 
