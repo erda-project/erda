@@ -53,6 +53,20 @@
                 ],
                 "queryParams": {},
                 "scheme": "https"
+              },
+              "*:/v1/audio/speech": {
+                "headers": {
+                  "Authorization": [
+                    "Set",
+                    "Bearer ${@provider.apiKey}"
+                  ]
+                },
+                "host": "dashscope.aliyuncs.com",
+                "path": [
+                  "set",
+                  "/api/v1/services/aigc/multimodal-generation/generation"
+                ],
+                "scheme": "https"
               }
             }
           },
