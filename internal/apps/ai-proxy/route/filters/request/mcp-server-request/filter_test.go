@@ -34,6 +34,13 @@ func TestParseMcpPath(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "valid path with dot in name",
+			path:        "/proxy/connect/mcp.fetch/1.0.0",
+			wantName:    "mcp.fetch",
+			wantVersion: "1.0.0",
+			wantErr:     false,
+		},
+		{
 			name:        "valid path with underscore",
 			path:        "/proxy/connect/mcp_fetch/2.1.0",
 			wantName:    "mcp_fetch",
@@ -64,6 +71,20 @@ func TestParseMcpPath(t *testing.T) {
 		{
 			name:        "invalid path - extra segments",
 			path:        "/proxy/connect/mcp-fetch/1.0.0/extra",
+			wantName:    "",
+			wantVersion: "",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid path - trailing slash",
+			path:        "/proxy/connect/mcp-fetch/1.0.0/",
+			wantName:    "",
+			wantVersion: "",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid path - missing name",
+			path:        "/proxy/connect//1.0.0",
 			wantName:    "",
 			wantVersion: "",
 			wantErr:     true,
@@ -111,6 +132,51 @@ func TestParseSseMessagePath(t *testing.T) {
 			wantTag:         "1.0.0",
 			wantMessagePath: "/message",
 			wantSessionId:   "ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantErr:         false,
+		},
+		{
+			name:            "valid path - session_id key",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?session_id=ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantName:        "mcp-fetch",
+			wantTag:         "1.0.0",
+			wantMessagePath: "/message",
+			wantSessionId:   "ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantErr:         false,
+		},
+		{
+			name:            "valid path - sessionId not first query param",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?foo=bar&sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantName:        "mcp-fetch",
+			wantTag:         "1.0.0",
+			wantMessagePath: "/message",
+			wantSessionId:   "ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantErr:         false,
+		},
+		{
+			name:            "valid path - multiple query params before sessionId",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?a=b&c=d&sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantName:        "mcp-fetch",
+			wantTag:         "1.0.0",
+			wantMessagePath: "/message",
+			wantSessionId:   "ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantErr:         false,
+		},
+		{
+			name:            "valid path - extra query params after sessionId",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f49&foo=bar",
+			wantName:        "mcp-fetch",
+			wantTag:         "1.0.0",
+			wantMessagePath: "/message",
+			wantSessionId:   "ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantErr:         false,
+		},
+		{
+			name:            "valid path - uppercase hex in sessionId",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?sessionId=ACE21671-7DDD-403A-901D-1B0C7B7B1F49",
+			wantName:        "mcp-fetch",
+			wantTag:         "1.0.0",
+			wantMessagePath: "/message",
+			wantSessionId:   "ACE21671-7DDD-403A-901D-1B0C7B7B1F49",
 			wantErr:         false,
 		},
 		{
@@ -168,6 +234,41 @@ func TestParseSseMessagePath(t *testing.T) {
 			wantErr:         true,
 		},
 		{
+			name:            "invalid path - missing message path",
+			path:            "/proxy/message/mcp-fetch/1.0.0/?sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantName:        "",
+			wantTag:         "",
+			wantMessagePath: "",
+			wantSessionId:   "",
+			wantErr:         true,
+		},
+		{
+			name:            "invalid path - sessionId empty",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?sessionId=",
+			wantName:        "",
+			wantTag:         "",
+			wantMessagePath: "",
+			wantSessionId:   "",
+			wantErr:         true,
+		},
+		{
+			name:            "invalid path - sessionId contains non-hex letter",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f4g",
+			wantName:        "",
+			wantTag:         "",
+			wantMessagePath: "",
+			wantSessionId:   "",
+			wantErr:         true,
+		}, {
+			name:            "invalid path - session_id and ak",
+			path:            "/proxy/message/mcp-fetch/1.0.0/message?session_id=ace21671-7ddd-403a-901d-1b0c7b7b1f49&ak=47832982579439",
+			wantName:        "mcp-fetch",
+			wantTag:         "1.0.0",
+			wantMessagePath: "/message",
+			wantSessionId:   "ace21671-7ddd-403a-901d-1b0c7b7b1f49",
+			wantErr:         false,
+		},
+		{
 			name:            "empty path",
 			path:            "",
 			wantName:        "",
@@ -181,6 +282,7 @@ func TestParseSseMessagePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotName, gotTag, gotMessagePath, gotSessionId, err := parseSseMessagePath(tt.path)
+			t.Logf("name: %v, tag: %v, messagePath: %v, sessionId: %v", gotName, gotTag, gotMessagePath, gotSessionId)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseSseMessagePath() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -257,6 +359,30 @@ func TestParseEndpoint(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:     "valid https endpoint with port and no path",
+			endpoint: "https://example.com:8443",
+			want: &ParsedEndpoint{
+				Endpoint: "https://example.com:8443",
+				Host:     "example.com",
+				Port:     "8443",
+				Path:     "/",
+				Scheme:   "https",
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid http endpoint with port and no path",
+			endpoint: "http://example.com:8080",
+			want: &ParsedEndpoint{
+				Endpoint: "http://example.com:8080",
+				Host:     "example.com",
+				Port:     "8080",
+				Path:     "/",
+				Scheme:   "http",
+			},
+			wantErr: false,
+		},
+		{
 			name:     "valid endpoint with complex path",
 			endpoint: "http://api.example.com:3000/api/v1/chat/completions",
 			want: &ParsedEndpoint{
@@ -277,6 +403,24 @@ func TestParseEndpoint(t *testing.T) {
 		{
 			name:     "invalid endpoint - unsupported scheme",
 			endpoint: "ftp://example.com:8080/api",
+			want:     nil,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid endpoint - scheme is uppercase",
+			endpoint: "HTTP://example.com:8080/api",
+			want:     nil,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid endpoint - ipv6 host not supported by regexp",
+			endpoint: "http://[::1]:8080/",
+			want:     nil,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid endpoint - userinfo not supported by regexp",
+			endpoint: "http://user:pass@example.com:8080/api",
 			want:     nil,
 			wantErr:  true,
 		},
@@ -342,10 +486,50 @@ func TestParseEndpoint(t *testing.T) {
 	}
 }
 
-func TestParseMessage(t *testing.T) {
-	name, tag, messagePath, id, err := parseSseMessagePath("/proxy/message/mcp-fetch/1.0.0/message?sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f49")
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("name: %s tag: %s messagePath: %s, sessionId: %s", name, tag, messagePath, id)
+func TestRegexps_CaptureGroups(t *testing.T) {
+	t.Run("mcpPathRegexp", func(t *testing.T) {
+		matches := mcpPathRegexp.FindStringSubmatch("/proxy/connect/mcp-fetch/1.0.0")
+		if len(matches) != 3 {
+			t.Fatalf("mcpPathRegexp FindStringSubmatch len = %d, want 3", len(matches))
+		}
+		if matches[1] != "mcp-fetch" {
+			t.Fatalf("mcpPathRegexp name = %q, want %q", matches[1], "mcp-fetch")
+		}
+		if matches[2] != "1.0.0" {
+			t.Fatalf("mcpPathRegexp version = %q, want %q", matches[2], "1.0.0")
+		}
+	})
+
+	t.Run("sseMessagePathRegexp", func(t *testing.T) {
+		matches := sseMessagePathRegexp.FindStringSubmatch("/proxy/message/mcp-fetch/1.0.0/message?sessionId=ace21671-7ddd-403a-901d-1b0c7b7b1f49")
+		if len(matches) != 5 {
+			t.Fatalf("sseMessagePathRegexp FindStringSubmatch len = %d, want 5", len(matches))
+		}
+		if matches[1] != "mcp-fetch" || matches[2] != "1.0.0" || matches[3] != "/message" {
+			t.Fatalf("sseMessagePathRegexp got name=%q tag=%q messagePath=%q", matches[1], matches[2], matches[3])
+		}
+		if matches[4] != "ace21671-7ddd-403a-901d-1b0c7b7b1f49" {
+			t.Fatalf("sseMessagePathRegexp sessionId = %q, want %q", matches[4], "ace21671-7ddd-403a-901d-1b0c7b7b1f49")
+		}
+	})
+
+	t.Run("endpointRegexp SubexpNames", func(t *testing.T) {
+		names := endpointRegexp.SubexpNames()
+		want := map[string]bool{
+			"scheme": false,
+			"host":   false,
+			"port":   false,
+			"path":   false,
+		}
+		for _, n := range names {
+			if _, ok := want[n]; ok {
+				want[n] = true
+			}
+		}
+		for k, ok := range want {
+			if !ok {
+				t.Fatalf("endpointRegexp SubexpNames missing %q: %v", k, names)
+			}
+		}
+	})
 }

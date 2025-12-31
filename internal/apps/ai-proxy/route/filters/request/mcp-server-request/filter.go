@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/mcp-server-request/request"
@@ -74,16 +75,20 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 
 	if strings.HasPrefix(routePath, "/proxy/connect") {
 		name, version, err := parseMcpPath(routePath)
-		if err == nil {
-			return f.OnConnect(logger, req.Context(), name, version, pr.Out)
+		if err != nil {
+			logger.Errorf("parse mcp path failed: %v", err)
+			return err
 		}
+		return f.OnConnect(logger, req.Context(), name, version, pr.Out)
 	}
 
 	if strings.HasPrefix(routePath, "/proxy/message") {
 		name, tag, messagePath, sessionId, err := parseSseMessagePath(routePath)
-		if err == nil {
-			return f.OnMessage(logger, req.Context(), name, tag, messagePath, sessionId, pr.Out)
+		if err != nil {
+			logger.Errorf("failed to parse mcp message: %v", err)
+			return err
 		}
+		return f.OnMessage(logger, req.Context(), name, tag, messagePath, sessionId, pr.Out)
 	}
 
 	return fmt.Errorf("not supported router path %v", routePath)
@@ -137,6 +142,21 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 	req.URL.Host = endpoint
 	req.URL.Path = parsedEndpoint.Path
 	req.Header.Set("Host", parsedEndpoint.Host)
+
+	config, err := loadInstanceConfig(ctx, name, version)
+	if err != nil {
+		logger.Errorf("load config failed: %v", err)
+		return err
+	}
+	for key, value := range config.Header {
+		req.Header.Set(key, value)
+	}
+	query := req.URL.Query()
+	for key, value := range config.Query {
+		query.Add(key, value)
+	}
+	req.URL.RawQuery = query.Encode()
+
 	return nil
 }
 
@@ -219,8 +239,10 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 
 var (
 	mcpPathRegexp        = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
-	sseMessagePathRegexp = regexp.MustCompile(`^/proxy/message/([^/]+)/([^/]+)(?P<sub_path>/[^?]+)\?sessionId=(?P<sessionId>[0-9a-fA-F-]+)$`)
-	endpointRegexp       = regexp.MustCompile(`^(?P<scheme>https?)://(?P<host>[^/:]+)(?::(?P<port>\d+))?(?P<path>/.*)?$`)
+	sseMessagePathRegexp = regexp.MustCompile(
+		`^/proxy/message/([^/]+)/([^/]+)(/[^?\s]+)\?(?:[^ \t\r\n]*&)?(?:sessionId|session_id)=([0-9a-fA-F-]+)(?:&[^\s]*)?$`,
+	)
+	endpointRegexp = regexp.MustCompile(`^(?P<scheme>https?)://(?P<host>[^/:]+)(?::(?P<port>\d+))?(?P<path>/.*)?$`)
 )
 
 func parseMcpPath(path string) (name, version string, err error) {
@@ -357,4 +379,55 @@ func filterInitNotification(ctx context.Context, body []byte, client dao.DAO, na
 	}
 
 	return jsonData, nil
+}
+
+type ConnectConfig struct {
+	Header map[string]string `json:"header"`
+	Query  map[string]string `json:"query"`
+}
+
+func loadInstanceConfig(ctx context.Context, name string, tag string) (*ConnectConfig, error) {
+	var uc ConnectConfig
+	uc.Header = make(map[string]string)
+	uc.Query = make(map[string]string)
+
+	client := ctxhelper.MustGetDBClient(ctx)
+
+	clientId, ok := ctxhelper.GetClientId(ctx)
+	if !ok && !auth.IsAdmin(ctx) {
+		return nil, errors.New("failed to get clientId")
+	}
+
+	instance, err := client.MCPServerConfigInstanceClient().Get(ctx, name, tag, clientId)
+	if err != nil {
+		return nil, err
+	}
+	var config = make(map[string]string)
+	if err = json.Unmarshal([]byte(instance.Config), &config); err != nil {
+		return nil, err
+	}
+
+	template, err := client.MCPServerTemplateClient().Get(ctx, name, tag)
+	if err != nil {
+		return nil, err
+	}
+
+	var items = make([]*mcp_server_template.TemplateConfigItem, 0)
+
+	if err = json.Unmarshal([]byte(template.Template), &items); err != nil {
+		return nil, err
+	}
+
+	for _, item := range items {
+		if item.Scope == nil {
+			continue
+		}
+		if *item.Scope == mcp_server_template.TemplateConfigItemScopeHeader && config[item.Name] != "" {
+			uc.Header[item.Name] = config[item.Name]
+		}
+		if *item.Scope == mcp_server_template.TemplateConfigItemScopeQuery && config[item.Name] != "" {
+			uc.Query[item.Name] = config[item.Name]
+		}
+	}
+	return &uc, nil
 }

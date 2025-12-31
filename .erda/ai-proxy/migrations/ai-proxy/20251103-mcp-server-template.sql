@@ -49,7 +49,13 @@ VALUES
     ('pptx-server', '1.0.0', '[]', '一个PPT模板生成工具，提供多种模板构建功能'),
     ('pptx-agent', '1.0.0', '[]', '一个PPT生成工具，可根据用户提供的数据生成PPT'),
     ('mcp-timer', '1.0.0', '[]', '提供时间戳与日期时间互相转换的两个工具'),
-    ('mcp-server-baidu-maps', '1.11.0', '[]', '百度地图MCP服务器，符合MCP标准的开源LBS解决方案，为开发者和AI代理提供地理位置相关API与工具'),
+    ('mcp-server-baidu-maps', '1.11.0', '[{
+    "desc": "百度地图 AccessKey",
+    "name": "ak",
+    "required": true,
+    "type": "string",
+    "scope": "query"
+  }]', '百度地图MCP服务器，符合MCP标准的开源LBS解决方案，为开发者和AI代理提供地理位置相关API与工具'),
     ('playwright', '1.0.0', '[]', '基于Playwright的浏览器自动化与测试工具'),
     ('office-word-mcp-server', '1.0.0', '[]', '用于创建、读取和操作Microsoft Word文档的MCP服务器'),
     ('mcp-milvus', '1.0.0', '[]', '提供Milvus向量数据库的访问功能'),
