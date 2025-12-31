@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	serverTokenCacheKey = "server-token"
+	serverTokenCacheKey    = "server_token"
+	userTokenCachePrefix   = "user:"
+	defaultEarlyExpireRate = 0.8
 )
 
 type Config struct {
@@ -36,18 +38,30 @@ type Config struct {
 	ClientSecret string `file:"client_secret"`
 	// Optional, only needed for authorization_code grant types
 	RedirectURI string `file:"redirect_uri"`
+	// token cache config
+	TokenCacheSize            int     `file:"token_cache_size" default:"20000"`
+	TokenCacheEarlyExpireRate float64 `file:"token_cache_early_expire_rate" default:"0.8"`
+	ServerTokenCacheEnabled   bool    `file:"server_token_cache_enabled" default:"true"`
+	UserTokenCacheEnabled     bool    `file:"user_token_cache_enabled" default:"true"`
 }
 
 type provider struct {
 	Log    logs.Logger
 	Config *Config
 
-	serverTokenCache gcache.Cache
+	tokenCache gcache.Cache
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
 	legacycontainer.Register[domain.OAuthTokenProvider](p)
-	p.serverTokenCache = gcache.New(1).Build()
+	// auto fix token cache early expire rate
+	rate := p.Config.TokenCacheEarlyExpireRate
+	if rate <= 0 || rate >= 1 {
+		rate = defaultEarlyExpireRate
+		p.Log.Warnf("illegal token cache early expire rate, use default: %v", rate)
+	}
+	p.Config.TokenCacheEarlyExpireRate = rate
+	p.tokenCache = gcache.New(p.Config.TokenCacheSize).LRU().Build()
 	return nil
 }
 
