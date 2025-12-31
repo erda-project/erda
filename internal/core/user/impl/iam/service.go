@@ -25,16 +25,19 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"k8s.io/utils/pointer"
 
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/pointer"
 )
 
 func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error) {
-	oauthToken, err := p.OAuthTokenProvider.ExchangeClientCredentials(
-		context.Background(), pointer.BoolDeref(refresh, false), nil,
+	oauthToken, err := p.UserOAuthSvc.ExchangeClientCredentials(
+		context.Background(), &useroauthpb.ExchangeClientCredentialsRequest{
+			Refresh: pointer.BoolDeref(refresh, false),
+		},
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to exchange client credentials token")

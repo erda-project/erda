@@ -23,22 +23,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type OAuthProvider interface {
-	OAuthTokenProvider
-	OAuthSessionProvider
-}
-
-type OAuthSessionProvider interface {
-	AuthURL(ctx context.Context, referer string) (string, error)
-	LogoutURL(ctx context.Context, referer string) (string, error)
-}
-
-type OAuthTokenProvider interface {
-	ExchangeCode(ctx context.Context, code string, extraParams url.Values) (*OAuthToken, error)
-	ExchangePassword(ctx context.Context, username, password string, extraParams url.Values) (*OAuthToken, error)
-	ExchangeClientCredentials(ctx context.Context, refresh bool, extraParams url.Values) (*OAuthToken, error)
-}
-
 type RequestAuthenticator interface {
 	Apply(req *httpclient.Request)
 }

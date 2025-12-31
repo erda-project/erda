@@ -15,11 +15,9 @@
 package uc
 
 import (
-	"reflect"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -32,9 +30,9 @@ type provider struct {
 	Cfg *Config
 	Log logs.Logger
 
-	baseURL            string
-	client             *httpclient.HTTPClient
-	OAuthTokenProvider domain.OAuthTokenProvider `autowired:"erda.core.user.oauth"`
+	baseURL      string
+	client       *httpclient.HTTPClient
+	UserOAuthSvc useroauthpb.UserOAuthServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -46,13 +44,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 type Interface common.Interface
 
-func init() {
-	servicehub.Register("erda.core.user.uc", &servicehub.Spec{
-		Services:   []string{"erda.core.user.uc"},
-		Types:      []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
-		ConfigFunc: func() interface{} { return &Config{} },
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
-	})
-}
+//func init() {
+//	servicehub.Register("erda.core.user.uc", &servicehub.Spec{
+//		Services:   []string{"erda.core.user.uc"},
+//		Types:      []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
+//		ConfigFunc: func() interface{} { return &Config{} },
+//		Creator: func() servicehub.Provider {
+//			return &provider{}
+//		},
+//	})
+//}
