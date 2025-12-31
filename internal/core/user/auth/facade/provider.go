@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/legacycontainer"
@@ -29,10 +30,10 @@ type Config struct {
 type provider struct {
 	Cfg *Config
 
-	OAuthTokenProvider domain.OAuthTokenProvider `autowired:"erda.core.user.oauth"`
-	CredStore          domain.CredentialStore    `autowired:"erda.core.user.credstore"`
-	Identity           domain.Identity           `autowired:"erda.core.user.identity"`
-	Bundle             *bundle.Bundle
+	UserOAuthSvc useroauthpb.UserOAuthServiceServer
+	CredStore    domain.CredentialStore `autowired:"erda.core.user.credstore"`
+	Identity     domain.Identity        `autowired:"erda.core.user.identity"`
+	Bundle       *bundle.Bundle
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -43,11 +44,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 
 func (p *provider) NewUserState() domain.UserAuthState {
 	return &userState{
-		state:              GetInit,
-		oauthTokenProvider: p.OAuthTokenProvider,
-		identity:           p.Identity,
-		bundle:             p.Bundle,
-		credStore:          p.CredStore,
+		state:            GetInit,
+		UserOAuthService: p.UserOAuthSvc,
+		identity:         p.Identity,
+		bundle:           p.Bundle,
+		credStore:        p.CredStore,
 	}
 }
 

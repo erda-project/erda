@@ -15,14 +15,12 @@
 package iam
 
 import (
-	"reflect"
-
 	"github.com/bluele/gcache"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/legacycontainer"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 )
 
 const (
@@ -46,14 +44,14 @@ type Config struct {
 }
 
 type provider struct {
-	Log    logs.Logger
-	Config *Config
+	Register transport.Register `autowired:"service-register" required:"true"`
+	Log      logs.Logger
+	Config   *Config
 
 	tokenCache gcache.Cache
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	legacycontainer.Register[domain.OAuthTokenProvider](p)
 	// auto fix token cache early expire rate
 	rate := p.Config.TokenCacheEarlyExpireRate
 	if rate <= 0 || rate >= 1 {
@@ -62,13 +60,18 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 	p.Config.TokenCacheEarlyExpireRate = rate
 	p.tokenCache = gcache.New(p.Config.TokenCacheSize).LRU().Build()
+
+	if p.Register != nil {
+		pb.RegisterUserOAuthServiceImp(p.Register, p)
+		pb.RegisterUserOAuthSessionServiceImp(p.Register, p)
+	}
 	return nil
 }
 
 func init() {
 	servicehub.Register("erda.core.user.oauth.iam", &servicehub.Spec{
-		Services:   []string{"erda.core.user.oauth"},
-		Types:      []reflect.Type{reflect.TypeOf((*domain.OAuthProvider)(nil)).Elem()},
+		Services:   pb.ServiceNames(),
+		Types:      pb.Types(),
 		ConfigFunc: func() interface{} { return &Config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}

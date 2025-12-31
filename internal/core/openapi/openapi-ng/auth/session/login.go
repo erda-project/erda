@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/common"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 )
@@ -32,7 +33,9 @@ func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
 		referer = p.Cfg.RedirectAfterLogin
 	}
 
-	authURL, err := p.OAuthSessionProvider.AuthURL(r.Context(), referer)
+	authURL, err := p.UserOauthSessionSvc.AuthURL(r.Context(), &pb.AuthURLRequest{
+		Referer: referer,
+	})
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -41,7 +44,7 @@ func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: authURL,
+		URL: authURL.Data,
 	})
 }
 
@@ -101,7 +104,9 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 		Secure:   scheme == "https",
 	})
 
-	logoutURL, err := p.OAuthSessionProvider.LogoutURL(r.Context(), referer)
+	logoutURL, err := p.UserOauthSessionSvc.LogoutURL(r.Context(), &pb.LogoutURLRequest{
+		Referer: referer,
+	})
 	if err != nil {
 		p.Log.Errorf("failed to get logout url, %v", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -110,7 +115,7 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: logoutURL,
+		URL: logoutURL.Data,
 	})
 }
 

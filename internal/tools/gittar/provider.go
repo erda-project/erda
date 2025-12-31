@@ -25,24 +25,23 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/session/client"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	_ "github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl"
 )
 
 type provider struct {
 	Log logs.Logger
 
-	ETCD               etcd.Interface             // autowired
-	EtcdClient         *clientv3.Client           // autowired
-	TokenService       tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
-	UserSvc            userpb.UserServiceServer   `autowired:"erda.core.user.UserService"`
-	OAuthTokenProvider domain.OAuthTokenProvider  `autowired:"erda.core.user.oauth"`
-	Identity           domain.Identity            `autowired:"erda.core.user.identity"`
-	Org                org.ClientInterface
-	I18n               i18n.Translator `translator:"common"`
+	ETCD         etcd.Interface             // autowired
+	EtcdClient   *clientv3.Client           // autowired
+	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
+	UserSvc      userpb.UserServiceServer
+	UserOAuthSvc useroauthpb.UserOAuthServiceServer
+	Org          org.ClientInterface
+	I18n         i18n.Translator `translator:"common"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize(ctx) }

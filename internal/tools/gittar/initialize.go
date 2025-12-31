@@ -101,6 +101,7 @@ func (p *provider) Initialize(ctx context.Context) error {
 	webcontext.WithTokenService(&p.TokenService)
 	webcontext.WithOrgClient(p.Org)
 	webcontext.WithI18n(p.I18n)
+	webcontext.WithUserOAuthSvc(p.UserOAuthSvc)
 
 	e := echo.New()
 

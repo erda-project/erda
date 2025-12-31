@@ -32,6 +32,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	identity "github.com/erda-project/erda/internal/core/user/common"
@@ -317,7 +318,10 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, repoName string) (*ide
 }
 
 func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*identity.UserInfo, error) {
-	oauthToken, err := c.OAuthTokenProvider.ExchangePassword(context.Background(), username, passwd, nil)
+	oauthToken, err := c.UserOAuthSvc.ExchangePassword(context.Background(), &pb.ExchangePasswordRequest{
+		Username: username,
+		Password: passwd,
+	})
 	if err != nil {
 		return nil, err
 	}

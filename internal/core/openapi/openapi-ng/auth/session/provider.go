@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/openapi/settings"
@@ -43,15 +44,15 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg                  *config
-	Log                  logs.Logger
-	Router               openapi.Interface           `autowired:"openapi-router"`
-	Settings             settings.OpenapiSettings    `autowired:"openapi-settings"`
-	OAuthSessionProvider domain.OAuthSessionProvider `autowired:"erda.core.user.oauth"`
-	CredStore            domain.CredentialStore      `autowired:"erda.core.user.credstore"`
-	UserAuth             domain.UserAuthFacade       `autowired:"erda.core.user.auth.facade"`
-	Org                  org.Interface
-	referMatcher         *referMatcher
+	Cfg                 *config
+	Log                 logs.Logger
+	Router              openapi.Interface        `autowired:"openapi-router"`
+	Settings            settings.OpenapiSettings `autowired:"openapi-settings"`
+	UserOauthSessionSvc pb.UserOAuthSessionServiceServer
+	CredStore           domain.CredentialStore `autowired:"erda.core.user.credstore"`
+	UserAuth            domain.UserAuthFacade  `autowired:"erda.core.user.auth.facade"`
+	Org                 org.Interface
+	referMatcher        *referMatcher
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

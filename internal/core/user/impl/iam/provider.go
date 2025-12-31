@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -34,8 +34,8 @@ type provider struct {
 	Cfg *Config
 	Log logs.Logger
 
-	client             *httpclient.HTTPClient
-	OAuthTokenProvider domain.OAuthTokenProvider `autowired:"erda.core.user.oauth"`
+	client       *httpclient.HTTPClient
+	UserOAuthSvc pb.UserOAuthServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

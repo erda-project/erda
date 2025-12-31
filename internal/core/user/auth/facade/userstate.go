@@ -24,12 +24,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/util"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
+	uutil "github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -51,10 +53,10 @@ type userState struct {
 	authenticator domain.RequestAuthenticator
 
 	// dependencies
-	oauthTokenProvider domain.OAuthTokenProvider
-	identity           domain.Identity
-	bundle             *bundle.Bundle
-	credStore          domain.CredentialStore
+	UserOAuthService pb.UserOAuthServiceServer
+	identity         domain.Identity
+	bundle           *bundle.Bundle
+	credStore        domain.CredentialStore
 }
 
 func (u *userState) get(req *http.Request, targetState GetUserState) (interface{}, domain.UserAuthResult) {
@@ -171,13 +173,16 @@ func (u *userState) GetScopeInfo(req *http.Request) (common.UserScopeInfo, domai
 }
 
 func (u *userState) Login(code string, queryValues url.Values) error {
-	oauthToken, err := u.oauthTokenProvider.ExchangeCode(context.Background(), code, queryValues)
+	oauthToken, err := u.UserOAuthService.ExchangeCode(context.Background(), &pb.ExchangeCodeRequest{
+		Code:        code,
+		ExtraParams: uutil.ConvertURLValuesToPb(queryValues),
+	})
 	if err != nil {
 		logrus.Errorf("failed to login with exchange code, %v", err)
 		return err
 	}
 	persistedCredential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
-		OAuthToken: oauthToken,
+		OAuthToken: uutil.ConvertPbToOAuthDomain(oauthToken),
 	})
 	if err != nil {
 		return err
@@ -193,13 +198,16 @@ func (u *userState) Login(code string, queryValues url.Values) error {
 }
 
 func (u *userState) PwdLogin(username, password string) error {
-	oauthToken, err := u.oauthTokenProvider.ExchangePassword(context.Background(), username, password, nil)
+	oauthToken, err := u.UserOAuthService.ExchangePassword(context.Background(), &pb.ExchangePasswordRequest{
+		Username: username,
+		Password: password,
+	})
 	if err != nil {
 		logrus.Error(err)
 		return err
 	}
 	persistedCredential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
-		OAuthToken: oauthToken,
+		OAuthToken: uutil.ConvertPbToOAuthDomain(oauthToken),
 	})
 	if err != nil {
 		return err

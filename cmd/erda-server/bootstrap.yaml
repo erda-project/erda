@@ -109,11 +109,11 @@ erda.core.user.credstore.iam:
   cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 
 # uc user services server
-erda.core.user.uc:
-  _enabled: "${UC_ENABLED:true}"
-  host: "${UC_ADDR}"
-  client_id: "${OAUTH_CLIENT_ID}"
-  client_secret: "${OAUTH_CLIENT_SECRET}"
+#erda.core.user.uc:
+#  _enabled: "${UC_ENABLED:true}"
+#  host: "${UC_ADDR}"
+#  client_id: "${OAUTH_CLIENT_ID}"
+#  client_secret: "${OAUTH_CLIENT_SECRET}"
 
 # user auth facade
 erda.core.user.auth.facade: { }
