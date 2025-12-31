@@ -412,7 +412,7 @@ func loadInstanceConfig(ctx context.Context, name string, tag string) (*ConnectC
 		return nil, err
 	}
 
-	var items = make([]*mcp_server_template.TemplateItem, 0)
+	var items = make([]*mcp_server_template.TemplateConfigItem, 0)
 
 	if err = json.Unmarshal([]byte(template.Template), &items); err != nil {
 		return nil, err
@@ -422,10 +422,10 @@ func loadInstanceConfig(ctx context.Context, name string, tag string) (*ConnectC
 		if item.Scope == nil {
 			continue
 		}
-		if *item.Scope == mcp_server_template.TemplateItemScopeHeader && config[item.Name] != "" {
+		if *item.Scope == mcp_server_template.TemplateConfigItemScopeHeader && config[item.Name] != "" {
 			uc.Header[item.Name] = config[item.Name]
 		}
-		if *item.Scope == mcp_server_template.TemplateItemScopeQuery && config[item.Name] != "" {
+		if *item.Scope == mcp_server_template.TemplateConfigItemScopeQuery && config[item.Name] != "" {
 			uc.Query[item.Name] = config[item.Name]
 		}
 	}

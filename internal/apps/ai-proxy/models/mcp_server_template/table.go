@@ -28,11 +28,11 @@ const EmptyTemplate = "[]"
 const MCPErdaProvider = "Erda Platform"
 const MCPUnknowProvider = "Unknow Provider"
 
-const TemplateItemScopeHeader = "header"
-const TemplateItemScopeQuery = "query"
-const TemplateItemScopeNotification = "notification"
+const TemplateConfigItemScopeHeader = "header"
+const TemplateConfigItemScopeQuery = "query"
+const TemplateConfigItemScopeNotification = "notification"
 
-type TemplateItem struct {
+type TemplateConfigItem struct {
 	Description string  `json:"description"`
 	Name        string  `json:"name"`
 	Required    bool    `json:"required"`
