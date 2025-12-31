@@ -36,7 +36,6 @@ func (p *provider) ExchangePassword(ctx context.Context, r *pb.ExchangePasswordR
 		} else {
 			cacheToken, ok := cacheTokenAny.(*domain.OAuthToken)
 			if ok {
-				p.Log.Infof("cached get user token: %s, %s", r.Username, cacheToken.AccessToken)
 				return util.ConvertOAuthDomainToPb(cacheToken), nil
 			}
 			p.Log.Warn("user cache token is not *domain.OAuthToken")
