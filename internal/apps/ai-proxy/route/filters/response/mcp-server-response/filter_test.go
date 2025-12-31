@@ -40,6 +40,12 @@ func TestParseSessionId(t *testing.T) {
 				Router    string
 				SessionId string
 			}{Router: "/proxy/message", SessionId: "c4712579-9753-4fde-9129-92519abdd7c5"},
+		}, {
+			Message: "data: messages/?session_id=582c5949d3b54a2399a8366a646a6c81&ak=thisisaccesskey\n", // baidu mcp server
+			Want: struct {
+				Router    string
+				SessionId string
+			}{Router: "/messages/", SessionId: "582c5949d3b54a2399a8366a646a6c81"},
 		},
 	}
 

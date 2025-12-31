@@ -28,6 +28,19 @@ const EmptyTemplate = "[]"
 const MCPErdaProvider = "Erda Platform"
 const MCPUnknowProvider = "Unknow Provider"
 
+const TemplateConfigItemScopeHeader = "header"
+const TemplateConfigItemScopeQuery = "query"
+const TemplateConfigItemScopeNotification = "notification"
+
+type TemplateConfigItem struct {
+	Description string  `json:"description"`
+	Name        string  `json:"name"`
+	Required    bool    `json:"required"`
+	Type        string  `json:"type"`
+	Scope       *string `json:"scope,omitempty"`
+	Default     *string `json:"default,omitempty"`
+}
+
 type McpServerTemplate struct {
 	ID          uint64 `gorm:"column:id;primaryKey;autoIncrement;not null" json:"id"`
 	McpName     string `gorm:"column:mcp_name;type:varchar(255);not null" json:"mcp_name"`
