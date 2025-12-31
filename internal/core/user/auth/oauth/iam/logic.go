@@ -37,6 +37,20 @@ func (p *provider) ExchangeCode(_ context.Context, code string, _ url.Values) (*
 }
 
 func (p *provider) ExchangePassword(_ context.Context, username, password string, _ url.Values) (*domain.OAuthToken, error) {
+	if p.Config.UserTokenCacheEnabled {
+		cacheTokenAny, err := p.tokenCache.Get(userTokenCacheKey(username))
+		if err != nil {
+			p.Log.Warnf("failed to get user token from cache (username: %s), %v", username, err)
+		} else {
+			cacheToken, ok := cacheTokenAny.(*domain.OAuthToken)
+			if ok {
+				p.Log.Infof("cached get user token: %s, %s", username, cacheToken.AccessToken)
+				return cacheToken, nil
+			}
+			p.Log.Warn("user cache token is not *domain.OAuthToken")
+		}
+	}
+
 	formBody := make(url.Values)
 	formBody.Set("grant_type", "password")
 	formBody.Set("username", username)
@@ -44,13 +58,26 @@ func (p *provider) ExchangePassword(_ context.Context, username, password string
 	// fixed scope user_info
 	formBody.Set("scope", "user_info")
 
-	return p.doExchange(formBody)
+	oauthToken, err := p.doExchange(formBody)
+	if err != nil {
+		return nil, err
+	}
+
+	if p.Config.UserTokenCacheEnabled {
+		expireTime := p.convertExpiresIn2Time(oauthToken.ExpiresIn)
+		if err := p.tokenCache.SetWithExpire(userTokenCacheKey(username), oauthToken, expireTime); err != nil {
+			p.Log.Warnf("failed to set token with expire %s (username: %s), %v", expireTime.String(), username, err)
+		}
+		p.Log.Infof("grant new password token with expire time %s (username: %s)", expireTime.String(), username)
+	}
+
+	return oauthToken, nil
 }
 
 func (p *provider) ExchangeClientCredentials(_ context.Context, refresh bool, _ url.Values) (*domain.OAuthToken, error) {
 	// load from cache
-	if !refresh {
-		cacheToken, err := p.serverTokenCache.Get(serverTokenCacheKey)
+	if !refresh && p.Config.ServerTokenCacheEnabled {
+		cacheToken, err := p.tokenCache.Get(serverTokenCacheKey)
 		if err != nil {
 			p.Log.Warnf("failed to get server token from cache, %v", err)
 		} else {
@@ -58,7 +85,7 @@ func (p *provider) ExchangeClientCredentials(_ context.Context, refresh bool, _ 
 			if ok {
 				return oauthToken, nil
 			}
-			p.Log.Warn("cache token is not *domain.OAuthToken")
+			p.Log.Warn("server cache token is not *domain.OAuthToken")
 		}
 	}
 
@@ -70,12 +97,14 @@ func (p *provider) ExchangeClientCredentials(_ context.Context, refresh bool, _ 
 		return nil, err
 	}
 
-	expireTime := time.Duration(serverToken.ExpiresIn/10*8) * time.Second
-	if err := p.serverTokenCache.SetWithExpire(serverTokenCacheKey, serverToken, expireTime); err != nil {
-		p.Log.Warnf("failed to set token with expire %s, %v", expireTime.String(), err)
+	if p.Config.ServerTokenCacheEnabled {
+		expireTime := p.convertExpiresIn2Time(serverToken.ExpiresIn)
+		if err := p.tokenCache.SetWithExpire(serverTokenCacheKey, serverToken, expireTime); err != nil {
+			p.Log.Warnf("failed to set token with expire %s, %v", expireTime.String(), err)
+		}
+		p.Log.Infof("grant new client_credential token with expire time %s", expireTime.String())
 	}
 
-	p.Log.Infof("grant new client_credential token with expire time %s", expireTime.String())
 	return serverToken, nil
 }
 
@@ -141,4 +170,12 @@ func (p *provider) LogoutURL(ctx context.Context, referer string) (string, error
 	baseURL.Path = "logout"
 	baseURL.RawQuery = q.Encode()
 	return baseURL.String(), nil
+}
+
+func (p *provider) convertExpiresIn2Time(expiresIn int) time.Duration {
+	return time.Duration(float64(expiresIn)*p.Config.TokenCacheEarlyExpireRate) * time.Second
+}
+
+func userTokenCacheKey(username string) string {
+	return userTokenCachePrefix + username
 }

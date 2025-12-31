@@ -99,6 +99,10 @@ erda.core.user.oauth.iam:
   client_id: "${OAUTH_CLIENT_ID}"
   client_secret: "${OAUTH_CLIENT_SECRET}"
   redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
+  token_cache_size: "${OAUTH_TOKEN_CACHE_SIZE:20000}"
+  token_cache_early_expire_rate: "${OAUTH_TOKEN_CACHE_EARLY_EXPIRE_RATE:0.8}"
+  server_token_cache_enabled: "${OAUTH_SERVER_TOKEN_CACHE_ENABLED:true}"
+  user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
 # iam user credential store
 erda.core.user.credstore.iam:
   _enabled: "${IAM_ENABLED:true}"
