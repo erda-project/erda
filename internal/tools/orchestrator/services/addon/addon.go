@@ -386,6 +386,12 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 						return err
 					}
 				}
+				if v.Plan != old.Plan {
+					old.Plan = v.Plan
+					if err := a.db.UpdatePrebuild(&old); err != nil {
+						return err
+					}
+				}
 
 				newPrebuildList = append(newPrebuildList, old)
 
