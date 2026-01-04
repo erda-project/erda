@@ -1,0 +1,60 @@
+{
+  "multimodal-embedding-v1": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2712517"
+    },
+    "desc": "多模态向量模型将文本、图像或视频转换成统一的1024维浮点数向量，适用于视频分类、图像分类、图文检索等。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "embedding",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "embedding"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 512,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": 512
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.0000009",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
