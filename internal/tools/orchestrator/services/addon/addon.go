@@ -351,67 +351,22 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 		return err
 	}
 
-	// 找出新增 addons，添加至 prebuild
-	addonPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons)) // 新增 addons
-	newPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons))   // 新 addons 列表
-	for _, v := range req.Addons {
-		newAddonName := addonutil.TransAddonName(v.Type)
-		if old, ok := existBuildMap[fmt.Sprintf("%d%s%s", req.RuntimeID, newAddonName, v.Name)]; ok {
-			switch old.DeleteStatus {
-			case apistructs.AddonPrebuildDiceYmlDeleted: // 若 addon 在 prebuild 已存在，且历史从 dice.yml 删除
-				// 更新删除状态为未删除
-				old.DeleteStatus = apistructs.AddonPrebuildNotDeleted
-				if err := a.db.UpdatePrebuild(&old); err != nil {
-					return err
-				}
-				newPrebuildList = append(newPrebuildList, old)
-			case apistructs.AddonPrebuildNotDeleted:
-				if len(v.Options) > 0 {
-					options, err := json.Marshal(v.Options)
-					if err != nil {
-						return err
-					}
-					if v.Plan != old.Plan || (string(options) != old.Options) {
-						old.Plan = v.Plan
-						old.Options = string(options)
-						if err := a.db.UpdatePrebuild(&old); err != nil {
-							return err
-						}
-					}
-				}
-				if len(v.Options) == 0 && old.Options != "" {
-					old.Plan = v.Plan
-					old.Options = ""
-					if err := a.db.UpdatePrebuild(&old); err != nil {
-						return err
-					}
-				}
-				if v.Plan != old.Plan {
-					old.Plan = v.Plan
-					if err := a.db.UpdatePrebuild(&old); err != nil {
-						return err
-					}
-				}
-
-				newPrebuildList = append(newPrebuildList, old)
-
-			}
-		} else {
-			ap := a.ParsePreBuild(req.ApplicationID, req.RuntimeID, req.RuntimeName, req.Workspace, v)
-			if ap.AddonName == apistructs.AddonRoost && !zkExist && !roostExist { // 若 dice.yml 里指定 roost，替换为 registercenter
-				//ap.InstanceName = apistructs.AddonZKProxy
-				ap.AddonName = apistructs.AddonZKProxy
-			}
-			addonPrebuildList = append(addonPrebuildList, *ap)
-			newPrebuildList = append(newPrebuildList, *ap)
+	toCreate, toUpdate, newPrebuildList, err := a.preparePrebuildChanges(req, existBuildMap, zkExist, roostExist)
+	if err != nil {
+		return err
+	}
+	for i := range toUpdate {
+		prebuild := toUpdate[i]
+		if err := a.db.UpdatePrebuild(&prebuild); err != nil {
+			return err
 		}
 	}
 	if len(newPrebuildList) > 0 {
 		logrus.Infof("new prebuild list: %+v", newPrebuildList)
 	}
-	// prebuild 入库
-	for _, v := range addonPrebuildList {
-		if err := a.db.CreatePrebuild(&v); err != nil {
+	for i := range toCreate {
+		prebuild := toCreate[i]
+		if err := a.db.CreatePrebuild(&prebuild); err != nil {
 			return err
 		}
 	}
@@ -434,6 +389,55 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 		return err
 	}
 	return nil
+}
+
+func (a *Addon) preparePrebuildChanges(
+	req *apistructs.AddonCreateRequest,
+	existBuildMap map[string]dbclient.AddonPrebuild,
+	zkExist, roostExist bool,
+) (toCreate, toUpdate, newPrebuildList []dbclient.AddonPrebuild, err error) {
+	toCreate = make([]dbclient.AddonPrebuild, 0, len(req.Addons))
+	toUpdate = make([]dbclient.AddonPrebuild, 0, len(req.Addons))
+	newPrebuildList = make([]dbclient.AddonPrebuild, 0, len(req.Addons))
+
+	for _, v := range req.Addons {
+		newAddonName := addonutil.TransAddonName(v.Type)
+		if old, ok := existBuildMap[fmt.Sprintf("%d%s%s", req.RuntimeID, newAddonName, v.Name)]; ok {
+			switch old.DeleteStatus {
+			case apistructs.AddonPrebuildDiceYmlDeleted: // 若 addon 在 prebuild 已存在，且历史从 dice.yml 删除
+				old.DeleteStatus = apistructs.AddonPrebuildNotDeleted
+				toUpdate = append(toUpdate, old)
+				newPrebuildList = append(newPrebuildList, old)
+			case apistructs.AddonPrebuildNotDeleted:
+				desired := old
+				desired.Plan = v.Plan
+				if len(v.Options) > 0 {
+					options, err := json.Marshal(v.Options)
+					if err != nil {
+						return nil, nil, nil, err
+					}
+					desired.Options = string(options)
+				} else {
+					desired.Options = ""
+				}
+
+				if desired.Plan != old.Plan || desired.Options != old.Options {
+					toUpdate = append(toUpdate, desired)
+				}
+				newPrebuildList = append(newPrebuildList, desired)
+			}
+			continue
+		}
+
+		ap := a.ParsePreBuild(req.ApplicationID, req.RuntimeID, req.RuntimeName, req.Workspace, v)
+		if ap.AddonName == apistructs.AddonRoost && !zkExist && !roostExist { // 若 dice.yml 里指定 roost，替换为 registercenter
+			ap.AddonName = apistructs.AddonZKProxy
+		}
+		toCreate = append(toCreate, *ap)
+		newPrebuildList = append(newPrebuildList, *ap)
+	}
+
+	return toCreate, toUpdate, newPrebuildList, nil
 }
 
 func (a *Addon) appendAddon(req *apistructs.AddonCreateRequest, addonName, plan string) error {
