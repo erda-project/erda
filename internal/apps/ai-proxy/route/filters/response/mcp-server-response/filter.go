@@ -81,7 +81,7 @@ func buildMessage(info *ctxhelper.McpInfo, router string, chunk []byte) []byte {
 	// prefix：/proxy/message/{name}/{tag}
 	prefix := fmt.Sprintf("/proxy/message/%s/%s", info.Name, info.Version)
 	prefix = strings.Trim(prefix, "/")
-	router = strings.Trim(router, "/")
+	router = strings.TrimPrefix(router, "/")
 
 	// newRouter：/proxy/message/{name}/{tag}/{router}
 	newRouter := "/" + prefix
@@ -107,6 +107,7 @@ func buildMessage(info *ctxhelper.McpInfo, router string, chunk []byte) []byte {
 	if hasDataPrefix {
 		out = "data: " + out
 	}
+	out = out + "\n"
 	return []byte(out)
 }
 
