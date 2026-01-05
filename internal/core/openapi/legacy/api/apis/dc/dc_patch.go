@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 
 var DC_PATCH = apis.ApiSpec{
 	Path:        "/api/dc/<*>",
-	BackendPath: "/api/fdp/<*>",
+	BackendPath: "/api/dc/<*>",
 	Host:        "dc-master.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "PATCH",

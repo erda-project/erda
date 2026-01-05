@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 
 var DC_WEBSOCKET = apis.ApiSpec{
 	Path:        "/api/dc-websocket/<*>",
-	BackendPath: "/api/fdp-websocket/ad-hoc/ws/<*>",
+	BackendPath: "/api/dc-websocket/ad-hoc/ws/<*>",
 	Host:        "dc-master.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "ws",
 	Method:      "GET",
