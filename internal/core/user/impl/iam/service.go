@@ -46,7 +46,7 @@ func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error
 	return p.client.BearerTokenAuth(oauthToken.AccessToken), nil
 }
 
-func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
+func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
 	if len(req.IDs) == 0 {
 		return &pb.FindUsersResponse{}, nil
 	}
@@ -64,7 +64,7 @@ func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb
 	//	ids = strutil.RemoveSlice(ids, common.SystemOperator)
 	//}
 
-	users, err := p.findByIDs(intIds)
+	users, err := p.findByIDs(intIds, true)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +282,7 @@ func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInf
 
 // GetUser get user detail info
 func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	user, err := p.getUser(req.UserID)
+	user, err := p.getUser(req.UserID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +429,7 @@ func (p *provider) findUsersByQuery(fieldName, key string) ([]*common.IAMUserDto
 	return resp.Data, nil
 }
 
-func (p *provider) findByIDs(ids []int) ([]common.User, error) {
+func (p *provider) findByIDs(ids []int, plainText bool) ([]common.User, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err
@@ -439,6 +439,10 @@ func (p *provider) findByIDs(ids []int) ([]common.User, error) {
 		path = "/iam/api/v1/admin/user/find-by-ids"
 		body bytes.Buffer
 	)
+
+	if plainText {
+		path = "/iam/api/v1/admin/user/plaintext/find-by-ids"
+	}
 
 	r, err := client.Post(p.Cfg.Host).
 		Path(path).JSONBody(map[string][]int{
@@ -464,7 +468,7 @@ func (p *provider) findByIDs(ids []int) ([]common.User, error) {
 	return userList, nil
 }
 
-func (p *provider) getUser(userID string) (*common.User, error) {
+func (p *provider) getUser(userID string, plainText bool) (*common.User, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err
@@ -474,6 +478,10 @@ func (p *provider) getUser(userID string) (*common.User, error) {
 		path = fmt.Sprintf("/iam/api/v1/admin/user/%s/find", userID)
 		resp common.IAMResponse[common.IAMUserDto]
 	)
+
+	if plainText {
+		path = fmt.Sprintf("/iam/api/v1/admin/user/%s/plaintext/find", userID)
+	}
 
 	r, err := client.Get(p.Cfg.Host).
 		Path(path).
