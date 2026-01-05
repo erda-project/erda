@@ -36,7 +36,7 @@ service dc {
 
   rpc DC_DELETE (DC_DELETE_Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/api/fdp/**",
+      delete: "/api/dc/**",
     };
     option (erda.common.openapi) = {
       path: "/api/dc/**",
@@ -52,7 +52,7 @@ service dc {
   };
   rpc DC_GET (DC_GET_Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      get: "/api/fdp/**",
+      get: "/api/dc/**",
     };
     option (erda.common.openapi) = {
       path: "/api/dc/**",
@@ -68,7 +68,7 @@ service dc {
   };
   rpc DC_PATCH (DC_PATCH_Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      patch: "/api/fdp/**",
+      patch: "/api/dc/**",
     };
     option (erda.common.openapi) = {
       path: "/api/dc/**",
@@ -84,7 +84,7 @@ service dc {
   };
   rpc DC_POST (DC_POST_Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/api/fdp/**",
+      post: "/api/dc/**",
     };
     option (erda.common.openapi) = {
       path: "/api/dc/**",
@@ -100,7 +100,7 @@ service dc {
   };
   rpc DC_PUT (DC_PUT_Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      put: "/api/fdp/**",
+      put: "/api/dc/**",
     };
     option (erda.common.openapi) = {
       path: "/api/dc/**",
@@ -116,7 +116,7 @@ service dc {
   };
   rpc DC_WEBSOCKET (DC_WEBSOCKET_Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      get: "/api/fdp-websocket/ad-hoc/ws/**",
+      get: "/api/dc-websocket/ad-hoc/ws/**",
     };
     option (erda.common.openapi) = {
       path: "/api/dc-websocket/**",
