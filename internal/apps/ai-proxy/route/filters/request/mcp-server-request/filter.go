@@ -332,10 +332,11 @@ func filterTerminusTraceId(body []byte, rawReq *http.Request) ([]byte, error) {
 
 	var traceId string
 
+	if _, exist := req.Params.Arguments[RequestIdHeader]; exist {
+		delete(req.Params.Arguments, RequestIdHeader)
+	}
+
 	if id, exist := req.Params.Arguments[TerminusRequestIdHeader]; exist {
-		if _, ok := req.Params.Arguments[RequestIdHeader]; ok {
-			delete(req.Params.Arguments, RequestIdHeader)
-		}
 
 		traceId = fmt.Sprintf("%v", id)
 		delete(req.Params.Arguments, TerminusRequestIdHeader)
