@@ -8,7 +8,14 @@
         "mapping": {
           "by": {
             "service_provider_type": {
-              "google-vertex-ai": "google/gemini-2.5-flash-lite"
+              "google-vertex-ai": {
+                "by": {
+                  "path_matcher": {
+                    "/v1/chat/completions": "google/${@template.name}",
+                    "default": "${@template.name}"
+                  }
+                }
+              }
             }
           },
           "default": "${@template.name}"

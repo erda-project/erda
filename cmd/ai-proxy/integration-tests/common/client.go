@@ -140,6 +140,8 @@ func (c *Client) PostJSONStreamWithHeaders(ctx context.Context, path string, pay
 
 	// Handle streaming response
 	scanner := bufio.NewScanner(resp.Body)
+	// Increase buffer size to 1MB to handle large streaming chunks
+	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -217,6 +219,8 @@ func (c *Client) PostJSONStream(ctx context.Context, path string, payload interf
 
 	// Handle streaming response
 	scanner := bufio.NewScanner(resp.Body)
+	// Increase buffer size to 1MB to handle large streaming chunks
+	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -473,3 +477,4 @@ func (c *Client) PostMultipart(ctx context.Context, path string, body io.Reader,
 
 	return result
 }
+

@@ -90,6 +90,11 @@ const (
 // context. Mapping rules can leverage it to select provider-specific values.
 const ServiceProviderTypeParamKey = "__service_provider_type__"
 
+// PathMatcherParamKey is the reserved key that callers can use
+// to inject the current path matcher pattern into the rendering
+// context. Mapping rules can leverage it to select path-specific values.
+const PathMatcherParamKey = "__path_matcher__"
+
 func replacePlaceholdersRecursively(templateName, templateDesc string, value interface{}, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
 	switch typed := value.(type) {
 	case map[string]interface{}:
@@ -198,7 +203,7 @@ func resolvePlaceholderValue(templateName, templateDesc, name string, placeholde
 		if err != nil {
 			return nil, err
 		}
-		return evaluateStringIfNeeded(converted, templateName, templateDesc)
+		return evaluateStringIfNeeded(converted, templateName, templateDesc, placeholderDefines, placeholderValues)
 	}
 
 	if mapped, ok, err := resolvePlaceholderMapping(definition, placeholderValues); err != nil {
@@ -208,7 +213,7 @@ func resolvePlaceholderValue(templateName, templateDesc, name string, placeholde
 		if err != nil {
 			return nil, err
 		}
-		return evaluateStringIfNeeded(converted, templateName, templateDesc)
+		return evaluateStringIfNeeded(converted, templateName, templateDesc, placeholderDefines, placeholderValues)
 	}
 
 	if hasPlaceholderDefault(definition) {
@@ -216,7 +221,7 @@ func resolvePlaceholderValue(templateName, templateDesc, name string, placeholde
 		if err != nil {
 			return nil, err
 		}
-		return evaluateStringIfNeeded(defaultValue, templateName, templateDesc)
+		return evaluateStringIfNeeded(defaultValue, templateName, templateDesc, placeholderDefines, placeholderValues)
 	}
 
 	// strict mode: any declared placeholder must render to a concrete value.
@@ -339,7 +344,7 @@ func coercePlaceholderValue(raw interface{}, definition *pb.Placeholder) (interf
 	}
 }
 
-func evaluateStringIfNeeded(value interface{}, templateName, templateDesc string) (interface{}, error) {
+func evaluateStringIfNeeded(value interface{}, templateName, templateDesc string, placeholderDefines map[string]*pb.Placeholder, placeholderValues map[string]string) (interface{}, error) {
 	str, ok := value.(string)
 	if !ok {
 		return value, nil
@@ -350,7 +355,7 @@ func evaluateStringIfNeeded(value interface{}, templateName, templateDesc string
 	if str == TemplateDescPlaceholder {
 		return templateDesc, nil
 	}
-	return str, nil
+	return replaceEmbeddedTemplatePlaceholders(str, templateName, templateDesc, placeholderDefines, placeholderValues)
 }
 
 func resolvePlaceholderMapping(definition *pb.Placeholder, placeholderValues map[string]string) (interface{}, bool, error) {
@@ -364,46 +369,96 @@ func resolvePlaceholderMapping(definition *pb.Placeholder, placeholderValues map
 		return nil, false, nil
 	}
 
+	return resolveMappingRecursive(definition.GetName(), mapping, placeholderValues, make(map[string]bool))
+}
+
+func resolveMappingRecursive(placeholderName string, mapping map[string]interface{}, placeholderValues map[string]string, usedByTypes map[string]bool) (interface{}, bool, error) {
+	var matchedValue interface{}
+	found := false
+
+	// define priority for 'by' types
+	byTypesPriority := []string{"path_matcher", "service_provider_type"}
+
 	if byRaw, ok := mapping["by"]; ok {
 		by, ok := byRaw.(map[string]interface{})
 		if !ok {
-			return nil, false, fmt.Errorf("invalid mapping.by for placeholder %q", definition.GetName())
+			return nil, false, fmt.Errorf("invalid mapping.by for placeholder %q", placeholderName)
 		}
-		if value, found, err := resolveMappingBy(by, placeholderValues); err != nil {
-			return nil, false, err
-		} else if found {
-			return value, true, nil
+
+		for _, byType := range byTypesPriority {
+			if condRaw, ok := by[byType]; ok {
+				if usedByTypes[byType] {
+					return nil, false, fmt.Errorf("duplicate mapping by type %q for placeholder %q in recursion", byType, placeholderName)
+				}
+				condMap, ok := condRaw.(map[string]interface{})
+				if !ok {
+					return nil, false, fmt.Errorf("invalid mapping.by.%s format for placeholder %q", byType, placeholderName)
+				}
+
+				currentVal := ""
+				switch byType {
+				case "path_matcher":
+					currentVal = placeholderValues[PathMatcherParamKey]
+				case "service_provider_type":
+					currentVal = placeholderValues[ServiceProviderTypeParamKey]
+				}
+
+				if currentVal != "" {
+					if val, ok := condMap[currentVal]; ok {
+						matchedValue = val
+						found = true
+					}
+				}
+
+				if !found {
+					if val, ok := condMap["default"]; ok {
+						matchedValue = val
+						found = true
+					} else if val, ok := condMap["*"]; ok {
+						matchedValue = val
+						found = true
+					}
+				}
+
+				if found {
+					// mark this byType as used for the next recursion levels
+					newUsedByTypes := make(map[string]bool, len(usedByTypes)+1)
+					for k, v := range usedByTypes {
+						newUsedByTypes[k] = v
+					}
+					newUsedByTypes[byType] = true
+
+					// check if matchedValue is a nested mapping node
+					if nextMapping, isMappingNode := isMappingNode(matchedValue); isMappingNode {
+						return resolveMappingRecursive(placeholderName, nextMapping, placeholderValues, newUsedByTypes)
+					}
+					return matchedValue, true, nil
+				}
+			}
 		}
 	}
 
+	// fallback to top-level default if no branch in 'by' matched or 'by' is missing
 	if defaultRaw, ok := mapping["default"]; ok {
+		if nextMapping, isMappingNode := isMappingNode(defaultRaw); isMappingNode {
+			return resolveMappingRecursive(placeholderName, nextMapping, placeholderValues, usedByTypes)
+		}
 		return defaultRaw, true, nil
 	}
 
 	return nil, false, nil
 }
 
-func resolveMappingBy(by map[string]interface{}, placeholderValues map[string]string) (interface{}, bool, error) {
-	if providerRaw, ok := by["service_provider_type"]; ok {
-		providerMap, ok := providerRaw.(map[string]interface{})
-		if !ok {
-			return nil, false, fmt.Errorf("invalid mapping.by.service_provider_type format")
-		}
-		providerType := ""
-		if placeholderValues != nil {
-			providerType = placeholderValues[ServiceProviderTypeParamKey]
-		}
-		if providerType != "" {
-			if value, found := providerMap[providerType]; found {
-				return value, true, nil
-			}
-		}
-		if value, found := providerMap["default"]; found {
-			return value, true, nil
-		}
-		if value, found := providerMap["*"]; found {
-			return value, true, nil
-		}
+func isMappingNode(val interface{}) (map[string]interface{}, bool) {
+	m, ok := val.(map[string]interface{})
+	if !ok {
+		return nil, false
 	}
-	return nil, false, nil
+	// a map is considered a mapping node if it contains "by" or "default" keys
+	_, hasBy := m["by"]
+	_, hasDefault := m["default"]
+	if hasBy || hasDefault {
+		return m, true
+	}
+	return nil, false
 }

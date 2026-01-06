@@ -440,6 +440,283 @@ func TestFindAndReplacePlaceholders(t *testing.T) {
 		require.NoError(t, json.Unmarshal(rendered, &actual))
 		require.Equal(t, "mapping-default", actual["model_name"])
 	})
+
+	t.Run("path_matcher mapping applies correctly", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"model_name": "${@template.placeholders.target_model_name}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		mapping := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"by": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"path_matcher": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"/v1/chat/completions": structpb.NewStringValue("google/gemini-2.5-flash-image"),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		defs := []*pb.Placeholder{
+			{
+				Name:    "target_model_name",
+				Type:    "string",
+				Mapping: mapping,
+			},
+		}
+
+		rendered, err := findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			PathMatcherParamKey: "/v1/chat/completions",
+		})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "google/gemini-2.5-flash-image", actual["model_name"])
+	})
+
+	t.Run("path_matcher has higher priority than service_provider_type", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"model_name": "${@template.placeholders.target_model_name}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		mapping := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"by": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"path_matcher": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"/v1/chat/completions": structpb.NewStringValue("higher-priority-path"),
+							},
+						}),
+						"service_provider_type": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"google-vertex-ai": structpb.NewStringValue("lower-priority-provider"),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		defs := []*pb.Placeholder{
+			{
+				Name:    "target_model_name",
+				Type:    "string",
+				Mapping: mapping,
+			},
+		}
+
+		rendered, err := findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			PathMatcherParamKey:         "/v1/chat/completions",
+			ServiceProviderTypeParamKey: "google-vertex-ai",
+		})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "higher-priority-path", actual["model_name"])
+	})
+
+	t.Run("multi-level nested mapping applies correctly", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"model_name": "${@template.placeholders.target_model_name}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		// Provider: google-vertex-ai -> Path: /v1/chat/completions -> Result: nested-result
+		mapping := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"by": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"service_provider_type": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"google-vertex-ai": structpb.NewStructValue(&structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"by": structpb.NewStructValue(&structpb.Struct{
+											Fields: map[string]*structpb.Value{
+												"path_matcher": structpb.NewStructValue(&structpb.Struct{
+													Fields: map[string]*structpb.Value{
+														"/v1/chat/completions": structpb.NewStringValue("google/gemini-2.5-flash-image"),
+														"default":              structpb.NewStringValue("gemini-2.5-flash-image"),
+													},
+												}),
+											},
+										}),
+									},
+								}),
+								"default": structpb.NewStringValue("other-provider-model"),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		defs := []*pb.Placeholder{
+			{
+				Name:    "target_model_name",
+				Type:    "string",
+				Mapping: mapping,
+			},
+		}
+
+		// 1. Google + ChatPath
+		rendered, err := findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			ServiceProviderTypeParamKey: "google-vertex-ai",
+			PathMatcherParamKey:         "/v1/chat/completions",
+		})
+		require.NoError(t, err)
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "google/gemini-2.5-flash-image", actual["model_name"])
+
+		// 2. Google + OtherPath (falls back to inner default)
+		rendered, err = findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			ServiceProviderTypeParamKey: "google-vertex-ai",
+			PathMatcherParamKey:         "/v1/other",
+		})
+		require.NoError(t, err)
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "gemini-2.5-flash-image", actual["model_name"])
+
+		// 3. OtherProvider (falls back to outer provider default)
+		rendered, err = findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			ServiceProviderTypeParamKey: "openai",
+		})
+		require.NoError(t, err)
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "other-provider-model", actual["model_name"])
+	})
+
+	t.Run("nested mapping detects duplicate by type", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"val": "${@template.placeholders.test}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		// service_provider_type inside service_provider_type
+		mapping := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"by": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"service_provider_type": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"google": structpb.NewStructValue(&structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"by": structpb.NewStructValue(&structpb.Struct{
+											Fields: map[string]*structpb.Value{
+												"service_provider_type": structpb.NewStructValue(&structpb.Struct{
+													Fields: map[string]*structpb.Value{
+														"any": structpb.NewStringValue("fail"),
+													},
+												}),
+											},
+										}),
+									},
+								}),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		defs := []*pb.Placeholder{{Name: "test", Mapping: mapping}}
+
+		_, err = findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			ServiceProviderTypeParamKey: "google",
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `duplicate mapping by type "service_provider_type"`)
+	})
+
+	t.Run("nested mapping with complex object leaf node", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"metadata": "${@template.placeholders.meta}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		mapping := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"by": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"path_matcher": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"match": structpb.NewStructValue(&structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"key": structpb.NewStringValue("value"),
+									},
+								}),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		defs := []*pb.Placeholder{{Name: "meta", Type: "object", Mapping: mapping}}
+
+		rendered, err := findAndReplacePlaceholders("test", testTemplateDesc, defs, cfgJSON, map[string]string{
+			PathMatcherParamKey: "match",
+		})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		meta := actual["metadata"].(map[string]interface{})
+		require.Equal(t, "value", meta["key"])
+	})
+
+	t.Run("mapping value supports embedded template placeholders", func(t *testing.T) {
+		cfg := map[string]interface{}{
+			"model_name": "${@template.placeholders.target_model_name}",
+		}
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		// Mapping returns "google/${@template.name}"
+		mapping := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"by": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"path_matcher": structpb.NewStructValue(&structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"/v1/chat/completions": structpb.NewStringValue("google/${@template.name}"),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		defs := []*pb.Placeholder{
+			{
+				Name:    "target_model_name",
+				Type:    "string",
+				Mapping: mapping,
+			},
+		}
+
+		rendered, err := findAndReplacePlaceholders("test-template", testTemplateDesc, defs, cfgJSON, map[string]string{
+			PathMatcherParamKey: "/v1/chat/completions",
+		})
+		require.NoError(t, err)
+
+		var actual map[string]interface{}
+		require.NoError(t, json.Unmarshal(rendered, &actual))
+		require.Equal(t, "google/test-template", actual["model_name"])
+	})
 }
 
 func TestEmbeddedTemplatePlaceholderMustError(t *testing.T) {
@@ -504,3 +781,4 @@ func TestFindAndReplacePlaceholders_GoogleVertexAI_APIStyleConfig(t *testing.T) 
 	require.Contains(t, p, "/locations/global/")
 	require.Contains(t, p, "${@provider.metadata.public.gcp-project-id}")
 }
+

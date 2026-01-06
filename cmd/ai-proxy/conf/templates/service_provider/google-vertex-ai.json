@@ -56,7 +56,7 @@
                 "host": "${@provider.metadata.public.host}",
                 "path": [
                   "set",
-                  "/v1/projects/${@provider.metadata.public.gcp-project-id}/locations/${@template.placeholders.location}/publishers/google/models/${@model.metadata.public.model_name}:generateContent"
+                  "/v1/projects/${@provider.metadata.public.gcp-project-id}/locations/${@template.placeholders.location}/publishers/${@model.publisher}/models/${@model.metadata.public.model_name}:generateContent"
                 ],
                 "queryParams": {},
                 "scheme": "${@provider.metadata.public.scheme}"
