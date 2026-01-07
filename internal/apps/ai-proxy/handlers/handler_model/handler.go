@@ -213,6 +213,17 @@ func (h *ModelHandler) LabelModel(ctx context.Context, req *pb.ModelLabelRequest
 	return h.DAO.ModelClient().LabelModel(ctx, req)
 }
 
+func (h *ModelHandler) SetEnabled(ctx context.Context, req *pb.ModelSetEnabledRequest) (*pb.Model, error) {
+	resp, err := h.DAO.ModelClient().SetEnabled(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	desensitizeModel(ctx, resp)
+	// trigger cache refresh
+	go ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager).TriggerRefresh(ctx, cachetypes.ItemTypeModel)
+	return resp, nil
+}
+
 func desensitizeModel(ctx context.Context, item *pb.Model) {
 	// pass for: admin
 	if auth.IsAdmin(ctx) {

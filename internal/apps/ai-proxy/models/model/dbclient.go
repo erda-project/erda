@@ -182,6 +182,22 @@ func (dbClient *DBClient) LabelModel(ctx context.Context, req *pb.ModelLabelRequ
 	return dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id, ClientId: req.ClientId})
 }
 
+func (dbClient *DBClient) SetEnabled(ctx context.Context, req *pb.ModelSetEnabledRequest) (*pb.Model, error) {
+	if req.Id == "" {
+		return nil, gorm.ErrPrimaryKeyRequired
+	}
+	c := &Model{BaseModel: common.BaseModelWithID(req.Id), IsEnabled: &req.IsEnabled}
+	whereC := &Model{
+		BaseModel: common.BaseModelWithID(req.Id),
+		ClientID:  req.ClientId,
+	}
+	// use Select to explicitly specify the column, otherwise GORM ignores false values
+	if err := dbClient.DB.WithContext(ctx).Model(c).Where(whereC).Select("is_enabled").Updates(c).Error; err != nil {
+		return nil, err
+	}
+	return dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id, ClientId: req.ClientId})
+}
+
 func (dbClient *DBClient) GetClientModelIDs(ctx context.Context, clientId string) ([]string, error) {
 	var modelClientIdClause string
 	var relationClientIdClause string

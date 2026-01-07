@@ -70,7 +70,7 @@ func (r *Resolver) Resolve(ctx context.Context, clientID, inputGroupName string)
 		return group, nil
 	}
 
-	return nil, fmt.Errorf("no policy group matched for model %q", inputGroupName)
+	return nil, fmt.Errorf("no policy group matched for model: %s", inputGroupName)
 }
 
 func (r *Resolver) resolveUserDefined(ctx context.Context, clientID, inputGroupName string) (*policypb.PolicyGroup, error) {

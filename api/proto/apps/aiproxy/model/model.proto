@@ -54,6 +54,12 @@ service ModelService {
             post: "/api/ai-proxy/models/{id}/actions/label-model"
         };
     }
+
+    rpc SetEnabled(ModelSetEnabledRequest) returns (Model) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/models/{id}/actions/set-enabled"
+        };
+    }
 }
 
 message Model {
@@ -166,6 +172,14 @@ message ModelAbilitiesInfoUpdateRequest {
 message ModelLabelRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     map<string, string> labels = 2;
+
+    // auto-injected to restrict data permission
+    string clientId = 3 [(validate.rules).string = {len: 36, ignore_empty: true}];
+}
+
+message ModelSetEnabledRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    bool isEnabled = 2;
 
     // auto-injected to restrict data permission
     string clientId = 3 [(validate.rules).string = {len: 36, ignore_empty: true}];

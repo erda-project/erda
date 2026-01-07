@@ -51,7 +51,9 @@ func GetRenderedServiceProviderByID(ctx context.Context, providerID string) (*pb
 	for k, v := range provider.TemplateParams {
 		renderParams[k] = v
 	}
-	renderParams[template.PathMatcherParamKey] = ctxhelper.MustGetPathMatcher(ctx).Pattern
+	if pm, ok := ctxhelper.GetPathMatcher(ctx); ok && pm != nil {
+		renderParams[template.PathMatcherParamKey] = pm.Pattern
+	}
 	// render
 	if err := template.RenderTemplate(provider.TemplateId, tpl, renderParams); err != nil {
 		return nil, fmt.Errorf("failed to render template: %w", err)

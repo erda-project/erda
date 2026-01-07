@@ -60,7 +60,9 @@ func GetRenderedModelByID(ctx context.Context, modelID string) (*pb.Model, error
 		renderParams[k] = v
 	}
 	renderParams[template.ServiceProviderTypeParamKey] = sp.Type
-	renderParams[template.PathMatcherParamKey] = ctxhelper.MustGetPathMatcher(ctx).Pattern
+	if pm, ok := ctxhelper.GetPathMatcher(ctx); ok && pm != nil {
+		renderParams[template.PathMatcherParamKey] = pm.Pattern
+	}
 	// render template
 	if err := template.RenderTemplate(model.TemplateId, tpl, renderParams); err != nil {
 		return nil, fmt.Errorf("failed to render template: %w", err)
