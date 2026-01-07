@@ -57,6 +57,7 @@ var CheckModelPerm = CheckPermissions(
 	&MethodPermission{Method: modelpb.ModelServiceServer.Paging, LoggedIn: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.UpdateModelAbilitiesInfo, AdminOrClient: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.LabelModel, AdminOrClient: true},
+	&MethodPermission{Method: modelpb.ModelServiceServer.SetEnabled, AdminOrClient: true},
 )
 
 var CheckClientModelRelationPerm = CheckPermissions(
