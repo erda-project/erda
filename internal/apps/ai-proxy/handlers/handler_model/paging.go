@@ -53,6 +53,9 @@ func (h *ModelHandler) pagingViaCache(ctx context.Context, req *pb.ModelPagingRe
 			if m.ClientId == "" {
 				continue
 			}
+			if m.ClientId != req.ClientId {
+				continue
+			}
 		}
 		// name like
 		if req.Name != "" {

@@ -32,7 +32,7 @@
     "config": {
       "desc": "${@template.desc}",
       "apiKey": "",
-      "type": "text_generation",
+      "type": "image",
       "publisher": "google",
       "metadata": {
         "public": {
