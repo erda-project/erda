@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	Name = "context-audio"
+	Name = "context-audio-stt"
 
 	formBodyFieldFile           = "file"
 	formBodyFieldPrompt         = "prompt"

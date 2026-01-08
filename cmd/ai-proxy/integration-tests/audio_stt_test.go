@@ -55,7 +55,7 @@ func TestAudioTranscriptions(t *testing.T) {
 	}
 
 	// Get audio models for testing
-	audioModels := cfg.AudioModels
+	audioModels := cfg.AudioSTTModels
 	if len(audioModels) == 0 {
 		t.Skip("No audio models configured for testing")
 	}
@@ -296,7 +296,7 @@ func TestAudioTranscriptionsErrorHandling(t *testing.T) {
 		t.Fatalf("Failed to ensure test audio files: %v", err)
 	}
 
-	audioModels := cfg.AudioModels
+	audioModels := cfg.AudioSTTModels
 	if len(audioModels) == 0 {
 		t.Skip("No audio models configured for testing")
 	}

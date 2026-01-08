@@ -60,8 +60,13 @@ type ProxyResponseModifier interface {
 	OnComplete(resp *http.Response) (out []byte, err error)
 }
 
-type ProxyResponseModiferEnabler interface {
+type ProxyResponseModifierEnabler interface {
 	Enable(resp *http.Response) bool
+}
+
+type ProxyResponseModifierBodyPeeker interface {
+	// OnPeekChunkBeforeHeaders inspects the first chunk of the response body before headers are sent.
+	OnPeekChunkBeforeHeaders(resp *http.Response, peekedBody []byte) error
 }
 
 // PassThroughResponseModifier passes response as-is to next Filter.
@@ -79,4 +84,7 @@ func (m *PassThroughResponseModifier) OnBodyChunk(resp *http.Response, chunk []b
 }
 func (m *PassThroughResponseModifier) OnComplete(resp *http.Response) (out []byte, err error) {
 	return nil, nil
+}
+func (m *PassThroughResponseModifier) OnPeekChunkBeforeHeaders(resp *http.Response, peekedBody []byte) error {
+	return nil
 }

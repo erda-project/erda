@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package qwen
+package aliyun_bailian
 
 import (
 	"encoding/json"
@@ -20,13 +20,18 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 )
 
-func (f *QwenTTSConverter) OnProxyRequest(pr *httputil.ProxyRequest) error {
+func (f *BailianTTSConverter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	var openaiReq openai.CreateSpeechRequest
-	if err := json.NewDecoder(pr.In.Body).Decode(&openaiReq); err != nil {
+	if err := json.NewDecoder(pr.Out.Body).Decode(&openaiReq); err != nil {
 		return err
+	}
+
+	if openaiReq.ResponseFormat != "" {
+		ctxhelper.PutAudioTTSResponseFormat(pr.In.Context(), string(openaiReq.ResponseFormat))
 	}
 
 	qwenReq := &QwenReq{
