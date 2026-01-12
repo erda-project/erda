@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/tts/ttsutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/tts/ttsutil"
 )
 
 func (f *VolcengineTTSConverter) OnProxyRequest(pr *httputil.ProxyRequest) error {

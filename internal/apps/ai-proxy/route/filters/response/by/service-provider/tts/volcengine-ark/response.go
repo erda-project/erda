@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/polling"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/tts/ttsutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/tts/ttsutil"
 )
 
 type (
