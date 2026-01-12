@@ -5,7 +5,7 @@ routes:
       - name: rate-limit
       - name: auth
       - name: context
-      - name: context-audio
+      - name: context-audio-stt
         config:
           maxAudioSize: 25MB
           supportedAudioFileTypes: [ "flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm" ]
@@ -19,8 +19,11 @@ routes:
       - name: rate-limit
       - name: auth
       - name: context
+      - name: context-audio-tts
       - name: openai-compatible-director
-      - name: qwen-tts-converter
+      - name: aliyun-bailian-tts-converter
+      - name: volcengine-ark-tts-converter
       - name: set-response-chunk-splitter
     response_filters:
-      - name: qwen-tts-converter
+      - name: aliyun-bailian-tts-response-converter
+      - name: volcengine-ark-tts-response-converter

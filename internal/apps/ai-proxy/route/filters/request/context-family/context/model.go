@@ -49,11 +49,6 @@ func findModel(req *http.Request, client *clientpb.Client) (*modelpb.Model, erro
 		return nil, err
 	}
 
-	provider, err := cachehelpers.GetRenderedServiceProviderByID(ctx, model.ProviderId)
-	if err != nil {
-		return nil, err
-	}
-	ctxhelper.PutServiceProvider(ctx, provider)
 	ctxhelper.PutPolicyTrace(ctx, trace)
 
 	return model, nil

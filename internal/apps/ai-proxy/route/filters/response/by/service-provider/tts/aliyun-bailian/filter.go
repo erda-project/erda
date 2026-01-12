@@ -12,32 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package qwen
+package aliyun_bailian
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	aliyun_bailian "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/by/service-provider/tts/aliyun-bailian"
 )
 
 func init() {
-	filter_define.RegisterFilterCreator("qwen-tts-converter", Creator)
+	filter_define.RegisterFilterCreator("aliyun-bailian-tts-response-converter", Creator)
 }
 
-type QwenTTSConverter struct {
+type BailianTTSConverter struct {
 	filter_define.PassThroughResponseModifier
-	buff bytes.Buffer
+
+	audioURL string
 }
 
 var Creator filter_define.ResponseModifierCreator = func(_ string, _ json.RawMessage) filter_define.ProxyResponseModifier {
-	return &QwenTTSConverter{}
+	return &BailianTTSConverter{}
 }
 
-func (f *QwenTTSConverter) Enable(resp *http.Response) bool {
-	model := ctxhelper.MustGetModel(resp.Request.Context())
-	return model.Publisher == common_types.ModelPublisherQwen.String()
+func (f *BailianTTSConverter) Enable(resp *http.Response) bool {
+	return aliyun_bailian.Enabled(resp.Request.Context())
 }

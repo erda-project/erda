@@ -91,6 +91,10 @@ type (
 	mapKeyRequestBeginAt struct{ time.Time }
 
 	mapKeyPolicyTrace struct{ any }
+
+	mapKeyAudioTTSResponseFormat struct{ string }
+
+	mapKeyIsLastBodyChunk struct{ bool }
 )
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)

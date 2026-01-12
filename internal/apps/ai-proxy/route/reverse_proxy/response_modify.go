@@ -36,12 +36,21 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
+const (
+	FirstChunkIndex = 0
+)
+
 // MyResponseModify will be assigned to ReverseProxy.ModifyResponse inside p.ServeHTTP.
 //
 // Key flow:
-//  1. First run all ProxyResponseModifier.OnHeaders(), allowing addition/removal of response headers and Trailer declaration.
+//  0. If any filter implements ProxyResponseModifierBodyPeeker and is enabled,
+//     peek the first chunk BEFORE sending headers, allowing filters to inspect body content
+//     and modify headers accordingly via OnPeekChunkBeforeHeaders().
+//  1. Run all ProxyResponseModifier.OnHeaders(), allowing addition/removal of response headers
+//     and Trailer declaration.
 //  2. Loop read chunks according to ChunkSplitter in ctx (default FixedSize);
-//     each chunk flows through all Modifier.OnBodyChunk() in sequence; write to downstream immediately after getting out.
+//     each chunk flows through all Modifier.OnBodyChunk() in sequence;
+//     write to downstream immediately after getting out.
 //  3. When stream ends or errors, call each Modifier.OnComplete();
 //     they can write trailer headers to resp.Trailer.
 //  4. Return nil; ReverseProxy will continue copying resp to client.
@@ -73,32 +82,48 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 			return
 		}
 
-		upstream := resp.Body
-		pr, pw := io.Pipe()
-		resp.Body = pr // replace with read end
-
-		// 1) choose chunk splitting strategy -- get from ctx; fallback to FixedSize if none
-		// determine splitter based on original response header
+		// get splitter BEFORE modifying headers (Content-Type may be changed by handleAIProxyResponseHeader);
+		// this ensures we use the original Content-Type to select the correct splitter
 		splitter := set_resp_body_chunk_splitter.GetSplitterByResp(resp)
 		if splitter == nil {
 			panic("no RespBodyChunkSplitter found in context")
 		}
-		// wrap as auto-decompressing splitter
 		autoDecompressSplitter := set_resp_body_chunk_splitter.NewDecompressingChunkSplitter(splitter, resp)
-		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Debugf("splitter: %s", reflect.TypeOf(splitter))
+		ctxhelper.MustGetLoggerBase(resp.Request.Context()).Debugf("splitter type: %s", reflect.TypeOf(splitter))
 		audithelper.NoteOnce(resp.Request.Context(), "response_body_splitter", reflect.TypeOf(splitter).String())
 
-		// ---------------------------------------------------------------------
-		// 2) let all Modifiers run OnHeaders first
+		// run modifiers before creating the pipe
 		dumplog.DumpResponseHeadersIn(resp)
-
-		// handle ai-proxy response header
 		handleAIProxyResponseHeader(resp)
 
+		// peek the first chunk BEFORE sending headers (so filters can modify headers based on body content)
+		peekedChunk, peekedChunkErr := autoDecompressSplitter.NextChunk(resp.Body)
+		if peekedChunkErr != nil && peekedChunkErr != io.EOF {
+			return peekedChunkErr
+		}
+
+		// call OnPeekChunkBeforeHeaders for filters BEFORE OnHeaders
 		for _, filter := range filters {
 			brokenFilterName = filter.Name
 			logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
-			if fe, ok := filter.Instance.(filter_define.ProxyResponseModiferEnabler); ok && !fe.Enable(resp) {
+			if fe, ok := filter.Instance.(filter_define.ProxyResponseModifierEnabler); ok && !fe.Enable(resp) {
+				continue
+			}
+			peeker, ok := filter.Instance.(filter_define.ProxyResponseModifierBodyPeeker)
+			if !ok {
+				continue
+			}
+			if err := peeker.OnPeekChunkBeforeHeaders(resp, peekedChunk); err != nil {
+				return err
+			}
+		}
+		brokenFilterName = ""
+
+		// now call OnHeaders (after peek, so filter can modify headers based on peeked body)
+		for _, filter := range filters {
+			brokenFilterName = filter.Name
+			logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
+			if fe, ok := filter.Instance.(filter_define.ProxyResponseModifierEnabler); ok && !fe.Enable(resp) {
 				continue
 			}
 			if err := filter.Instance.OnHeaders(resp); err != nil {
@@ -109,16 +134,19 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 
 		dumplog.DumpResponseHeadersOut(resp)
 
-		// ---------------------------------------------------------------------
-		// 3) write upstream Body-Splitter-Modifier chain results to Pipe, let ReverseProxy copy to client
+		// prepare body pipe for async processing
+		upstream := resp.Body
+		pr, pw := io.Pipe()
+		resp.Body = pr
 
-		go asyncHandleRespBody(upstream, autoDecompressSplitter, pw, resp, filters)
+		// write upstream to pipe asynchronously, passing peeked chunk to be processed first
+		go asyncHandleRespBody(upstream, autoDecompressSplitter, pw, resp, filters, peekedChunk, peekedChunkErr == io.EOF)
 
 		return nil
 	}
 }
 
-func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBodyChunkSplitter, pw *io.PipeWriter, resp *http.Response, filters []filter_define.FilterWithName[filter_define.ProxyResponseModifier]) {
+func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBodyChunkSplitter, pw *io.PipeWriter, resp *http.Response, filters []filter_define.FilterWithName[filter_define.ProxyResponseModifier], peekedChunk []byte, peekedChunkIsEOF bool) {
 	defer func() {
 		// sink audit
 		audithelper.Flush(resp.Request.Context())
@@ -168,10 +196,11 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		audithelper.NoteOnce(resp.Request.Context(), "response_chunk_done_at", responseChunkDoneAt)
 	}()
 
-	var chunkIndex int64 = -1
-	for {
-		chunkIndex++
-		chunk, rerr := splitter.NextChunk(upstream)
+	// processChunk handles a single chunk through all filters and writes to output
+	processChunk := func(chunk []byte, chunkIndex int64, rerr error) bool {
+		if rerr != nil && rerr == io.EOF {
+			ctxhelper.PutIsLastBodyChunk(resp.Request.Context(), true)
+		}
 		// begin response here
 		if responseChunkBeginAt.IsZero() {
 			responseChunkBeginAt = time.Now()
@@ -180,24 +209,24 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 		if len(chunk) == 0 && rerr == nil {
 			// indicates splitter violated contract, avoid infinite loop
 			writeAndCloseWithErr(resp, pw, errors.New("splitter returned empty chunk without error"))
-			return
+			return false // stop
 		}
 		if len(chunk) > 0 {
 			out := chunk
-			// 3.2 same chunk flows through all Modifiers in sequence
+			// same chunk flows through all Modifiers in sequence
 			dumpReceivedOut := dumplog.DumpResponseBodyChunk(resp, out, chunkIndex)
 			wholeReceivedBody = append(wholeReceivedBody, dumpReceivedOut...)
 			for _, filter := range filters {
 				currentFilterName = filter.Name
 				m := filter.Instance
 				logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
-				if fe, ok := m.(filter_define.ProxyResponseModiferEnabler); ok && !fe.Enable(resp) {
+				if fe, ok := m.(filter_define.ProxyResponseModifierEnabler); ok && !fe.Enable(resp) {
 					continue
 				}
 				o, err := m.OnBodyChunk(resp, out, chunkIndex)
 				if err != nil {
 					writeAndCloseWithErr(resp, pw, err)
-					return
+					return false // stop
 				}
 				out = o
 				if len(out) == 0 { // Swallowed
@@ -210,7 +239,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 			if len(out) > 0 {
 				if _, err := pw.Write(out); err != nil {
 					// Downstream disconnected
-					return
+					return false // stop
 				}
 			}
 		}
@@ -225,10 +254,13 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 				currentFilterName = filter.Name
 				if m, ok := filter.Instance.(filter_define.ProxyResponseModifier); ok {
 					logutil.InjectLoggerWithFilterInfo(resp.Request.Context(), filter)
-					if fe, ok := m.(filter_define.ProxyResponseModiferEnabler); ok && !fe.Enable(resp) {
+					if fe, ok := m.(filter_define.ProxyResponseModifierEnabler); ok && !fe.Enable(resp) {
 						continue
 					}
-					out, _ := m.OnComplete(resp)
+					out, err := m.OnComplete(resp)
+					if err != nil {
+						audithelper.Note(resp.Request.Context(), fmt.Sprintf("myResponseModify.%s.OnComplete.error", filter.Name), err.Error())
+					}
 					if len(out) > 0 {
 						wholeHandledBody = append(wholeHandledBody, out...)
 						_, _ = pw.Write(out)
@@ -237,6 +269,34 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 			}
 			currentFilterName = ""
 			_ = pw.Close()
+			return false // stop
+		}
+		return true // continue
+	}
+
+	var chunkIndex int64 = FirstChunkIndex - 1
+
+	// process peeked chunk first (if any)
+	if len(peekedChunk) > 0 {
+		chunkIndex++
+		var inputErr error
+		if peekedChunkIsEOF {
+			inputErr = io.EOF
+		}
+		if !processChunk(peekedChunk, chunkIndex, inputErr) {
+			return
+		}
+		// if peekedChunkErr was io.EOF, we're done
+		if peekedChunkIsEOF {
+			return
+		}
+	}
+
+	// continue reading remaining chunks from upstream
+	for {
+		chunkIndex++
+		chunk, rerr := splitter.NextChunk(upstream)
+		if !processChunk(chunk, chunkIndex, rerr) {
 			return
 		}
 	}

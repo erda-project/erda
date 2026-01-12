@@ -33,7 +33,8 @@ type Config struct {
 	// Test models categorized by API type
 	ChatModels       []string
 	EmbeddingsModels []string
-	AudioModels      []string
+	AudioSTTModels   []string
+	AudioTTSModels   []string
 	ImageModels      []string
 	ResponsesModels  []string
 	ThinkingModels   []string
@@ -120,8 +121,10 @@ func setConfigValue(config *Config, key, value string) {
 		config.ChatModels = parseModelList(value)
 	case "EMBEDDINGS_MODELS":
 		config.EmbeddingsModels = parseModelList(value)
-	case "AUDIO_MODELS":
-		config.AudioModels = parseModelList(value)
+	case "AUDIO_STT_MODELS":
+		config.AudioSTTModels = parseModelList(value)
+	case "AUDIO_TTS_MODELS":
+		config.AudioTTSModels = parseModelList(value)
 	case "IMAGE_MODELS":
 		config.ImageModels = parseModelList(value)
 	case "RESPONSES_MODELS":
@@ -152,7 +155,8 @@ func (c *Config) GetAllModels() []string {
 	var allModels []string
 	allModels = append(allModels, c.ChatModels...)
 	allModels = append(allModels, c.EmbeddingsModels...)
-	allModels = append(allModels, c.AudioModels...)
+	allModels = append(allModels, c.AudioSTTModels...)
+	allModels = append(allModels, c.AudioTTSModels...)
 	allModels = append(allModels, c.ImageModels...)
 	allModels = append(allModels, c.ResponsesModels...)
 	return allModels

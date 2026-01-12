@@ -1,6 +1,6 @@
 # AI Proxy Integration Tests Makefile
 
-.PHONY: help test test-chat test-embeddings test-audio test-images test-responses test-verbose test-concurrent test-quick clean setup
+.PHONY: help test test-chat test-embeddings test-audio test-audio-stt test-audio-tts test-images test-responses test-verbose test-concurrent test-quick clean setup
 
 # Default target
 .DEFAULT_GOAL := help
@@ -12,6 +12,8 @@ help:
 	@echo "Main targets:"
 	@echo "  test                   - Run all tests (chat completions + responses)"
 	@echo "  test-except-images     - Run all tests except image generation (faster)"
+	@echo "  test-except-audio      - Run all tests except audio (STT + TTS)"
+	@echo "  test-except-image-audio - Run all tests except images and audio"
 	@echo "  setup                  - Set up test environment (copy .env.example to .env)"
 	@echo "  check                  - Check compilation and syntax"
 	@echo "  clean                  - Clean test cache"
@@ -20,7 +22,9 @@ help:
 	@echo "  test-chat-completions - Run chat completions tests (non-stream + stream)"
 	@echo "  test-chat-completions-nonstream - Run chat completions non-stream tests"
 	@echo "  test-chat-completions-stream - Run chat completions stream tests"
-	@echo "  test-audio             - Run audio transcriptions tests"
+	@echo "  test-audio-stt         - Run audio transcriptions (STT) tests"
+	@echo "  test-audio-tts         - Run audio speech (TTS) tests"
+	@echo "  test-audio             - Run all audio tests (STT + TTS)"
 	@echo "  test-images            - Run image generation tests"
 	@echo "  test-embeddings        - Run embeddings tests"
 	@echo "  test-responses         - Run responses API tests (non-stream + stream)"
@@ -50,12 +54,20 @@ setup:
 	fi
 
 ## Run all tests
-test: test-chat-completions test-audio test-images test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+test: test-chat-completions test-audio-stt test-audio-tts test-images test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
 	@echo "✓ All tests completed!"
 
 ## Run all tests except image generation (faster execution)
-test-except-images: test-chat-completions test-audio test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+test-except-images: test-chat-completions test-audio-stt test-audio-tts test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
 	@echo "✓ All tests completed (excluding image generation)!"
+
+## Run all tests except audio (STT + TTS)
+test-except-audio: test-chat-completions test-images test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+	@echo "✓ All tests completed (excluding audio)!"
+
+## Run all tests except images and audio
+test-except-image-audio: test-chat-completions test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+	@echo "✓ All tests completed (excluding images and audio)!"
 
 
 ## ===== Individual API type test targets =====
@@ -74,12 +86,22 @@ test-chat-completions-stream: setup mod-init
 test-chat-completions: test-chat-completions-nonstream test-chat-completions-stream
 	@echo "✓ All chat completions tests completed!"
 
-## Run audio transcription tests
-test-audio: setup mod-init
-	@echo "Running Audio Transcriptions tests..."
+## Run audio STT tests
+test-audio-stt: setup mod-init
+	@echo "Running Audio STT tests..."
 	@echo "Note: Test audio files will be automatically generated if missing"
 	go test -v -count=1 -timeout 300s -failfast -run "^TestAudioTranscriptions" ./...
-	@echo "✓ All audio transcriptions tests completed!"
+	@echo "✓ Audio STT tests completed!"
+
+## Run audio TTS tests
+test-audio-tts: setup mod-init
+	@echo "Running Audio TTS tests..."
+	go test -v -count=1 -timeout 300s -failfast -run "^TestAudioSpeech" ./...
+	@echo "✓ Audio TTS tests completed!"
+
+## Run all audio tests
+test-audio: test-audio-stt test-audio-tts
+	@echo "✓ All audio tests completed!"
 
 ## Run image generation tests
 test-images: setup mod-init
