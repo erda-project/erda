@@ -20,7 +20,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/tts/ttsutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/tts/ttsutil"
 )
 
 func TestMapVoice(t *testing.T) {
