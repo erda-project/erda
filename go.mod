@@ -2,6 +2,8 @@ module github.com/erda-project/erda
 
 go 1.24.0
 
+godebug x509negativeserial=1
+
 require (
 	bou.ke/monkey v1.0.2
 	erda.cloud/rocketmq v0.0.0-20221216094959-4f1e33965edc
