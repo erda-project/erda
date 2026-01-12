@@ -15,7 +15,6 @@
 package aliyun_bailian
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,45 +23,24 @@ import (
 )
 
 func TestQwenTTSConverter_OnPeekChunkBeforeHeaders(t *testing.T) {
-	// Mock audio server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("audio data"))
-	}))
-	defer ts.Close()
-
-	// Mock 404 server
-	ts404 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer ts404.Close()
-
 	tests := []struct {
 		name           string
 		jsonBody       string
 		expectError    bool
 		expectHeader   string
-		expectBody     string
 		expectErrorMsg string
 	}{
 		{
-			name:         "Success",
-			jsonBody:     `{"output":{"audio":{"url":"` + ts.URL + `"},"finish_reason":"stop"}}`,
+			name:         "Success - extracts audio URL and sets header",
+			jsonBody:     `{"output":{"audio":{"url":"http://example.com/audio.mp3"},"finish_reason":"stop"}}`,
 			expectError:  false,
 			expectHeader: "audio/mpeg",
-			expectBody:   "audio data",
 		},
 		{
-			name:         "Missing URL (Error Response)",
-			jsonBody:     `{"code":"InvalidParameter","message":"error"}`,
-			expectError:  false,
-			expectHeader: "",
-			expectBody:   "", // Body not replaced
-		},
-		{
-			name:           "Download Error",
-			jsonBody:       `{"output":{"audio":{"url":"` + ts404.URL + `"},"finish_reason":"stop"}}`,
+			name:           "Missing URL - error response",
+			jsonBody:       `{"code":"InvalidParameter","message":"error"}`,
 			expectError:    true,
-			expectErrorMsg: "failed to download audio",
+			expectErrorMsg: "missing audio url",
 		},
 		{
 			name:           "Invalid JSON",
@@ -80,7 +58,6 @@ func TestQwenTTSConverter_OnPeekChunkBeforeHeaders(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Header:     make(http.Header),
 				Request:    req,
-				Body:       io.NopCloser(nil), // Initial body, irrelevant for peek logic itself but good for structure
 			}
 
 			err := f.OnPeekChunkBeforeHeaders(resp, []byte(tt.jsonBody))
@@ -93,20 +70,39 @@ func TestQwenTTSConverter_OnPeekChunkBeforeHeaders(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectHeader, resp.Header.Get("Content-Type"))
-				if tt.expectBody != "" {
-					bodyBytes, _ := io.ReadAll(resp.Body)
-					assert.Equal(t, tt.expectBody, string(bodyBytes))
-				}
+				assert.NotEmpty(t, f.audioURL) // audioURL should be extracted
 			}
 		})
 	}
 }
 
 func TestQwenTTSConverter_OnBodyChunk(t *testing.T) {
-	f := &BailianTTSConverter{}
-	chunk := []byte("test chunk")
+	// Mock audio server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("audio data"))
+	}))
+	defer ts.Close()
 
-	out, err := f.OnBodyChunk(nil, chunk, 0)
+	// Test success case
+	f := &BailianTTSConverter{audioURL: ts.URL}
+	req := httptest.NewRequest("GET", "/", nil)
+	resp := &http.Response{
+		Request: req,
+	}
+
+	out, err := f.OnBodyChunk(resp, []byte("original chunk"), 0)
 	assert.NoError(t, err)
-	assert.Equal(t, chunk, out)
+	assert.Equal(t, "audio data", string(out))
+
+	// Test download error case
+	ts404 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts404.Close()
+
+	f2 := &BailianTTSConverter{audioURL: ts404.URL}
+	out2, err2 := f2.OnBodyChunk(resp, []byte("original chunk"), 0)
+	assert.Error(t, err2)
+	assert.Contains(t, err2.Error(), "failed to download audio")
+	assert.Nil(t, out2)
 }

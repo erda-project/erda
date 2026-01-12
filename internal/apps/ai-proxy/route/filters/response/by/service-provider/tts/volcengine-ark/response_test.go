@@ -29,9 +29,7 @@ import (
 )
 
 func TestVolcengineTTSResponseConverter_OnPeekChunkBeforeHeaders(t *testing.T) {
-	// Case 1: Success path logic check
-	// Note: This test will fail to poll real Bytedance API, which is expected.
-	// We verify that it tries to poll (and fails), which means it passed the TaskID check.
+	// Case 1: Success path - should parse JSON, extract taskID, set headers, return nil
 	f1 := &VolcengineTTSConverter{}
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -58,49 +56,69 @@ func TestVolcengineTTSResponseConverter_OnPeekChunkBeforeHeaders(t *testing.T) {
 	seekedBody := []byte(`{"code":20000000,"message":"success","data":{"task_id":"test-task-123"}}`)
 
 	err := f1.OnPeekChunkBeforeHeaders(resp, seekedBody)
-	assert.Error(t, err) // Expect network error
-	assert.Contains(t, err.Error(), "failed to poll audio")
+	assert.NoError(t, err) // OnPeekChunkBeforeHeaders should succeed (poll happens in OnBodyChunk)
+	assert.Equal(t, "test-task-123", f1.taskID)
+	assert.Contains(t, resp.Header.Get("Content-Type"), "audio/")
 
-	// Case 2: Error response
+	// Case 2: Error response code
 	f2 := &VolcengineTTSConverter{}
+	req2 := httptest.NewRequest("GET", "/", nil)
+	req2 = req2.WithContext(ctxhelper.InitCtxMapIfNeed(req2.Context()))
 	resp2 := &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     make(http.Header),
-		Request:    httptest.NewRequest("GET", "/", nil),
+		Request:    req2,
 	}
-	seekedBody2 := []byte(`{"code":40000001,"message":"error","data":{}}`)
+	seekedBody2 := []byte(`{"code":40000001,"message":"invalid request","data":{}}`)
 
 	err = f2.OnPeekChunkBeforeHeaders(resp2, seekedBody2)
-	assert.NoError(t, err)                                // Returns nil
-	assert.Equal(t, "", resp2.Header.Get("Content-Type")) // Should NOT be audio
+	assert.Error(t, err) // Error code should return error
+	assert.Contains(t, err.Error(), "bytedance submit failed")
 
 	// Case 3: Invalid JSON
 	f3 := &VolcengineTTSConverter{}
+	req3 := httptest.NewRequest("GET", "/", nil)
 	resp3 := &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     make(http.Header),
-		Request:    httptest.NewRequest("GET", "/", nil),
+		Request:    req3,
 	}
 	seekedBody3 := []byte(`invalid json`)
 	err = f3.OnPeekChunkBeforeHeaders(resp3, seekedBody3)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unmarshal")
 }
 
 func TestVolcengineTTSResponseConverter_OnBodyChunk(t *testing.T) {
-	f := &VolcengineTTSConverter{}
-	chunk := []byte("test chunk")
+	// OnBodyChunk now does the polling. Since we can't mock the network call easily,
+	// we just test that it attempts to poll (and fails with network error)
+	f := &VolcengineTTSConverter{taskID: "test-task-id"}
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req = req.WithContext(ctxhelper.InitCtxMapIfNeed(req.Context()))
-	// ctxhelper.PutIsLastBodyChunk(req.Context(), false) // Simulate NOT last chunk
+
+	// Mock Model for onceQueryTaskStatus
+	mockMeta, _ := structpb.NewStruct(map[string]interface{}{
+		"app_id":     "mock_app",
+		"access_key": "mock_key",
+		"model_name": "mock_model",
+	})
+	ctxhelper.PutModel(req.Context(), &modelpb.Model{
+		Metadata: &metadatapb.Metadata{
+			Public: mockMeta.Fields,
+		},
+	})
+	ctxhelper.PutGeneratedCallID(req.Context(), "mock-call-id")
 
 	resp := &http.Response{
 		Request: req,
 	}
 
-	out, err := f.OnBodyChunk(resp, chunk, 0)
-	assert.NoError(t, err)
-	assert.Equal(t, chunk, out)
+	out, err := f.OnBodyChunk(resp, []byte("original chunk"), 0)
+	// Expect network error because we can't reach the real Bytedance API
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to poll audio")
+	assert.Nil(t, out)
 }
 
 func TestBytedanceTTSSubmitResponse_Parsing(t *testing.T) {
