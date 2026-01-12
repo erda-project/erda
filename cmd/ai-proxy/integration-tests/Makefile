@@ -179,7 +179,7 @@ test-watch: setup
 ## Run stress tests
 test-stress: setup
 	@echo "Running stress tests..."
-	CONCURRENT_TEST_S=true go test -v -count=10 -timeout 300s -failfast ./...
+	CONCURRENT_TESTS=true go test -v -count=10 -timeout 300s -failfast ./...
 
 ## Check compilation
 check: mod-init
