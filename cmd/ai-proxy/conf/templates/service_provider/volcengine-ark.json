@@ -36,6 +36,31 @@
                   "/v1",
                   "/api/v3"
                 ]
+              },
+              "*:/v1/audio/speech": {
+                "headers": {
+                  "x-api-app-id": [
+                    "set",
+                    "${@model.metadata.secret.app_id}"
+                  ],
+                  "x-api-access-key": [
+                    "set",
+                    "${@model.metadata.secret.access_key}"
+                  ],
+                  "x-api-resource-id": [
+                    "set",
+                    "${@model.metadata.public.model_name}"
+                  ],
+                  "authorization": [
+                    "delete"
+                  ]
+                },
+                "host": "openspeech.bytedance.com",
+                "path": [
+                  "set",
+                  "/api/v3/tts/submit"
+                ],
+                "scheme": "https"
               }
             }
           },

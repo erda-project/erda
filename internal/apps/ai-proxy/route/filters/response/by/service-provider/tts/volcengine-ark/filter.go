@@ -12,32 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package qwen
+package volcengine_ark
 
 import (
 	"encoding/json"
-	"net/http/httputil"
+	"net/http"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	volcengine_ark "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/by/service-provider/tts/volcengine-ark"
 )
 
 func init() {
-	filter_define.RegisterFilterCreator("qwen-tts-converter", Creator)
+	filter_define.RegisterFilterCreator("volcengine-ark-tts-response-converter", Creator)
 }
 
-type QwenTTSConverter struct{}
+type VolcengineTTSConverter struct {
+	filter_define.PassThroughResponseModifier
 
-var Creator filter_define.RequestRewriterCreator = func(name string, _ json.RawMessage) filter_define.ProxyRequestRewriter {
-	return &QwenTTSConverter{}
+	taskID string
 }
 
-func (f *QwenTTSConverter) Enable(pr *httputil.ProxyRequest) bool {
-	model := ctxhelper.MustGetModel(pr.In.Context())
-	// publisher == qwen
-	if model.Publisher == common_types.ModelPublisherQwen.String() {
-		return true
-	}
-	return false
+var Creator filter_define.ResponseModifierCreator = func(_ string, _ json.RawMessage) filter_define.ProxyResponseModifier {
+	return &VolcengineTTSConverter{}
+}
+
+func (f *VolcengineTTSConverter) Enable(resp *http.Response) bool {
+	return volcengine_ark.Enabled(resp.Request.Context())
 }

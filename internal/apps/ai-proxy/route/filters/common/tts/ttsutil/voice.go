@@ -12,53 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package qwen
+package ttsutil
 
-import (
-	"encoding/json"
-	"net/http/httputil"
-
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
-)
-
-func (f *QwenTTSConverter) OnProxyRequest(pr *httputil.ProxyRequest) error {
-	var openaiReq openai.CreateSpeechRequest
-	if err := json.NewDecoder(pr.In.Body).Decode(&openaiReq); err != nil {
-		return err
-	}
-
-	qwenReq := &QwenReq{
-		Model: string(openaiReq.Model),
-		Input: QwenInput{
-			Text:  openaiReq.Input,
-			Voice: mapVoice(openaiReq.Voice),
-		},
-	}
-
-	if openaiReq.Voice != "" {
-		qwenReq.Input.Voice = mapVoice(openaiReq.Voice)
-	}
-
-	return body_util.SetBody(pr.Out, qwenReq)
-}
-
-type QwenReq struct {
-	Model string    `json:"model"`
-	Input QwenInput `json:"input"`
-}
-
-type QwenInput struct {
-	Text         string `json:"text"`
-	Voice        string `json:"voice,omitempty"`
-	LanguageType string `json:"language_type,omitempty"`
-}
-
-const (
-	FixedMaleVoice   = "Ethan"
-	FixedFemaleVoice = "Cherry"
-)
+import "github.com/sashabaranov/go-openai"
 
 var genderMap = map[openai.SpeechVoice]string{
 	// female
@@ -76,16 +32,34 @@ var genderMap = map[openai.SpeechVoice]string{
 	"male":            "male",
 }
 
-func mapVoice(voice openai.SpeechVoice) string {
+// MapVoice maps openai.SpeechVoice to service-provider specific voice.
+// maleVoice and femaleVoice are the fixed voice names for male and female respectively.
+func MapVoice(voice openai.SpeechVoice, maleVoice, femaleVoice string) string {
 	gender := genderMap[voice]
 
 	switch gender {
 	case "female":
-		return FixedFemaleVoice
+		return femaleVoice
 	case "male":
-		return FixedMaleVoice
+		return maleVoice
 	default:
 		// return original if mismatch
 		return string(voice)
+	}
+}
+
+// ContentTypeFromFormat returns the MIME type for the given audio format.
+func ContentTypeFromFormat(format string) string {
+	switch format {
+	case "wav":
+		return "audio/wav"
+	case "flac":
+		return "audio/flac"
+	case "aac":
+		return "audio/aac"
+	case "opus":
+		return "audio/opus"
+	default:
+		return "audio/mpeg"
 	}
 }

@@ -298,7 +298,11 @@ func (c *Client) sendRequest(ctx context.Context, method, path string, payload i
 
 	fmt.Printf("← %s %d\n", req.URL.String(), resp.StatusCode)
 	fmt.Printf("← Headers: %+v\n", resp.Header)
-	fmt.Printf("← Body: %s\n", string(responseBody))
+	if strings.Contains(resp.Header.Get("Content-Type"), "audio/") {
+		fmt.Printf("← Body: <audio binary data, size: %d>\n", len(responseBody))
+	} else {
+		fmt.Printf("← Body: %s\n", string(responseBody))
+	}
 
 	result := &APIResponse{
 		StatusCode: resp.StatusCode,
@@ -477,4 +481,3 @@ func (c *Client) PostMultipart(ctx context.Context, path string, body io.Reader,
 
 	return result
 }
-

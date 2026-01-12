@@ -1,0 +1,73 @@
+{
+  "doubao-seed-tts-2.0": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "seed-tts-2.0"
+      },
+      {
+        "name": "app_id",
+        "type": "string",
+        "required": true,
+        "desc": "refer: https://www.volcengine.com/docs/6561/196768?lang=zh"
+      },
+      {
+        "name": "access_key",
+        "type": "string",
+        "required": true,
+        "desc": "refer: https://www.volcengine.com/docs/6561/196768?lang=zh"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark"
+      ],
+      "website": "https://www.volcengine.com/docs/6561/1871062?lang=zh"
+    },
+    "desc": "依托新一代大模型能力，火山语音模型能够根据上下文，智能预测文本的情绪、语调等信息，并生成超自然、高保真、个性化的语音，以满足不同用户的个性化需求。相较于传统语音合成技术，大语音模型在口语自然度、连贯性、拟人度、音质、韵律、气口、情感、语气词表达等各方面为客户带来更生动、更具情感表现力的听觉体验。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "audio",
+      "publisher": "bytedance",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "text_to_speech"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "audio"
+            ]
+          },
+          "context": {
+            "context_length": 0,
+            "max_completion_tokens": 0,
+            "max_prompt_tokens": 0
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "prompt": "0.0003",
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {
+          "app_id": "${@template.placeholders.app_id}",
+          "access_key": "${@template.placeholders.access_key}"
+        }
+      }
+    }
+  }
+}
