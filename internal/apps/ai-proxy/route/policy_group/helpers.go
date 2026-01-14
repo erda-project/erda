@@ -29,7 +29,7 @@ import (
 
 // BuildRoutingInstancesForClient fetches client models and converts to routing instances.
 func BuildRoutingInstancesForClient(ctx context.Context, clientID string) ([]*RoutingModelInstance, error) {
-	cfg := &cachehelpers.ClientModelConfig{OnlyEnabled: false}
+	cfg := &cachehelpers.ClientModelConfig{OnlyEnabled: true}
 	allClientModels, err := cachehelpers.ListAllClientModels(ctx, clientID, cfg)
 	if err != nil {
 		return nil, err
