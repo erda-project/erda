@@ -94,6 +94,10 @@ message AuditPagingRequest {
     // unix milliseconds, used for http query parsing convenience
     uint64 timeRangeAfterMs = 11 [(validate.rules).uint64 = {ignore_empty: true, gte: 0}];
     uint64 timeRangeBeforeMs = 12 [(validate.rules).uint64 = {ignore_empty: true, gte: 0}];
+
+    // status filter
+    repeated int32 statusIn = 13;
+    repeated int32 statusNotIn = 14;
 }
 
 message AuditPagingResponse {

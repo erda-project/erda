@@ -59,6 +59,14 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.AuditPagingRequest
 	sql = sql.Where("created_at <= ?", before)
 	sql = sql.Where("created_at >= ?", after)
 
+	// status filter
+	if len(req.StatusIn) > 0 {
+		sql = sql.Where("status IN ?", req.StatusIn)
+	}
+	if len(req.StatusNotIn) > 0 {
+		sql = sql.Where("status NOT IN ?", req.StatusNotIn)
+	}
+
 	sql = sql.WithContext(ctx).Where(c).Unscoped()
 
 	var (
