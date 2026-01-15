@@ -43,7 +43,7 @@ func TestValidateAndGetTimeRange(t *testing.T) {
 
 	t.Run("both time params provided within 24 hours", func(t *testing.T) {
 		beforeMs := now.UnixNano() / 1e6
-		afterMs := now.Add(-12 * time.Hour).UnixNano() / 1e6
+		afterMs := now.Add(-12*time.Hour).UnixNano() / 1e6
 		req := &pb.AuditPagingRequest{
 			TimeRangeBeforeMs: uint64(beforeMs),
 			TimeRangeAfterMs:  uint64(afterMs),
@@ -56,7 +56,7 @@ func TestValidateAndGetTimeRange(t *testing.T) {
 
 	t.Run("time range exceeds 24 hours", func(t *testing.T) {
 		beforeMs := now.UnixNano() / 1e6
-		afterMs := now.Add(-25 * time.Hour).UnixNano() / 1e6
+		afterMs := now.Add(-25*time.Hour).UnixNano() / 1e6
 		req := &pb.AuditPagingRequest{
 			TimeRangeBeforeMs: uint64(beforeMs),
 			TimeRangeAfterMs:  uint64(afterMs),
@@ -76,7 +76,7 @@ func TestValidateAndGetTimeRange(t *testing.T) {
 	})
 
 	t.Run("before is after", func(t *testing.T) {
-		beforeMs := now.Add(-25 * time.Hour).UnixNano() / 1e6
+		beforeMs := now.Add(-25*time.Hour).UnixNano() / 1e6
 		afterMs := now.UnixNano() / 1e6
 		req := &pb.AuditPagingRequest{
 			TimeRangeBeforeMs: uint64(beforeMs),
