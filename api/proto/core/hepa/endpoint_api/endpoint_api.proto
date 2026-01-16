@@ -22,12 +22,26 @@ service EndpointApiService {
     option (google.api.http) = {
       get: "/api/gateway/openapi/packages?projectId={projectId}&env={env}&pageNo={pageNo}&pageSize={pageSize}&sortField={sortField}&sortType={sortType}&domain={domain}",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path: "/api/gateway/openapi/packages/{packageId}"
   rpc GetEndpoint(GetEndpointRequest) returns (GetEndpointResponse) {
     option (google.api.http) = {
       get: "/api/gateway/openapi/packages/{packageId}",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}",
+      auth: {
+        check_token: true
+      }
     };
   }
 
@@ -37,6 +51,13 @@ service EndpointApiService {
       post: "/api/gateway/openapi/packages?projectId={projectId}&env={env}",
       body: "endpoint",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path: "/api/gateway/openapi/packages/{packageId}"
@@ -45,6 +66,13 @@ service EndpointApiService {
       patch: "/api/gateway/openapi/packages/{packageId}",
       body: "endpoint",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path: "/api/gateway/openapi/packages/{packageId}"
@@ -52,12 +80,26 @@ service EndpointApiService {
     option (google.api.http) = {
       delete: "/api/gateway/openapi/packages/{packageId}",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path: "/api/gateway/openapi/packages/{packageId}/apis"
   rpc GetEndpointApis(GetEndpointApisRequest) returns (GetEndpointApisResponse) {
     option (google.api.http) = {
       get: "/api/gateway/openapi/packages/{packageId}/apis?apiPath={apiPath}&method={method}&origin={origin}&diceApp={diceApp}&diceService={diceService}&sortField={sortField}&sortType={sortType}&pageNo={pageNo}&pageSize={pageSize}",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}/apis",
+      auth: {
+        check_token: true
+      }
     };
   }
 
@@ -67,6 +109,13 @@ service EndpointApiService {
       post: "/api/gateway/openapi/packages/{packageId}/apis",
       body: "endpointApi",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}/apis",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}"
@@ -75,12 +124,26 @@ service EndpointApiService {
       patch: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}",
       body: "endpointApi",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}"
   rpc DeleteEndpointApi(DeleteEndpointApiRequest) returns (DeleteEndpointApiResponse) {
     option (google.api.http) = {
       delete: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}",
+      auth: {
+        check_token: true
+      }
     };
   }
 
