@@ -332,7 +332,7 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 		req.UpdatedAtBeginInclude = &t
 	}
 	if req.UpdatedAtBeginInclude != nil {
-		baseSQL = baseSQL.Where("`tc`.`updated_at` >= ?", req.UpdatedAtBeginInclude)
+		baseSQL = baseSQL.Where("`rel`.`updated_at` >= ?", req.UpdatedAtBeginInclude)
 	}
 	// updatedAtEnd (Right closed Section)
 	if req.TimestampSecUpdatedAtEnd != nil {
@@ -340,7 +340,7 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 		req.UpdatedAtEndInclude = &t
 	}
 	if req.UpdatedAtEndInclude != nil {
-		baseSQL = baseSQL.Where("`tc`.`updated_at` <= ?", req.UpdatedAtEndInclude)
+		baseSQL = baseSQL.Where("`rel`.`updated_at` <= ?", req.UpdatedAtEndInclude)
 	}
 	// executor
 	if len(req.ExecutorIDs) > 0 {
