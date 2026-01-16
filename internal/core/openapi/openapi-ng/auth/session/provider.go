@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/openapi/settings"
@@ -49,6 +50,7 @@ type provider struct {
 	Router              openapi.Interface        `autowired:"openapi-router"`
 	Settings            settings.OpenapiSettings `autowired:"openapi-settings"`
 	UserOauthSessionSvc pb.UserOAuthSessionServiceServer
+	UserSvc             userpb.UserServiceServer
 	CredStore           domain.CredentialStore `autowired:"erda.core.user.credstore"`
 	UserAuth            domain.UserAuthFacade  `autowired:"erda.core.user.auth.facade"`
 	Org                 org.Interface

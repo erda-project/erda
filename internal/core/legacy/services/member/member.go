@@ -35,7 +35,9 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
 	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/desensitize"
+	"github.com/erda-project/erda/pkg/discover"
 	locale "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -108,7 +110,10 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 		return errors.Errorf("failed to create permission(invalid scope id)")
 	}
 
-	resp, err := m.uc.FindUsers(context.Background(), &pb.FindUsersRequest{IDs: req.UserIDs})
+	resp, err := m.uc.FindUsers(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&pb.FindUsersRequest{Ids: req.UserIDs},
+	)
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
 		return errors.Errorf("failed to get user info")

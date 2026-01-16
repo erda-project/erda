@@ -31,6 +31,8 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/core/legacy/utils"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/loop"
@@ -79,7 +81,10 @@ func (e *Endpoints) CreateReviewUser(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrCreateReviewUser.InternalError(err).ToResp(), nil
 	}
 
-	ucUser, err := e.uc.GetUser(ctx, &userpb.GetUserRequest{UserID: reviewCreateReq.Operator})
+	ucUser, err := e.uc.GetUser(
+		apis.WithInternalClientContext(ctx, discover.SvcCoreServices),
+		&userpb.GetUserRequest{UserID: reviewCreateReq.Operator},
+	)
 	if err != nil {
 		return apierrors.ErrCreateReviewUser.InternalError(err).ToResp(), nil
 	}
@@ -132,7 +137,10 @@ func (e *Endpoints) createEventBoxMessage(req *apistructs.CreateReviewRequest) (
 		return false, err
 	}
 
-	resp, err := e.uc.GetUser(context.Background(), &userpb.GetUserRequest{UserID: req.SponsorId})
+	resp, err := e.uc.GetUser(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.GetUserRequest{UserID: req.SponsorId},
+	)
 	if err != nil {
 		return false, err
 	}

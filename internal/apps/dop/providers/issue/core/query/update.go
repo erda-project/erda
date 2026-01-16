@@ -31,6 +31,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (p *provider) UpdateIssue(req *pb.UpdateIssueRequest) error {
@@ -492,7 +494,10 @@ func (p *provider) batchCreateAssignChaningStream(req *pb.BatchUpdateIssueReques
 	}
 	userIds = append(userIds, req.Assignee)
 
-	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: userIds})
+	resp, err := p.Identity.FindUsers(
+		apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&userpb.FindUsersRequest{Ids: userIds},
+	)
 	if err != nil {
 		return err
 	}

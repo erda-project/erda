@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/services/code_coverage"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -246,7 +248,10 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 		})
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	resp, err := ca.identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userIDs})
+	resp, err := ca.identity.FindUsers(
+		apis.WithInternalClientContext(ctx, discover.SvcDOP),
+		&userpb.FindUsersRequest{Ids: userIDs},
+	)
 	if err != nil {
 		return err
 	}

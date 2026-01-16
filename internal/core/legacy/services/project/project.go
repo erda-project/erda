@@ -36,6 +36,8 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/filehelper"
 	local "github.com/erda-project/erda/pkg/i18n"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -232,23 +234,25 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	}
 
 	// 新增项目管理员至admin_members表
-	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
+	resp, err := p.uc.GetUser(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.GetUserRequest{UserID: userID},
+	)
 	if err != nil {
 		logrus.Warnf("user query error: %v", err)
-	}
-	users := resp.Data
-	if len(users) > 0 {
+	} else {
+		user := resp.Data
 		member := model.Member{
 			ScopeType:  apistructs.ProjectScope,
 			ScopeID:    project.ID,
 			ScopeName:  project.Name,
 			ParentID:   project.OrgID,
 			UserID:     userID,
-			Email:      users[0].Email,
-			Mobile:     users[0].Phone,
-			Name:       users[0].Name,
-			Nick:       users[0].Nick,
-			Avatar:     users[0].AvatarURL,
+			Email:      user.Email,
+			Mobile:     user.Phone,
+			Name:       user.Name,
+			Nick:       user.Nick,
+			Avatar:     user.AvatarURL,
 			UserSyncAt: time.Now(),
 			OrgID:      project.OrgID,
 			ProjectID:  project.ID,
