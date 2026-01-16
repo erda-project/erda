@@ -47,11 +47,11 @@ func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error
 }
 
 func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
-	if len(req.IDs) == 0 {
+	if len(req.Ids) == 0 {
 		return &pb.FindUsersResponse{}, nil
 	}
-	intIds := make([]int, 0, len(req.IDs))
-	for _, id := range req.IDs {
+	intIds := make([]int, 0, len(req.Ids))
+	for _, id := range req.Ids {
 		intId, err := strconv.Atoi(id)
 		if err != nil {
 			return nil, err

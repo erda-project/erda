@@ -94,7 +94,7 @@ func (p *provider) getDingTalkConfig(param *JsonnetParam) (*DingTalkConfig, erro
 	}
 
 	// find users mobile info
-	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: d.Users})
+	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: d.Users})
 	if err != nil {
 		return nil, err
 	}

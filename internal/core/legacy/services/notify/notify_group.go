@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -226,9 +228,10 @@ func uniqueTargetList(list []apistructs.Target) []apistructs.Target {
 }
 
 func (o *NotifyGroup) getNotifyUsersByIDs(userIds []string) ([]apistructs.NotifyUser, error) {
-	findUsersResp, err := o.userService.FindUsers(context.Background(), &userpb.FindUsersRequest{
-		IDs: userIds,
-	})
+	findUsersResp, err := o.userService.FindUsers(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.FindUsersRequest{Ids: userIds},
+	)
 	if err != nil {
 		return nil, err
 	}

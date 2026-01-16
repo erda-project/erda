@@ -93,7 +93,7 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 			return apierrors.ErrListUser.InvalidParameter("user id too much").ToResp(), nil
 		}
 
-		resp, err := e.uc.FindUsers(ctx, &pb.FindUsersRequest{IDs: userIDs})
+		resp, err := e.uc.FindUsers(ctx, &pb.FindUsersRequest{Ids: userIDs})
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
