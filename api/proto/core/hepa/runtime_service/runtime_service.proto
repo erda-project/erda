@@ -3,6 +3,7 @@ syntax = "proto3";
 package erda.core.hepa.runtime_service;
 option go_package = "github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb";
 import "google/api/annotations.proto";
+import "common/openapi.proto";
 
 
 // +publish service:"hepa"
@@ -33,12 +34,26 @@ service RuntimeService {
     option (google.api.http) = {
       get: "/api/gateway/openapi/service-runtime?projectId={projectId}&env={env}&app={app}&service={service}",
     };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/service-runtime",
+      auth: {
+        check_token: true
+      }
+    };
   }
 
   // +publish path:"/api/gateway/openapi/service-api-prefix"
   rpc GetServiceApiPrefix(GetServiceApiPrefixRequest) returns (GetServiceApiPrefixResponse) {
     option (google.api.http) = {
       get: "/api/gateway/openapi/service-api-prefix?projectId={projectId}&env={env}&app={app}&service={service}&runtimeId={runtimeId}",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/service-api-prefix",
+      auth: {
+        check_token: true
+      }
     };
   }
 
