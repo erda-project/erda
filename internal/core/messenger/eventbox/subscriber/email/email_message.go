@@ -82,7 +82,7 @@ func (m *Message) Bytes() []byte {
 		buf.WriteString(fmt.Sprintf("--%s\r\n", boundary))
 	}
 
-	buf.WriteString(fmt.Sprintf("Content-Type: %s\"\n\n", m.BodyContentType))
+	buf.WriteString(fmt.Sprintf("Content-Type: %s\n\n", m.BodyContentType))
 	buf.WriteString(m.Body)
 	buf.WriteString("\n")
 
