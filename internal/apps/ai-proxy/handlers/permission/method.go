@@ -16,6 +16,7 @@ package permission
 
 import (
 	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	cachepb "github.com/erda-project/erda-proto-go/apps/aiproxy/cache/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
@@ -156,4 +157,8 @@ var CheckPolicyGroupPerm = CheckPermissions(
 	&MethodPermission{Method: policypb.PolicyGroupServiceServer.GetForModelTemplate, LoggedIn: true},
 	&MethodPermission{Method: policypb.PolicyGroupServiceServer.PreviewLabelGroups, LoggedIn: true},
 	&MethodPermission{Method: policypb.PolicyGroupServiceServer.ListAllOfficialLabels, LoggedIn: true},
+)
+
+var CheckCachePerm = CheckPermissions(
+	&MethodPermission{Method: cachepb.CacheServiceServer.RefreshCache, OnlyAdmin: true},
 )

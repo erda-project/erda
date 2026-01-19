@@ -104,7 +104,8 @@ func (m *cacheManager) GetByID(ctx context.Context, itemType cachetypes.ItemType
 	return item.GetByID(ctx, id)
 }
 
-// TriggerRefresh triggers a refresh for the specified item
+// TriggerRefresh triggers a refresh for the specified item types.
+// If no item types are specified, all registered cache items will be refreshed.
 func (m *cacheManager) TriggerRefresh(ctx context.Context, itemTypes ...cachetypes.ItemType) {
 	for _, t := range itemTypes {
 		i := m.items[t]
