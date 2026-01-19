@@ -74,7 +74,11 @@ func (c *BaseCacheItem) listAll(ctx context.Context, needClone bool) (uint64, an
 	// if cache is disabled, always query from database
 	if !c.config.Enabled {
 		c.getLogger(ctx).Warn("cache is disabled, fallback to database query")
-		return c.QueryFromDB(ctx)
+		total, data, err := c.QueryFromDB(ctx)
+		if err != nil {
+			return 0, nil, err
+		}
+		return total, ensureNonNilSlice(data), nil
 	}
 
 	c.mu.RLock()
@@ -109,6 +113,9 @@ func (c *BaseCacheItem) listAll(ctx context.Context, needClone bool) (uint64, an
 	if err != nil {
 		return 0, nil, err
 	}
+
+	// Ensure data is a non-nil slice to prevent type assertion failures
+	newData = ensureNonNilSlice(newData)
 
 	index, err := c.buildIndexFromListData(newData)
 	if err != nil {
@@ -161,6 +168,18 @@ func (c *BaseCacheItem) buildIndexFromListData(data any) (map[string]any, error)
 	return index, nil
 }
 
+// ensureNonNilSlice ensures the returned data is a non-nil slice.
+// This is critical for type assertions like data.([]*pb.Model) to succeed
+// even when the database table is empty.
+func ensureNonNilSlice(data any) any {
+	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Slice && val.IsNil() {
+		// create an empty slice of the same type
+		return reflect.MakeSlice(val.Type(), 0, 0).Interface()
+	}
+	return data
+}
+
 // smartClone:
 // - if type is slice, clone each element
 // - if type is proto.Message, use proto.Clone
@@ -176,7 +195,8 @@ func smartClone(data any) any {
 	val := reflect.ValueOf(data)
 	if val.Kind() == reflect.Slice {
 		if val.IsNil() {
-			return nil
+			// return empty slice instead of nil to ensure type assertions succeed
+			return reflect.MakeSlice(val.Type(), 0, 0).Interface()
 		}
 
 		length := val.Len()
