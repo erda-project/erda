@@ -14,7 +14,9 @@
 
 package cachetypes
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // ItemType defines the type of cached items
 type ItemType int
@@ -30,22 +32,45 @@ const (
 )
 
 func (itemType ItemType) String() string {
-	switch itemType {
-	case ItemTypeModel:
-		return "model"
-	case ItemTypeProvider:
-		return "provider"
-	case ItemTypeClientModelRelation:
-		return "clientModelRelation"
-	case ItemTypeClient:
-		return "client"
-	case ItemTypeClientToken:
-		return "clientToken"
-	case ItemTypeTemplate:
-		return "template"
-	case ItemTypePolicyGroup:
-		return "policyGroup"
-	default:
-		return fmt.Sprintf("unknown(%d)", itemType)
+	if s, ok := ItemTypeToString[itemType]; ok {
+		return s
 	}
+	return fmt.Sprintf("unknown(%d)", itemType)
+}
+
+// ItemTypeToString maps ItemType to string names (camelCase)
+var ItemTypeToString = map[ItemType]string{
+	ItemTypeModel:               "model",
+	ItemTypeProvider:            "provider",
+	ItemTypeClientModelRelation: "clientModelRelation",
+	ItemTypeClient:              "client",
+	ItemTypeClientToken:         "clientToken",
+	ItemTypeTemplate:            "template",
+	ItemTypePolicyGroup:         "policyGroup",
+}
+
+var ItemTypeStrToType map[string]ItemType = func() map[string]ItemType {
+	m := make(map[string]ItemType)
+	for itemType, name := range ItemTypeToString {
+		m[name] = itemType
+	}
+	return m
+}()
+
+// AllItemTypes returns all available item types
+func AllItemTypes() []ItemType {
+	return []ItemType{
+		ItemTypeModel,
+		ItemTypeProvider,
+		ItemTypeClientModelRelation,
+		ItemTypeClient,
+		ItemTypeClientToken,
+		ItemTypeTemplate,
+		ItemTypePolicyGroup,
+	}
+}
+
+func IsValidItemType(typeName string) bool {
+	_, ok := ItemTypeStrToType[typeName]
+	return ok
 }

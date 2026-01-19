@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	cachepb "github.com/erda-project/erda-proto-go/apps/aiproxy/cache/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
@@ -36,6 +37,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
@@ -72,6 +74,7 @@ func (p *provider) initHandlers(templates templatetypes.TemplatesByType) {
 		TokenUsageHandler:          &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache},
 		TemplateHandler:            &handler_template.TemplateHandler{Cache: p.cache},
 		PolicyGroupHandler:         &handler_policy_group.Handler{DAO: p.Dao},
+		CacheHandler:               &handler_cache.CacheHandler{Cache: p.cache},
 	}
 }
 
@@ -91,6 +94,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, p.getProtoOptions(permission.CheckTokenUsagePerm)...)
 	templatepb.RegisterTemplateServiceImp(register, p.handlers.TemplateHandler, p.getProtoOptions(permission.CheckTemplatePerm)...)
 	policypb.RegisterPolicyGroupServiceImp(register, p.handlers.PolicyGroupHandler, p.getProtoOptions(permission.CheckPolicyGroupPerm)...)
+	cachepb.RegisterCacheServiceImp(register, p.handlers.CacheHandler, p.getProtoOptions(permission.CheckCachePerm)...)
 }
 
 func (p *provider) registerMcpProxyManageAPI() {
