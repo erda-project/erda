@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.cache;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/cache/pb";
+
+import "google/api/annotations.proto";
+
+service CacheService {
+    // RefreshCache triggers a cache refresh.
+    // If no types are specified, all cache types will be refreshed.
+    rpc RefreshCache(CacheRefreshRequest) returns (CacheRefreshResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/cache/actions/refresh"
+        };
+    }
+}
+
+// CacheRefreshRequest specifies which cache types to refresh.
+// If types is empty, all cache types will be refreshed.
+message CacheRefreshRequest {
+    // Optional: specific cache types to refresh (e.g., "model", "provider", "client").
+    // If empty, all types will be refreshed.
+    repeated string types = 1;
+}
+
+message CacheRefreshResponse {
+    string message = 1;
+    // List of cache types that were refreshed.
+    repeated string refreshedTypes = 2;
+}

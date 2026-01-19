@@ -16,6 +16,7 @@ package aiproxytypes
 
 import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_audit"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
@@ -44,4 +45,5 @@ type Handlers struct {
 	TokenUsageHandler          *handler_token_usage.TokenUsageHandler
 	TemplateHandler            *handler_template.TemplateHandler
 	PolicyGroupHandler         *handler_policy_group.Handler
+	CacheHandler               *handler_cache.CacheHandler
 }
