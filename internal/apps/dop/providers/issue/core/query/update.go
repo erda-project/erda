@@ -496,7 +496,7 @@ func (p *provider) batchCreateAssignChaningStream(req *pb.BatchUpdateIssueReques
 
 	resp, err := p.Identity.FindUsers(
 		apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
-		&userpb.FindUsersRequest{Ids: userIds},
+		&userpb.FindUsersRequest{IDs: userIds},
 	)
 	if err != nil {
 		return err

@@ -299,7 +299,7 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 
 	resp, err := a.uc.FindUsers(
 		apis.WithInternalClientContext(ctx, discover.SvcCoreServices),
-		&userpb.FindUsersRequest{Ids: userIDs},
+		&userpb.FindUsersRequest{IDs: userIDs},
 	)
 	if err != nil {
 		return nil, err

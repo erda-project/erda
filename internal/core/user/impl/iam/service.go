@@ -27,6 +27,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/utils/pointer"
 
+	"github.com/erda-project/erda-infra/pkg/strutil"
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
@@ -47,11 +48,16 @@ func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error
 }
 
 func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
-	if len(req.Ids) == 0 {
+	if len(req.IDs) == 0 {
 		return &pb.FindUsersResponse{}, nil
 	}
-	intIds := make([]int, 0, len(req.Ids))
-	for _, id := range req.Ids {
+	sysOpExist := strutil.Exist(req.IDs, common.SystemOperator)
+	if sysOpExist {
+		req.IDs = strutil.RemoveSlice(req.IDs, common.SystemOperator)
+	}
+
+	intIds := make([]int, 0, len(req.IDs))
+	for _, id := range req.IDs {
 		intId, err := strconv.Atoi(id)
 		if err != nil {
 			return nil, err
@@ -59,18 +65,14 @@ func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.F
 		intIds = append(intIds, intId)
 	}
 
-	//sysOpExist := strutil.Exist(ids, common.SystemOperator)
-	//if sysOpExist {
-	//	ids = strutil.RemoveSlice(ids, common.SystemOperator)
-	//}
-
 	users, err := p.findByIDs(intIds, true)
 	if err != nil {
 		return nil, err
 	}
-	//if sysOpExist {
-	//	users = append(users, common.SystemUser)
-	//}
+	if sysOpExist {
+		users = append(users, common.SystemUser)
+	}
+
 	userList := make([]*pb.User, 0, len(users))
 	for _, i := range users {
 		userList = append(userList, common.ToPbUser(i))
@@ -298,6 +300,10 @@ func (p *provider) PwdSecurityConfigGet(ctx context.Context, request *pb.PwdSecu
 
 func (p *provider) PwdSecurityConfigUpdate(ctx context.Context, request *pb.PwdSecurityConfigUpdateRequest) (*pb.PwdSecurityConfigUpdateResponse, error) {
 	return nil, errors.New("iam not support update password security config direct")
+}
+
+func (p *provider) UserMe(ctx context.Context, request *pb.UserMeRequest) (*pb.UserMeResponse, error) {
+	return &pb.UserMeResponse{}, nil
 }
 
 func (p *provider) updateProfile(userId string, newVal map[string]any) error {

@@ -26,7 +26,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/desensitize"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -93,7 +95,10 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 			return apierrors.ErrListUser.InvalidParameter("user id too much").ToResp(), nil
 		}
 
-		resp, err := e.uc.FindUsers(ctx, &pb.FindUsersRequest{Ids: userIDs})
+		resp, err := e.uc.FindUsers(
+			apis.WithInternalClientContext(ctx, discover.SvcCoreServices),
+			&pb.FindUsersRequest{IDs: userIDs},
+		)
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}

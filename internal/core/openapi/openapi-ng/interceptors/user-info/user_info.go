@@ -159,7 +159,7 @@ func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{
 	desensitized, _ := strconv.ParseBool(r.Header.Get(httputil.UserInfoDesensitizedHeader))
 	resp, err := p.Identity.FindUsers(
 		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
-		&userpb.FindUsersRequest{Ids: userIDs},
+		&userpb.FindUsersRequest{IDs: userIDs},
 	)
 	if err != nil {
 		p.Log.Error(err)

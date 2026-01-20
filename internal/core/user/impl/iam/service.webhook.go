@@ -43,7 +43,7 @@ func (p *provider) UserEventWebhook(_ context.Context, req *pb.UserEventWebhookR
 		return nil, errors.New("event type must be iam")
 	}
 
-	event := req.GetEvent()
+	event := req.GetData()
 	if event == nil {
 		return nil, errors.New("nil event payload")
 	}

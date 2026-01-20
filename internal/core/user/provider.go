@@ -82,8 +82,8 @@ func (p *provider) Init(_ servicehub.Context) error {
 								return err
 							}
 							body.EventType = pb.EventType_EVENT_IAM
-							body.Payload = &pb.UserEventWebhookRequest_Event{
-								Event: recv,
+							body.Payload = &pb.UserEventWebhookRequest_Data{
+								Data: recv,
 							}
 							return nil
 						}
