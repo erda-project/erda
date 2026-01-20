@@ -45,7 +45,6 @@ service UserService {
         check_login: true,
         check_token: true,
       },
-      doc: "summary: 用户分页",
     };
   };
 
@@ -62,7 +61,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 获取当前环境支持的登录方式",
     };
   }
 
@@ -79,7 +77,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 查询密码安全配置",
     };
   };
 
@@ -96,7 +93,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 更新密码安全配置",
     };
   };
 
@@ -113,7 +109,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 批量用户冻结",
     };
   };
 
@@ -130,7 +125,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 批量用户解冻",
     };
   };
 
@@ -147,7 +141,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 批量修改用户登录方式",
     };
   };
 
@@ -164,7 +157,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 用户创建",
     };
   };
 
@@ -181,7 +173,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 导出用户",
     };
   };
 
@@ -198,7 +189,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 用户冻结",
     };
   };
 
@@ -215,7 +205,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 用户解冻",
     };
   };
 
@@ -232,7 +221,6 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 修改用户登录方式",
     };
   };
 
@@ -249,7 +237,37 @@ service UserService {
         check_token: true,
         check_basic_auth: false,
       },
-      doc: "summary: 更新用户信息",
+    };
+  };
+  rpc UserMe (UserMeRequest) returns (UserMeResponse) {
+    option (google.api.http) = {
+      post: "/api/users/me-wip",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/users/me-wip",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+    };
+  };
+
+  rpc UserEventWebhook (UserEventWebhookRequest) returns (UserEventWebhookResponse) {
+    option (google.api.http) = {
+      post: "/api/user/webhook/events",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/user/webhook/events",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
     };
   };
 }
@@ -261,6 +279,7 @@ message GetUserRequest {
 message GetUserResponse {
   User data = 1;
 }
+
 
 message User {
   string ID = 1 [json_name = "user_id"];
@@ -401,11 +420,9 @@ message UserUpdateLoginMethodRequest {
   string userID = 3; // generated from path variable: userID. You should change the proto type if necessary.
 }
 
-message UserUpdateLoginMethodResponse {
-}
+message UserUpdateLoginMethodResponse {}
 
-message PwdSecurityConfigGetRequest {
-}
+message PwdSecurityConfigGetRequest {}
 
 message PwdSecurityConfig {
   int64 captchaChallengeNumber = 1;
@@ -422,5 +439,36 @@ message PwdSecurityConfigUpdateRequest {
   PwdSecurityConfig pwdSecurityConfig = 1;
 }
 
-message PwdSecurityConfigUpdateResponse {
+message PwdSecurityConfigUpdateResponse {}
+
+message UserMeRequest {}
+
+message UserMeResponse {
+  string id = 1;
+  string name = 2;
+  string nick = 3;
+  string avatar = 4;
+  string phone = 5;
+  string email = 6;
+  string token = 7;
+  string lastLoginAt = 8;
 }
+
+enum EventType {
+  EVENT_IAM = 0;
+}
+
+message UserEventIAM {
+  string eventName = 1;
+  google.protobuf.Struct data = 2;
+}
+
+// +SKIP_GO-FORM
+message UserEventWebhookRequest {
+  EventType eventType = 1;
+  oneof payload {
+    UserEventIAM data = 2;
+  }
+}
+
+message UserEventWebhookResponse {}

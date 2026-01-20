@@ -62,7 +62,7 @@ func (svc *Service) CheckClientIDSecret(orgID, userID, clientID, clientSecret st
 func (svc *Service) EmailNotify(title, templateName string, params map[string]string, locale string, orgID uint64, userIDs []string) error {
 	findUsersResp, err := svc.userService.FindUsers(
 		apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
-		&userpb.FindUsersRequest{Ids: userIDs},
+		&userpb.FindUsersRequest{IDs: userIDs},
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to GetUsers")

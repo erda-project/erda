@@ -112,7 +112,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 
 	resp, err := m.uc.FindUsers(
 		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
-		&pb.FindUsersRequest{Ids: req.UserIDs},
+		&pb.FindUsersRequest{IDs: req.UserIDs},
 	)
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)

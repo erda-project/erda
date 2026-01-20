@@ -230,7 +230,7 @@ func uniqueTargetList(list []apistructs.Target) []apistructs.Target {
 func (o *NotifyGroup) getNotifyUsersByIDs(userIds []string) ([]apistructs.NotifyUser, error) {
 	findUsersResp, err := o.userService.FindUsers(
 		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
-		&userpb.FindUsersRequest{Ids: userIds},
+		&userpb.FindUsersRequest{IDs: userIds},
 	)
 	if err != nil {
 		return nil, err

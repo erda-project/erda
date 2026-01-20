@@ -208,7 +208,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if len(issues) > 0 {
 		resp, err := identity.FindUsers(
 			apis.WithInternalClientContext(ctx, discover.SvcDOP),
-			&userpb.FindUsersRequest{Ids: userids},
+			&userpb.FindUsersRequest{IDs: userids},
 		)
 		if err != nil {
 			return err
