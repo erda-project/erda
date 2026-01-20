@@ -38,7 +38,9 @@ service RuntimeService {
       service: "hepa",
       path: "/api/gateway/openapi/service-runtime",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -52,7 +54,9 @@ service RuntimeService {
       service: "hepa",
       path: "/api/gateway/openapi/service-api-prefix",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
