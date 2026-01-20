@@ -26,7 +26,8 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
       }
     };
   }
@@ -40,7 +41,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -55,7 +58,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -70,7 +75,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -84,7 +91,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -98,7 +107,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}/apis",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -113,7 +124,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}/apis",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -128,7 +141,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
@@ -142,7 +157,9 @@ service EndpointApiService {
       service: "hepa",
       path: "/api/gateway/openapi/packages/{packageId}/apis/{apiId}",
       auth: {
-        check_token: true
+        check_token: true,
+        check_login: true
+      
       }
     };
   }
