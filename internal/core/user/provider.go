@@ -15,6 +15,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -32,7 +33,8 @@ import (
 )
 
 type config struct {
-	OAuthProvider string `default:"iam" file:"oauth_provider"`
+	OAuthProvider      string `default:"iam" file:"oauth_provider"`
+	EventWebhookSecret string `default:"erda" file:"event_webhook_secret"`
 }
 
 type provider struct {
@@ -69,6 +71,23 @@ func (p *provider) Init(_ servicehub.Context) error {
 						}
 						body.Users = recv
 						return nil
+					case *pb.UserEventWebhookRequest:
+						// iam
+						if secret := r.Header.Get("x-iam-secret"); secret != "" {
+							if secret != p.Cfg.EventWebhookSecret {
+								return errors.New("secret auth fail")
+							}
+							var recv *pb.UserEventIAM
+							if err := encoding.DecodeRequest(r, &recv); err != nil {
+								return err
+							}
+							body.EventType = pb.EventType_EVENT_IAM
+							body.Payload = &pb.UserEventWebhookRequest_Event{
+								Event: recv,
+							}
+							return nil
+						}
+						return encoding.DecodeRequest(r, out)
 					default:
 						return encoding.DecodeRequest(r, out)
 					}
