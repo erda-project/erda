@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -34,12 +35,14 @@ type provider struct {
 	Cfg *Config
 	Log logs.Logger
 
+	bdl          *bundle.Bundle
 	client       *httpclient.HTTPClient
 	UserOAuthSvc pb.UserOAuthServiceServer
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
+func (p *provider) Init(_ servicehub.Context) error {
 	p.client = httpclient.New()
+	p.bdl = bundle.New(bundle.WithErdaServer())
 	return nil
 }
 

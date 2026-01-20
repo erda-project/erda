@@ -76,3 +76,14 @@ type IAMUserCreate struct {
 	Password          string `json:"password"`
 	NeedResetPassword bool   `json:"needResetPassword,omitempty"`
 }
+
+type IAMUserEventDto struct {
+	// TODO: only use user id now
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Mobile   string `json:"mobile"`
+	Email    string `json:"email"`
+	Avatar   string `json:"avatar"`
+	// TODO: support more fields
+}
