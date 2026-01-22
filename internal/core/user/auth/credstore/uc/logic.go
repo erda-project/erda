@@ -17,13 +17,16 @@ package uc
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 func (p *provider) Load(_ context.Context, r *http.Request) (*domain.PersistedCredential, error) {
@@ -46,17 +49,23 @@ func (p *provider) Load(_ context.Context, r *http.Request) (*domain.PersistedCr
 	}, nil
 }
 
-func (p *provider) Persist(_ context.Context, cred *domain.PersistedCredential) (*domain.PersistedCredential, error) {
-	if cred.AccessToken == "" {
-		return nil, errors.New("credential token is empty")
+func (p *provider) Persist(_ context.Context, cred *domain.AuthCredential) (*domain.PersistedCredential, error) {
+	if cred == nil {
+		return nil, errors.New("credential is nil")
 	}
+
 	sessionID := genSessionID()
-	if _, err := p.Redis.Set(makeSessionKey(sessionID), cred.AccessToken, p.Config.Expire).Result(); err != nil {
+	if _, err := p.Redis.Set(makeSessionKey(sessionID), cred.OAuthToken.AccessToken, p.Config.Expire).Result(); err != nil {
 		return nil, errors.Wrap(err, "failed to store session")
 	}
-	// TODO: new credential with cookie or session?
-	cred.SessionID = sessionID
-	return cred, nil
+
+	return &domain.PersistedCredential{
+		Authenticator: &applier.BearerTokenAuth{
+			Token: cred.OAuthToken.AccessToken,
+		},
+		AccessToken: cred.OAuthToken.AccessToken,
+		SessionID:   sessionID,
+	}, nil
 }
 
 func (p *provider) Revoke(_ context.Context, sessionID string) error {
@@ -67,22 +76,23 @@ func (p *provider) Revoke(_ context.Context, sessionID string) error {
 	return err
 }
 
-//func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *common.SessionRefresh) error {
-//	if refresh == nil || refresh.Token == "" {
-//		return nil
-//	}
-//	c := &http.Cookie{
-//		Name:     p.Config.CookieName,
-//		Value:    refresh.SessionID,
-//		Path:     "/",
-//		HttpOnly: true,
-//		Secure:   req.TLS != nil,
-//		SameSite: http.SameSiteDefaultMode,
-//	}
-//
-//	http.SetCookie(rw, c)
-//	return nil
-//}
+func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *common.SessionRefresh) error {
+	if refresh == nil || refresh.Token == "" {
+		return nil
+	}
+	c := &http.Cookie{
+		Name:     p.Config.CookieName,
+		Value:    refresh.SessionID,
+		Path:     "/",
+		HttpOnly: true,
+		Domain:   p.getSessionDomain(req.Host),
+		Secure:   req.TLS != nil,
+		SameSite: http.SameSite(p.Config.CookieSameSite),
+	}
+
+	http.SetCookie(rw, c)
+	return nil
+}
 
 func makeSessionKey(sessionID string) string {
 	return fmt.Sprintf("openapi:sessionid:%s", sessionID)
@@ -90,4 +100,22 @@ func makeSessionKey(sessionID string) string {
 
 func genSessionID() string {
 	return uuid.NewV4().String()
+}
+
+func (p *provider) getSessionDomain(host string) string {
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	domains := strings.SplitN(host, ".", -1)
+	l := len(domains)
+	if l < 2 {
+		return ""
+	}
+	rootDomain := "." + domains[l-2] + "." + domains[l-1]
+	for _, item := range p.Config.SessionCookieDomains {
+		if strings.Contains(item, rootDomain) {
+			return item
+		}
+	}
+	return ""
 }

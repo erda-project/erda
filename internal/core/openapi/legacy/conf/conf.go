@@ -38,20 +38,10 @@ type Conf struct {
 
 	OpenAPIPublicAddr string `env:"SELF_PUBLIC_ADDR"`
 	OpenAPIPublicURL  string `env:"SELF_PUBLIC_URL"`
-	// oauth provider
-	OAuthProvider string `default:"uc" env:"OAUTH_PROVIDER"`
-	// oauth provider uc
-	UCAddr         string `env:"UC_ADDR"`
-	UCClientID     string `default:"dice" env:"UC_CLIENT_ID"`
-	UCClientSecret string `default:"secret" env:"UC_CLIENT_SECRET"`
-	// token store
-	IAMTokenCookieName string `env:"OAUTH_COOKIE_NAME"`
 
-	RedirectAfterLogin string `default:"//dice.test.terminus.io/" env:"UI_PUBLIC_ADDR"`
-	CookieDomain       string `default:".terminus.io,.erda.cloud" env:"COOKIE_DOMAIN"`
-	OldCookieDomain    string `default:"" env:"OLD_COOKIE_DOMAIN"`
-	SessionCookieName  string `default:"OPENAPISESSION" env:"SESSION_COOKIE_NAME"`
-	CSRFCookieDomain   string `default:"" env:"CSRF_COOKIE_DOMAIN"`
+	OldCookieDomain   string `default:"" env:"OLD_COOKIE_DOMAIN"`
+	SessionCookieName string `default:"OPENAPISESSION" env:"SESSION_COOKIE_NAME"`
+	CSRFCookieDomain  string `default:"" env:"CSRF_COOKIE_DOMAIN"`
 
 	UseK8S             string `env:"DICE_CLUSTER_TYPE"`
 	SurveyDingding     string `env:"SURVEY_DINGDING"`
@@ -100,27 +90,6 @@ func ListenAddr() string {
 	return cfg.ListenAddr
 }
 
-// RedisMasterName
-func RedisMasterName() string {
-	return cfg.RedisMasterName
-}
-
-func RedisSentinelAddrs() string {
-	return cfg.RedisSentinelAddrs
-}
-
-func RedisPwd() string {
-	return cfg.RedisPwd
-}
-
-func OAuthProvider() string {
-	return cfg.OAuthProvider
-}
-
-func IAMTokenCookieName() string {
-	return cfg.IAMTokenCookieName
-}
-
 func OldCookieDomain() string {
 	return cfg.OldCookieDomain
 }
@@ -139,10 +108,6 @@ func SurveyDingding() string {
 
 func SelfPublicURL() string {
 	return cfg.SelfPublicURL
-}
-
-func ExportUserWithRole() bool {
-	return cfg.ExportUserWithRole == "true"
 }
 
 func ErdaSystemFQDN() string {

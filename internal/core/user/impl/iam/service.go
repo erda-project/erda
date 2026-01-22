@@ -31,6 +31,7 @@ import (
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -302,8 +303,23 @@ func (p *provider) PwdSecurityConfigUpdate(ctx context.Context, request *pb.PwdS
 	return nil, errors.New("iam not support update password security config direct")
 }
 
-func (p *provider) UserMe(ctx context.Context, request *pb.UserMeRequest) (*pb.UserMeResponse, error) {
-	return &pb.UserMeResponse{}, nil
+func (p *provider) UserMe(ctx context.Context, req *pb.UserMeRequest) (*pb.UserMeResponse, error) {
+	return p.Me(ctx, req)
+}
+
+func (p *provider) Me(ctx context.Context, _ *pb.UserMeRequest) (*pb.UserMeResponse, error) {
+	u, err := p.getUser(apis.GetUserID(ctx), true)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get user")
+	}
+	return &pb.UserMeResponse{
+		Id:     u.ID,
+		Name:   u.Name,
+		Nick:   u.Nick,
+		Avatar: u.AvatarURL,
+		Phone:  u.Phone,
+		Email:  u.Email,
+	}, nil
 }
 
 func (p *provider) updateProfile(userId string, newVal map[string]any) error {

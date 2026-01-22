@@ -79,21 +79,25 @@ erda.core.org: { }
 
 erda.core.user:
   oauth_provider: "${OAUTH_PROVIDER:iam}"
+
+# user auth facade
+erda.core.user.auth.facade: { }
+
 # iam user services server
 erda.core.user.iam:
-  _enabled: "${IAM_ENABLED:true}"
+  _enable: ${IAM_ENABLED:true}
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   client_secret: "${OAUTH_CLIENT_SECRET}"
 # iam identity
 erda.core.user.identity.iam:
-  _enabled: "${IAM_ENABLED:true}"
+  _enable: ${IAM_ENABLED:true}
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   application_name: "${IAM_APPLICATION_NAME:erda}"
 # iam oauth impl
 erda.core.user.oauth.iam:
-  _enabled: "${IAM_ENABLED:true}"
+  _enable: ${IAM_ENABLED:true}
   frontend_url: "${IAM_PUBLIC_URL}"
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
@@ -105,18 +109,38 @@ erda.core.user.oauth.iam:
   user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
 # iam user credential store
 erda.core.user.credstore.iam:
-  _enabled: "${IAM_ENABLED:true}"
+  _enable: ${IAM_ENABLED:true}
   cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 
 # uc user services server
-#erda.core.user.uc:
-#  _enabled: "${UC_ENABLED:true}"
-#  host: "${UC_ADDR}"
-#  client_id: "${OAUTH_CLIENT_ID}"
-#  client_secret: "${OAUTH_CLIENT_SECRET}"
+erda.core.user.uc:
+  _enable: ${UC_ENABLED:false}
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
 
-# user auth facade
-erda.core.user.auth.facade: { }
+erda.core.user.oauth.uc:
+  _enable: ${UC_ENABLED:false}
+  frontend_url: "${UC_PUBLIC_URL}"
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
+  token_cache_size: "${OAUTH_TOKEN_CACHE_SIZE:20000}"
+  token_cache_early_expire_rate: "${OAUTH_TOKEN_CACHE_EARLY_EXPIRE_RATE:0.8}"
+  server_token_cache_enabled: "${OAUTH_SERVER_TOKEN_CACHE_ENABLED:true}"
+  user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
+
+erda.core.user.identity.uc:
+  _enable: ${UC_ENABLED:false}
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+
+erda.core.user.credstore.uc:
+  _enable: ${UC_ENABLED:false}
+  cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  session_cookie_domain: "${COOKIE_DOMAIN}"
+  cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"
 
 erda.core.file: { }
 
@@ -211,6 +235,7 @@ openapi-auth-session:
 openapi-auth-password:
   _enable: ${UC_ENABLED:true}
   weight: 50
+  access_token_expred_in: "${ACCESS_TOKEN_EXPRED_IN:1h}"
 openapi-over-permission-org-name:
   _enable: ${AUTH_OVER_PERMISSION:true}
   weight: 30

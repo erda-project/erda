@@ -27,21 +27,20 @@ import (
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/pointer"
 )
 
-func (p *provider) Me(_ context.Context, authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
-	switch authCtx.(type) {
+func (p *provider) Me(_ context.Context, credential *domain.PersistedCredential) (*common.UserInfo, error) {
+	switch credential.Authenticator.(type) {
 	case *applier.BearerTokenAuth:
-		return p.getUserWithOAuthToken(authCtx)
+		return p.getUserWithOAuthToken(credential)
 	case *applier.CookieTokenAuth:
-		return p.getUserWithCookie(authCtx)
+		return p.getUserWithCookie(credential)
 	default:
 		return nil, errors.New("not support auth context")
 	}
 }
 
-func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
+func (p *provider) getUserWithOAuthToken(credential *domain.PersistedCredential) (*common.UserInfo, error) {
 	var (
 		reqPath = "/api/oauth/me"
 		body    bytes.Buffer
@@ -50,7 +49,7 @@ func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
 		Path(reqPath)
-	authCtx.Apply(req)
+	credential.Authenticator.Apply(req)
 
 	r, err := req.Do().Body(&body)
 	if err != nil {
@@ -66,13 +65,14 @@ func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*
 		return nil, err
 	}
 
-	// /api/oauth/me 返回的 lastLoginAt 可能为空，保持兼容
-	info.LastLoginAt = pointer.StringDeref(pointer.String(info.LastLoginAt), "")
-
+	info.SessionRefresh = &common.SessionRefresh{
+		Token:     credential.AccessToken,
+		SessionID: credential.SessionID,
+	}
 	return &info, nil
 }
 
-func (p *provider) getUserWithCookie(authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
+func (p *provider) getUserWithCookie(credential *domain.PersistedCredential) (*common.UserInfo, error) {
 	var (
 		reqPath = "/api/user/web/current-user"
 		body    bytes.Buffer
@@ -81,7 +81,7 @@ func (p *provider) getUserWithCookie(authCtx domain.RequestAuthenticator) (*comm
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
 		Path(reqPath)
-	authCtx.Apply(req)
+	credential.Authenticator.Apply(req)
 
 	r, err := req.Do().Body(&body)
 	if err != nil {
@@ -104,6 +104,8 @@ func (p *provider) getUserWithCookie(authCtx domain.RequestAuthenticator) (*comm
 	if info.Result.LastLoginAt > 0 {
 		lastLogin = time.Unix(int64(info.Result.LastLoginAt/1e3), 0).Format("2006-01-02 15:04:05")
 	}
+
+	// TODO: cookie refresh
 
 	return &common.UserInfo{
 		ID:          info.Result.ID,
