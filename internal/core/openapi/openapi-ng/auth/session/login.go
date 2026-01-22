@@ -16,6 +16,7 @@ package oauth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -57,6 +58,20 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 	redirectAfterLogin := state
 	if redirectAfterLogin == "" {
 		redirectAfterLogin = referer
+	}
+
+	if redirectAfterLogin == "" {
+		err := errors.New("missing redirect url after login")
+		p.Log.Error(err)
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if code == "" {
+		err := errors.New("missing oauth code")
+		p.Log.Error(err)
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	user := p.UserAuth.NewState()

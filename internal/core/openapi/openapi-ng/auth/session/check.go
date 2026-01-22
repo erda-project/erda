@@ -34,16 +34,15 @@ func (a *loginChecker) Weight() int64 { return a.p.Cfg.Weight }
 func (a *loginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
 	check, _ := opts.Get("CheckLogin").(bool)
 	if check {
-		if cred, err := a.p.CredStore.Load(context.Background(), r); err == nil && cred != nil {
-			return true, cred.SessionID
+		if cred, err := a.p.CredStore.Load(r.Context(), r); err == nil && cred != nil {
+			return true, cred
 		}
 	}
 	return false, nil
 }
 
-func (a *loginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
+func (a *loginChecker) Check(r *http.Request, data interface{}, _ openapiauth.Options) (bool, *http.Request, error) {
 	user := a.p.UserAuth.NewState()
-	r = r.WithContext(context.WithValue(r.Context(), "session", data.(string)))
 	result := user.IsLogin(r)
 	if result.Code != domain.AuthSuccess {
 		a.p.Log.Debugf("failed to auth: %v", result.Detail)
@@ -87,7 +86,7 @@ func (a *tryLoginChecker) Match(r *http.Request, opts openapiauth.Options) (bool
 	check, _ := opts.Get("TryCheckLogin").(bool)
 	if check {
 		if cred, err := a.p.CredStore.Load(context.Background(), r); err == nil && cred != nil {
-			return true, cred.SessionID
+			return true, cred
 		}
 		return true, ""
 	}
@@ -96,7 +95,6 @@ func (a *tryLoginChecker) Match(r *http.Request, opts openapiauth.Options) (bool
 
 func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
 	user := a.p.UserAuth.NewState()
-	r = r.WithContext(context.WithValue(r.Context(), "session", data.(string)))
 	result := user.IsLogin(r)
 	if result.Code == domain.AuthSuccess {
 		setUserInfoHeaders(r, user)

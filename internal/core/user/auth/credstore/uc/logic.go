@@ -30,22 +30,15 @@ import (
 )
 
 func (p *provider) Load(_ context.Context, r *http.Request) (*domain.PersistedCredential, error) {
-	session, err := r.Cookie(p.Config.CookieName)
-	if err != nil {
-		return nil, err
-	}
-
-	token, err := p.Redis.Get(makeSessionKey(session.Value)).Result()
+	cookie, err := r.Cookie(p.Config.CookieName)
 	if err != nil {
 		return nil, err
 	}
 
 	return &domain.PersistedCredential{
-		Authenticator: &applier.BearerTokenAuth{
-			Token: token,
+		Authenticator: &applier.CookieTokenAuth{
+			Cookie: cookie,
 		},
-		AccessToken: token,
-		SessionID:   session.Value,
 	}, nil
 }
 
@@ -53,19 +46,17 @@ func (p *provider) Persist(_ context.Context, cred *domain.AuthCredential) (*dom
 	if cred == nil {
 		return nil, errors.New("credential is nil")
 	}
-
-	sessionID := genSessionID()
-	if _, err := p.Redis.Set(makeSessionKey(sessionID), cred.OAuthToken.AccessToken, p.Config.Expire).Result(); err != nil {
-		return nil, errors.Wrap(err, "failed to store session")
+	switch {
+	case cred.OAuthToken != nil:
+		return &domain.PersistedCredential{
+			Authenticator: &applier.BearerTokenAuth{
+				Token: cred.OAuthToken.AccessToken,
+			},
+			AccessToken: cred.OAuthToken.AccessToken,
+		}, nil
+	default:
+		return nil, errors.New("unreachable auth credential")
 	}
-
-	return &domain.PersistedCredential{
-		Authenticator: &applier.BearerTokenAuth{
-			Token: cred.OAuthToken.AccessToken,
-		},
-		AccessToken: cred.OAuthToken.AccessToken,
-		SessionID:   sessionID,
-	}, nil
 }
 
 func (p *provider) Revoke(_ context.Context, sessionID string) error {
@@ -89,7 +80,6 @@ func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refre
 		Secure:   req.TLS != nil,
 		SameSite: http.SameSite(p.Config.CookieSameSite),
 	}
-
 	http.SetCookie(rw, c)
 	return nil
 }

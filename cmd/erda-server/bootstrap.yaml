@@ -222,7 +222,6 @@ openapi-interceptor-set-response-header:
 ### openapi-auth
 openapi-auth:
 openapi-auth-session:
-  #  _enable: ${UC_ENABLED:true}
   platform_protocol: "${DICE_PROTOCOL:https}"
   weight: 100
   redirect_after_login: "${UI_PUBLIC_ADDR}"
@@ -233,7 +232,6 @@ openapi-auth-session:
   cookie_max_age: "${UC_COOKIE_MAX_AGE:168h}"
   cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"
 openapi-auth-password:
-  _enable: ${UC_ENABLED:true}
   weight: 50
   access_token_expred_in: "${ACCESS_TOKEN_EXPRED_IN:1h}"
 openapi-over-permission-org-name:
@@ -243,7 +241,6 @@ openapi-over-permission-org-name:
 openapi-over-permission-org-id:
   _enable: ${AUTH_OVER_PERMISSION:true}
 openapi-auth-token:
-  _enable: ${UC_ENABLED:true}
   weight: 10
 ### openapi-routes
 openapi-protobuf-routes:

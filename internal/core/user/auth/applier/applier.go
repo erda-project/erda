@@ -21,11 +21,11 @@ import (
 )
 
 type CookieTokenAuth struct {
-	Header http.Header
+	Cookie *http.Cookie
 }
 
 func (c *CookieTokenAuth) Apply(req *httpclient.Request) {
-	req = req.Headers(c.Header)
+	req.Cookie(c.Cookie)
 }
 
 type BearerTokenAuth struct {

@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -105,14 +106,23 @@ func (p *provider) getUserWithCookie(credential *domain.PersistedCredential) (*c
 		lastLogin = time.Unix(int64(info.Result.LastLoginAt/1e3), 0).Format("2006-01-02 15:04:05")
 	}
 
-	// TODO: cookie refresh
+	setCookie := r.ResponseHeader("Set-Cookie")
+	cookie, err := http.ParseSetCookie(setCookie)
+	if err != nil {
+		return nil, err
+	}
+
+	refresh := &common.SessionRefresh{
+		Cookie: cookie,
+	}
 
 	return &common.UserInfo{
-		ID:          info.Result.ID,
-		Email:       info.Result.Email,
-		Phone:       info.Result.Mobile,
-		UserName:    info.Result.Username,
-		NickName:    info.Result.Nickname,
-		LastLoginAt: lastLogin,
+		ID:             info.Result.ID,
+		Email:          info.Result.Email,
+		Phone:          info.Result.Mobile,
+		UserName:       info.Result.Username,
+		NickName:       info.Result.Nickname,
+		LastLoginAt:    lastLogin,
+		SessionRefresh: refresh,
 	}, nil
 }

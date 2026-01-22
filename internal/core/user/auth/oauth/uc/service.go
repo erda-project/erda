@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
@@ -12,17 +13,19 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func (p *provider) AuthURL(_ context.Context, r *pb.AuthURLRequest) (*pb.AuthURLResponse, error) {
+	redirectUri := fmt.Sprintf("%s?referer=%s", p.Config.RedirectURI, r.Referer)
+
 	q := make(url.Values)
 	q.Set("response_type", "code")
 	q.Set("client_id", p.Config.ClientID)
-	q.Set("redirect_uri", p.Config.RedirectURI)
+	q.Set("redirect_uri", redirectUri)
 	q.Set("scope", "public_profile")
-	q.Set("referer", r.Referer)
 
 	baseURL, err := url.Parse(p.Config.FrontendURL)
 	if err != nil {
@@ -57,11 +60,17 @@ func (p *provider) LogoutURL(ctx context.Context, r *pb.LogoutURLRequest) (*pb.L
 	}, nil
 }
 
-func (p *provider) ExchangeCode(ctx context.Context, r *pb.ExchangeCodeRequest) (*pb.OAuthToken, error) {
+func (p *provider) ExchangeCode(_ context.Context, r *pb.ExchangeCodeRequest) (*pb.OAuthToken, error) {
+	redirectURI := p.Config.RedirectURI
+	referer, ok := r.ExtraParams["referer"]
+	if ok {
+		redirectURI = fmt.Sprintf("%s?referer=%s", redirectURI, referer.Values[0])
+	}
+
 	formBody := make(url.Values)
 	formBody.Set("grant_type", "authorization_code")
 	formBody.Set("code", r.Code)
-	formBody.Set("redirect_uri", p.Config.RedirectURI)
+	formBody.Set("redirect_uri", redirectURI)
 
 	t, err := p.doExchange(formBody)
 	if err != nil {
@@ -136,11 +145,18 @@ func (p *provider) doExchange(formBody url.Values) (*domain.OAuthToken, error) {
 			reqPath, r.StatusCode(), body.String())
 	}
 
-	var oauthToken domain.OAuthToken
-	if err := json.NewDecoder(&body).Decode(&oauthToken); err != nil {
+	bodyBytes, err := io.ReadAll(&body)
+	if err != nil {
 		return nil, err
 	}
-	return &oauthToken, nil
+
+	token, err := DecodeUCFlat[domain.OAuthToken](bodyBytes)
+	if err != nil {
+		p.Log.Errorf("failed to get exchange token, %v", err)
+		return nil, err
+	}
+
+	return token, nil
 }
 
 func (p *provider) convertExpiresIn2Time(expiresIn int64) time.Duration {
@@ -149,4 +165,24 @@ func (p *provider) convertExpiresIn2Time(expiresIn int64) time.Duration {
 
 func userTokenCacheKey(username, password string) string {
 	return userTokenCachePrefix + username + ":" + password
+}
+
+func DecodeUCFlat[T any](body []byte) (*T, error) {
+	var meta common.UCResponseMeta
+	if err := json.Unmarshal(body, &meta); err != nil {
+		return nil, err
+	}
+
+	if meta.Success != nil && !*meta.Success {
+		if meta.Error != "" {
+			return nil, errors.New(meta.Error)
+		}
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
