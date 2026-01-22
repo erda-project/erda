@@ -3,26 +3,30 @@ package uc
 import (
 	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
+	"net/url"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb2 "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/pointer"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -33,15 +37,21 @@ var ucLoginMethodI18nMap = map[string]map[string]string{
 	"mobile":   {"en-US": "default", "zh-CN": "默认登录方式", "marks": ""},
 }
 
-func (p *provider) UserListLoginMethod(ctx context.Context, req *pb.UserListLoginMethodRequest) (*pb.UserListLoginMethodResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
+func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error) {
+	oauthToken, err := p.UserOAuthSvc.ExchangeClientCredentials(
+		context.Background(), &useroauthpb.ExchangeClientCredentialsRequest{
+			Refresh: pointer.BoolDeref(refresh, false),
+		},
+	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to exchange client credentials token")
 	}
 
-	res, err := p.handleListLoginMethod(token)
+	return p.client.BearerTokenAuth(oauthToken.AccessToken), nil
+}
+
+func (p *provider) UserListLoginMethod(ctx context.Context, req *pb.UserListLoginMethodRequest) (*pb.UserListLoginMethodResponse, error) {
+	res, err := p.handleListLoginMethod()
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +82,7 @@ func (p *provider) UserListLoginMethod(ctx context.Context, req *pb.UserListLogi
 }
 
 func (p *provider) PwdSecurityConfigGet(ctx context.Context, req *pb.PwdSecurityConfigGetRequest) (*pb.PwdSecurityConfigGetResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := p.handleGetPwdSecurityConfig(token)
+	config, err := p.handleGetPwdSecurityConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -95,23 +98,14 @@ func (p *provider) PwdSecurityConfigGet(ctx context.Context, req *pb.PwdSecurity
 }
 
 func (p *provider) PwdSecurityConfigUpdate(ctx context.Context, req *pb.PwdSecurityConfigUpdateRequest) (*pb.PwdSecurityConfigUpdateResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if req.PwdSecurityConfig == nil {
-		return nil, apierrors.ErrUpdatePwdSecurityConfig.InvalidParameter("pwdSecurityConfig is empty")
-	}
 	config := apistructs.PwdSecurityConfig{
-		CaptchaChallengeNumber:   int(req.PwdSecurityConfig.CaptchaChallengeNumber),
-		ContinuousPwdErrorNumber: int(req.PwdSecurityConfig.ContinuousPwdErrorNumber),
-		MaxPwdErrorNumber:        int(req.PwdSecurityConfig.MaxPwdErrorNumber),
-		ResetPassWordPeriod:      int(req.PwdSecurityConfig.ResetPassWordPeriod),
+		CaptchaChallengeNumber:   int(req.CaptchaChallengeNumber),
+		ContinuousPwdErrorNumber: int(req.ContinuousPwdErrorNumber),
+		MaxPwdErrorNumber:        int(req.MaxPwdErrorNumber),
+		ResetPassWordPeriod:      int(req.ResetPassWordPeriod),
 	}
 
-	if err := p.handleUpdatePwdSecurityConfig(&config, token); err != nil {
+	if err := p.handleUpdatePwdSecurityConfig(&config); err != nil {
 		return nil, err
 	}
 
@@ -119,15 +113,9 @@ func (p *provider) PwdSecurityConfigUpdate(ctx context.Context, req *pb.PwdSecur
 }
 
 func (p *provider) UserBatchFreeze(ctx context.Context, req *pb.UserBatchFreezeRequest) (*pb.UserBatchFreezeResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
 	operatorID := apis.GetUserID(ctx)
 	for _, id := range req.UserIDs {
-		if err := p.handleFreezeUser(id, operatorID, token); err != nil {
+		if err := p.handleFreezeUser(id, operatorID); err != nil {
 			return nil, err
 		}
 	}
@@ -135,15 +123,9 @@ func (p *provider) UserBatchFreeze(ctx context.Context, req *pb.UserBatchFreezeR
 }
 
 func (p *provider) UserBatchUnfreeze(ctx context.Context, req *pb.UserBatchUnFreezeRequest) (*pb.UserBatchUnFreezeResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
 	operatorID := apis.GetUserID(ctx)
 	for _, id := range req.UserIDs {
-		if err := p.handleUnfreezeUser(id, operatorID, token); err != nil {
+		if err := p.handleUnfreezeUser(id, operatorID); err != nil {
 			return nil, err
 		}
 	}
@@ -151,19 +133,13 @@ func (p *provider) UserBatchUnfreeze(ctx context.Context, req *pb.UserBatchUnFre
 }
 
 func (p *provider) UserBatchUpdateLoginMethod(ctx context.Context, req *pb.UserBatchUpdateLoginMethodRequest) (*pb.UserBatchUpdateLoginMethodResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
 	operatorID := apis.GetUserID(ctx)
 	for _, id := range req.UserIDs {
 		updateReq := apistructs.UserUpdateLoginMethodRequest{
 			ID:     id,
 			Source: req.Source,
 		}
-		if err := p.handleUpdateLoginMethod(updateReq, operatorID, token); err != nil {
+		if err := p.handleUpdateLoginMethod(updateReq, operatorID); err != nil {
 			return nil, err
 		}
 	}
@@ -171,14 +147,8 @@ func (p *provider) UserBatchUpdateLoginMethod(ctx context.Context, req *pb.UserB
 }
 
 func (p *provider) UserCreate(ctx context.Context, req *pb.UserCreateRequest) (*pb.UserCreateResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
 	operatorID := apis.GetUserID(ctx)
-	if err := p.handleCreateUsers(req, operatorID, token); err != nil {
+	if err := p.handleCreateUsers(req, operatorID); err != nil {
 		return nil, err
 	}
 	return &pb.UserCreateResponse{}, nil
@@ -190,13 +160,6 @@ func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*
 		return nil, errors.New("response writer missing in context")
 	}
 
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	pagingReq := convertPagingReq(req)
 	if pagingReq.PageSize == 0 {
 		pagingReq.PageSize = 1024
@@ -206,24 +169,24 @@ func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*
 	}
 
 	var users []apistructs.UserInfoExt
-	for i := 0; i < 100; i++ {
-		data, err := HandlePagingUsers(pagingReq, token)
-		if err != nil {
-			return nil, err
-		}
-		pageData := util.ConvertToUserInfoExt(data)
-		users = append(users, pageData.List...)
-		if len(pageData.List) < pagingReq.PageSize {
-			break
-		}
-		pagingReq.PageNo++
-	}
+	//for i := 0; i < 100; i++ {
+	//	data, err := HandlePagingUsers(pagingReq, token)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	pageData := util.ConvertToUserInfoExt(data)
+	//	users = append(users, pageData.List...)
+	//	if len(pageData.List) < pagingReq.PageSize {
+	//		break
+	//	}
+	//	pagingReq.PageNo++
+	//}
 
 	locale := apis.GetLang(ctx)
 	if locale == "" {
 		locale = "zh-CN"
 	}
-	loginMethodMap, err := p.getLoginMethodMap(token, locale)
+	loginMethodMap, err := p.getLoginMethodMap(locale)
 	if err != nil {
 		return nil, err
 	}
@@ -243,38 +206,20 @@ func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*
 }
 
 func (p *provider) UserFreeze(ctx context.Context, req *pb.UserFreezeRequest) (*pb.UserFreezeResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err := p.handleFreezeUser(req.UserID, apis.GetUserID(ctx), token); err != nil {
+	if err := p.handleFreezeUser(req.UserID, apis.GetUserID(ctx)); err != nil {
 		return nil, err
 	}
 	return &pb.UserFreezeResponse{}, nil
 }
 
 func (p *provider) UserUnfreeze(ctx context.Context, req *pb.UserUnfreezeRequest) (*pb.UserUnfreezeResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err := p.handleUnfreezeUser(req.UserID, apis.GetUserID(ctx), token); err != nil {
+	if err := p.handleUnfreezeUser(req.UserID, apis.GetUserID(ctx)); err != nil {
 		return nil, err
 	}
 	return &pb.UserUnfreezeResponse{}, nil
 }
 
 func (p *provider) UserUpdateLoginMethod(ctx context.Context, req *pb.UserUpdateLoginMethodRequest) (*pb.UserUpdateLoginMethodResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
-		Refresh: false,
-	})
-	if err != nil {
-		return nil, err
-	}
 	id := req.ID
 	if id == "" {
 		id = req.UserID
@@ -283,14 +228,14 @@ func (p *provider) UserUpdateLoginMethod(ctx context.Context, req *pb.UserUpdate
 		ID:     id,
 		Source: req.Source,
 	}
-	if err := p.handleUpdateLoginMethod(updateReq, apis.GetUserID(ctx), token); err != nil {
+	if err := p.handleUpdateLoginMethod(updateReq, apis.GetUserID(ctx)); err != nil {
 		return nil, err
 	}
 	return &pb.UserUpdateLoginMethodResponse{}, nil
 }
 
 func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInfoRequest) (*pb.UserUpdateInfoResponse, error) {
-	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &pb2.ExchangeClientCredentialsRequest{
+	token, err := p.UserOAuthSvc.ExchangeClientCredentials(context.Background(), &useroauthpb.ExchangeClientCredentialsRequest{
 		Refresh: false,
 	})
 	if err != nil {
@@ -309,155 +254,230 @@ func getLoginTypeByUC(key string) map[string]string {
 	return nil
 }
 
-func (p *provider) handleListLoginMethod(token *pb2.OAuthToken) (*ListLoginTypeResult, error) {
+func (p *provider) handleListLoginMethod() (*ListLoginTypeResult, error) {
+	client, err := p.newAuthedClient(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		path = "/api/home/admin/login/style"
+		body bytes.Buffer
+	)
+
+	r, err := client.Get(p.Cfg.Host).Path(path).
+		Do().Body(&body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to freeze user")
+	}
+	if !r.IsOK() {
+		return nil, errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
+	}
+
 	var resp Response[*ListLoginTypeResult]
-	r, err := httpclient.New().Get(discover.UC()).
-		Path("/api/home/admin/login/style").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
-		Do().JSON(&resp)
-	if err != nil {
-		logrus.Errorf("failed to invoke list user login method, (%v)", err)
-		return nil, apierrors.ErrListLoginMethod.InternalError(err)
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return nil, err
 	}
-	if !r.IsOK() {
-		logrus.Debugf("failed to list user login method, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
-		return nil, apierrors.ErrListLoginMethod.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
-	}
-	if !resp.Success {
-		logrus.Debugf("failed to list user login method: %+v", resp.Error)
-		return nil, apierrors.ErrListLoginMethod.InternalError(errors.New(resp.Error))
-	}
+
 	return resp.Result, nil
 }
 
-func (p *provider) handleGetPwdSecurityConfig(token *pb2.OAuthToken) (*apistructs.PwdSecurityConfig, error) {
+func (p *provider) handleGetPwdSecurityConfig() (*apistructs.PwdSecurityConfig, error) {
+	client, err := p.newAuthedClient(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		path = "/api/user/admin/pwd-security-config"
+		body bytes.Buffer
+	)
+
+	r, err := client.Get(p.Cfg.Host).Path(path).
+		Do().Body(&body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get password security config")
+	}
+	if !r.IsOK() {
+		return nil, errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
+	}
+
 	var resp Response[*apistructs.PwdSecurityConfig]
-	r, err := httpclient.New().Get(discover.UC()).
-		Path("/api/user/admin/pwd-security-config").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
-		Do().JSON(&resp)
-	if err != nil {
-		return nil, apierrors.ErrGetPwdSecurityConfig.InternalError(err)
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return nil, err
 	}
-	if !r.IsOK() {
-		return nil, apierrors.ErrGetPwdSecurityConfig.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
-	}
-	if !resp.Success {
-		return nil, apierrors.ErrGetPwdSecurityConfig.InternalError(errors.New(resp.Error))
-	}
+
 	return resp.Result, nil
 }
 
-func (p *provider) handleUpdatePwdSecurityConfig(config *apistructs.PwdSecurityConfig, token *pb2.OAuthToken) error {
-	var resp Response[bool]
-	r, err := httpclient.New().Post(discover.UC()).
-		Path("/api/user/admin/pwd-security-config").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
+func (p *provider) handleUpdatePwdSecurityConfig(config *apistructs.PwdSecurityConfig) error {
+	client, err := p.newAuthedClient(nil)
+	if err != nil {
+		return err
+	}
+
+	var (
+		path = "/api/user/admin/pwd-security-config"
+		body bytes.Buffer
+	)
+
+	r, err := client.Post(p.Cfg.Host).Path(path).
 		JSONBody(config).
-		Do().JSON(&resp)
+		Do().Body(&body)
 	if err != nil {
-		return apierrors.ErrUpdatePwdSecurityConfig.InternalError(err)
+		return errors.Wrapf(err, "failed to update pwd security config")
 	}
 	if !r.IsOK() {
-		return apierrors.ErrUpdatePwdSecurityConfig.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
+		return errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
-	if !resp.Success {
-		return apierrors.ErrUpdatePwdSecurityConfig.InternalError(errors.New(resp.Error))
+
+	var resp Response[bool]
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return err
 	}
+
+	if !resp.Result {
+		return errors.New("failed to update pwd security config")
+	}
+
 	return nil
 }
 
-func (p *provider) handleFreezeUser(userID, operatorID string, token *pb2.OAuthToken) error {
-	var resp Response[bool]
-	request := httpclient.New().Put(discover.UC()).
-		Path("/api/user/admin/freeze/"+userID).
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if operatorID != "" {
-		request = request.Header("operatorId", operatorID)
-	}
-	r, err := request.Do().JSON(&resp)
+func (p *provider) handleFreezeUser(userID, operatorID string) error {
+	client, err := p.newAuthedClient(nil)
 	if err != nil {
-		return apierrors.ErrFreezeUser.InternalError(err)
+		return err
+	}
+
+	var (
+		path = "/api/user/admin/freeze/" + userID
+		body bytes.Buffer
+	)
+
+	r, err := client.Put(p.Cfg.Host).Path(path).
+		Param("operatorId", operatorID).
+		Do().Body(&body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to freeze user")
 	}
 	if !r.IsOK() {
-		return apierrors.ErrFreezeUser.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
+		return errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
-	if !resp.Success {
-		return apierrors.ErrFreezeUser.InternalError(errors.New(resp.Error))
+
+	var resp Response[bool]
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return err
 	}
+
+	if !resp.Result {
+		return errors.New("failed to freeze user")
+	}
+
 	return nil
 }
 
-func (p *provider) handleUnfreezeUser(userID, operatorID string, token *pb2.OAuthToken) error {
-	var resp Response[bool]
-	request := httpclient.New().Put(discover.UC()).
-		Path("/api/user/admin/unfreeze/"+userID).
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if operatorID != "" {
-		request = request.Header("operatorId", operatorID)
-	}
-	r, err := request.Do().JSON(&resp)
+func (p *provider) handleUnfreezeUser(userID, operatorID string) error {
+	client, err := p.newAuthedClient(nil)
 	if err != nil {
-		return apierrors.ErrUnfreezeUser.InternalError(err)
+		return err
+	}
+
+	var (
+		path = "/api/user/admin/unfreeze/" + userID
+		body bytes.Buffer
+	)
+
+	r, err := client.Put(p.Cfg.Host).Path(path).
+		Param("operatorId", operatorID).
+		Do().Body(&body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to unfreeze user")
 	}
 	if !r.IsOK() {
-		return apierrors.ErrUnfreezeUser.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
+		return errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
-	if !resp.Success {
-		return apierrors.ErrUnfreezeUser.InternalError(errors.New(resp.Error))
+
+	var resp Response[bool]
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return err
 	}
+
+	if !resp.Result {
+		return errors.New("failed to unfreeze user")
+	}
+
 	return nil
 }
 
-func (p *provider) handleUpdateLoginMethod(req apistructs.UserUpdateLoginMethodRequest, operatorID string, token *pb2.OAuthToken) error {
-	var resp Response[bool]
-	request := httpclient.New().Post(discover.UC()).
-		Path("/api/user/admin/change-full-info").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if operatorID != "" {
-		request = request.Header("operatorID", operatorID)
-	}
-	r, err := request.JSONBody(&req).Do().JSON(&resp)
+func (p *provider) handleUpdateLoginMethod(req apistructs.UserUpdateLoginMethodRequest, operatorID string) error {
+	client, err := p.newAuthedClient(nil)
 	if err != nil {
-		logrus.Errorf("failed to invoke change user login method, (%v)", err)
-		return apierrors.ErrUpdateLoginMethod.InternalError(err)
+		return err
+	}
+
+	var (
+		path = "/api/user/admin/change-full-info"
+		body bytes.Buffer
+	)
+
+	r, err := client.Post(p.Cfg.Host).Path(path).
+		Param("operatorId", operatorID).
+		JSONBody(&req).
+		Do().Body(&body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to invoke change user login method")
 	}
 	if !r.IsOK() {
-		logrus.Debugf("failed to change user login method, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
-		return apierrors.ErrUpdateLoginMethod.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
+		return errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
-	if !resp.Success {
-		logrus.Debugf("failed to change user login method: %+v", resp.Error)
-		return apierrors.ErrUpdateLoginMethod.InternalError(errors.New(resp.Error))
+
+	var resp Response[bool]
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return err
 	}
+
+	if !resp.Result {
+		return errors.New("failed to invoke change user login method")
+	}
+
 	return nil
 }
 
-func (p *provider) handleCreateUsers(req *pb.UserCreateRequest, operatorID string, token *pb2.OAuthToken) error {
-	var resp Response[bool]
+func (p *provider) handleCreateUsers(req *pb.UserCreateRequest, operatorID string) error {
+	client, err := p.newAuthedClient(nil)
+	if err != nil {
+		return err
+	}
+
 	users := make([]createUserItem, len(req.Users))
 	for i, u := range req.Users {
 		users[i] = convertCreateUserItem(u)
 	}
 	reqBody := createUser{Users: users}
-	request := httpclient.New().Post(discover.UC()).
-		Path("/api/user/admin/batch-create-user").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if operatorID != "" {
-		request = request.Header("operatorId", operatorID)
-	}
-	r, err := request.JSONBody(&reqBody).Do().JSON(&resp)
+
+	var (
+		path = "/api/user/admin/batch-create-user"
+		body bytes.Buffer
+	)
+
+	r, err := client.Post(p.Cfg.Host).Path(path).
+		Param("operatorId", operatorID).
+		JSONBody(&reqBody).
+		Do().Body(&body)
 	if err != nil {
-		logrus.Errorf("failed to invoke create user, (%v)", err)
-		return apierrors.ErrCreateUser.InternalError(err)
+		return errors.Wrapf(err, "failed to invoke create user")
 	}
 	if !r.IsOK() {
-		logrus.Debugf("failed to create user, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
-		return apierrors.ErrCreateUser.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
+		return errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
-	if !resp.Success {
-		logrus.Debugf("failed to create user: %+v", resp.Error)
-		return apierrors.ErrCreateUser.InternalError(errors.New(resp.Error))
+
+	var resp Response[bool]
+	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
+		return err
+	}
+
+	if !resp.Result {
+		return errors.New("failed to invoke create user")
 	}
 	return nil
 }
@@ -500,7 +520,7 @@ type ucUpdateUserInfoReq struct {
 	Email    string `json:"email,omitempty"`
 }
 
-func (p *provider) handleUpdateUserInfo(req *pb.UserUpdateInfoRequest, operatorID string, token *pb2.OAuthToken) error {
+func (p *provider) handleUpdateUserInfo(req *pb.UserUpdateInfoRequest, operatorID string, token *useroauthpb.OAuthToken) error {
 	body, err := getUCUpdateUserInfoReq(req)
 	if err != nil {
 		return apierrors.ErrUpdateUserInfo.InternalError(err)
@@ -570,8 +590,8 @@ func convertPagingReq(req *pb.UserPagingRequest) *apistructs.UserPagingRequest {
 	}
 }
 
-func (p *provider) getLoginMethodMap(token *pb2.OAuthToken, locale string) (map[string]string, error) {
-	res, err := p.handleListLoginMethod(token)
+func (p *provider) getLoginMethodMap(locale string) (map[string]string, error) {
+	res, err := p.handleListLoginMethod()
 	if err != nil {
 		return nil, err
 	}
@@ -622,51 +642,83 @@ func convertUserToExcelList(users []apistructs.UserInfoExt, loginMethodMap map[s
 }
 
 func (p *provider) UserPaging(ctx context.Context, req *pb.UserPagingRequest) (*pb.UserPagingResponse, error) {
-	return nil, errors.New("need impl")
-}
-
-func HandlePagingUsers(req *apistructs.UserPagingRequest, token *pb2.OAuthToken) (*common.UserPaging, error) {
-	v := httpclient.New().Get(discover.UC()).Path("/api/user/admin/paging").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if req.Name != "" {
-		v.Param("username", req.Name)
-	}
-	if req.Nick != "" {
-		v.Param("nickname", req.Nick)
-	}
-	if req.Phone != "" {
-		v.Param("mobile", req.Phone)
-	}
-	if req.Email != "" {
-		v.Param("email", req.Email)
-	}
-	if req.Locked != nil {
-		v.Param("locked", strconv.Itoa(*req.Locked))
-	}
-	if req.Source != "" {
-		v.Param("source", req.Source)
-	}
-	if req.PageNo > 0 {
-		v.Param("pageNo", strconv.Itoa(req.PageNo))
-	}
-	if req.PageSize > 0 {
-		v.Param("pageSize", strconv.Itoa(req.PageSize))
-	}
-	// 批量查询用户
-	var resp struct {
-		Success bool               `json:"success"`
-		Result  *common.UserPaging `json:"result"`
-		Error   string             `json:"error"`
-	}
-	r, err := v.Do().JSON(&resp)
+	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err
 	}
+
+	conditions := url.Values{}
+	if req.Name != "" {
+		conditions.Add("username", req.Name)
+	}
+	if req.Nick != "" {
+		conditions.Add("nickname", req.Nick)
+	}
+	if req.Phone != "" {
+		conditions.Add("mobile", req.Phone)
+	}
+	if req.Email != "" {
+		conditions.Add("email", req.Email)
+	}
+	if req.Locked {
+		conditions.Add("locked", "true")
+	}
+	if req.Source != "" {
+		conditions.Add("source", req.Source)
+	}
+	if req.PageNo > 0 {
+		conditions.Add("pageNo", cast.ToString(req.PageNo))
+	}
+	if req.PageSize > 0 {
+		conditions.Add("pageSize", cast.ToString(req.PageSize))
+	}
+
+	var (
+		path = "/api/user/admin/paging"
+		body bytes.Buffer
+	)
+
+	r, err := client.Get(p.Cfg.Host).Path(path).
+		Params(conditions).
+		Do().Body(&body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to paging user")
+	}
 	if !r.IsOK() {
-		return nil, fmt.Errorf("internal status code: %v", r.StatusCode())
+		return nil, errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
-	if !resp.Success {
-		return nil, errors.New(resp.Error)
+
+	var users common.UCResponse[*common.UserPaging]
+	if err := json.NewDecoder(&body).Decode(&users); err != nil {
+		return nil, err
 	}
-	return resp.Result, nil
+
+	userList := make([]*pb.ManagedUser, 0, len(users.Result.Data))
+	for _, datum := range users.Result.Data {
+		pbUser, err := managedUserMapper(datum)
+		if err != nil {
+			return nil, err
+		}
+		userList = append(userList, pbUser)
+	}
+
+	return &pb.UserPagingResponse{
+		Total: int64(users.Result.Total),
+		List:  userList,
+	}, nil
+}
+
+func managedUserMapper(u common.UserInPaging) (*pb.ManagedUser, error) {
+	return &pb.ManagedUser{
+		Id:          cast.ToString(u.Id),
+		Name:        u.Username,
+		Nick:        u.Nickname,
+		Avatar:      u.Avatar,
+		Phone:       u.Mobile,
+		Email:       u.Email,
+		LastLoginAt: timestamppb.New(time.Time(u.LastLoginAt)),
+		PwdExpireAt: timestamppb.New(time.Time(u.PwdExpireAt)),
+		Source:      u.Source,
+		Locked:      u.Locked,
+	}, nil
 }

@@ -452,7 +452,10 @@ message PwdSecurityConfigGetResponse {
 }
 
 message PwdSecurityConfigUpdateRequest {
-  PwdSecurityConfig pwdSecurityConfig = 1;
+  int64 captchaChallengeNumber = 1;
+  int64 continuousPwdErrorNumber = 2;
+  int64 maxPwdErrorNumber = 3;
+  int64 resetPassWordPeriod = 4;
 }
 
 message PwdSecurityConfigUpdateResponse {}
