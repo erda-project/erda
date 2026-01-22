@@ -28,7 +28,7 @@ type RequestAuthenticator interface {
 }
 
 type Identity interface {
-	Me(ctx context.Context, authCtx RequestAuthenticator) (*common.UserInfo, error)
+	Me(ctx context.Context, credential *PersistedCredential) (*common.UserInfo, error)
 }
 
 type CredentialStore interface {
@@ -46,7 +46,7 @@ type SessionRevoker interface {
 }
 
 type UserAuthFacade interface {
-	NewUserState() UserAuthState
+	NewState() UserAuthState
 }
 
 type UserAuthState interface {

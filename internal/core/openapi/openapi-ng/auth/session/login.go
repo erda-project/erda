@@ -59,7 +59,7 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 		redirectAfterLogin = referer
 	}
 
-	user := p.UserAuth.NewUserState()
+	user := p.UserAuth.NewState()
 	if err := user.Login(code, queryValues); err != nil {
 		p.Log.Errorf("failed to login: %v", err)
 		http.Error(rw, err.Error(), http.StatusUnauthorized)

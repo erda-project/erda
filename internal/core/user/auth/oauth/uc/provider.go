@@ -15,61 +15,63 @@
 package uc
 
 import (
-	"reflect"
-	"sync"
-	"time"
+	"github.com/bluele/gcache"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/legacycontainer"
-	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 )
 
 const (
-	jsonStoreCacheTimeout = 60
-	tokenRefreshMargin    = 60 * time.Second
+	serverTokenCacheKey    = "server_token"
+	userTokenCachePrefix   = "user:"
+	defaultEarlyExpireRate = 0.8
 )
 
 type Config struct {
 	FrontendURL  string `file:"frontend_url"`
 	BackendHost  string `file:"host"`
-	ClientID     string `file:"oauth_client_id"`
-	ClientSecret string `file:"oauth_client_secret"`
+	ClientID     string `file:"client_id"`
+	ClientSecret string `file:"client_secret"`
 	// Optional, only needed for authorization_code grant types
 	RedirectURI string `file:"redirect_uri"`
+	// token cache config
+	TokenCacheSize            int     `file:"token_cache_size" default:"20000"`
+	TokenCacheEarlyExpireRate float64 `file:"token_cache_early_expire_rate" default:"0.8"`
+	ServerTokenCacheEnabled   bool    `file:"server_token_cache_enabled" default:"true"`
+	UserTokenCacheEnabled     bool    `file:"user_token_cache_enabled" default:"true"`
 }
 
 type provider struct {
-	Log    logs.Logger
-	Config *Config
-	mu     sync.Mutex
+	Register transport.Register `autowired:"service-register" required:"true"`
+	Log      logs.Logger
+	Config   *Config
 
-	// server token
-	serverToken           *domain.OAuthToken
-	serverTokenExpireTime time.Time
-
-	// client token cache
-	clientTokenCache jsonstore.JsonStore
+	tokenCache gcache.Cache
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	clientTokenCache, err := jsonstore.New(
-		jsonstore.UseMemStore(),
-		jsonstore.UseTimeoutStore(jsonStoreCacheTimeout),
-	)
-	if err != nil {
-		return err
+	// auto fix token cache early expire rate
+	rate := p.Config.TokenCacheEarlyExpireRate
+	if rate <= 0 || rate >= 1 {
+		rate = defaultEarlyExpireRate
+		p.Log.Warnf("illegal token cache early expire rate, use default: %v", rate)
 	}
-	p.clientTokenCache = clientTokenCache
-	legacycontainer.Register[domain.OAuthTokenProvider](p)
+	p.Config.TokenCacheEarlyExpireRate = rate
+	p.tokenCache = gcache.New(p.Config.TokenCacheSize).LRU().Build()
+
+	if p.Register != nil {
+		pb.RegisterUserOAuthServiceImp(p.Register, p)
+		pb.RegisterUserOAuthSessionServiceImp(p.Register, p)
+	}
 	return nil
 }
 
 func init() {
 	servicehub.Register("erda.core.user.oauth.uc", &servicehub.Spec{
-		Services:   []string{"erda.core.user.oauth"},
-		Types:      []reflect.Type{reflect.TypeOf((*domain.OAuthProvider)(nil)).Elem()},
+		Services:   pb.ServiceNames(),
+		Types:      pb.Types(),
 		ConfigFunc: func() interface{} { return &Config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}

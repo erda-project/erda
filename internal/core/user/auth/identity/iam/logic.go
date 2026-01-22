@@ -24,7 +24,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
@@ -32,18 +31,18 @@ import (
 	"github.com/erda-project/erda/pkg/pointer"
 )
 
-func (p *provider) Me(_ context.Context, authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
-	switch authCtx.(type) {
+func (p *provider) Me(_ context.Context, credential *domain.PersistedCredential) (*common.UserInfo, error) {
+	switch credential.Authenticator.(type) {
 	case *applier.BearerTokenAuth:
-		return p.getUserWithOAuthToken(authCtx)
+		return p.getUserWithOAuthToken(credential)
 	case *applier.QueryTokenAuth:
-		return p.getUserByAuthToken(authCtx)
+		return p.getUserByAuthToken(credential)
 	default:
 		return nil, errors.New("not support auth context")
 	}
 }
 
-func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
+func (p *provider) getUserWithOAuthToken(credential *domain.PersistedCredential) (*common.UserInfo, error) {
 	var (
 		reqPath = "/iam/api/v1/admin/user/me"
 		body    bytes.Buffer
@@ -52,7 +51,7 @@ func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
 		Path(reqPath)
-	authCtx.Apply(req)
+	credential.Authenticator.Apply(req)
 
 	r, err := req.Do().Body(&body)
 	if err != nil {
@@ -80,7 +79,7 @@ func (p *provider) getUserWithOAuthToken(authCtx domain.RequestAuthenticator) (*
 	}, nil
 }
 
-func (p *provider) getUserByAuthToken(authCtx domain.RequestAuthenticator) (*common.UserInfo, error) {
+func (p *provider) getUserByAuthToken(credential *domain.PersistedCredential) (*common.UserInfo, error) {
 	var (
 		reqPath = fmt.Sprintf("/%s/iam/api/v1/admin/user/find-by-token", p.Cfg.ApplicationName)
 		body    bytes.Buffer
@@ -89,7 +88,7 @@ func (p *provider) getUserByAuthToken(authCtx domain.RequestAuthenticator) (*com
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
 		Path(reqPath)
-	authCtx.Apply(req)
+	credential.Authenticator.Apply(req)
 
 	r, err := req.Do().Body(&body)
 	if err != nil {
@@ -137,48 +136,4 @@ func (p *provider) getUserByAuthToken(authCtx domain.RequestAuthenticator) (*com
 		LastLoginAt:    userInfo.LastLoginAt,
 		SessionRefresh: refresh,
 	}, nil
-}
-
-func (p *provider) ListUCAuditsByLastID(ucAuditReq apistructs.UCAuditsListRequest) (*apistructs.UCAuditsListResponse, error) {
-	//token, err := c.ucTokenAuth.GetServerToken(false)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to get token when list uc audits by last id")
-	//}
-	//
-	//var getResp apistructs.UCAuditsListResponse
-	//resp, err := c.client.Post(c.baseURL).
-	//	Path("/api/event-log/admin/list-last-event").
-	//	Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
-	//	JSONBody(&ucAuditReq).Do().JSON(&getResp)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if !resp.IsOK() {
-	//	return nil, errors.Errorf("failed to list uc audits, status-code: %d", resp.StatusCode())
-	//}
-	//
-	//return &getResp, nil
-	return nil, nil
-}
-
-func (p *provider) ListUCAuditsByEventTime(ucAuditReq apistructs.UCAuditsListRequest) (*apistructs.UCAuditsListResponse, error) {
-	//token, err := c.ucTokenAuth.GetServerToken(false)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to get token when list uc audits by event time")
-	//}
-	//
-	//var getResp apistructs.UCAuditsListResponse
-	//resp, err := c.client.Post(c.baseURL).
-	//	Path("/api/event-log/admin/list-event-time").
-	//	Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
-	//	JSONBody(&ucAuditReq).Do().JSON(&getResp)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if !resp.IsOK() {
-	//	return nil, errors.Errorf("failed to list uc audits, status-code: %d", resp.StatusCode())
-	//}
-	//
-	//return &getResp, nil
-	return nil, nil
 }

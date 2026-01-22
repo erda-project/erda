@@ -87,7 +87,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) domain.UserAuthResult {
 	case NONE:
 		break
 	case LOGIN:
-		user := a.UserAuth.NewUserState()
+		user := a.UserAuth.NewState()
 		if r = user.IsLogin(req); r.Code != domain.AuthSuccess {
 			return r
 		}
@@ -95,7 +95,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) domain.UserAuthResult {
 			return r
 		}
 	case TRY_LOGIN:
-		user := a.UserAuth.NewUserState()
+		user := a.UserAuth.NewState()
 		if r := user.IsLogin(req); r.Code != domain.AuthSuccess {
 			break
 		}
@@ -103,7 +103,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) domain.UserAuthResult {
 			break
 		}
 	case BASICAUTH:
-		user := a.UserAuth.NewUserState()
+		user := a.UserAuth.NewState()
 		if r = a.checkBasicAuth(req, user); r.Code != domain.AuthSuccess {
 			return r
 		}

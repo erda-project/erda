@@ -47,10 +47,10 @@ const (
 )
 
 type userState struct {
-	info          *common.UserInfo
-	scopeInfo     common.UserScopeInfo
-	state         GetUserState
-	authenticator domain.RequestAuthenticator
+	info       *common.UserInfo
+	scopeInfo  common.UserScopeInfo
+	state      GetUserState
+	credential *domain.PersistedCredential
 
 	// dependencies
 	UserOAuthService pb.UserOAuthServiceServer
@@ -69,13 +69,13 @@ func (u *userState) get(req *http.Request, targetState GetUserState) (interface{
 				logrus.WithField("state", u.state).Errorf("failed to load token, %v", err)
 				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: "User:State:GetInit"}
 			}
-			u.authenticator = credential.Authenticator
+			u.credential = credential
 			u.state = GotToken
 		case GotToken:
 			if targetState == GotToken {
 				return nil, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
-			userInfo, err := u.identity.Me(req.Context(), u.authenticator)
+			userInfo, err := u.identity.Me(req.Context(), u.credential)
 			if err != nil {
 				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: err.Error()}
 			}
@@ -187,8 +187,8 @@ func (u *userState) Login(code string, queryValues url.Values) error {
 	if err != nil {
 		return err
 	}
-	u.authenticator = persistedCredential.Authenticator
-	userInfo, err := u.identity.Me(context.Background(), u.authenticator)
+	u.credential = persistedCredential
+	userInfo, err := u.identity.Me(context.Background(), u.credential)
 	if err != nil {
 		return err
 	}
@@ -206,14 +206,14 @@ func (u *userState) PwdLogin(username, password string) error {
 		logrus.Error(err)
 		return err
 	}
-	persistedCredential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
+	credential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
 		OAuthToken: uutil.ConvertPbToOAuthDomain(oauthToken),
 	})
 	if err != nil {
 		return err
 	}
-	u.authenticator = persistedCredential.Authenticator
-	userInfo, err := u.identity.Me(context.Background(), u.authenticator)
+	u.credential = credential
+	userInfo, err := u.identity.Me(context.Background(), u.credential)
 	if err != nil {
 		return err
 	}

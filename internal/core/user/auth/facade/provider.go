@@ -42,7 +42,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) NewUserState() domain.UserAuthState {
+func (p *provider) NewState() domain.UserAuthState {
 	return &userState{
 		state:            GetInit,
 		UserOAuthService: p.UserOAuthSvc,

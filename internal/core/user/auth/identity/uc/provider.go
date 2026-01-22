@@ -24,7 +24,7 @@ import (
 
 type Config struct {
 	BackendHost string `file:"host"`
-	ClientID    string `file:"oauth_client_id"`
+	ClientID    string `file:"client_id"`
 }
 
 type provider struct {

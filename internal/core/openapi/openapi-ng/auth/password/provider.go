@@ -92,7 +92,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := p.UserAuth.NewUserState()
+	user := p.UserAuth.NewState()
 	err := user.PwdLogin(loginParams.Username, loginParams.Password)
 	if err != nil {
 		err := fmt.Errorf("failed to PwdLogin: %v", err)

@@ -241,10 +241,26 @@ service UserService {
   };
   rpc UserMe (UserMeRequest) returns (UserMeResponse) {
     option (google.api.http) = {
-      post: "/api/users/me-wip",
+      get: "/api/users/me",
     };
     option (erda.common.openapi) = {
-      path: "/api/users/me-wip",
+      path: "/api/users/me",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+    };
+  };
+
+  rpc Me (UserMeRequest) returns (UserMeResponse) {
+    option (google.api.http) = {
+      get: "/me",
+    };
+    option (erda.common.openapi) = {
+      path: "/me",
       auth: {
         no_check: false,
         check_login: true,

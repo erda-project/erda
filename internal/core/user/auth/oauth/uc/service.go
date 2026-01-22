@@ -10,35 +10,92 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func (p *provider) ExchangeCode(_ context.Context, code string, _ url.Values) (*domain.OAuthToken, error) {
+func (p *provider) AuthURL(_ context.Context, r *pb.AuthURLRequest) (*pb.AuthURLResponse, error) {
+	q := make(url.Values)
+	q.Set("response_type", "code")
+	q.Set("client_id", p.Config.ClientID)
+	q.Set("redirect_uri", p.Config.RedirectURI)
+	q.Set("scope", "public_profile")
+	q.Set("referer", r.Referer)
+
+	baseURL, err := url.Parse(p.Config.FrontendURL)
+	if err != nil {
+		return nil, err
+	}
+
+	baseURL.Path = "/oauth/authorize"
+	baseURL.RawQuery = q.Encode()
+	return &pb.AuthURLResponse{Data: baseURL.String()}, nil
+}
+
+func (p *provider) LogoutURL(ctx context.Context, r *pb.LogoutURLRequest) (*pb.LogoutURLResponse, error) {
+	redirectURL, err := p.AuthURL(ctx, &pb.AuthURLRequest{
+		Referer: r.Referer,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	q := make(url.Values)
+	q.Set("redirectUrl", redirectURL.Data)
+
+	baseURL, err := url.Parse(p.Config.FrontendURL)
+	if err != nil {
+		return nil, err
+	}
+
+	baseURL.Path = "logout"
+	baseURL.RawQuery = q.Encode()
+	return &pb.LogoutURLResponse{
+		Data: baseURL.String(),
+	}, nil
+}
+
+func (p *provider) ExchangeCode(ctx context.Context, r *pb.ExchangeCodeRequest) (*pb.OAuthToken, error) {
 	formBody := make(url.Values)
 	formBody.Set("grant_type", "authorization_code")
-	formBody.Set("code", code)
+	formBody.Set("code", r.Code)
 	formBody.Set("redirect_uri", p.Config.RedirectURI)
 
-	return p.doExchange(formBody)
+	t, err := p.doExchange(formBody)
+	if err != nil {
+		return nil, err
+	}
+	return util.ConvertOAuthDomainToPb(t), nil
 }
 
-func (p *provider) ExchangePassword(_ context.Context, username, password string, _ url.Values) (*domain.OAuthToken, error) {
+func (p *provider) ExchangePassword(ctx context.Context, r *pb.ExchangePasswordRequest) (*pb.OAuthToken, error) {
 	formBody := make(url.Values)
 	formBody.Set("grant_type", "password")
-	formBody.Set("username", username)
-	formBody.Set("password", password)
+	formBody.Set("username", r.Username)
+	formBody.Set("password", r.Password)
 	formBody.Set("scope", "public_profile")
 
-	return p.doExchange(formBody)
+	t, err := p.doExchange(formBody)
+	if err != nil {
+		return nil, err
+	}
+	return util.ConvertOAuthDomainToPb(t), nil
 }
 
-func (p *provider) ExchangeClientCredentials(_ context.Context, refresh bool, _ url.Values) (*domain.OAuthToken, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.serverToken != nil && p.serverTokenExpireTime.After(time.Now().Add(tokenRefreshMargin)) && !refresh {
-		return p.serverToken, nil
+func (p *provider) ExchangeClientCredentials(ctx context.Context, r *pb.ExchangeClientCredentialsRequest) (*pb.OAuthToken, error) {
+	if !r.Refresh && p.Config.ServerTokenCacheEnabled {
+		cacheToken, err := p.tokenCache.Get(serverTokenCacheKey)
+		if err != nil {
+			p.Log.Warnf("failed to get server token from cache, %v", err)
+		} else {
+			oauthToken, ok := cacheToken.(*domain.OAuthToken)
+			if ok {
+				return util.ConvertOAuthDomainToPb(oauthToken), nil
+			}
+			p.Log.Warn("server cache token is not *domain.OAuthToken")
+		}
 	}
 
 	formBody := make(url.Values)
@@ -49,9 +106,15 @@ func (p *provider) ExchangeClientCredentials(_ context.Context, refresh bool, _ 
 		return nil, err
 	}
 
-	p.serverToken = serverToken
-	p.serverTokenExpireTime = time.Now().Add(time.Duration(serverToken.ExpiresIn) * time.Second)
-	return serverToken, nil
+	if p.Config.ServerTokenCacheEnabled {
+		expireTime := p.convertExpiresIn2Time(serverToken.ExpiresIn)
+		if err := p.tokenCache.SetWithExpire(serverTokenCacheKey, serverToken, expireTime); err != nil {
+			p.Log.Warnf("failed to set token with expire %s, %v", expireTime.String(), err)
+		}
+		p.Log.Infof("grant new client_credential token with expire time %s", expireTime.String())
+	}
+
+	return util.ConvertOAuthDomainToPb(serverToken), nil
 }
 
 func (p *provider) doExchange(formBody url.Values) (*domain.OAuthToken, error) {
@@ -80,20 +143,10 @@ func (p *provider) doExchange(formBody url.Values) (*domain.OAuthToken, error) {
 	return &oauthToken, nil
 }
 
-func (p *provider) AuthURL(_ context.Context, referer string) (string, error) {
-	q := make(url.Values)
-	q.Set("response_type", "code")
-	q.Set("client_id", p.Config.ClientID)
-	q.Set("redirect_uri", p.Config.RedirectURI)
-	q.Set("scope", "public_profile")
-	q.Set("referer", referer)
+func (p *provider) convertExpiresIn2Time(expiresIn int64) time.Duration {
+	return time.Duration(float64(expiresIn)*p.Config.TokenCacheEarlyExpireRate) * time.Second
+}
 
-	baseURL, err := url.Parse(p.Config.FrontendURL)
-	if err != nil {
-		return "", err
-	}
-
-	baseURL.Path = "/oauth/authorize"
-	baseURL.RawQuery = q.Encode()
-	return baseURL.String(), nil
+func userTokenCacheKey(username, password string) string {
+	return userTokenCachePrefix + username + ":" + password
 }
