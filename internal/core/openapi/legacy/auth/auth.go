@@ -15,7 +15,6 @@
 package auth
 
 import (
-	"context"
 	"encoding/base64"
 	"net/http"
 	"strconv"
@@ -167,7 +166,7 @@ const (
 )
 
 func (a *Auth) whichCheck(req *http.Request, spec *spec.Spec) (checkType, error) {
-	cred, _ := a.CredStore.Load(context.TODO(), req)
+	cred, _ := a.CredStore.Load(req.Context(), req)
 	if spec.CheckLogin && cred != nil {
 		return LOGIN, nil
 	}

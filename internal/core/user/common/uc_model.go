@@ -1,8 +1,12 @@
 package common
 
 type UCResponse[T any] struct {
-	Success bool   `json:"success"`
-	Result  T      `json:"result"`
+	UCResponseMeta
+	Result T `json:"result"`
+}
+
+type UCResponseMeta struct {
+	Success *bool  `json:"success"`
 	Error   string `json:"error"`
 }
 
