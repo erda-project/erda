@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -61,8 +62,8 @@ func StartZombieReaper() {
 	}
 }
 
-func gitCommand(version string, args ...string) *exec.Cmd {
-	command := exec.Command("git", args...)
+func gitCommand(ctx context.Context, version string, args ...string) *exec.Cmd {
+	command := exec.CommandContext(ctx, "git", args...)
 	if len(version) > 0 {
 		command.Env = append(os.Environ(), fmt.Sprintf("GIT_PROTOCOL=%s", version))
 	}
@@ -169,6 +170,7 @@ func RunAdvertisement(service string, c *webcontext.Context) {
 	}
 
 	runCommand2(writer, gitCommand(
+		c.HttpRequest().Context(),
 		version,
 		service,
 		"--stateless-rpc",
@@ -250,6 +252,7 @@ func RunProcess(service string, c *webcontext.Context) {
 					makeCreatePipelineLink(pushEvents[0].Ref[len(gitmodule.BRANCH_PREFIX):], c.Repository.OrgName, c.Repository.ProjectId)))
 			}
 			runCommand2(writer, gitCommand(
+				c.HttpRequest().Context(),
 				version,
 				service,
 				"--stateless-rpc",
@@ -261,6 +264,7 @@ func RunProcess(service string, c *webcontext.Context) {
 		}
 	} else {
 		runCommand2(writer, gitCommand(
+			c.HttpRequest().Context(),
 			version,
 			service,
 			"--stateless-rpc",
@@ -287,6 +291,7 @@ func RunArchive(c *webcontext.Context, ref string, format string) {
 
 	fullPath, _ := filepath.Abs(c.MustGet("repository").(*gitmodule.Repository).DiskPath())
 	runCommand2(c.GetWriter(), gitCommand(
+		c.HttpRequest().Context(),
 		"",
 		"archive",
 		"--format="+format,
@@ -301,6 +306,7 @@ func OutPutArchive(c *webcontext.Context, ref string, format string) string {
 	filename := fullPath + "/" + strings.Replace(ref, "/", "-", -1) + "." + format
 
 	runCommand2(c.GetWriter(), gitCommand(
+		c.HttpRequest().Context(),
 		"",
 		"archive",
 		"--format="+format,
@@ -312,7 +318,8 @@ func OutPutArchive(c *webcontext.Context, ref string, format string) string {
 
 // OutPutArchiveDelete 删除打包文件  （文件打包上传完必须删除）
 func OutPutArchiveDelete(c *webcontext.Context, path string) {
-	runCommand2(c.GetWriter(), exec.Command(
+	runCommand2(c.GetWriter(), exec.CommandContext(
+		c.HttpRequest().Context(),
 		"rm",
 		"-r",
 		"-f",
