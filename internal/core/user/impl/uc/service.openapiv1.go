@@ -5,15 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
@@ -23,9 +21,7 @@ import (
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/pointer"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -154,55 +150,49 @@ func (p *provider) UserCreate(ctx context.Context, req *pb.UserCreateRequest) (*
 	return &pb.UserCreateResponse{}, nil
 }
 
-func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*emptypb.Empty, error) {
-	rw, ok := ctx.Value(httpserver.ResponseWriter).(http.ResponseWriter)
-	if !ok || rw == nil {
-		return nil, errors.New("response writer missing in context")
+func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*pb.UserExportResponse, error) {
+	var (
+		users  []*pb.ManagedUser
+		total  int64
+		pageNo = req.PageNo
+	)
+
+	if pageNo == 0 {
+		pageNo = 100
 	}
 
-	pagingReq := convertPagingReq(req)
-	if pagingReq.PageSize == 0 {
-		pagingReq.PageSize = 1024
-	}
-	if pagingReq.PageNo == 0 {
-		pagingReq.PageNo = 1
-	}
+	for {
+		data, err := p.UserPaging(ctx, req)
+		if err != nil {
+			return nil, err
+		}
 
-	var users []apistructs.UserInfoExt
-	//for i := 0; i < 100; i++ {
-	//	data, err := HandlePagingUsers(pagingReq, token)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	pageData := util.ConvertToUserInfoExt(data)
-	//	users = append(users, pageData.List...)
-	//	if len(pageData.List) < pagingReq.PageSize {
-	//		break
-	//	}
-	//	pagingReq.PageNo++
-	//}
+		if total == 0 {
+			total = data.Total
+		}
+
+		users = append(users, data.List...)
+		if int64(len(users)) >= total {
+			break
+		}
+		req.PageNo++
+	}
 
 	locale := apis.GetLang(ctx)
 	if locale == "" {
 		locale = "zh-CN"
 	}
+
 	loginMethodMap, err := p.getLoginMethodMap(locale)
 	if err != nil {
 		return nil, err
 	}
 
-	reader, name, err := exportExcel(users, loginMethodMap)
-	if err != nil {
-		return nil, err
-	}
-
-	rw.Header().Add("Content-Disposition", "attachment;fileName="+name+".xlsx")
-	rw.Header().Add("Content-Type", "application/vnd.ms-excel")
-	if _, err = io.Copy(rw, reader); err != nil {
-		return nil, err
-	}
-
-	return &emptypb.Empty{}, nil
+	return &pb.UserExportResponse{
+		Total:        total,
+		List:         users,
+		LoginMethods: loginMethodMap,
+	}, nil
 }
 
 func (p *provider) UserFreeze(ctx context.Context, req *pb.UserFreezeRequest) (*pb.UserFreezeResponse, error) {
@@ -331,12 +321,12 @@ func (p *provider) handleUpdatePwdSecurityConfig(config *apistructs.PwdSecurityC
 		return errors.Errorf("failed to call %s, status code: %d, resp: %s", path, r.StatusCode(), body.String())
 	}
 
-	var resp Response[bool]
+	var resp common.UCResponseMeta
 	if err := json.NewDecoder(&body).Decode(&resp); err != nil {
 		return err
 	}
 
-	if !resp.Result {
+	if resp.Success != nil && !*resp.Success {
 		return errors.New("failed to update pwd security config")
 	}
 
@@ -572,24 +562,6 @@ func getUCUpdateUserInfoReq(req *pb.UserUpdateInfoRequest) (*ucUpdateUserInfoReq
 	return ucReq, nil
 }
 
-func convertPagingReq(req *pb.UserPagingRequest) *apistructs.UserPagingRequest {
-	var locked *int
-	if req.Locked {
-		val := 1
-		locked = &val
-	}
-	return &apistructs.UserPagingRequest{
-		Name:     req.Name,
-		Nick:     req.Nick,
-		Phone:    req.Phone,
-		Email:    req.Email,
-		Locked:   locked,
-		Source:   req.Source,
-		PageNo:   int(req.PageNo),
-		PageSize: int(req.PageSize),
-	}
-}
-
 func (p *provider) getLoginMethodMap(locale string) (map[string]string, error) {
 	res, err := p.handleListLoginMethod()
 	if err != nil {
@@ -613,34 +585,6 @@ func (p *provider) getLoginMethodMap(locale string) (map[string]string, error) {
 	return valueDisplayNameMap, nil
 }
 
-func exportExcel(users []apistructs.UserInfoExt, loginMethodMap map[string]string) (io.Reader, string, error) {
-	var (
-		table     [][]string
-		tableName = "users"
-		buf       = bytes.NewBuffer([]byte{})
-	)
-
-	table = convertUserToExcelList(users, loginMethodMap)
-
-	if err := excel.ExportExcel(buf, table, tableName); err != nil {
-		return nil, "", err
-	}
-
-	return buf, tableName, nil
-}
-
-func convertUserToExcelList(users []apistructs.UserInfoExt, loginMethodMap map[string]string) [][]string {
-	r := [][]string{{"用户名", "昵称", "邮箱", "手机号", "登录方式", "上次登录时间", "密码过期时间", "状态"}}
-	for _, user := range users {
-		state := "未冻结"
-		if user.Locked {
-			state = "冻结"
-		}
-		r = append(r, []string{user.Name, user.Nick, user.Email, user.Phone, loginMethodMap[user.Source], user.LastLoginAt, user.PwdExpireAt, state})
-	}
-	return r
-}
-
 func (p *provider) UserPaging(ctx context.Context, req *pb.UserPagingRequest) (*pb.UserPagingResponse, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
@@ -661,7 +605,7 @@ func (p *provider) UserPaging(ctx context.Context, req *pb.UserPagingRequest) (*
 		conditions.Add("email", req.Email)
 	}
 	if req.Locked {
-		conditions.Add("locked", "true")
+		conditions.Add("locked", strconv.Itoa(1))
 	}
 	if req.Source != "" {
 		conditions.Add("source", req.Source)

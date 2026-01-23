@@ -160,7 +160,7 @@ service UserService {
     };
   };
 
-  rpc UserExport (UserPagingRequest) returns (google.protobuf.Empty) {
+  rpc UserExport (UserPagingRequest) returns (UserExportResponse) {
     option (google.api.http) = {
       get: "/api/users/actions/export",
     };
@@ -347,6 +347,12 @@ message UserPagingRequest {
   string source = 6;
   int64 pageNo = 7;
   int64 pageSize = 8;
+}
+
+message UserExportResponse {
+  int64 total = 1;
+  repeated ManagedUser list = 2;
+  map<string, string> loginMethods = 3;
 }
 
 message UserPagingResponse {

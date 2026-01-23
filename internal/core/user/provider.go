@@ -17,6 +17,7 @@ package user
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -61,6 +62,27 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterUserServiceImp(p.Register, p.userService, apis.Options(),
 			transport.WithHTTPOptions(
+				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, resp interface{}) error {
+					if r.URL.Path == "/api/users/actions/export" {
+						data, ok := resp.(*pb.UserExportResponse)
+						if !ok {
+							return fmt.Errorf("illegal response data, current data type: %T", resp)
+						}
+
+						reader, name, err := common.ExportExcel(data)
+						if err != nil {
+							return err
+						}
+
+						rw.Header().Add("Content-Disposition", "attachment;fileName="+name+".xlsx")
+						rw.Header().Add("Content-Type", "application/vnd.ms-excel")
+						if _, err = io.Copy(rw, reader); err != nil {
+							return err
+						}
+						resp = nil
+					}
+					return encoding.EncodeResponse(rw, r, resp)
+				}),
 				transhttp.WithDecoder(func(r *http.Request, out interface{}) error {
 					switch body := out.(type) {
 					// Rewrap payload: [{},{}] -> {"users": [{},{}]}

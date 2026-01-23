@@ -73,7 +73,7 @@ func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refre
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   req.TLS != nil,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSite(p.Config.CookieSameSite),
 	}
 
 	if cfg := refresh.Cookie; cfg != nil {
