@@ -138,7 +138,7 @@ erda.core.user.identity.uc:
 
 erda.core.user.credstore.uc:
   _enable: ${UC_ENABLED:false}
-  cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
   session_cookie_domain: "${COOKIE_DOMAIN}"
   cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"
 

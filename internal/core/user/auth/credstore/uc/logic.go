@@ -16,13 +16,9 @@ package uc
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
@@ -59,53 +55,20 @@ func (p *provider) Persist(_ context.Context, cred *domain.AuthCredential) (*dom
 	}
 }
 
-func (p *provider) Revoke(_ context.Context, sessionID string) error {
-	if sessionID == "" {
-		return nil
-	}
-	_, err := p.Redis.Del(makeSessionKey(sessionID)).Result()
-	return err
-}
-
 func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *common.SessionRefresh) error {
-	if refresh == nil || refresh.Token == "" {
-		return nil
+	if refresh == nil {
+		return errors.New("refresh cookie is nil")
 	}
 	c := &http.Cookie{
 		Name:     p.Config.CookieName,
-		Value:    refresh.SessionID,
-		Path:     "/",
-		HttpOnly: true,
-		Domain:   p.getSessionDomain(req.Host),
+		Value:    refresh.Cookie.Value,
+		Path:     refresh.Cookie.Path,
+		HttpOnly: refresh.Cookie.HttpOnly,
+		Expires:  refresh.Cookie.Expires,
+		Domain:   refresh.Cookie.Domain,
 		Secure:   req.TLS != nil,
 		SameSite: http.SameSite(p.Config.CookieSameSite),
 	}
 	http.SetCookie(rw, c)
 	return nil
-}
-
-func makeSessionKey(sessionID string) string {
-	return fmt.Sprintf("openapi:sessionid:%s", sessionID)
-}
-
-func genSessionID() string {
-	return uuid.NewV4().String()
-}
-
-func (p *provider) getSessionDomain(host string) string {
-	if h, _, err := net.SplitHostPort(host); err == nil {
-		host = h
-	}
-	domains := strings.SplitN(host, ".", -1)
-	l := len(domains)
-	if l < 2 {
-		return ""
-	}
-	rootDomain := "." + domains[l-2] + "." + domains[l-1]
-	for _, item := range p.Config.SessionCookieDomains {
-		if strings.Contains(item, rootDomain) {
-			return item
-		}
-	}
-	return ""
 }

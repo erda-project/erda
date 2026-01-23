@@ -16,9 +16,7 @@ package uc
 
 import (
 	"reflect"
-	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/recallsong/go-utils/logs"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -27,15 +25,13 @@ import (
 )
 
 type Config struct {
-	CookieName           string        `file:"cookie_name"`
-	Expire               time.Duration `file:"expire"`
-	SessionCookieDomains []string      `file:"session_cookie_domain"`
+	CookieName           string   `file:"cookie_name"`
+	SessionCookieDomains []string `file:"session_cookie_domain"`
 	// CookieSameSite default set to 2, which is `lax`, more options see https://github.com/golang/go/blob/619b419a4b1506bde1aa7e833898f2f67fd0e83e/src/net/http/cookie.go#L52-L57
 	CookieSameSite int `file:"cookie_same_site" default:"2" desc:"indicates if cookie is SameSite. optional."`
 }
 
 type provider struct {
-	Redis  *redis.Client
 	Log    logs.Logger
 	Config *Config
 }
