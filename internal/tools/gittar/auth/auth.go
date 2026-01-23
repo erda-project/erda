@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
@@ -326,8 +327,10 @@ func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (
 		return nil, err
 	}
 	logrus.Debugf("login success username: %s", username)
-	userInfo, err := c.Identity.Me(context.Background(), &applier.BearerTokenAuth{
-		Token: oauthToken.AccessToken,
+	userInfo, err := c.Identity.Me(context.Background(), &domain.PersistedCredential{
+		Authenticator: &applier.BearerTokenAuth{
+			Token: oauthToken.AccessToken,
+		},
 	})
 	if err != nil {
 		return nil, err
