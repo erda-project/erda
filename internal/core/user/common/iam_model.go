@@ -59,13 +59,13 @@ type IAMUserWithToken struct {
 }
 
 type IAMCookieConfig struct {
-	Name     string `json:"name,omitempty"`
 	Domain   string `json:"domain,omitempty"`
 	Path     string `json:"path,omitempty"`
-	MaxAge   int    `json:"maxAge,omitempty"`
 	Secure   bool   `json:"secure,omitempty"`
 	HttpOnly bool   `json:"httpOnly,omitempty"`
-	SameSite string `json:"sameSite,omitempty"`
+	//MaxAge   int    `json:"maxAge,omitempty"`
+	//Name     string `json:"name,omitempty"`
+	//SameSite string `json:"sameSite,omitempty"`
 }
 
 type IAMUserCreate struct {

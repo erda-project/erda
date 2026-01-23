@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -112,16 +113,16 @@ func (p *provider) getUserByAuthToken(credential *domain.PersistedCredential) (*
 			Token: userWithToken.Data.NewToken,
 		}
 	}
+
 	if cfg := userWithToken.Data.CookieConfig; cfg != nil {
 		if refresh == nil {
 			refresh = &common.SessionRefresh{}
 		}
 		refresh.Cookie = &http.Cookie{
-			Name:     cfg.Name,
 			Domain:   cfg.Domain,
 			Path:     cfg.Path,
-			MaxAge:   cfg.MaxAge,
 			Secure:   cfg.Secure,
+			Expires:  time.Now().Add(time.Duration(userWithToken.Data.Expire) * time.Second),
 			HttpOnly: cfg.HttpOnly,
 		}
 	}

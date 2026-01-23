@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
@@ -74,7 +73,7 @@ func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refre
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   req.TLS != nil,
-		SameSite: http.SameSiteDefaultMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	if cfg := refresh.Cookie; cfg != nil {
@@ -87,9 +86,11 @@ func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refre
 		if cfg.Domain != "" {
 			c.Domain = cfg.Domain
 		}
+		if !cfg.Expires.IsZero() {
+			c.Expires = cfg.Expires
+		}
 		if cfg.MaxAge != 0 {
 			c.MaxAge = cfg.MaxAge
-			c.Expires = time.Now().Add(time.Duration(cfg.MaxAge) * time.Second)
 		}
 		c.HttpOnly = cfg.HttpOnly
 		c.Secure = cfg.Secure
