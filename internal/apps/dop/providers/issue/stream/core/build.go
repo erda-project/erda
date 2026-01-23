@@ -203,7 +203,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			}
 			resp, err := p.Identity.FindUsers(
 				apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
-				&userpb.FindUsersRequest{IDs: userIds},
+				&userpb.FindUsersRequest{IDs: userIds, KeepOrder: true},
 			)
 			if err != nil {
 				return err
@@ -284,7 +284,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			}
 			resp, err := p.Identity.FindUsers(
 				apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
-				&userpb.FindUsersRequest{IDs: userIds},
+				&userpb.FindUsersRequest{IDs: userIds, KeepOrder: true},
 			)
 			if err != nil {
 				return err

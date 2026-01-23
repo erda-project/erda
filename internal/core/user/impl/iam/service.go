@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/utils/pointer"
@@ -74,11 +75,25 @@ func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.F
 		users = append(users, common.SystemUser)
 	}
 
-	userList := make([]*pb.User, 0, len(users))
-	for _, i := range users {
-		userList = append(userList, common.ToPbUser(i))
+	pbUsers := make([]*pb.User, 0, len(users))
+	if req.KeepOrder {
+		userMap := lo.KeyBy(users, func(u common.User) string {
+			return u.ID
+		})
+		for _, id := range req.IDs {
+			if user, exists := userMap[id]; exists {
+				pbUsers = append(pbUsers, common.ToPbUser(user))
+			}
+		}
+	} else {
+		for _, i := range users {
+			pbUsers = append(pbUsers, common.ToPbUser(i))
+		}
 	}
-	return &pb.FindUsersResponse{Data: userList}, nil
+
+	return &pb.FindUsersResponse{
+		Data: pbUsers,
+	}, nil
 }
 
 // FindUsersByKey find users by key (username, nickname, mobile, email)
