@@ -323,6 +323,7 @@ message ManagedUser {
 
 message FindUsersRequest {
   repeated string IDs = 1 [json_name = "ids"];
+  bool keepOrder = 2;
 }
 
 message FindUsersResponse {
