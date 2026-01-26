@@ -1,0 +1,51 @@
+{
+  "qwen3-asr-flash-realtime": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-asr-flash-realtime"
+    },
+    "desc": "通义千问3-ASR-Flash的实时版，一款基于大语言模型的高精度、高智能、高鲁棒性的多语种语音识别模型。依托强大的基座模型、海量的文本与多模态数据、千万小时音频数据，通义千问3-ASR-Flash实现了高精度的语音识别功能，能够自动判断语种并准确识别 11 个语种的语音，在复杂的音频环境下能够保证精确转录。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "audio",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "audio_transcription"
+            ],
+            "input_modalities": [
+              "audio"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "audio_transcription": "0.00033",
+            "unit": "CNY"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
