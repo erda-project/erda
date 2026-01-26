@@ -162,6 +162,16 @@ func (f *PathFinder) Find(req *http.Request) (string, error) {
 	return modelName, nil
 }
 
+// QueryParamFinder finds model identifier from URL query parameters
+type QueryParamFinder struct{}
+
+func (f *QueryParamFinder) Find(req *http.Request) (string, error) {
+	if req.URL == nil {
+		return "", nil
+	}
+	return req.URL.Query().Get("model"), nil
+}
+
 // BodyFinder finds model identifier from request body
 type BodyFinder struct{}
 
@@ -214,6 +224,7 @@ func findModelIdentifier(req *http.Request) (string, error) {
 	finders := []ModelFinder{
 		&HeaderFinder{},
 		&PathFinder{},
+		&QueryParamFinder{},
 		&BodyFinder{},
 	}
 
