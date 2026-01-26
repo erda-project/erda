@@ -171,6 +171,73 @@ func TestPathFinder_Find(t *testing.T) {
 	}
 }
 
+func TestQueryParamFinder_Find(t *testing.T) {
+	tests := []struct {
+		name           string
+		url            string
+		expectedResult string
+		expectedError  bool
+	}{
+		{
+			name:           "find model from query param",
+			url:            "/test?model=gpt-4",
+			expectedResult: "gpt-4",
+		},
+		{
+			name:           "find model with multiple query params",
+			url:            "/test?temperature=0.7&model=claude-3&stream=true",
+			expectedResult: "claude-3",
+		},
+		{
+			name:           "model with UUID format",
+			url:            "/test?model=gpt-4-uuid-123",
+			expectedResult: "gpt-4-uuid-123",
+		},
+		{
+			name:           "no model in query params",
+			url:            "/test?temperature=0.7",
+			expectedResult: "",
+		},
+		{
+			name:           "empty query params",
+			url:            "/test",
+			expectedResult: "",
+		},
+		{
+			name:           "model param is empty string",
+			url:            "/test?model=",
+			expectedResult: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", tt.url, nil)
+
+			finder := &QueryParamFinder{}
+			result, err := finder.Find(req)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
+			}
+		})
+	}
+}
+
+func TestQueryParamFinder_Find_NilURL(t *testing.T) {
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.URL = nil
+
+	finder := &QueryParamFinder{}
+	result, err := finder.Find(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "", result)
+}
+
 func TestJSONBodyFinder_FindModelName(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -451,7 +518,40 @@ func TestFindModelIdentifier(t *testing.T) {
 			expectedResult: "path-model",
 		},
 		{
-			name: "find model from body when no header or path",
+			name: "find model from query param when no header or path",
+			setupRequest: func() *http.Request {
+				req := httptest.NewRequest("POST", "/test?model=query-model", strings.NewReader(`{"model": "body-model"}`))
+				req.Header.Set("Content-Type", "application/json")
+				return req
+			},
+			expectedResult: "query-model",
+		},
+		{
+			name: "path takes priority over query param",
+			setupRequest: func() *http.Request {
+				ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+				pm := path_matcher.NewPathMatcher("/test/{model}")
+				pm.SetValue("model", "path-model")
+				ctxhelper.PutPathMatcher(ctx, pm)
+
+				req := httptest.NewRequest("POST", "/test?model=query-model", strings.NewReader(`{"model": "body-model"}`))
+				req.Header.Set("Content-Type", "application/json")
+				req = req.WithContext(ctx)
+				return req
+			},
+			expectedResult: "path-model",
+		},
+		{
+			name: "query param takes priority over body",
+			setupRequest: func() *http.Request {
+				req := httptest.NewRequest("POST", "/test?model=query-model", strings.NewReader(`{"model": "body-model"}`))
+				req.Header.Set("Content-Type", "application/json")
+				return req
+			},
+			expectedResult: "query-model",
+		},
+		{
+			name: "find model from body when no header or path or query",
 			setupRequest: func() *http.Request {
 				req := httptest.NewRequest("POST", "/test", strings.NewReader(`{"model": "body-model"}`))
 				req.Header.Set("Content-Type", "application/json")
