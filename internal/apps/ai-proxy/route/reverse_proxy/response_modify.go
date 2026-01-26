@@ -77,6 +77,13 @@ var MyResponseModify = func(w http.ResponseWriter, filters []filter_define.Filte
 		// audit response begin
 		audithelper.NoteOnce(resp.Request.Context(), "response_at", time.Now()) // table field
 
+		// Skip 101 Switching Protocols responses (WebSocket upgrades).
+		// These responses have a special body that cannot be read/modified;
+		// the underlying connection is hijacked for bidirectional communication.
+		if resp.StatusCode == http.StatusSwitchingProtocols {
+			return nil
+		}
+
 		// handle error status firstly
 		if _err = errorStatusHandler(resp); _err != nil {
 			return
