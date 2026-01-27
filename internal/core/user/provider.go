@@ -64,12 +64,12 @@ func (p *provider) Init(_ servicehub.Context) error {
 			transport.WithHTTPOptions(
 				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, resp interface{}) error {
 					if r.URL.Path == "/api/users/actions/export" {
-						data, ok := resp.(*pb.UserExportResponse)
+						apiResp, ok := resp.(*apis.Response)
 						if !ok {
 							return fmt.Errorf("illegal response data, current data type: %T", resp)
 						}
 
-						reader, name, err := common.ExportExcel(data)
+						reader, name, err := common.ExportExcel(apiResp)
 						if err != nil {
 							return err
 						}
