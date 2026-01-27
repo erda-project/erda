@@ -14,7 +14,10 @@
 
 package uc
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Response uc standard response dto
 type Response[T any] struct {
@@ -81,30 +84,70 @@ type CreateUserItem struct {
 	UserDetail  interface{} `json:"userDetail,omitempty"`
 }
 
+type TimestampMs struct {
+	time.Time
+}
+
+func (t *TimestampMs) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		t.Time = time.Time{}
+		return nil
+	}
+
+	var ts int64
+	if err := json.Unmarshal(data, &ts); err == nil {
+		t.Time = time.Unix(ts/1000, (ts%1000)*1e6)
+		return nil
+	}
+
+	var str string
+	if err := json.Unmarshal(data, &str); err == nil {
+		if str == "" {
+			t.Time = time.Time{}
+			return nil
+		}
+		parsed, err := time.Parse(time.RFC3339, str)
+		if err != nil {
+			return err
+		}
+		t.Time = parsed
+		return nil
+	}
+
+	return json.Unmarshal(data, &t.Time)
+}
+
+func (t TimestampMs) MarshalJSON() ([]byte, error) {
+	if t.Time.IsZero() {
+		return []byte("null"), nil
+	}
+	return json.Marshal(t.Time.UnixMilli())
+}
+
 type UserPaging struct {
 	Data  []*UserInPaging `json:"data"`
 	Total int64           `json:"total"`
 }
 type UserInPaging struct {
-	Id            interface{} `json:"id"`            // 主键
-	Avatar        string      `json:"avatar"`        // 头像
-	Username      string      `json:"username"`      // 用户名
-	Nickname      string      `json:"nickname"`      // 昵称
-	Mobile        string      `json:"mobile"`        // 手机号
-	Email         string      `json:"email"`         // 邮箱
-	Enabled       bool        `json:"enabled"`       // 是否启用
-	UserDetail    interface{} `json:"userDetail"`    // 用户详细信息
-	Locked        bool        `json:"locked"`        // 冻结FLAG(0:NOT,1:YES)
-	PasswordExist bool        `json:"passwordExist"` // 密码是否存在
-	PwdExpireAt   time.Time   `json:"pwdExpireAt"`   // 过期时间
-	Extra         interface{} `json:"extra"`         // 扩展字段
-	Source        string      `json:"source"`        // 用户来源
-	SourceType    string      `json:"sourceType"`    // 来源类型
-	Tag           string      `json:"tag"`           // 标签
-	Channel       string      `json:"channel"`       // 注册渠道
-	ChannelType   string      `json:"channelType"`   // 渠道类型
-	TenantId      int         `json:"tenantId"`      // 租户ID
-	CreatedAt     time.Time   `json:"createdAt"`     // 创建时间
-	UpdatedAt     time.Time   `json:"updatedAt"`     // 更新时间
-	LastLoginAt   time.Time   `json:"lastLoginAt"`   // 最后登录时间
+	Id            interface{}  `json:"id"`
+	Avatar        string       `json:"avatar"`
+	Username      string       `json:"username"`
+	Nickname      string       `json:"nickname"`
+	Mobile        string       `json:"mobile"`
+	Email         string       `json:"email"`
+	Enabled       bool         `json:"enabled"`
+	UserDetail    interface{}  `json:"userDetail"`
+	Locked        bool         `json:"locked"`
+	PasswordExist bool         `json:"passwordExist"`
+	PwdExpireAt   *TimestampMs `json:"pwdExpireAt"`
+	Extra         interface{}  `json:"extra"`
+	Source        string       `json:"source"`
+	SourceType    string       `json:"sourceType"`
+	Tag           string       `json:"tag"`
+	Channel       string       `json:"channel"`
+	ChannelType   string       `json:"channelType"`
+	TenantId      int          `json:"tenantId"`
+	CreatedAt     TimestampMs  `json:"createdAt"`
+	UpdatedAt     *TimestampMs `json:"updatedAt"`
+	LastLoginAt   *TimestampMs `json:"lastLoginAt"`
 }
