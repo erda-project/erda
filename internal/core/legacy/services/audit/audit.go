@@ -306,7 +306,7 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 	}
 	users := resp.Data
 	for _, u := range users {
-		userIDNameMap[u.ID] = u.Nick
+		userIDNameMap[u.Id] = u.Nick
 	}
 
 	// 把r里的userID替换成userName

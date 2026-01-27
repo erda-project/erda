@@ -192,7 +192,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 			Mobile:        user.Phone,
 			Name:          user.Name,
 			Nick:          user.Nick,
-			Avatar:        user.AvatarURL,
+			Avatar:        user.Avatar,
 			UserSyncAt:    time.Now(),
 			OrgID:         org.ID,
 			ProjectID:     application.ProjectID,

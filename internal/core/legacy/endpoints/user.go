@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -41,7 +42,7 @@ const maxUserSize = 100
 func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	var (
-		users []*userpb.User
+		users []*commonpb.UserInfo
 		err   error
 	)
 
@@ -136,16 +137,16 @@ func (e *Endpoints) GetCurrentUser(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(*convertToUserInfo(resp.Data, false))
 }
 
-func convertToUserInfo(user *userpb.User, plaintext bool) *apistructs.UserInfo {
+func convertToUserInfo(user *commonpb.UserInfo, plaintext bool) *apistructs.UserInfo {
 	if !plaintext {
 		user.Phone = desensitize.Mobile(user.Phone)
 		user.Email = desensitize.Email(user.Email)
 	}
 	return &apistructs.UserInfo{
-		ID:     user.ID,
+		ID:     user.Id,
 		Name:   user.Name,
 		Nick:   user.Nick,
-		Avatar: user.AvatarURL,
+		Avatar: user.Avatar,
 		Phone:  user.Phone,
 		Email:  user.Email,
 	}

@@ -238,7 +238,7 @@ func (o *NotifyGroup) getNotifyUsersByIDs(userIds []string) ([]apistructs.Notify
 	var notifyUsers []apistructs.NotifyUser
 	for _, user := range findUsersResp.Data {
 		user := apistructs.NotifyUser{
-			ID:       user.ID,
+			ID:       user.Id,
 			Type:     "inner",
 			Email:    user.Email,
 			Mobile:   user.Phone,

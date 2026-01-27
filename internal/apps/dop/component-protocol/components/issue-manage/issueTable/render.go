@@ -215,7 +215,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		ca.userMap = make(map[string]string, len(resp.Data))
 		for _, i := range resp.Data {
-			ca.userMap[i.ID] = i.Nick
+			ca.userMap[i.Id] = i.Nick
 		}
 	}
 

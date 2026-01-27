@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 func (p *provider) UserPaging(ctx context.Context, req *pb.UserPagingRequest) (*pb.UserPagingResponse, error) {
@@ -185,14 +184,14 @@ func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInf
 }
 
 // GetUser get user detail info
-func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+func (p *provider) GetUser(_ context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	user, err := p.getUser(req.UserID, true)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetUserResponse{
-		Data: common.ToPbUser(user),
+		Data: user,
 	}, nil
 }
 

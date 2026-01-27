@@ -504,7 +504,7 @@ func (p *provider) batchCreateAssignChaningStream(req *pb.BatchUpdateIssueReques
 	users := resp.Data
 	userInfo := make(map[string]string, len(users))
 	for _, v := range users {
-		userInfo[v.ID] = v.Nick
+		userInfo[v.Id] = v.Nick
 	}
 
 	for _, v := range issues {

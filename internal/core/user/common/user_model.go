@@ -19,18 +19,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/erda-project/erda-proto-go/core/user/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
-
-type User struct {
-	ID        string `json:"user_id"`
-	Name      string `json:"username"`
-	Nick      string `json:"nickname"`
-	AvatarURL string `json:"avatar_url"`
-	Phone     string `json:"phone_number"`
-	Email     string `json:"email"`
-	State     string `json:"state"`
-}
 
 type UserInfo struct {
 	ID               USERID          `json:"id"`
@@ -79,8 +69,8 @@ func (u *USERID) UnmarshalJSON(b []byte) error {
 
 const SystemOperator = "system"
 
-var SystemUser = User{
-	ID:   SystemOperator,
+var SystemUser = &commonpb.UserInfo{
+	Id:   SystemOperator,
 	Name: SystemOperator,
 	Nick: SystemOperator,
 }
@@ -88,16 +78,4 @@ var SystemUser = User{
 type UserScopeInfo struct {
 	OrgID uint64 `json:"orgId"`
 	// dont care other fields
-}
-
-func ToPbUser(user *User) *pb.User {
-	return &pb.User{
-		ID:        user.ID,
-		Name:      user.Name,
-		Nick:      user.Nick,
-		AvatarURL: user.AvatarURL,
-		Phone:     user.Phone,
-		Email:     user.Email,
-		State:     user.State,
-	}
 }

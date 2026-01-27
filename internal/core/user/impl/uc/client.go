@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/pointer"
 )
@@ -29,7 +29,7 @@ func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error
 	return p.client.BearerTokenAuth(oauthToken.AccessToken), nil
 }
 
-func (p *provider) handleQueryUsers(query string) ([]*common.User, error) {
+func (p *provider) handleQueryUsers(query string) ([]*commonpb.UserInfo, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (p *provider) handleQueryUsers(query string) ([]*common.User, error) {
 	return usersMapper(resp), nil
 }
 
-func (p *provider) handleGetUser(userID string) (*common.User, error) {
+func (p *provider) handleGetUser(userID string) (*commonpb.UserInfo, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err

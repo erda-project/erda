@@ -104,7 +104,7 @@ func (s notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.C
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
 	user := resp.Data
-	if user == nil || user.ID == "" {
+	if user == nil || user.Id == "" {
 		return nil, pkgerrors.NewNotFoundError("User")
 	}
 	orgId := apis.GetOrgID(ctx)

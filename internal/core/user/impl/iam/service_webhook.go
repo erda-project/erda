@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 const (
@@ -98,17 +98,17 @@ func (p *provider) doDestroyUser(l logs.Logger, userEvent *UserEventDto) error {
 	return nil
 }
 
-func (p *provider) doUpdateUser(l logs.Logger, newUser *common.User) error {
-	l.Infof("user %s (id: %s) updated info", newUser.Name, newUser.ID)
+func (p *provider) doUpdateUser(l logs.Logger, newUser *commonpb.UserInfo) error {
+	l.Infof("user %s (id: %s) updated info", newUser.Name, newUser.Id)
 	if err := p.bdl.UpdateMemberUserInfo(apistructs.MemberUserInfoUpdateRequest{
 		Members: []apistructs.Member{
 			{
-				UserID: cast.ToString(newUser.ID),
+				UserID: newUser.Id,
 				Email:  newUser.Email,
 				Mobile: newUser.Phone,
 				Name:   newUser.Name,
 				Nick:   newUser.Nick,
-				Avatar: newUser.AvatarURL,
+				Avatar: newUser.Avatar,
 			},
 		},
 	}); err != nil {
