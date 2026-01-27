@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package erda.core.user.identity;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/user/identity/pb";
+
+import "common/userinfo.proto";
+
+message GetCurrentUserRequest {
+  string accessToken = 1;
+}
+
+message GetCurrentUserResponse {
+  common.UserInfo data = 1;
+}
+
+service UserIdentityService {
+  rpc GetCurrentUser (GetCurrentUserRequest) returns (GetCurrentUserResponse);
+}

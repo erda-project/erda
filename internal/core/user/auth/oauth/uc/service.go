@@ -13,10 +13,14 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
+
+type ResponseMeta struct {
+	Success *bool  `json:"success"`
+	Error   string `json:"error"`
+}
 
 func (p *provider) AuthURL(_ context.Context, r *pb.AuthURLRequest) (*pb.AuthURLResponse, error) {
 	redirectUri := fmt.Sprintf("%s?referer=%s", p.Config.RedirectURI, r.Referer)
@@ -163,12 +167,8 @@ func (p *provider) convertExpiresIn2Time(expiresIn int64) time.Duration {
 	return time.Duration(float64(expiresIn)*p.Config.TokenCacheEarlyExpireRate) * time.Second
 }
 
-func userTokenCacheKey(username, password string) string {
-	return userTokenCachePrefix + username + ":" + password
-}
-
 func DecodeUCFlat[T any](body []byte) (*T, error) {
-	var meta common.UCResponseMeta
+	var meta ResponseMeta
 	if err := json.Unmarshal(body, &meta); err != nil {
 		return nil, err
 	}

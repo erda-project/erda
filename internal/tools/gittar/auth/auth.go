@@ -31,17 +31,18 @@ import (
 	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/auth/applier"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -203,7 +204,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 
 	var gitRepository = &gitmodule.Repository{}
 	var err error
-	var userInfo *identity.UserInfo
+	var userInfo *commonpb.UserInfo
 
 	userIdStr := c.GetHeader(httputil.UserHeader)
 	if userIdStr != "" {
@@ -219,19 +220,19 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 			c.AbortWithStatus(500, err)
 			return
 		}
-		logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
+		logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Name)
 
 		// if success, caches the results for 5 minutes
 		_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
 		if validateError != nil {
-			logrus.Infof("openapi auth fail repo: %s user: %s", repoName, userInfoDto.Username)
+			logrus.Infof("openapi auth fail repo: %s user: %s", repoName, userInfoDto.Name)
 			c.AbortWithStatus(403, validateError)
 			return
 		}
 
 		c.Set("user", &models.User{
-			Name:     userInfoDto.Username,
-			NickName: userInfoDto.NickName,
+			Name:     userInfoDto.Name,
+			NickName: userInfoDto.Nick,
 			Email:    userInfoDto.Email,
 			Id:       userIdStr,
 		})
@@ -241,7 +242,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	logrus.Infof("basic auth,url: %s", c.HttpRequest().URL.String())
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repoName)
 	if err == nil {
-		_, validateError := ValidaUserRepo(c, string(userInfo.ID), repo)
+		_, validateError := ValidaUserRepo(c, string(userInfo.Id), repo)
 		if validateError != nil {
 			c.AbortWithString(403, validateError.Error()+" 403")
 		} else {
@@ -252,15 +253,16 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 			}
 			c.Set("repository", gitRepository)
 			c.Set("user", &models.User{
-				Name:     userInfo.UserName,
-				NickName: userInfo.NickName,
+				Name:     userInfo.Name,
+				NickName: userInfo.Nick,
 				Email:    userInfo.Email,
-				Id:       string(userInfo.ID)})
+				Id:       userInfo.Id,
+			})
 			c.Next()
 		}
 	} else {
 		c.Header("WWW-Authenticate", "Basic realm=Restricted")
-		if err == NO_AUTH_ERROR {
+		if errors.Is(err, NO_AUTH_ERROR) {
 			c.AbortWithStatus(401)
 		} else {
 			c.AbortWithString(401, fmt.Sprintf("[401 Unauthorized] %s", err.Error()))
@@ -280,7 +282,7 @@ type ErrorData struct {
 
 var printErr = func(err error) error { logrus.Error(err); return err }
 
-func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, repoName string) (*identity.UserInfo, error) {
+func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, repoName string) (*commonpb.UserInfo, error) {
 	username, password, ok := c.BasicAuth()
 	if !ok || username == "" || password == "" {
 		logrus.Debugf("failed to get user info by basic auth, repo: %s, Authorization header: %s", repoName, c.GetHeader(httpHeaderAuthorization))
@@ -306,20 +308,22 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, repoName string) (*ide
 		if err != nil {
 			return nil, printErr(fmt.Errorf("failed to get user info by PAT, repo: %s, userID: %s, err: %v", repoName, userID, err))
 		}
-		return identity.NewUserInfoFromDTO(userInfo), nil
+		return userInfo, nil
 	}
 
 	// otherwise, check by user
 	userInfo, err := GetUserByBasicAuth(c, username, password)
 	if err != nil {
-		return nil, printErr(fmt.Errorf("failed to get user info by basic auth, repo: %s, username: %s, err: %v", repoName, username, err))
+		logrus.Errorf("failed to get user info by basic auth, repo: %s, username: %s, err: %v", repoName, username, err)
+		return nil, errors.New("failed to get user info")
 	}
 	logrus.Debugf("success to get user info by basic auth, repo: %s, username: %s", repoName, username)
 	return userInfo, err
 }
 
-func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*identity.UserInfo, error) {
-	oauthToken, err := c.UserOAuthSvc.ExchangePassword(context.Background(), &pb.ExchangePasswordRequest{
+func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*commonpb.UserInfo, error) {
+	ctx := apis.WithInternalClientContext(context.Background(), discover.SvcGittar)
+	oauthToken, err := c.UserOAuthSvc.ExchangePassword(ctx, &pb.ExchangePasswordRequest{
 		Username: username,
 		Password: passwd,
 	})
@@ -327,15 +331,13 @@ func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (
 		return nil, err
 	}
 	logrus.Debugf("login success username: %s", username)
-	userInfo, err := c.Identity.Me(context.Background(), &domain.PersistedCredential{
-		Authenticator: &applier.BearerTokenAuth{
-			Token: oauthToken.AccessToken,
-		},
+	userInfo, err := c.UserIdentitySvc.GetCurrentUser(ctx, &identitypb.GetCurrentUserRequest{
+		AccessToken: oauthToken.AccessToken,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return userInfo, nil
+	return userInfo.Data, nil
 }
 
 func ValidaUserRepoWithCache(c *webcontext.Context, userId string, repo *models.Repo) (*AuthResp, error) {

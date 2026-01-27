@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/impl/iam"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/pointer"
 )
@@ -63,7 +64,7 @@ func (p *provider) getUserWithOAuthToken(credential *domain.PersistedCredential)
 			reqPath, r.StatusCode(), body.String())
 	}
 
-	var userWithToken common.IAMResponse[common.IAMUserDto]
+	var userWithToken iam.Response[iam.UserDto]
 	if err := json.NewDecoder(&body).Decode(&userWithToken); err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (p *provider) getUserByAuthToken(credential *domain.PersistedCredential) (*
 			reqPath, r.StatusCode(), body.String())
 	}
 
-	var userWithToken common.IAMResponse[common.IAMUserWithToken]
+	var userWithToken iam.Response[iam.UserWithToken]
 	if err := json.NewDecoder(&body).Decode(&userWithToken); err != nil {
 		return nil, err
 	}

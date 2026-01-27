@@ -133,36 +133,36 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	}
 
 	if result.AuthorId != "" {
-		dto, err := uc.FindUserByIdWithDesensitize(result.AuthorId)
+		dto, err := uc.FindUserById(result.AuthorId)
 		if err == nil {
-			result.AuthorUser = dto
+			result.AuthorUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
 			logrus.Errorf("get user from uc error: %v", err)
 		}
 	}
 
 	if result.AssigneeId != "" {
-		dto, err := uc.FindUserByIdWithDesensitize(result.AssigneeId)
+		dto, err := uc.FindUserById(result.AssigneeId)
 		if err == nil {
-			result.AssigneeUser = dto
+			result.AssigneeUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
 			logrus.Errorf("get user from uc error: %v", err)
 		}
 	}
 
 	if result.CloseUserId != "" {
-		dto, err := uc.FindUserByIdWithDesensitize(result.CloseUserId)
+		dto, err := uc.FindUserById(result.CloseUserId)
 		if err == nil {
-			result.CloseUser = dto
+			result.CloseUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
 			logrus.Errorf("get user from uc error: %v", err)
 		}
 	}
 
 	if result.MergeUserId != "" {
-		dto, err := uc.FindUserByIdWithDesensitize(result.MergeUserId)
+		dto, err := uc.FindUserById(result.MergeUserId)
 		if err == nil {
-			result.MergeUser = dto
+			result.MergeUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
 			logrus.Errorf("get user from uc error: %v", err)
 		}

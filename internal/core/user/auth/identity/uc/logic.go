@@ -24,11 +24,44 @@ import (
 
 	"github.com/pkg/errors"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda/internal/core/user/auth/applier"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
+
+type CurrentUser struct {
+	ID          common.USERID `json:"id"`
+	Email       string        `json:"email"`
+	Mobile      string        `json:"mobile"`
+	Username    string        `json:"username"`
+	Nickname    string        `json:"nickname"`
+	LastLoginAt uint64        `json:"lastLoginAt"`
+}
+
+func (p *provider) GetCurrentUser(_ context.Context, req *pb.GetCurrentUserRequest) (*pb.GetCurrentUserResponse, error) {
+	u, err := p.getUserWithOAuthToken(&domain.PersistedCredential{
+		Authenticator: &applier.BearerTokenAuth{
+			Token: req.AccessToken,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetCurrentUserResponse{
+		Data: &commonpb.UserInfo{
+			Id:     string(u.ID),
+			Name:   u.UserName,
+			Nick:   u.NickName,
+			Avatar: u.AvatarUrl,
+			Phone:  u.Phone,
+			Email:  u.Email,
+		},
+	}, nil
+}
 
 func (p *provider) Me(_ context.Context, credential *domain.PersistedCredential) (*common.UserInfo, error) {
 	switch credential.Authenticator.(type) {
@@ -93,7 +126,7 @@ func (p *provider) getUserWithCookie(credential *domain.PersistedCredential) (*c
 			reqPath, r.StatusCode(), body.String())
 	}
 
-	var info common.UCResponse[common.UCCurrentUser]
+	var info uc.Response[CurrentUser]
 	if err := json.NewDecoder(&body).Decode(&info); err != nil {
 		return nil, err
 	}

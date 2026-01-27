@@ -25,7 +25,6 @@ import (
 
 const (
 	serverTokenCacheKey    = "server_token"
-	userTokenCachePrefix   = "user:"
 	defaultEarlyExpireRate = 0.8
 )
 
@@ -40,7 +39,8 @@ type Config struct {
 	TokenCacheSize            int     `file:"token_cache_size" default:"20000"`
 	TokenCacheEarlyExpireRate float64 `file:"token_cache_early_expire_rate" default:"0.8"`
 	ServerTokenCacheEnabled   bool    `file:"server_token_cache_enabled" default:"true"`
-	UserTokenCacheEnabled     bool    `file:"user_token_cache_enabled" default:"true"`
+	// why uc doesn't need user token cache ？
+	// an implicit token is used, and when a user logs in repeatedly, the same UUID is assigned to them.
 }
 
 type provider struct {

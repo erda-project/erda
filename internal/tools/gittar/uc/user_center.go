@@ -16,18 +16,14 @@ package uc
 
 import (
 	"context"
-	"errors"
-	"time"
 
-	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/desensitize"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
-
-var userCache = cache.New(12*time.Hour, 1*time.Hour)
 
 var userServiceServer userpb.UserServiceServer
 
@@ -36,50 +32,21 @@ func InitializeUcClient(identity userpb.UserServiceServer) {
 	logrus.Infof("gittar uc client set up")
 }
 
-func FindUserById(id string) (*apistructs.UserInfoDto, error) {
-	cacheUser, exist := userCache.Get(id)
-	if exist {
-		return cacheUser.(*apistructs.UserInfoDto), nil
-	}
-	if id == "0" {
-		return nil, nil
-	}
-	user, err := userServiceServer.GetUser(context.Background(), &userpb.GetUserRequest{
+func FindUserById(id string) (*commonpb.UserInfo, error) {
+	ctx := apis.WithInternalClientContext(context.Background(), discover.SvcGittar)
+	userResp, err := userServiceServer.GetUser(ctx, &userpb.GetUserRequest{
 		UserID: id,
 	})
 	if err != nil {
 		return nil, err
 	}
-	userInfo := convertDto(user.Data)
-	userCache.Set(id, userInfo, cache.DefaultExpiration)
-	return userInfo, nil
-}
-func FindUserByIdWithDesensitize(id string) (*apistructs.UserInfoDto, error) {
-	user, err := userServiceServer.GetUser(context.Background(), &userpb.GetUserRequest{
-		UserID: id,
-	})
-	if err != nil {
-		return nil, err
-	}
-	userInfo := user.Data
-	if userInfo != nil {
-		// 不是用指针类型 防止更新缓存里的原始值
-		result := userInfo
-		result.Email = desensitize.Email(userInfo.Email)
-		result.Phone = desensitize.Mobile(userInfo.Phone)
-		userInfo = result
-		return convertDto(userInfo), nil
-	}
-	return nil, errors.New("error user")
-}
-
-func convertDto(userInfo *userpb.User) *apistructs.UserInfoDto {
-	return &apistructs.UserInfoDto{
-		AvatarURL: userInfo.AvatarURL,
-		Email:     userInfo.Email,
-		UserID:    userInfo.ID,
-		NickName:  userInfo.Nick,
-		Phone:     userInfo.Phone,
-		Username:  userInfo.Name,
-	}
+	user := userResp.Data
+	return &commonpb.UserInfo{
+		Id:     user.ID,
+		Name:   user.Name,
+		Nick:   user.Nick,
+		Avatar: user.AvatarURL,
+		Phone:  user.Phone,
+		Email:  user.Email,
+	}, nil
 }

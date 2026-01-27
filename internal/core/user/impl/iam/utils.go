@@ -32,7 +32,7 @@ func formatIAMTime(timeStr string) (time.Time, error) {
 	return time.Parse(timeLayout, timeStr)
 }
 
-func userMapper(user *common.IAMUserDto) *common.User {
+func userMapper(user *UserDto) *common.User {
 	return &common.User{
 		ID:        strconv.FormatInt(user.ID, 10),
 		Name:      user.Username,
@@ -43,7 +43,7 @@ func userMapper(user *common.IAMUserDto) *common.User {
 	}
 }
 
-func managedUserMapper(u *common.IAMUserDto) (*pb.ManagedUser, error) {
+func managedUserMapper(u *UserDto) (*pb.ManagedUser, error) {
 	var (
 		loginAt          *timestamppb.Timestamp
 		passwordExpireAt *timestamppb.Timestamp
