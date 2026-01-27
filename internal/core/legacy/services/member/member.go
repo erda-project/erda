@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
@@ -34,7 +35,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
@@ -218,7 +218,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 	parentIDMap := make(map[int64]int64)
 	for _, user := range users {
 		for _, targetScopeID := range targetScopeIDs {
-			members, err := m.db.GetMemberByScopeAndUserID(user.ID, targetScopeType, targetScopeID)
+			members, err := m.db.GetMemberByScopeAndUserID(user.Id, targetScopeType, targetScopeID)
 			if err != nil {
 				logrus.Infof("failed to get members, (%v)", err)
 				continue
@@ -235,7 +235,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 						Scope:     string(apistructs.OrgScope),
 						ScopeId:   req.Scope.ID,
 						Type:      mysqltokenstore.PAT.String(),
-						CreatorId: user.ID,
+						CreatorId: user.Id,
 					})
 					if err != nil {
 						return err
@@ -246,12 +246,12 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					ScopeID:       targetScopeID,
 					ScopeName:     m.db.GetScopeNameByScope(targetScopeType, targetScopeID),
 					ParentID:      parentID,
-					UserID:        user.ID,
+					UserID:        user.Id,
 					Email:         user.Email,
 					Mobile:        user.Phone,
 					Name:          user.Name,
 					Nick:          user.Nick,
-					Avatar:        user.AvatarURL,
+					Avatar:        user.Avatar,
 					UserSyncAt:    time.Now(),
 					OrgID:         orgID,
 					ProjectID:     projectID,
@@ -263,7 +263,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 			}
 		}
 
-		userIDStrs = append(userIDStrs, user.ID)
+		userIDStrs = append(userIDStrs, user.Id)
 	}
 
 	// 更新member的extra
@@ -586,10 +586,10 @@ func (m *Member) syncReqExtra2DB(userIDs []string, scopeType apistructs.ScopeTyp
 
 // 在判断最大管理员数量时，若是成员原本就有manager的角色，这次更新只是添加一个非管理员的角色，
 // 则不应该算作占用最大管理员数量中的一个
-func (m *Member) getMemberManagerCount(users []identity.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberManagerCount(users []*commonpb.UserInfo, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
-		userIDs = append(userIDs, user.ID)
+		userIDs = append(userIDs, user.Id)
 	}
 
 	count, err := m.db.GetManagerMemberCountByUserID(userIDs, scopeID, scopeType)
@@ -602,10 +602,10 @@ func (m *Member) getMemberManagerCount(users []identity.User, scopeID int64, sco
 
 // 在判断最大管理员数量时，若是成员原本就有owner的角色，这次更新只是添加一个非owner的角色，
 // 则不应该算作占用最大所有者数量中的一个
-func (m *Member) getMemberOwnerCount(users []*userpb.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberOwnerCount(users []*commonpb.UserInfo, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
-		userIDs = append(userIDs, user.ID)
+		userIDs = append(userIDs, user.Id)
 	}
 
 	count, err := m.db.GetOwnerMemberCountByUserID(userIDs, scopeID, scopeType)
@@ -945,9 +945,9 @@ func (m *Member) getMember(scopeType apistructs.ScopeType, scopeID int64) (map[s
 	return members, nil
 }
 
-func (m *Member) checkUCUserInfo(users []*userpb.User) error {
+func (m *Member) checkUCUserInfo(users []*commonpb.UserInfo) error {
 	for _, user := range users {
-		if user.ID == "" {
+		if user.Id == "" {
 			return errors.Errorf("failed to get user info")
 		}
 	}

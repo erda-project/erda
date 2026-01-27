@@ -252,7 +252,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			Mobile:     user.Phone,
 			Name:       user.Name,
 			Nick:       user.Nick,
-			Avatar:     user.AvatarURL,
+			Avatar:     user.Avatar,
 			UserSyncAt: time.Now(),
 			OrgID:      project.OrgID,
 			ProjectID:  project.ID,

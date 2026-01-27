@@ -29,19 +29,17 @@ type PagingData[T any] struct {
 }
 
 type UserDto struct {
-	ID           int64   `json:"id"`
-	Username     string  `json:"username"`
-	Nickname     string  `json:"nickname"`
-	Realname     *string `json:"realname"`
-	Mobile       string  `json:"mobile"`
-	Email        *string `json:"email"`
-	Status       bool    `json:"status"`
-	Locked       bool    `json:"locked"`
-	Avatar       *string `json:"avatar"`
-	Source       string  `json:"source"`
-	LastLoginIp  string  `json:"lastLoginIp"`
-	InviteCode   *string `json:"inviteCode"`
-	InviteUserId *int64  `json:"inviteUserId"`
+	ID          int64  `json:"id"`
+	Username    string `json:"username"`
+	Nickname    string `json:"nickname"`
+	Realname    string `json:"realname"`
+	Mobile      string `json:"mobile"`
+	Email       string `json:"email"`
+	Status      bool   `json:"status"`
+	Locked      bool   `json:"locked"`
+	Avatar      string `json:"avatar"`
+	Source      string `json:"source"`
+	LastLoginIp string `json:"lastLoginIp"`
 	// TODO: time format, now response: yyyy-MM-ddTHH:mm:ss
 	CreatedAt        string `json:"createdAt"`
 	LastLoginAt      string `json:"lastLoginAt"`
@@ -49,6 +47,8 @@ type UserDto struct {
 	LockExpireAt     string `json:"lockExpireAt"`
 	// TODO: not used now
 	// Application  struct `json:"application"`
+	//InviteCode   *string `json:"inviteCode"`
+	//InviteUserId *int64  `json:"inviteUserId"`
 }
 
 type UserWithToken struct {

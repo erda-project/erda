@@ -7,23 +7,23 @@ import (
 	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/internal/core/user/common"
 )
 
-func userMapper(user *GetUser) *common.User {
-	return &common.User{
-		ID:        strconv.Itoa(user.ID),
-		Name:      user.Name,
-		Nick:      user.Nick,
-		AvatarURL: user.AvatarURL,
-		Phone:     user.Phone,
-		Email:     user.Email,
+func userMapper(user *GetUser) *commonpb.UserInfo {
+	return &commonpb.UserInfo{
+		Id:     strconv.Itoa(user.ID),
+		Name:   user.Name,
+		Nick:   user.Nick,
+		Avatar: user.AvatarURL,
+		Phone:  user.Phone,
+		Email:  user.Email,
 	}
 }
 
-func usersMapper(users []*GetUser) []*common.User {
-	return lo.Map(users, func(item *GetUser, _ int) *common.User {
+func usersMapper(users []*GetUser) []*commonpb.UserInfo {
+	return lo.Map(users, func(item *GetUser, _ int) *commonpb.UserInfo {
 		return userMapper(item)
 	})
 }

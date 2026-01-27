@@ -294,19 +294,9 @@ message GetUserRequest {
 }
 
 message GetUserResponse {
-  User data = 1;
+  common.UserInfo data = 1;
 }
 
-
-message User {
-  string ID = 1 [json_name = "user_id"];
-  string name = 2 [json_name = "username"];
-  string nick = 3 [json_name = "nickname"];
-  string avatarURL = 4 [json_name = "avatar_url"];
-  string phone = 5 [json_name = "phone_number"];
-  string email = 6;
-  string state = 7;
-}
 
 message ManagedUser {
   string id = 1;
@@ -328,7 +318,7 @@ message FindUsersRequest {
 }
 
 message FindUsersResponse {
-  repeated User data = 1;
+  repeated common.UserInfo data = 1;
 }
 
 message FindUsersByKeyRequest {
@@ -336,7 +326,7 @@ message FindUsersByKeyRequest {
 }
 
 message FindUsersByKeyResponse {
-  repeated User data = 1;
+  repeated common.UserInfo data = 1;
 }
 
 message UserPagingRequest {

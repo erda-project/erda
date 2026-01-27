@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
-	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -41,7 +41,7 @@ func (p *provider) newAuthedClient(refresh *bool) (*httpclient.HTTPClient, error
 	return p.client.BearerTokenAuth(oauthToken.AccessToken), nil
 }
 
-func (p *provider) getUser(userID string, plainText bool) (*common.User, error) {
+func (p *provider) getUser(userID string, plainText bool) (*commonpb.UserInfo, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (p *provider) findUsersByQuery(fieldName, key string) ([]*UserDto, error) {
 	return resp.Data, nil
 }
 
-func (p *provider) findByIDs(ids []int, plainText bool) ([]*common.User, error) {
+func (p *provider) findByIDs(ids []int, plainText bool) ([]*commonpb.UserInfo, error) {
 	client, err := p.newAuthedClient(nil)
 	if err != nil {
 		return nil, err
@@ -233,7 +233,7 @@ func (p *provider) findByIDs(ids []int, plainText bool) ([]*common.User, error) 
 		return nil, err
 	}
 
-	userList := make([]*common.User, len(resp.Data))
+	userList := make([]*commonpb.UserInfo, len(resp.Data))
 	for i, user := range resp.Data {
 		userList[i] = userMapper(&user)
 	}

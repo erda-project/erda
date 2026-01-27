@@ -149,7 +149,7 @@ func (p *provider) Create(createReq *pb.CreateOrgRequest) (*db.Org, error) {
 			Mobile:     user.Phone,
 			Name:       user.Name,
 			Nick:       user.Nick,
-			Avatar:     user.AvatarURL,
+			Avatar:     user.Avatar,
 			UserSyncAt: time.Now(),
 			OrgID:      org.ID,
 		}

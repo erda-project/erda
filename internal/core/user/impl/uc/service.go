@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
+func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
 	ids := req.IDs
 	if len(ids) == 0 {
 		return &pb.FindUsersResponse{}, nil
@@ -50,22 +50,22 @@ func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb
 	}
 
 	if sysOpExist {
-		users = append(users, &common.SystemUser)
+		users = append(users, common.SystemUser)
 	}
 
-	pbUsers := make([]*pb.User, 0, len(users))
+	pbUsers := make([]*commonpb.UserInfo, 0, len(users))
 	if req.KeepOrder {
-		userMap := lo.KeyBy(users, func(u *common.User) string {
-			return u.ID
+		userMap := lo.KeyBy(users, func(u *commonpb.UserInfo) string {
+			return u.Id
 		})
 		for _, id := range req.IDs {
 			if user, exists := userMap[id]; exists {
-				pbUsers = append(pbUsers, common.ToPbUser(user))
+				pbUsers = append(pbUsers, user)
 			}
 		}
 	} else {
 		for _, i := range users {
-			pbUsers = append(pbUsers, common.ToPbUser(i))
+			pbUsers = append(pbUsers, i)
 		}
 	}
 
@@ -82,20 +82,20 @@ func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyReq
 	if err != nil {
 		return nil, err
 	}
-	pbUsers := make([]*pb.User, 0, len(users))
+	pbUsers := make([]*commonpb.UserInfo, 0, len(users))
 	for _, i := range users {
-		pbUsers = append(pbUsers, common.ToPbUser(i))
+		pbUsers = append(pbUsers, i)
 	}
 	return &pb.FindUsersByKeyResponse{Data: pbUsers}, nil
 }
 
-func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+func (p *provider) GetUser(_ context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	user, err := p.handleGetUser(req.UserID)
 	if err != nil {
 		return nil, err
 	}
 	return &pb.GetUserResponse{
-		Data: common.ToPbUser(user),
+		Data: user,
 	}, nil
 }
 
@@ -110,10 +110,10 @@ func (p *provider) UserMe(ctx context.Context, r *pb.UserMeRequest) (*commonpb.U
 		return nil, err
 	}
 	return &commonpb.UserInfo{
-		Id:     user.ID,
+		Id:     user.Id,
 		Name:   user.Name,
 		Nick:   user.Nick,
-		Avatar: user.AvatarURL,
+		Avatar: user.Avatar,
 		Phone:  user.Phone,
 		Email:  user.Email,
 	}, nil

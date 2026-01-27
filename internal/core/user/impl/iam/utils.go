@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/pkg/pointer"
 )
 
 const timeLayout = "2006-01-02T15:04:05"
@@ -32,14 +32,14 @@ func formatIAMTime(timeStr string) (time.Time, error) {
 	return time.Parse(timeLayout, timeStr)
 }
 
-func userMapper(user *UserDto) *common.User {
-	return &common.User{
-		ID:        strconv.FormatInt(user.ID, 10),
-		Name:      user.Username,
-		Nick:      user.Nickname,
-		AvatarURL: pointer.StringDeref(user.Avatar, ""),
-		Phone:     user.Mobile,
-		Email:     pointer.StringDeref(user.Email, ""),
+func userMapper(user *UserDto) *commonpb.UserInfo {
+	return &commonpb.UserInfo{
+		Id:     cast.ToString(user.ID),
+		Name:   user.Username,
+		Nick:   user.Nickname,
+		Avatar: user.Avatar,
+		Phone:  user.Mobile,
+		Email:  user.Email,
 	}
 }
 
@@ -69,9 +69,9 @@ func managedUserMapper(u *UserDto) (*pb.ManagedUser, error) {
 		Id:          strconv.FormatInt(u.ID, 10),
 		Name:        u.Username,
 		Nick:        u.Nickname,
-		Avatar:      pointer.StringDeref(u.Avatar, ""),
+		Avatar:      u.Avatar,
 		Phone:       u.Mobile,
-		Email:       pointer.StringDeref(u.Email, ""),
+		Email:       u.Email,
 		LastLoginAt: loginAt,
 		PwdExpireAt: passwordExpireAt,
 		// Not support source change now.

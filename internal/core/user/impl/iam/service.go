@@ -53,22 +53,22 @@ func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.F
 		return nil, err
 	}
 	if sysOpExist {
-		users = append(users, &common.SystemUser)
+		users = append(users, common.SystemUser)
 	}
 
-	pbUsers := make([]*pb.User, 0, len(users))
+	pbUsers := make([]*commonpb.UserInfo, 0, len(users))
 	if req.KeepOrder {
-		userMap := lo.KeyBy(users, func(u *common.User) string {
-			return u.ID
+		userMap := lo.KeyBy(users, func(u *commonpb.UserInfo) string {
+			return u.Id
 		})
 		for _, id := range req.IDs {
 			if user, exists := userMap[id]; exists {
-				pbUsers = append(pbUsers, common.ToPbUser(user))
+				pbUsers = append(pbUsers, user)
 			}
 		}
 	} else {
 		for _, i := range users {
-			pbUsers = append(pbUsers, common.ToPbUser(i))
+			pbUsers = append(pbUsers, i)
 		}
 	}
 
@@ -85,7 +85,7 @@ func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyReq
 	}
 	g, ctx := errgroup.WithContext(context.Background())
 
-	userMap := make(map[string]*pb.User)
+	userMap := make(map[string]*commonpb.UserInfo)
 	var mu sync.Mutex
 
 	conditions := []string{"username", "nickname", "mobile", "email"}
@@ -100,8 +100,8 @@ func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyReq
 			mu.Lock()
 			defer mu.Unlock()
 			for _, u := range users {
-				pbUser := common.ToPbUser(userMapper(u))
-				userMap[pbUser.ID] = pbUser
+				pbUser := userMapper(u)
+				userMap[pbUser.Id] = pbUser
 			}
 			return nil
 		})
@@ -111,7 +111,7 @@ func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyReq
 		return nil, err
 	}
 
-	foundUsers := make([]*pb.User, 0, len(userMap))
+	foundUsers := make([]*commonpb.UserInfo, 0, len(userMap))
 	for _, u := range userMap {
 		foundUsers = append(foundUsers, u)
 	}
@@ -131,10 +131,10 @@ func (p *provider) Me(ctx context.Context, _ *pb.UserMeRequest) (*commonpb.UserI
 		return nil, errors.Wrap(err, "failed to get user")
 	}
 	return &commonpb.UserInfo{
-		Id:     u.ID,
+		Id:     u.Id,
 		Name:   u.Name,
 		Nick:   u.Nick,
-		Avatar: u.AvatarURL,
+		Avatar: u.Avatar,
 		Phone:  u.Phone,
 		Email:  u.Email,
 	}, nil

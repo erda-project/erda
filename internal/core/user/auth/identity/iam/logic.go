@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/iam"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/pointer"
 )
 
 func (p *provider) Me(_ context.Context, credential *domain.PersistedCredential) (*common.UserInfo, error) {
@@ -73,7 +72,7 @@ func (p *provider) getUserWithOAuthToken(credential *domain.PersistedCredential)
 
 	return &common.UserInfo{
 		ID:          common.USERID(strconv.FormatInt(userInfo.ID, 10)),
-		Email:       pointer.StringDeref(userInfo.Email, ""),
+		Email:       userInfo.Email,
 		Phone:       userInfo.Mobile,
 		UserName:    userInfo.Username,
 		NickName:    userInfo.Nickname,
@@ -130,10 +129,10 @@ func (p *provider) getUserByAuthToken(credential *domain.PersistedCredential) (*
 
 	return &common.UserInfo{
 		ID:             common.USERID(strconv.FormatInt(userInfo.ID, 10)),
-		Email:          pointer.StringDeref(userInfo.Email, ""),
+		Email:          userInfo.Email,
 		Phone:          userInfo.Mobile,
 		UserName:       userInfo.Username,
-		AvatarUrl:      pointer.StringDeref(userInfo.Avatar, ""),
+		AvatarUrl:      userInfo.Avatar,
 		NickName:       userInfo.Nickname,
 		LastLoginAt:    userInfo.LastLoginAt,
 		SessionRefresh: refresh,

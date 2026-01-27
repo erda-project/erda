@@ -257,7 +257,7 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 	}
 	uInfo := make(map[string]string, len(resp.Data))
 	for _, i := range resp.Data {
-		uInfo[i.ID] = i.Nick
+		uInfo[i.Id] = i.Nick
 	}
 	for i := range list {
 		list[i].Starter = uInfo[list[i].Starter]
