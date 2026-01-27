@@ -42,8 +42,6 @@ grpc-client@erda.core.user.oauth:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.user.oauth-client: { }
 
-# identity
-erda.core.user.identity.iam:
-  host: "${IAM_ADDR}"
-  client_id: "${OAUTH_CLIENT_ID}"
-  application_name: "${IAM_APPLICATION_NAME:erda}"
+grpc-client@erda.core.user.identity:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.user.identity-client: { }

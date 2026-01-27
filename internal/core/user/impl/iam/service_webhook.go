@@ -57,7 +57,7 @@ func (p *provider) UserEventWebhook(_ context.Context, req *pb.UserEventWebhookR
 
 	l.Debugf("event payload, %s", string(jsonBytes))
 
-	var userEvent common.IAMUserEventDto
+	var userEvent UserEventDto
 	if err := json.Unmarshal(jsonBytes, &userEvent); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal payload to IAMUserDto")
 	}
@@ -88,7 +88,7 @@ func (p *provider) UserEventWebhook(_ context.Context, req *pb.UserEventWebhookR
 	return &pb.UserEventWebhookResponse{}, nil
 }
 
-func (p *provider) doDestroyUser(l logs.Logger, userEvent *common.IAMUserEventDto) error {
+func (p *provider) doDestroyUser(l logs.Logger, userEvent *UserEventDto) error {
 	l.Infof("user %s (id: %d) destroy", userEvent.Username, userEvent.ID)
 	if err := p.bdl.DestroyUsers(apistructs.MemberDestroyRequest{
 		UserIDs: []string{cast.ToString(userEvent.ID)},

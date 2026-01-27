@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
 import "common/openapi.proto";
+import "common/userinfo.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/user/pb";
 
@@ -239,7 +240,7 @@ service UserService {
       },
     };
   };
-  rpc UserMe (UserMeRequest) returns (UserMeResponse) {
+  rpc UserMe (UserMeRequest) returns (common.UserInfo) {
     option (google.api.http) = {
       get: "/api/users/me",
     };
@@ -255,7 +256,7 @@ service UserService {
     };
   };
 
-  rpc Me (UserMeRequest) returns (UserMeResponse) {
+  rpc Me (UserMeRequest) returns (common.UserInfo) {
     option (google.api.http) = {
       get: "/me",
     };
@@ -468,17 +469,6 @@ message PwdSecurityConfigUpdateRequest {
 message PwdSecurityConfigUpdateResponse {}
 
 message UserMeRequest {}
-
-message UserMeResponse {
-  string id = 1;
-  string name = 2;
-  string nick = 3;
-  string avatar = 4;
-  string phone = 5;
-  string email = 6;
-  string token = 7;
-  string lastLoginAt = 8;
-}
 
 enum EventType {
   EVENT_IAM = 0;

@@ -289,7 +289,7 @@ func (svc *Service) QueryAllNotes(repo *gitmodule.Repository, mergeId int64) ([]
 		if v.AuthorId != "" {
 			dto, err := uc.FindUserById(v.AuthorId)
 			if err == nil {
-				v.AuthorUser = dto
+				v.AuthorUser = uc.ConverPbToUserInfoDto(dto)
 			} else {
 				logrus.Errorf("get user from uc error: %v", err)
 			}
@@ -318,7 +318,7 @@ func (svc *Service) QueryDiffNotes(repo *gitmodule.Repository, mergeId int64, ol
 		if v.AuthorId != "" {
 			dto, err := uc.FindUserById(v.AuthorId)
 			if err == nil {
-				v.AuthorUser = dto
+				v.AuthorUser = uc.ConverPbToUserInfoDto(dto)
 			} else {
 				logrus.Errorf("get user from uc error: %v", err)
 			}

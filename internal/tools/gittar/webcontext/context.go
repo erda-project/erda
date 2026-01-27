@@ -30,12 +30,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
@@ -45,19 +45,20 @@ import (
 )
 
 type Context struct {
-	EchoContext  echo.Context
-	Repository   *gitmodule.Repository
-	User         *models.User
-	Service      *models.Service
-	DBClient     *models.DBClient
-	Bundle       *bundle.Bundle
-	UserOAuthSvc useroauthpb.UserOAuthServiceServer
-	Identity     domain.Identity
-	next         bool
-	EtcdClient   *clientv3.Client
-	TokenService tokenpb.TokenServiceServer
-	orgClient    org.ClientInterface
-	i18nTran     i18n.Translator
+	EchoContext     echo.Context
+	Repository      *gitmodule.Repository
+	User            *models.User
+	Service         *models.Service
+	DBClient        *models.DBClient
+	Bundle          *bundle.Bundle
+	UserOAuthSvc    useroauthpb.UserOAuthServiceServer
+	UserIdentitySvc identitypb.UserIdentityServiceServer
+	UserSvc         userpb.UserServiceServer
+	next            bool
+	EtcdClient      *clientv3.Client
+	TokenService    tokenpb.TokenServiceServer
+	orgClient       org.ClientInterface
+	i18nTran        i18n.Translator
 }
 
 type ContextHandlerFunc func(*Context)
@@ -69,6 +70,8 @@ var tokenServiceInstance *tokenpb.TokenServiceServer
 var orgClient org.ClientInterface
 var i18nTran i18n.Translator
 var userOAuthSvc useroauthpb.UserOAuthServiceServer
+var userIdentitySvc identitypb.UserIdentityServiceServer
+var userSvc userpb.UserServiceServer
 
 func WithDB(db *models.DBClient) {
 	dbClientInstance = db
@@ -96,6 +99,14 @@ func WithI18n(i18n i18n.Translator) {
 
 func WithUserOAuthSvc(o useroauthpb.UserOAuthServiceServer) {
 	userOAuthSvc = o
+}
+
+func WithUserIdentitySvc(i identitypb.UserIdentityServiceServer) {
+	userIdentitySvc = i
+}
+
+func WithUSerSvc(u userpb.UserServiceServer) {
+	userSvc = u
 }
 
 func WrapHandler(handlerFunc ContextHandlerFunc) echo.HandlerFunc {
@@ -163,17 +174,18 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		user = userValue.(*models.User)
 	}
 	return &Context{
-		Repository:   repository.(*gitmodule.Repository),
-		EchoContext:  c,
-		User:         user,
-		Service:      models.NewService(db, diceBundleInstance, i18nTran, apis.HTTPLanguage(c.Request())),
-		DBClient:     db,
-		UserOAuthSvc: userOAuthSvc,
-		Identity:     legacycontainer.Get[domain.Identity](),
-		Bundle:       diceBundleInstance,
-		EtcdClient:   etcdClientInstance,
-		TokenService: *tokenServiceInstance,
-		orgClient:    orgClient,
+		Repository:      repository.(*gitmodule.Repository),
+		EchoContext:     c,
+		User:            user,
+		Service:         models.NewService(db, diceBundleInstance, i18nTran, apis.HTTPLanguage(c.Request())),
+		DBClient:        db,
+		UserOAuthSvc:    userOAuthSvc,
+		UserIdentitySvc: userIdentitySvc,
+		UserSvc:         userSvc,
+		Bundle:          diceBundleInstance,
+		EtcdClient:      etcdClientInstance,
+		TokenService:    *tokenServiceInstance,
+		orgClient:       orgClient,
 	}
 }
 

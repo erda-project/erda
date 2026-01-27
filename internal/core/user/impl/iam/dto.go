@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package iam
 
-// IAMResponse iam standard response dto
-type IAMResponse[T any] struct {
+// Response iam standard iam response dto
+type Response[T any] struct {
 	Success bool   `json:"success"`
 	Data    T      `json:"data"`
 	Code    string `json:"code"`
@@ -23,12 +23,12 @@ type IAMResponse[T any] struct {
 	Help    string `json:"help"`
 }
 
-type IAMPagingData[T any] struct {
+type PagingData[T any] struct {
 	Total int `json:"total"`
 	Data  T   `json:"data"`
 }
 
-type IAMUserDto struct {
+type UserDto struct {
 	ID           int64   `json:"id"`
 	Username     string  `json:"username"`
 	Nickname     string  `json:"nickname"`
@@ -51,14 +51,14 @@ type IAMUserDto struct {
 	// Application  struct `json:"application"`
 }
 
-type IAMUserWithToken struct {
-	User         IAMUserDto       `json:"user"`
-	Expire       uint             `json:"expire"`
-	NewToken     string           `json:"newToken"`
-	CookieConfig *IAMCookieConfig `json:"cookieConfig,omitempty"`
+type UserWithToken struct {
+	User         UserDto       `json:"user"`
+	Expire       uint          `json:"expire"`
+	NewToken     string        `json:"newToken"`
+	CookieConfig *CookieConfig `json:"cookieConfig,omitempty"`
 }
 
-type IAMCookieConfig struct {
+type CookieConfig struct {
 	Domain   string `json:"domain,omitempty"`
 	Path     string `json:"path,omitempty"`
 	Secure   bool   `json:"secure,omitempty"`
@@ -68,7 +68,7 @@ type IAMCookieConfig struct {
 	//SameSite string `json:"sameSite,omitempty"`
 }
 
-type IAMUserCreate struct {
+type UserCreate struct {
 	UserName          string `json:"username"`
 	NickName          string `json:"nickname"`
 	Email             string `json:"email"`
@@ -77,7 +77,7 @@ type IAMUserCreate struct {
 	NeedResetPassword bool   `json:"needResetPassword,omitempty"`
 }
 
-type IAMUserEventDto struct {
+type UserEventDto struct {
 	// TODO: only use user id now
 	ID       int64  `json:"id"`
 	Username string `json:"username"`

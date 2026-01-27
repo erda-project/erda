@@ -18,12 +18,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type User struct {
@@ -81,57 +77,6 @@ func (u *USERID) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type UserPaging struct {
-	Data  []UserInPaging `json:"data"`
-	Total int            `json:"total"`
-}
-
-// userInPaging 用户中心分页用户数据结构
-type UserInPaging struct {
-	Id            interface{} `json:"id"`            // 主键
-	Avatar        string      `json:"avatar"`        // 头像
-	Username      string      `json:"username"`      // 用户名
-	Nickname      string      `json:"nickname"`      // 昵称
-	Mobile        string      `json:"mobile"`        // 手机号
-	Email         string      `json:"email"`         // 邮箱
-	Enabled       bool        `json:"enabled"`       // 是否启用
-	UserDetail    interface{} `json:"userDetail"`    // 用户详细信息
-	Locked        bool        `json:"locked"`        // 冻结FLAG(0:NOT,1:YES)
-	PasswordExist bool        `json:"passwordExist"` // 密码是否存在
-	PwdExpireAt   timestamp   `json:"pwdExpireAt"`   // 过期时间
-	Extra         interface{} `json:"extra"`         // 扩展字段
-	Source        string      `json:"source"`        // 用户来源
-	SourceType    string      `json:"sourceType"`    // 来源类型
-	Tag           string      `json:"tag"`           // 标签
-	Channel       string      `json:"channel"`       // 注册渠道
-	ChannelType   string      `json:"channelType"`   // 渠道类型
-	TenantId      int         `json:"tenantId"`      // 租户ID
-	CreatedAt     timestamp   `json:"createdAt"`     // 创建时间
-	UpdatedAt     timestamp   `json:"updatedAt"`     // 更新时间
-	LastLoginAt   timestamp   `json:"lastLoginAt"`   // 最后登录时间
-}
-
-// millisecond epoch
-type timestamp time.Time
-
-func (t timestamp) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.FormatInt(time.Time(t).Unix(), 10)), nil
-}
-
-func (t *timestamp) UnmarshalJSON(s []byte) (err error) {
-	r := strings.Replace(string(s), `"`, ``, -1)
-	if r == "null" {
-		return
-	}
-
-	q, err := strconv.ParseInt(r, 10, 64)
-	if err != nil {
-		return err
-	}
-	*(*time.Time)(t) = time.Unix(q/1000, 0)
-	return
-}
-
 const SystemOperator = "system"
 
 var SystemUser = User{
@@ -145,7 +90,7 @@ type UserScopeInfo struct {
 	// dont care other fields
 }
 
-func ToPbUser(user User) *pb.User {
+func ToPbUser(user *User) *pb.User {
 	return &pb.User{
 		ID:        user.ID,
 		Name:      user.Name,
@@ -154,21 +99,5 @@ func ToPbUser(user User) *pb.User {
 		Phone:     user.Phone,
 		Email:     user.Email,
 		State:     user.State,
-	}
-}
-
-func NewUserInfoFromDTO(dto *apistructs.UserInfoDto) *UserInfo {
-	if dto == nil {
-		return nil
-	}
-	return &UserInfo{
-		ID:         USERID(strutil.String(dto.UserID)),
-		Email:      dto.Email,
-		EmailExist: dto.Email != "",
-		Phone:      dto.Phone,
-		PhoneExist: dto.Phone != "",
-		AvatarUrl:  dto.AvatarURL,
-		UserName:   dto.Username,
-		NickName:   dto.NickName,
 	}
 }
