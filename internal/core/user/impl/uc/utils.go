@@ -29,6 +29,16 @@ func usersMapper(users []*GetUser) []*common.User {
 }
 
 func managedUserMapper(u *UserInPaging) *pb.ManagedUser {
+	var lastLoginAt *timestamppb.Timestamp
+	if u.LastLoginAt != nil && !u.LastLoginAt.IsZero() {
+		lastLoginAt = timestamppb.New(u.LastLoginAt.Time)
+	}
+
+	var pwdExpireAt *timestamppb.Timestamp
+	if u.PwdExpireAt != nil && !u.PwdExpireAt.IsZero() {
+		pwdExpireAt = timestamppb.New(u.PwdExpireAt.Time)
+	}
+
 	return &pb.ManagedUser{
 		Id:          cast.ToString(u.Id),
 		Name:        u.Username,
@@ -36,8 +46,8 @@ func managedUserMapper(u *UserInPaging) *pb.ManagedUser {
 		Avatar:      u.Avatar,
 		Phone:       u.Mobile,
 		Email:       u.Email,
-		LastLoginAt: timestamppb.New(u.LastLoginAt),
-		PwdExpireAt: timestamppb.New(u.PwdExpireAt),
+		LastLoginAt: lastLoginAt,
+		PwdExpireAt: pwdExpireAt,
 		Source:      u.Source,
 		Locked:      u.Locked,
 	}
