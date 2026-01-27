@@ -16,16 +16,18 @@ package common
 
 import (
 	"bytes"
+	"errors"
 	"io"
 
 	"github.com/spf13/cast"
 
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func ExportExcel(exporterResp *pb.UserExportResponse) (io.Reader, string, error) {
+func ExportExcel(exporterResp *apis.Response) (io.Reader, string, error) {
 	var (
 		table     [][]string
 		tableName = "users"
@@ -33,9 +35,14 @@ func ExportExcel(exporterResp *pb.UserExportResponse) (io.Reader, string, error)
 		buf = bytes.NewBuffer([]byte{})
 	)
 
+	resp, ok := exporterResp.Data.(*pb.UserExportResponse)
+	if !ok {
+		return nil, "", errors.New("data type error")
+	}
+
 	table = convertUserToExcelList(
-		convertPbToUserInfoExt(exporterResp.List),
-		exporterResp.LoginMethods,
+		convertPbToUserInfoExt(resp.List),
+		resp.LoginMethods,
 	)
 
 	if err := excel.ExportExcel(buf, table, tableName); err != nil {
