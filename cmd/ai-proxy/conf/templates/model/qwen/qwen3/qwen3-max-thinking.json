@@ -1,19 +1,20 @@
 {
-  "qwen3-max": {
+  "qwen3-max-thinking": {
     "placeholders": [
       {
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "${@template.name}"
+        "default": "qwen3-max-2026-01-23"
       }
     ],
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://qwen.ai/blog?id=qwen3-max-thinking"
     },
-    "desc": "最新的qwen3-max模型：相较qwen3-max-preview版本，在智能体编程与工具调用方向进行了专项升级。本次发布的正式版模型达到领域SOTA水平，适配场景更加复杂的智能体需求。",
+    "desc": "我们正式推出 Qwen3-Max-Thinking，这是我们最新的旗舰推理模型。通过大幅增加模型参数规模，并投入大量强化学习训练算力，Qwen3-Max-Thinking 在多个关键维度上实现了显著提升，包括事实知识、复杂推理、指令遵循、人类偏好对齐以及智能体能力。在19项权威基准测试中，其性能可媲美 GPT-5.2-Thinking、Claude-Opus-4.5 和 Gemini 3 Pro 等顶尖模型。我们进一步为 Qwen3-Max-Thinking 引入两项核心创新：（1）自适应工具调用能力，可按需调用搜索引擎和代码解释器，现已上线 chat.qwen.ai；（2）测试时扩展技术（Test-Time Scaling），显著提升推理性能，在关键推理基准上超越 Gemini 3 Pro。",
     "config": {
       "desc": "${@template.desc}",
       "apiKey": "",
@@ -23,7 +24,9 @@
         "public": {
           "abilities": {
             "abilities": [
-              "tool"
+              "tool",
+              "reasoning",
+              "enable_thinking"
             ],
             "input_modalities": [
               "text"
