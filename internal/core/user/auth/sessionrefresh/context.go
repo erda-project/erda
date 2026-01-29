@@ -12,19 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package sessionrefresh
 
 import (
 	"context"
 
 	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
-	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
 )
 
-func WithSessionRefresh(ctx context.Context, refresh *identitypb.SessionRefresh) context.Context {
-	return sessionrefresh.With(ctx, refresh)
+type ctxKey struct{}
+
+func With(ctx context.Context, refresh *identitypb.SessionRefresh) context.Context {
+	if ctx == nil || refresh == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxKey{}, refresh)
 }
 
-func GetSessionRefresh(ctx context.Context) *identitypb.SessionRefresh {
-	return sessionrefresh.Get(ctx)
+func Get(ctx context.Context) *identitypb.SessionRefresh {
+	if ctx == nil {
+		return nil
+	}
+	v := ctx.Value(ctxKey{})
+	if v == nil {
+		return nil
+	}
+	if refresh, ok := v.(*identitypb.SessionRefresh); ok {
+		return refresh
+	}
+	return nil
 }

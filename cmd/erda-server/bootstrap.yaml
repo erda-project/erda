@@ -81,7 +81,8 @@ erda.core.user:
   oauth_provider: "${OAUTH_PROVIDER:iam}"
 
 # user auth facade
-erda.core.user.auth.facade: { }
+erda.core.user.auth.facade:
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 
 # iam user services server
 erda.core.user.iam:
@@ -95,6 +96,8 @@ erda.core.user.identity.iam:
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   application_name: "${IAM_APPLICATION_NAME:erda}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
+
 # iam oauth impl
 erda.core.user.oauth.iam:
   _enable: ${IAM_ENABLED:true}
@@ -114,6 +117,7 @@ erda.core.user.uc:
   host: "${UC_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   client_secret: "${OAUTH_CLIENT_SECRET}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
 
 erda.core.user.oauth.uc:
   _enable: ${UC_ENABLED:false}
@@ -131,6 +135,7 @@ erda.core.user.identity.uc:
   _enable: ${UC_ENABLED:false}
   host: "${UC_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
 
 
 erda.core.file: { }
@@ -204,7 +209,7 @@ openapi-interceptor-filter-client-header:
 openapi-interceptor-auth-session-compatibility:
   order: 500
   old_cookie_domain: ${OLD_COOKIE_DOMAIN}
-  session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 openapi-interceptor-user-info:
   order: 900
 openapi-interceptor-set-response-header:
@@ -218,7 +223,7 @@ openapi-auth-session:
   redirect_after_login: "${UI_PUBLIC_ADDR}"
   platform_root_domain: "${DICE_ROOT_DOMAIN}"
   allowed_referrers: "${ALLOWED_REFERRERS}"
-  session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
   session_cookie_domain: "${COOKIE_DOMAIN}"
   cookie_max_age: "${UC_COOKIE_MAX_AGE:168h}"
   cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"

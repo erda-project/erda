@@ -14,25 +14,17 @@
 
 package auth
 
-type sessionRefreshCtxKey struct{}
+import (
+	"context"
 
-//func WithSessionRefresh(ctx context.Context, refresh *common.SessionRefresh) context.Context {
-//	if refresh == nil {
-//		return ctx
-//	}
-//	return context.WithValue(ctx, sessionRefreshCtxKey{}, refresh)
-//}
-//
-//func GetSessionRefresh(ctx context.Context) *common.SessionRefresh {
-//	if ctx == nil {
-//		return nil
-//	}
-//	v := ctx.Value(sessionRefreshCtxKey{})
-//	if v == nil {
-//		return nil
-//	}
-//	if refresh, ok := v.(*common.SessionRefresh); ok {
-//		return refresh
-//	}
-//	return nil
-//}
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
+	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
+)
+
+func WithSessionRefresh(ctx context.Context, refresh *identitypb.SessionRefresh) context.Context {
+	return sessionrefresh.With(ctx, refresh)
+}
+
+func GetSessionRefresh(ctx context.Context) *identitypb.SessionRefresh {
+	return sessionrefresh.Get(ctx)
+}

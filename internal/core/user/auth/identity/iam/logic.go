@@ -19,9 +19,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/identity/pb"
@@ -117,24 +119,33 @@ func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.Sess
 
 	userInfo := userWithToken.Data.User
 
-	//var refresh *common.SessionRefresh
-	//if userWithToken.Data.NewToken != "" {
-	//	refresh = &common.SessionRefresh{
-	//		//Token: userWithToken.Data.NewToken,
-	//	}
-	//}
-
-	if cfg := userWithToken.Data.CookieConfig; cfg != nil {
-		//if refresh == nil {
-		//	refresh = &common.SessionRefresh{}
-		//}
-		//refresh.Cookie = &http.Cookie{
-		//	Domain:   cfg.Domain,
-		//	Path:     cfg.Path,
-		//	Secure:   cfg.Secure,
-		//	Expires:  time.Now().Add(time.Duration(userWithToken.Data.Expire) * time.Second),
-		//	HttpOnly: cfg.HttpOnly,
-		//}
+	var refresh *pb.SessionRefresh
+	if userWithToken.Data.NewToken != "" {
+		refreshCookie := &pb.CookieRefresh{
+			Name:  p.Cfg.CookieName,
+			Value: userWithToken.Data.NewToken,
+			Path:  "/",
+		}
+		if cfg := userWithToken.Data.CookieConfig; cfg != nil {
+			httpOnly := cfg.HttpOnly
+			secure := cfg.Secure
+			if cfg.Domain != "" {
+				refreshCookie.Domain = cfg.Domain
+			}
+			if cfg.Path != "" {
+				refreshCookie.Path = cfg.Path
+			}
+			refreshCookie.HttpOnly = &httpOnly
+			refreshCookie.Secure = &secure
+		}
+		if userWithToken.Data.Expire > 0 {
+			expireAt := time.Now().Add(time.Duration(userWithToken.Data.Expire) * time.Second)
+			refreshCookie.ExpireAt = timestamppb.New(expireAt)
+			refreshCookie.MaxAge = int32(userWithToken.Data.Expire)
+		}
+		refresh = &pb.SessionRefresh{
+			Cookie: refreshCookie,
+		}
 	}
 
 	return &commonpb.UserInfo{
@@ -144,5 +155,5 @@ func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.Sess
 		Name:   userInfo.Username,
 		Avatar: userInfo.Avatar,
 		Nick:   userInfo.Nickname,
-	}, nil, nil
+	}, refresh, nil
 }
