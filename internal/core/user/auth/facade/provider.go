@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
@@ -25,14 +26,14 @@ import (
 )
 
 type Config struct {
+	CookieName string `file:"cookie_name"`
 }
 
 type provider struct {
 	Cfg *Config
 
 	UserOAuthSvc useroauthpb.UserOAuthServiceServer
-	CredStore    domain.CredentialStore `autowired:"erda.core.user.credstore"`
-	Identity     domain.Identity        `autowired:"erda.core.user.identity"`
+	IdentitySvc  identitypb.UserIdentityServiceServer
 	Bundle       *bundle.Bundle
 }
 
@@ -46,9 +47,8 @@ func (p *provider) NewState() domain.UserAuthState {
 	return &userState{
 		state:            GetInit,
 		UserOAuthService: p.UserOAuthSvc,
-		identity:         p.Identity,
+		credStore:        NewCookieStore(p.Cfg.CookieName),
 		bundle:           p.Bundle,
-		credStore:        p.CredStore,
 	}
 }
 

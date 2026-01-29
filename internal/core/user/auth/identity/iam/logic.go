@@ -19,40 +19,51 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 
-	"github.com/erda-project/erda/internal/core/user/auth/applier"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/common"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda/internal/core/user/impl/iam"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func (p *provider) Me(_ context.Context, credential *domain.PersistedCredential) (*common.UserInfo, error) {
-	switch credential.Authenticator.(type) {
-	case *applier.BearerTokenAuth:
-		return p.getUserWithOAuthToken(credential)
-	case *applier.QueryTokenAuth:
-		return p.getUserByAuthToken(credential)
-	default:
-		return nil, errors.New("not support auth context")
+func (p *provider) GetCurrentUser(_ context.Context, req *pb.GetCurrentUserRequest) (*pb.GetCurrentUserResponse, error) {
+	var (
+		user    *commonpb.UserInfo
+		refresh *pb.SessionRefresh
+		err     error
+	)
+	switch req.Source {
+	case pb.TokenSource_Grant:
+		user, err = p.getUserWithGrantedToken(req.AccessToken)
+		if err != nil {
+			return nil, err
+		}
+	case pb.TokenSource_Cookie:
+		user, refresh, err = p.getUserWithCookie(req.AccessToken)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	return &pb.GetCurrentUserResponse{
+		Data:           user,
+		SessionRefresh: refresh,
+	}, nil
 }
 
-func (p *provider) getUserWithOAuthToken(credential *domain.PersistedCredential) (*common.UserInfo, error) {
+func (p *provider) getUserWithGrantedToken(token string) (*commonpb.UserInfo, error) {
 	var (
 		reqPath = "/iam/api/v1/admin/user/me"
 		body    bytes.Buffer
 	)
 
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
+		BearerTokenAuth(token).
 		Get(p.Cfg.BackendHost).
 		Path(reqPath)
-	credential.Authenticator.Apply(req)
 
 	r, err := req.Do().Body(&body)
 	if err != nil {
@@ -70,17 +81,16 @@ func (p *provider) getUserWithOAuthToken(credential *domain.PersistedCredential)
 
 	userInfo := userWithToken.Data
 
-	return &common.UserInfo{
-		ID:          common.USERID(strconv.FormatInt(userInfo.ID, 10)),
-		Email:       userInfo.Email,
-		Phone:       userInfo.Mobile,
-		UserName:    userInfo.Username,
-		NickName:    userInfo.Nickname,
-		LastLoginAt: userInfo.LastLoginAt,
+	return &commonpb.UserInfo{
+		Id:    cast.ToString(userInfo.ID),
+		Email: userInfo.Email,
+		Phone: userInfo.Mobile,
+		Name:  userInfo.Username,
+		Nick:  userInfo.Nickname,
 	}, nil
 }
 
-func (p *provider) getUserByAuthToken(credential *domain.PersistedCredential) (*common.UserInfo, error) {
+func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.SessionRefresh, error) {
 	var (
 		reqPath = fmt.Sprintf("/%s/iam/api/v1/admin/user/find-by-token", p.Cfg.ApplicationName)
 		body    bytes.Buffer
@@ -88,53 +98,51 @@ func (p *provider) getUserByAuthToken(credential *domain.PersistedCredential) (*
 
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
+		Header("Cookie", fmt.Sprintf("%s=%s", p.Cfg.CookieName, value)).
 		Path(reqPath)
-	credential.Authenticator.Apply(req)
 
 	r, err := req.Do().Body(&body)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to request iam")
+		return nil, nil, errors.Wrap(err, "failed to request iam")
 	}
 	if !r.IsOK() {
-		return nil, fmt.Errorf("failed to call %s, status code: %d, resp body: %s",
+		return nil, nil, fmt.Errorf("failed to call %s, status code: %d, resp body: %s",
 			reqPath, r.StatusCode(), body.String())
 	}
 
 	var userWithToken iam.Response[iam.UserWithToken]
 	if err := json.NewDecoder(&body).Decode(&userWithToken); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	userInfo := userWithToken.Data.User
 
-	var refresh *common.SessionRefresh
-	if userWithToken.Data.NewToken != "" {
-		refresh = &common.SessionRefresh{
-			Token: userWithToken.Data.NewToken,
-		}
-	}
+	//var refresh *common.SessionRefresh
+	//if userWithToken.Data.NewToken != "" {
+	//	refresh = &common.SessionRefresh{
+	//		//Token: userWithToken.Data.NewToken,
+	//	}
+	//}
 
 	if cfg := userWithToken.Data.CookieConfig; cfg != nil {
-		if refresh == nil {
-			refresh = &common.SessionRefresh{}
-		}
-		refresh.Cookie = &http.Cookie{
-			Domain:   cfg.Domain,
-			Path:     cfg.Path,
-			Secure:   cfg.Secure,
-			Expires:  time.Now().Add(time.Duration(userWithToken.Data.Expire) * time.Second),
-			HttpOnly: cfg.HttpOnly,
-		}
+		//if refresh == nil {
+		//	refresh = &common.SessionRefresh{}
+		//}
+		//refresh.Cookie = &http.Cookie{
+		//	Domain:   cfg.Domain,
+		//	Path:     cfg.Path,
+		//	Secure:   cfg.Secure,
+		//	Expires:  time.Now().Add(time.Duration(userWithToken.Data.Expire) * time.Second),
+		//	HttpOnly: cfg.HttpOnly,
+		//}
 	}
 
-	return &common.UserInfo{
-		ID:             common.USERID(strconv.FormatInt(userInfo.ID, 10)),
-		Email:          userInfo.Email,
-		Phone:          userInfo.Mobile,
-		UserName:       userInfo.Username,
-		AvatarUrl:      userInfo.Avatar,
-		NickName:       userInfo.Nickname,
-		LastLoginAt:    userInfo.LastLoginAt,
-		SessionRefresh: refresh,
-	}, nil
+	return &commonpb.UserInfo{
+		Id:     cast.ToString(userInfo.ID),
+		Email:  userInfo.Email,
+		Phone:  userInfo.Mobile,
+		Name:   userInfo.Username,
+		Avatar: userInfo.Avatar,
+		Nick:   userInfo.Nickname,
+	}, nil, nil
 }

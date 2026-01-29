@@ -125,10 +125,10 @@ func (t TimestampMs) MarshalJSON() ([]byte, error) {
 }
 
 type UserPaging struct {
-	Data  []*UserInPaging `json:"data"`
-	Total int64           `json:"total"`
+	Data  []*UserDto `json:"data"`
+	Total int64      `json:"total"`
 }
-type UserInPaging struct {
+type UserDto struct {
 	Id            interface{}  `json:"id"`
 	Avatar        string       `json:"avatar"`
 	Username      string       `json:"username"`

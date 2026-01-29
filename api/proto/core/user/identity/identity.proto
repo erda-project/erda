@@ -6,12 +6,27 @@ option go_package = "github.com/erda-project/erda-proto-go/core/user/identity/pb
 
 import "common/userinfo.proto";
 
+enum TokenSource {
+  Grant = 0;
+  Cookie = 1;
+}
+
 message GetCurrentUserRequest {
   string accessToken = 1;
+  TokenSource source = 2;
+}
+
+message SessionRefresh {
+  // session id or new jwt token
+  string newToken = 1;
+  int64 expireAt = 2;
+  // e.g. cookie config
+  map<string, string> extraMap = 3;
 }
 
 message GetCurrentUserResponse {
   common.UserInfo data = 1;
+  SessionRefresh sessionRefresh = 2;
 }
 
 service UserIdentityService {

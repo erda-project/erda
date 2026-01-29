@@ -15,17 +15,15 @@
 package uc
 
 import (
-	"reflect"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/user/identity/pb"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
 )
 
 type Config struct {
 	BackendHost string `file:"host"`
 	ClientID    string `file:"client_id"`
+	CookieName  string `file:"cookie_name"`
 }
 
 type provider struct {
@@ -42,8 +40,8 @@ func (p *provider) Init(_ servicehub.Context) error {
 
 func init() {
 	servicehub.Register("erda.core.user.identity.uc", &servicehub.Spec{
-		Services:   append(pb.ServiceNames(), "erda.core.user.identity"),
-		Types:      append(pb.Types(), reflect.TypeOf((*domain.Identity)(nil)).Elem()),
+		Services:   pb.ServiceNames(),
+		Types:      pb.Types(),
 		ConfigFunc: func() interface{} { return &Config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}

@@ -42,13 +42,6 @@ type AuthCredential struct {
 	SessionID  string
 }
 
-type PersistedCredential struct {
-	Authenticator RequestAuthenticator
-	AccessToken   string
-	// Optional
-	SessionID string
-}
-
 type UserAuthResult struct {
 	Code   int
 	Detail string

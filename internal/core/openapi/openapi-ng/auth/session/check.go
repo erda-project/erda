@@ -15,14 +15,11 @@
 package oauth
 
 import (
-	"context"
 	"math"
 	"net/http"
-	"strconv"
 
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 type loginChecker struct {
@@ -34,8 +31,9 @@ func (a *loginChecker) Weight() int64 { return a.p.Cfg.Weight }
 func (a *loginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
 	check, _ := opts.Get("CheckLogin").(bool)
 	if check {
-		if cred, err := a.p.CredStore.Load(r.Context(), r); err == nil && cred != nil {
-			return true, cred
+		userAuthState := a.p.UserAuth.NewState()
+		if userAuthState.IsLogin(r).Code == domain.AuthSuccess {
+			return true, nil
 		}
 	}
 	return false, nil
@@ -48,32 +46,12 @@ func (a *loginChecker) Check(r *http.Request, data interface{}, _ openapiauth.Op
 		a.p.Log.Debugf("failed to auth: %v", result.Detail)
 		return false, r, nil
 	}
-	result = setUserInfoHeaders(r, user)
+	result = openapiauth.ApplyUserInfoHeaders(r, user)
 	if result.Code != domain.AuthSuccess {
 		a.p.Log.Debugf("failed to auth: %v", result.Detail)
 		return false, r, nil
 	}
 	return true, r, nil
-}
-
-func setUserInfoHeaders(req *http.Request, user domain.UserAuthState) domain.UserAuthResult {
-	userinfo, r := user.GetInfo(req)
-	if r.Code != domain.AuthSuccess {
-		return r
-	}
-	// set User-ID
-	req.Header.Set("User-ID", string(userinfo.ID))
-
-	var scopeinfo common.UserScopeInfo
-	scopeinfo, r = user.GetScopeInfo(req)
-	if r.Code != domain.AuthSuccess {
-		return r
-	}
-	// set Org-ID
-	if scopeinfo.OrgID != 0 {
-		req.Header.Set("Org-ID", strconv.FormatUint(scopeinfo.OrgID, 10))
-	}
-	return domain.UserAuthResult{Code: domain.AuthSuccess}
 }
 
 type tryLoginChecker struct {
@@ -85,10 +63,10 @@ func (a *tryLoginChecker) Weight() int64 { return math.MinInt64 }
 func (a *tryLoginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
 	check, _ := opts.Get("TryCheckLogin").(bool)
 	if check {
-		if cred, err := a.p.CredStore.Load(context.Background(), r); err == nil && cred != nil {
-			return true, cred
+		userAuthState := a.p.UserAuth.NewState()
+		if userAuthState.IsLogin(r).Code == domain.AuthSuccess {
+			return true, ""
 		}
-		return true, ""
 	}
 	return false, nil
 }
@@ -97,7 +75,7 @@ func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapia
 	user := a.p.UserAuth.NewState()
 	result := user.IsLogin(r)
 	if result.Code == domain.AuthSuccess {
-		setUserInfoHeaders(r, user)
+		openapiauth.ApplyUserInfoHeaders(r, user)
 	}
 	return true, r, nil
 }

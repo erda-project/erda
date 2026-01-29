@@ -28,7 +28,7 @@ func usersMapper(users []*GetUser) []*commonpb.UserInfo {
 	})
 }
 
-func managedUserMapper(u *UserInPaging) *pb.ManagedUser {
+func managedUserMapper(u *UserDto) *pb.ManagedUser {
 	var lastLoginAt *timestamppb.Timestamp
 	if u.LastLoginAt != nil && !u.LastLoginAt.IsZero() {
 		lastLoginAt = timestamppb.New(u.LastLoginAt.Time)

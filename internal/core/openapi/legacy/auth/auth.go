@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/monitor"
 	"github.com/erda-project/erda/internal/core/openapi/settings"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
@@ -49,7 +49,6 @@ type Auth struct {
 	OAuth2Server *oauth2.OAuth2Server
 	TokenService tokenpb.TokenServiceServer
 	Settings     settings.OpenapiSettings
-	CredStore    domain.CredentialStore
 }
 
 func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer,
@@ -59,7 +58,6 @@ func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer
 		OAuth2Server: oauth2server,
 		TokenService: token,
 		Settings:     settings,
-		CredStore:    legacycontainer.Get[domain.CredentialStore](),
 	}, nil
 }
 
@@ -123,7 +121,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) domain.UserAuthResult {
 
 func applyUserIdentity(req *http.Request, user domain.UserAuthState) domain.UserAuthResult {
 	var (
-		userinfo identity.UserInfo
+		userinfo *common.UserInfo
 		r        = domain.UserAuthResult{
 			Code: domain.AuthSuccess,
 		}
@@ -135,14 +133,14 @@ func applyUserIdentity(req *http.Request, user domain.UserAuthState) domain.User
 	}
 
 	// set User-ID
-	req.Header.Set("User-ID", string(userinfo.ID))
+	req.Header.Set("User-ID", userinfo.Id)
 
 	// with session refresh context
 	if newCtx := WithSessionRefresh(req.Context(), userinfo.SessionRefresh); newCtx != req.Context() {
 		*req = *req.WithContext(newCtx)
 	}
 
-	var scopeInfo identity.UserScopeInfo
+	var scopeInfo common.UserScopeInfo
 	scopeInfo, r = user.GetScopeInfo(req)
 	if r.Code != domain.AuthSuccess {
 		return r
@@ -166,8 +164,8 @@ const (
 )
 
 func (a *Auth) whichCheck(req *http.Request, spec *spec.Spec) (checkType, error) {
-	cred, _ := a.CredStore.Load(req.Context(), req)
-	if spec.CheckLogin && cred != nil {
+	userAuthState := a.UserAuth.NewState()
+	if spec.CheckLogin && userAuthState.IsLogin(req).Code == domain.AuthSuccess {
 		return LOGIN, nil
 	}
 	auth := req.Header.Get(HeaderAuthorization)

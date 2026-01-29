@@ -1,8 +1,8 @@
 package password
 
 import (
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 )
 
 type LoginParams struct {
@@ -11,6 +11,6 @@ type LoginParams struct {
 }
 
 type LoginResponse struct {
-	User  *identity.UserInfo      `json:"user,omitempty"`
+	User  *commonpb.UserInfo      `json:"user,omitempty"`
 	Token *apistructs.OAuth2Token `json:"token,omitempty"`
 }

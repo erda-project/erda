@@ -42,16 +42,14 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg       *config
-	Log       logs.Logger
-	Router    openapi.Interface `autowired:"openapi-router"`
-	Redis     *redis.Client     `autowired:"redis-client"`
-	Org       org.Interface
-	Settings  settings.OpenapiSettings `autowired:"openapi-settings"`
-	CredStore domain.CredentialStore   `autowired:"erda.core.user.credstore"`
-	Identity  domain.Identity          `autowired:"erda.core.user.identity"`
-	UserAuth  domain.UserAuthFacade    `autowired:"erda.core.user.auth.facade"`
-	Bdl       *bundle.Bundle
+	Cfg      *config
+	Log      logs.Logger
+	Router   openapi.Interface `autowired:"openapi-router"`
+	Redis    *redis.Client     `autowired:"redis-client"`
+	Org      org.Interface
+	Settings settings.OpenapiSettings `autowired:"openapi-settings"`
+	UserAuth domain.UserAuthFacade
+	Bdl      *bundle.Bundle
 	// openapi token
 	openapiToken *oatuh2TokenStore.ClientStoreItem
 }
@@ -115,7 +113,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 			AccessTokenExpiredIn: p.Cfg.AccessTokenExpiredIn,
 			AllowAccessAllAPIs:   true,
 			Metadata: map[string]string{
-				"User-ID": string(info.ID),
+				"User-ID": info.Id,
 			},
 		},
 	})
@@ -127,7 +125,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	common.ResponseJSON(rw, &LoginResponse{
-		User:  &info,
+		User:  info.UserInfo,
 		Token: token,
 	})
 }
