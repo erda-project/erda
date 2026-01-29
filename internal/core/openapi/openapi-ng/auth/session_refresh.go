@@ -12,35 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package applier
+package auth
 
-import (
-	"net/http"
+type sessionRefreshCtxKey struct{}
 
-	"github.com/erda-project/erda/pkg/http/httpclient"
-)
-
-type CookieTokenAuth struct {
-	Cookie *http.Cookie
-}
-
-func (c *CookieTokenAuth) Apply(req *httpclient.Request) {
-	req.Cookie(c.Cookie)
-}
-
-type BearerTokenAuth struct {
-	Token string
-}
-
-func (b *BearerTokenAuth) Apply(req *httpclient.Request) {
-	req = req.Header("Authorization", "Bearer "+b.Token)
-}
-
-type QueryTokenAuth struct {
-	Param string
-	Token string
-}
-
-func (q *QueryTokenAuth) Apply(req *httpclient.Request) {
-	req.Param(q.Param, q.Token)
-}
+//func WithSessionRefresh(ctx context.Context, refresh *common.SessionRefresh) context.Context {
+//	if refresh == nil {
+//		return ctx
+//	}
+//	return context.WithValue(ctx, sessionRefreshCtxKey{}, refresh)
+//}
+//
+//func GetSessionRefresh(ctx context.Context) *common.SessionRefresh {
+//	if ctx == nil {
+//		return nil
+//	}
+//	v := ctx.Value(sessionRefreshCtxKey{})
+//	if v == nil {
+//		return nil
+//	}
+//	if refresh, ok := v.(*common.SessionRefresh); ok {
+//		return refresh
+//	}
+//	return nil
+//}

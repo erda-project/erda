@@ -15,17 +15,11 @@
 package oauth
 
 import (
-	"context"
 	"errors"
-	"fmt"
-	"net"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/common"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
 )
 
 func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
@@ -95,30 +89,6 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 		referer = p.Cfg.RedirectAfterLogin
 	}
 
-	if cred, err := p.CredStore.Load(context.Background(), r); err == nil && cred != nil && cred.SessionID != "" {
-		r = r.WithContext(context.WithValue(r.Context(), "session", cred.SessionID))
-		if revoker, ok := p.CredStore.(domain.SessionRevoker); ok {
-			if err := revoker.Revoke(context.Background(), cred.SessionID); err != nil {
-				err := fmt.Errorf("logout: %v", err)
-				p.Log.Error(err)
-				http.Error(rw, err.Error(), http.StatusBadGateway)
-				return
-			}
-		}
-	}
-
-	scheme := p.getScheme(r)
-	http.SetCookie(rw, &http.Cookie{
-		Name:     p.Cfg.SessionCookieName,
-		Value:    "",
-		Path:     "/",
-		Expires:  time.Unix(0, 0),
-		MaxAge:   -1,
-		Domain:   p.getSessionDomain(r.Host),
-		HttpOnly: true,
-		Secure:   scheme == "https",
-	})
-
 	logoutURL, err := p.UserOauthSessionSvc.LogoutURL(r.Context(), &pb.LogoutURLRequest{
 		Referer: referer,
 	})
@@ -132,46 +102,4 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 	}{
 		URL: logoutURL.Data,
 	})
-}
-
-func (p *provider) getScheme(r *http.Request) string {
-	// get from standard header first
-	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"), r.URL.Scheme)
-	if len(proto) > 0 {
-		return proto
-	}
-	return p.Cfg.PlatformProtocol
-}
-
-func firstNonEmpty(ss ...string) string {
-	for _, s := range ss {
-		if len(s) > 0 {
-			list := strings.Split(s, ",")
-			for _, item := range list {
-				v := strings.ToLower(strings.TrimSpace(item))
-				if len(v) > 0 {
-					return v
-				}
-			}
-		}
-	}
-	return ""
-}
-
-func (p *provider) getSessionDomain(host string) string {
-	if h, _, err := net.SplitHostPort(host); err == nil {
-		host = h
-	}
-	domains := strings.SplitN(host, ".", -1)
-	l := len(domains)
-	if l < 2 {
-		return ""
-	}
-	rootDomain := "." + domains[l-2] + "." + domains[l-1]
-	for _, domain := range p.Cfg.SessionCookieDomains {
-		if strings.Contains(domain, rootDomain) {
-			return domain
-		}
-	}
-	return ""
 }

@@ -107,10 +107,6 @@ erda.core.user.oauth.iam:
   token_cache_early_expire_rate: "${OAUTH_TOKEN_CACHE_EARLY_EXPIRE_RATE:0.8}"
   server_token_cache_enabled: "${OAUTH_SERVER_TOKEN_CACHE_ENABLED:true}"
   user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
-# iam user credential store
-erda.core.user.credstore.iam:
-  _enable: ${IAM_ENABLED:true}
-  cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 
 # uc user services server
 erda.core.user.uc:
@@ -136,11 +132,6 @@ erda.core.user.identity.uc:
   host: "${UC_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
 
-erda.core.user.credstore.uc:
-  _enable: ${UC_ENABLED:false}
-  cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
-  session_cookie_domain: "${COOKIE_DOMAIN}"
-  cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"
 
 erda.core.file: { }
 

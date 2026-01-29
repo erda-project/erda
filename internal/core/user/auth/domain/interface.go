@@ -19,30 +19,18 @@ import (
 	"net/http"
 	"net/url"
 
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type RequestAuthenticator interface {
-	Apply(req *httpclient.Request)
-}
-
-type Identity interface {
-	Me(ctx context.Context, credential *PersistedCredential) (*common.UserInfo, error)
-}
-
-type CredentialStore interface {
-	Load(ctx context.Context, req *http.Request) (*PersistedCredential, error)
-	Persist(ctx context.Context, cred *AuthCredential) (*PersistedCredential, error)
-}
-
 type RefreshWriter interface {
-	WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *common.SessionRefresh) error
+	WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *identitypb.SessionRefresh) error
 }
 
 // SessionRevoker (Optional: revoke session, e.g. remove from redis)
+// TODO:
 type SessionRevoker interface {
-	Revoke(ctx context.Context, sessionID string) error
+	Revoke(ctx context.Context) error
 }
 
 type UserAuthFacade interface {
@@ -52,7 +40,7 @@ type UserAuthFacade interface {
 type UserAuthState interface {
 	GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error)
 	IsLogin(req *http.Request) UserAuthResult
-	GetInfo(req *http.Request) (common.UserInfo, UserAuthResult)
+	GetInfo(req *http.Request) (*common.UserInfo, UserAuthResult)
 	GetScopeInfo(req *http.Request) (common.UserScopeInfo, UserAuthResult)
 	Login(code string, queryValues url.Values) error
 	PwdLogin(username, password string) error

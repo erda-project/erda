@@ -15,32 +15,34 @@
 package iam
 
 import (
-	"reflect"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/legacycontainer"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/user/identity/pb"
 )
 
 type Config struct {
 	BackendHost     string `file:"host"`
 	ClientID        string `file:"client_id"`
 	ApplicationName string `file:"application_name" default:"erda"`
+	CookieName      string `file:"cookie_name"`
 }
 
 type provider struct {
-	Cfg *Config
+	Register transport.Register `autowired:"service-register"`
+	Cfg      *Config
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	legacycontainer.Register[domain.Identity](p)
+	if p.Register != nil {
+		pb.RegisterUserIdentityServiceImp(p.Register, p)
+	}
 	return nil
 }
 
 func init() {
 	servicehub.Register("erda.core.user.identity.iam", &servicehub.Spec{
-		Services:   []string{"erda.core.user.identity"},
-		Types:      []reflect.Type{reflect.TypeOf((*domain.Identity)(nil)).Elem()},
+		Services:   pb.ServiceNames(),
+		Types:      pb.Types(),
 		ConfigFunc: func() interface{} { return &Config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}

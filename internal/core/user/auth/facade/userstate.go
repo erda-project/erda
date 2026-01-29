@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -37,7 +38,6 @@ import (
 )
 
 type GetUserState int
-type SetUserState int
 
 const (
 	GetInit GetUserState = iota
@@ -47,16 +47,16 @@ const (
 )
 
 type userState struct {
-	info       *common.UserInfo
+	userInfo   *common.UserInfo
 	scopeInfo  common.UserScopeInfo
 	state      GetUserState
-	credential *domain.PersistedCredential
+	credential *PersistedCredential
 
 	// dependencies
 	UserOAuthService pb.UserOAuthServiceServer
-	identity         domain.Identity
+	IdentitySvc      identitypb.UserIdentityServiceServer
 	bundle           *bundle.Bundle
-	credStore        domain.CredentialStore
+	credStore        CredentialStore
 }
 
 func (u *userState) get(req *http.Request, targetState GetUserState) (interface{}, domain.UserAuthResult) {
@@ -75,15 +75,21 @@ func (u *userState) get(req *http.Request, targetState GetUserState) (interface{
 			if targetState == GotToken {
 				return nil, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
-			userInfo, err := u.identity.Me(req.Context(), u.credential)
+			curUser, err := u.IdentitySvc.GetCurrentUser(ctx, &identitypb.GetCurrentUserRequest{
+				AccessToken: u.credential.AccessToken,
+				Source:      u.credential.Type,
+			})
 			if err != nil {
 				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: err.Error()}
 			}
-			u.info = userInfo
+			u.userInfo = &common.UserInfo{
+				UserInfo:       curUser.Data,
+				SessionRefresh: curUser.SessionRefresh,
+			}
 			u.state = GotInfo
 		case GotInfo:
 			if targetState == GotInfo {
-				return u.info, domain.UserAuthResult{Code: domain.AuthSuccess}
+				return u.userInfo, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
 			orgHeader := req.Header.Get("org")
 			domainHeader := req.Header.Get("domain")
@@ -92,7 +98,7 @@ func (u *userState) get(req *http.Request, targetState GetUserState) (interface{
 				return nil, domain.UserAuthResult{Code: domain.InternalAuthErr, Detail: err.Error()}
 			}
 			if orgID > 0 {
-				role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
+				role, err := u.bundle.ScopeRoleAccess(u.userInfo.Id, &apistructs.ScopeRoleAccessRequest{
 					Scope: apistructs.Scope{
 						Type: apistructs.OrgScope,
 						ID:   strconv.FormatUint(orgID, 10),
@@ -104,7 +110,7 @@ func (u *userState) get(req *http.Request, targetState GetUserState) (interface{
 				if !role.Access {
 					return nil, domain.UserAuthResult{
 						Code:   domain.AuthFail,
-						Detail: fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID),
+						Detail: fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.userInfo.Id, orgID),
 					}
 				}
 				var scopeInfo common.UserScopeInfo
@@ -155,13 +161,13 @@ func (u *userState) IsLogin(req *http.Request) domain.UserAuthResult {
 	return authr
 }
 
-func (u *userState) GetInfo(req *http.Request) (common.UserInfo, domain.UserAuthResult) {
+func (u *userState) GetInfo(req *http.Request) (*common.UserInfo, domain.UserAuthResult) {
 	info, authr := u.get(req, GotInfo)
 	if authr.Code != domain.AuthSuccess {
-		return common.UserInfo{}, authr
+		return nil, authr
 	}
 	userInfo := info.(*common.UserInfo)
-	return *userInfo, authr
+	return userInfo, authr
 }
 
 func (u *userState) GetScopeInfo(req *http.Request) (common.UserScopeInfo, domain.UserAuthResult) {
@@ -181,18 +187,20 @@ func (u *userState) Login(code string, queryValues url.Values) error {
 		logrus.Errorf("failed to login with exchange code, %v", err)
 		return err
 	}
-	persistedCredential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
-		OAuthToken: uutil.ConvertPbToOAuthDomain(oauthToken),
+	u.credential = &PersistedCredential{
+		Type:        identitypb.TokenSource_Grant,
+		AccessToken: oauthToken.AccessToken,
+	}
+	userInfo, err := u.IdentitySvc.GetCurrentUser(context.Background(), &identitypb.GetCurrentUserRequest{
+		AccessToken: u.credential.AccessToken,
+		Source:      u.credential.Type,
 	})
 	if err != nil {
 		return err
 	}
-	u.credential = persistedCredential
-	userInfo, err := u.identity.Me(context.Background(), u.credential)
-	if err != nil {
-		return err
+	u.userInfo = &common.UserInfo{
+		UserInfo: userInfo.Data,
 	}
-	u.info = userInfo
 	u.state = GotInfo
 	return nil
 }
@@ -206,18 +214,20 @@ func (u *userState) PwdLogin(username, password string) error {
 		logrus.Error(err)
 		return err
 	}
-	credential, err := u.credStore.Persist(context.Background(), &domain.AuthCredential{
-		OAuthToken: uutil.ConvertPbToOAuthDomain(oauthToken),
+	u.credential = &PersistedCredential{
+		Type:        identitypb.TokenSource_Grant,
+		AccessToken: oauthToken.AccessToken,
+	}
+	userInfo, err := u.IdentitySvc.GetCurrentUser(context.Background(), &identitypb.GetCurrentUserRequest{
+		AccessToken: u.credential.AccessToken,
+		Source:      u.credential.Type,
 	})
 	if err != nil {
 		return err
 	}
-	u.credential = credential
-	userInfo, err := u.identity.Me(context.Background(), u.credential)
-	if err != nil {
-		return err
+	u.userInfo = &common.UserInfo{
+		UserInfo: userInfo.Data,
 	}
-	u.info = userInfo
 	u.state = GotInfo
 	return nil
 }

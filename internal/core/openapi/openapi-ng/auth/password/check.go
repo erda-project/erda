@@ -18,12 +18,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
-	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 func (p *provider) Weight() int64 { return p.Cfg.Weight }
@@ -53,29 +51,9 @@ func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Opt
 	if err != nil {
 		return false, r, nil
 	}
-	result := setUserInfoHeaders(r, user)
+	result := openapiauth.ApplyUserInfoHeaders(r, user)
 	if result.Code != domain.AuthSuccess {
 		return false, r, nil
 	}
 	return true, r, nil
-}
-
-func setUserInfoHeaders(req *http.Request, user domain.UserAuthState) domain.UserAuthResult {
-	userinfo, r := user.GetInfo(req)
-	if r.Code != domain.AuthSuccess {
-		return r
-	}
-	// set User-ID
-	req.Header.Set("User-ID", string(userinfo.ID))
-
-	var scopeinfo common.UserScopeInfo
-	scopeinfo, r = user.GetScopeInfo(req)
-	if r.Code != domain.AuthSuccess {
-		return r
-	}
-	// set Org-ID
-	if scopeinfo.OrgID != 0 {
-		req.Header.Set("Org-ID", strconv.FormatUint(scopeinfo.OrgID, 10))
-	}
-	return domain.UserAuthResult{Code: domain.AuthSuccess}
 }

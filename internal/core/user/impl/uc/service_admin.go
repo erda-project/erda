@@ -333,7 +333,7 @@ func (p *provider) UserPaging(_ context.Context, req *pb.UserPagingRequest) (*pb
 		return nil, err
 	}
 
-	pbUsers := lo.Map(users.Result.Data, func(datum *UserInPaging, _ int) *pb.ManagedUser {
+	pbUsers := lo.Map(users.Result.Data, func(datum *UserDto, _ int) *pb.ManagedUser {
 		return managedUserMapper(datum)
 	})
 

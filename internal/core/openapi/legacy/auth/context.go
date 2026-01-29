@@ -17,19 +17,19 @@ package auth
 import (
 	"context"
 
-	identity "github.com/erda-project/erda/internal/core/user/common"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 )
 
 type sessionRefreshCtxKey struct{}
 
-func WithSessionRefresh(ctx context.Context, refresh *identity.SessionRefresh) context.Context {
+func WithSessionRefresh(ctx context.Context, refresh *identitypb.SessionRefresh) context.Context {
 	if refresh == nil {
 		return ctx
 	}
 	return context.WithValue(ctx, sessionRefreshCtxKey{}, refresh)
 }
 
-func GetSessionRefresh(ctx context.Context) *identity.SessionRefresh {
+func GetSessionRefresh(ctx context.Context) *identitypb.SessionRefresh {
 	if ctx == nil {
 		return nil
 	}
@@ -37,7 +37,7 @@ func GetSessionRefresh(ctx context.Context) *identity.SessionRefresh {
 	if v == nil {
 		return nil
 	}
-	if refresh, ok := v.(*identity.SessionRefresh); ok {
+	if refresh, ok := v.(*identitypb.SessionRefresh); ok {
 		return refresh
 	}
 	return nil

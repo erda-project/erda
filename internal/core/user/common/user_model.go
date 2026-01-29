@@ -16,37 +16,11 @@ package common
 
 import (
 	"encoding/json"
-	"net/http"
 	"strconv"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 )
-
-type UserInfo struct {
-	ID               USERID          `json:"id"`
-	Token            string          `json:"token"`
-	Email            string          `json:"email"`
-	EmailExist       bool            `json:"emailExist"`
-	PasswordExist    bool            `json:"passwordExist"`
-	PhoneExist       bool            `json:"phoneExist"`
-	Birthday         string          `json:"birthday"`
-	PasswordStrength int             `json:"passwordStrength"`
-	Phone            string          `json:"phone"`
-	AvatarUrl        string          `json:"avatarUrl"`
-	UserName         string          `json:"username"`
-	NickName         string          `json:"nickName"`
-	Enabled          bool            `json:"enabled"`
-	CreatedAt        string          `json:"createdAt"`
-	UpdatedAt        string          `json:"updatedAt"`
-	LastLoginAt      string          `json:"lastLoginAt"`
-	SessionRefresh   *SessionRefresh `json:"sessionRefresh,omitempty"`
-}
-
-type SessionRefresh struct {
-	Token     string       `json:"token"`
-	SessionID string       `json:"sessionID"`
-	Cookie    *http.Cookie `json:"cookie,omitempty"`
-}
 
 type USERID string
 
@@ -73,6 +47,11 @@ var SystemUser = &commonpb.UserInfo{
 	Id:   SystemOperator,
 	Name: SystemOperator,
 	Nick: SystemOperator,
+}
+
+type UserInfo struct {
+	*commonpb.UserInfo
+	SessionRefresh *identitypb.SessionRefresh
 }
 
 type UserScopeInfo struct {
