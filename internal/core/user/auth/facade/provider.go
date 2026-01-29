@@ -26,7 +26,7 @@ import (
 )
 
 type Config struct {
-	CookieName string `file:"cookie_name"`
+	CookieName string `file:"session_cookie_name"`
 }
 
 type provider struct {
@@ -47,8 +47,9 @@ func (p *provider) NewState() domain.UserAuthState {
 	return &userState{
 		state:            GetInit,
 		UserOAuthService: p.UserOAuthSvc,
-		credStore:        NewCookieStore(p.Cfg.CookieName),
+		IdentitySvc:      p.IdentitySvc,
 		bundle:           p.Bundle,
+		credStore:        NewCookieStore(p.Cfg.CookieName),
 	}
 }
 

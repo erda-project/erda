@@ -16,6 +16,7 @@ package uc
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -106,12 +107,11 @@ func (t *TimestampMs) UnmarshalJSON(data []byte) error {
 			t.Time = time.Time{}
 			return nil
 		}
-		parsed, err := time.Parse(time.RFC3339, str)
-		if err != nil {
-			return err
+		if parsed, ok := parseFlexibleTime(str); ok {
+			t.Time = parsed
+			return nil
 		}
-		t.Time = parsed
-		return nil
+		return fmt.Errorf("unsupported time format: %s", str)
 	}
 
 	return json.Unmarshal(data, &t.Time)
@@ -122,6 +122,32 @@ func (t TimestampMs) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 	return json.Marshal(t.Time.UnixMilli())
+}
+
+func parseFlexibleTime(value string) (time.Time, bool) {
+	layouts := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		var (
+			parsed time.Time
+			err    error
+		)
+		switch layout {
+		case time.RFC3339, time.RFC3339Nano:
+			parsed, err = time.Parse(layout, value)
+		default:
+			parsed, err = time.ParseInLocation(layout, value, time.Local)
+		}
+		if err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
 }
 
 type UserPaging struct {

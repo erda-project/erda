@@ -20,7 +20,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -116,13 +120,13 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 					if !permissionAuthResult {
 						break // execute error
 					}
-					//if refresh := GetSessionRefresh(req.Context()); refresh != nil {
-					//	if writer, ok := p.CredStore.(domain.RefreshWriter); ok {
-					//		if err := writer.WriteRefresh(rw, req, refresh); err != nil {
-					//			logrus.Warnf("failed to write session refresh: %v", err)
-					//		}
-					//	}
-					//}
+					if refresh := GetSessionRefresh(req.Context()); refresh != nil {
+						if writer := legacycontainer.Get[domain.RefreshWriter](); writer != nil {
+							if err := writer.WriteRefresh(rw, req, refresh); err != nil {
+								logrus.Warnf("failed to write session refresh: %v", err)
+							}
+						}
+					}
 					h(rw, req)
 					return
 				}

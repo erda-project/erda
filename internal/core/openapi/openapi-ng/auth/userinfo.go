@@ -31,9 +31,9 @@ func ApplyUserInfoHeaders(req *http.Request, user domain.UserAuthState) domain.U
 	req.Header.Set("User-ID", userinfo.Id)
 
 	// with session refresh context
-	//if newCtx := WithSessionRefresh(req.Context(), userinfo.SessionRefresh); newCtx != req.Context() {
-	//	*req = *req.WithContext(newCtx)
-	//}
+	if newCtx := WithSessionRefresh(req.Context(), userinfo.SessionRefresh); newCtx != req.Context() {
+		*req = *req.WithContext(newCtx)
+	}
 
 	var scopeinfo common.UserScopeInfo
 	scopeinfo, r = user.GetScopeInfo(req)

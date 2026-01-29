@@ -34,6 +34,7 @@ import (
 	phttp "github.com/erda-project/erda/internal/core/openapi/legacy/proxy/http"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/proxy/ws"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 )
 
 type ReverseProxyWithAuth struct {
@@ -68,7 +69,7 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 	}
 
 	if refresh := auth.GetSessionRefresh(req.Context()); refresh != nil {
-		if writer, ok := r.auth.CredStore.(domain.RefreshWriter); ok {
+		if writer := legacycontainer.Get[domain.RefreshWriter](); writer != nil {
 			if err := writer.WriteRefresh(rw, req, refresh); err != nil {
 				logrus.Warnf("failed to refresh refresh %v", err)
 			}

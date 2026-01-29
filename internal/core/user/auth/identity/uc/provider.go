@@ -23,7 +23,7 @@ import (
 type Config struct {
 	BackendHost string `file:"host"`
 	ClientID    string `file:"client_id"`
-	CookieName  string `file:"cookie_name"`
+	CookieName  string `file:"session_cookie_name"`
 }
 
 type provider struct {

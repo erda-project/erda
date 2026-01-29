@@ -21,12 +21,15 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/openapi/settings"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 )
 
 type config struct {
@@ -58,6 +61,9 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.Cfg.RedirectAfterLogin = strings.TrimLeft(p.Cfg.RedirectAfterLogin, "/")
 	// build refer matcher
 	p.referMatcher = p.buildReferMatcher()
+	if legacycontainer.Get[domain.RefreshWriter]() == nil {
+		legacycontainer.Register[domain.RefreshWriter](p)
+	}
 
 	router := p.Router
 	router.Add(http.MethodGet, "/api/openapi/login", p.LoginURL)
@@ -69,12 +75,31 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 }
 
 var _ openapiauth.AutherLister = (*provider)(nil)
+var _ domain.RefreshWriter = (*provider)(nil)
 
 func (p *provider) Authers() []openapiauth.Auther {
 	return []openapiauth.Auther{
 		&loginChecker{p: p},
 		&tryLoginChecker{p: p},
 	}
+}
+
+func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *identitypb.SessionRefresh) error {
+	cookies, err := sessionrefresh.BuildCookies(refresh, sessionrefresh.CookieDefaults{
+		Name:     p.Cfg.SessionCookieName,
+		Domains:  p.Cfg.SessionCookieDomains,
+		Path:     "/",
+		HTTPOnly: true,
+		SameSite: http.SameSite(p.Cfg.CookieSameSite),
+		MaxAge:   p.Cfg.CookieMaxAge,
+	}, req)
+	if err != nil {
+		return err
+	}
+	for _, cookie := range cookies {
+		http.SetCookie(rw, cookie)
+	}
+	return nil
 }
 
 func init() {

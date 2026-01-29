@@ -23,9 +23,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/identity/pb"
+	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -116,14 +118,35 @@ func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.Sess
 	}
 
 	setCookie := r.ResponseHeader("Set-Cookie")
-	cookie, err := http.ParseSetCookie(setCookie)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sessionRefresh := &pb.SessionRefresh{
-		NewToken: cookie.Value,
-		ExpireAt: cookie.Expires.Unix(),
+	var sessionRefresh *pb.SessionRefresh
+	if setCookie != "" {
+		cookie, err := http.ParseSetCookie(setCookie)
+		if err != nil {
+			return nil, nil, err
+		}
+		if cookie.Value != "" {
+			httpOnly := cookie.HttpOnly
+			secure := cookie.Secure
+			refreshCookie := &pb.CookieRefresh{
+				Name:     cookie.Name,
+				Value:    cookie.Value,
+				Domain:   cookie.Domain,
+				Path:     cookie.Path,
+				HttpOnly: &httpOnly,
+				Secure:   &secure,
+				SameSite: sessionrefresh.SameSiteFromHTTP(cookie.SameSite),
+				MaxAge:   int32(cookie.MaxAge),
+			}
+			if refreshCookie.Name == "" {
+				refreshCookie.Name = p.Cfg.CookieName
+			}
+			if !cookie.Expires.IsZero() {
+				refreshCookie.ExpireAt = timestamppb.New(cookie.Expires)
+			}
+			sessionRefresh = &pb.SessionRefresh{
+				Cookie: refreshCookie,
+			}
+		}
 	}
 
 	user := resp.Result
@@ -135,8 +158,4 @@ func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.Sess
 		Phone:  user.Mobile,
 		Email:  user.Mobile,
 	}, sessionRefresh, nil
-}
-
-func (p *provider) WriteRefresh(rw http.ResponseWriter, req *http.Request, refresh *pb.SessionRefresh) error {
-	return nil
 }
