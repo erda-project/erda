@@ -15,6 +15,8 @@ enum TokenSource {
 message GetCurrentUserRequest {
   string accessToken = 1;
   TokenSource source = 2;
+  // When source == Cookie: session cookie name. Used for backend Cookie header and SessionRefresh. Optional, identity may fall back to its config.
+  optional string cookieName = 3;
 }
 
 message SessionRefresh {
@@ -51,5 +53,6 @@ message GetCurrentUserResponse {
 }
 
 service UserIdentityService {
+  // GetCurrentUser resolves current user by access token (grant or cookie). Pass cookie_name when source is Cookie.
   rpc GetCurrentUser (GetCurrentUserRequest) returns (GetCurrentUserResponse);
 }
