@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 )
 
 func (p *provider) Weight() int64 { return p.Cfg.Weight }
@@ -34,15 +35,15 @@ func (p *provider) Match(r *http.Request, opts openapiauth.Options) (bool, inter
 	return false, nil
 }
 
-func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
+func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
 	authorization := data.(string)
 	client, err := p.checkToken(opts, r, authorization)
 	if err != nil {
-		return false, r, nil
+		return false, r, nil, nil
 	}
 	r.Header.Set("Client-ID", client.ClientID)
 	r.Header.Set("Client-Name", client.ClientName)
-	return true, r, nil
+	return true, r, nil, nil
 }
 
 type clientToken struct {
