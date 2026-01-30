@@ -36,24 +36,20 @@ func (p *provider) Match(r *http.Request, opts openapiauth.Options) (bool, inter
 	return false, nil
 }
 
-func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
+func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
 	authorization := data.(string)
 	userpwd, err := base64.StdEncoding.DecodeString(authorization)
 	if err != nil {
-		return false, r, fmt.Errorf("failed to decode base64: %v", err)
+		return false, r, nil, fmt.Errorf("failed to decode base64: %v", err)
 	}
 	parts := strings.SplitN(string(userpwd), ":", 2)
 	if len(parts) != 2 || len(parts[0]) <= 0 || len(parts[1]) <= 0 {
-		return false, r, fmt.Errorf("miss username or password")
+		return false, r, nil, fmt.Errorf("miss username or password")
 	}
 	user := p.UserAuth.NewState()
 	err = user.PwdLogin(parts[0], parts[1])
 	if err != nil {
-		return false, r, nil
+		return false, r, nil, nil
 	}
-	result := openapiauth.ApplyUserInfoHeaders(r, user)
-	if result.Code != domain.AuthSuccess {
-		return false, r, nil
-	}
-	return true, r, nil
+	return true, r, user, nil
 }

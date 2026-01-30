@@ -15,12 +15,23 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
 	"github.com/erda-project/erda/internal/core/user/common"
 )
+
+func WithSessionRefresh(ctx context.Context, refresh *identitypb.SessionRefresh) context.Context {
+	return sessionrefresh.With(ctx, refresh)
+}
+
+func GetSessionRefresh(ctx context.Context) *identitypb.SessionRefresh {
+	return sessionrefresh.Get(ctx)
+}
 
 func ApplyUserInfoHeaders(req *http.Request, user domain.UserAuthState) domain.UserAuthResult {
 	userinfo, r := user.GetInfo(req)

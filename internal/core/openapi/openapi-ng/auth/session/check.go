@@ -39,19 +39,14 @@ func (a *loginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, i
 	return false, nil
 }
 
-func (a *loginChecker) Check(r *http.Request, data interface{}, _ openapiauth.Options) (bool, *http.Request, error) {
+func (a *loginChecker) Check(r *http.Request, data interface{}, _ openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
 	user := a.p.UserAuth.NewState()
 	result := user.IsLogin(r)
 	if result.Code != domain.AuthSuccess {
 		a.p.Log.Debugf("failed to auth: %v", result.Detail)
-		return false, r, nil
+		return false, r, nil, nil
 	}
-	result = openapiauth.ApplyUserInfoHeaders(r, user)
-	if result.Code != domain.AuthSuccess {
-		a.p.Log.Debugf("failed to auth: %v", result.Detail)
-		return false, r, nil
-	}
-	return true, r, nil
+	return true, r, user, nil
 }
 
 type tryLoginChecker struct {
@@ -71,11 +66,11 @@ func (a *tryLoginChecker) Match(r *http.Request, opts openapiauth.Options) (bool
 	return false, nil
 }
 
-func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
+func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
 	user := a.p.UserAuth.NewState()
 	result := user.IsLogin(r)
 	if result.Code == domain.AuthSuccess {
-		openapiauth.ApplyUserInfoHeaders(r, user)
+		return true, r, user, nil
 	}
-	return true, r, nil
+	return true, r, nil, nil
 }
