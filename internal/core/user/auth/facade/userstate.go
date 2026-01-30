@@ -75,10 +75,7 @@ func (u *userState) get(req *http.Request, targetState GetUserState) (interface{
 			if targetState == GotToken {
 				return nil, domain.UserAuthResult{Code: domain.AuthSuccess}
 			}
-			curUser, err := u.IdentitySvc.GetCurrentUser(ctx, &identitypb.GetCurrentUserRequest{
-				AccessToken: u.credential.AccessToken,
-				Source:      u.credential.Type,
-			})
+			curUser, err := u.IdentitySvc.GetCurrentUser(ctx, ToGetCurrentUserRequest(u.credential))
 			if err != nil {
 				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: err.Error()}
 			}
@@ -191,10 +188,7 @@ func (u *userState) Login(code string, queryValues url.Values) error {
 		Type:        identitypb.TokenSource_Grant,
 		AccessToken: oauthToken.AccessToken,
 	}
-	userInfo, err := u.IdentitySvc.GetCurrentUser(context.Background(), &identitypb.GetCurrentUserRequest{
-		AccessToken: u.credential.AccessToken,
-		Source:      u.credential.Type,
-	})
+	userInfo, err := u.IdentitySvc.GetCurrentUser(context.Background(), ToGetCurrentUserRequest(u.credential))
 	if err != nil {
 		return err
 	}
@@ -218,10 +212,7 @@ func (u *userState) PwdLogin(username, password string) error {
 		Type:        identitypb.TokenSource_Grant,
 		AccessToken: oauthToken.AccessToken,
 	}
-	userInfo, err := u.IdentitySvc.GetCurrentUser(context.Background(), &identitypb.GetCurrentUserRequest{
-		AccessToken: u.credential.AccessToken,
-		Source:      u.credential.Type,
-	})
+	userInfo, err := u.IdentitySvc.GetCurrentUser(context.Background(), ToGetCurrentUserRequest(u.credential))
 	if err != nil {
 		return err
 	}

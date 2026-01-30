@@ -24,7 +24,6 @@ type Config struct {
 	BackendHost     string `file:"host"`
 	ClientID        string `file:"client_id"`
 	ApplicationName string `file:"application_name" default:"erda"`
-	CookieName      string `file:"session_cookie_name"`
 }
 
 type provider struct {

@@ -96,7 +96,6 @@ erda.core.user.identity.iam:
   host: "${IAM_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
   application_name: "${IAM_APPLICATION_NAME:erda}"
-  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 
 # iam oauth impl
 erda.core.user.oauth.iam:
@@ -135,8 +134,6 @@ erda.core.user.identity.uc:
   _enable: ${UC_ENABLED:false}
   host: "${UC_ADDR}"
   client_id: "${OAUTH_CLIENT_ID}"
-  session_cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
-
 
 erda.core.file: { }
 

@@ -45,7 +45,7 @@ func (p *provider) GetCurrentUser(_ context.Context, req *pb.GetCurrentUserReque
 			return nil, err
 		}
 	case pb.TokenSource_Cookie:
-		user, refresh, err = p.getUserWithCookie(req.AccessToken)
+		user, refresh, err = p.getUserWithCookie(req.CookieName, req.AccessToken)
 		if err != nil {
 			return nil, err
 		}
@@ -92,15 +92,20 @@ func (p *provider) getUserWithGrantedToken(token string) (*commonpb.UserInfo, er
 	}, nil
 }
 
-func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.SessionRefresh, error) {
+func (p *provider) getUserWithCookie(name *string, value string) (*commonpb.UserInfo, *pb.SessionRefresh, error) {
 	var (
 		reqPath = "/api/user/web/current-user"
 		body    bytes.Buffer
 	)
 
+	if name == nil {
+		return nil, nil, errors.New("illegal cookie name")
+	}
+	cookieName := *name
+
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
-		Header("Cookie", fmt.Sprintf("%s=%s", p.Cfg.CookieName, value)).
+		Cookie(&http.Cookie{Name: cookieName, Value: value}).
 		Path(reqPath)
 
 	r, err := req.Do().Body(&body)
@@ -138,7 +143,7 @@ func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.Sess
 				MaxAge:   int32(cookie.MaxAge),
 			}
 			if refreshCookie.Name == "" {
-				refreshCookie.Name = p.Cfg.CookieName
+				refreshCookie.Name = cookieName
 			}
 			if !cookie.Expires.IsZero() {
 				refreshCookie.ExpireAt = timestamppb.New(cookie.Expires)

@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,7 +45,7 @@ func (p *provider) GetCurrentUser(_ context.Context, req *pb.GetCurrentUserReque
 			return nil, err
 		}
 	case pb.TokenSource_Cookie:
-		user, refresh, err = p.getUserWithCookie(req.AccessToken)
+		user, refresh, err = p.getUserWithCookie(req.CookieName, req.AccessToken)
 		if err != nil {
 			return nil, err
 		}
@@ -92,15 +93,20 @@ func (p *provider) getUserWithGrantedToken(token string) (*commonpb.UserInfo, er
 	}, nil
 }
 
-func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.SessionRefresh, error) {
+func (p *provider) getUserWithCookie(name *string, value string) (*commonpb.UserInfo, *pb.SessionRefresh, error) {
 	var (
 		reqPath = fmt.Sprintf("/%s/iam/api/v1/admin/user/find-by-token", p.Cfg.ApplicationName)
 		body    bytes.Buffer
 	)
 
+	if name == nil {
+		return nil, nil, errors.New("illegal cookie name")
+	}
+	cookieName := *name
+
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
-		Header("Cookie", fmt.Sprintf("%s=%s", p.Cfg.CookieName, value)).
+		Cookie(&http.Cookie{Name: cookieName, Value: value}).
 		Path(reqPath)
 
 	r, err := req.Do().Body(&body)
@@ -122,7 +128,7 @@ func (p *provider) getUserWithCookie(value string) (*commonpb.UserInfo, *pb.Sess
 	var refresh *pb.SessionRefresh
 	if userWithToken.Data.NewToken != "" {
 		refreshCookie := &pb.CookieRefresh{
-			Name:  p.Cfg.CookieName,
+			Name:  cookieName,
 			Value: userWithToken.Data.NewToken,
 			Path:  "/",
 		}
