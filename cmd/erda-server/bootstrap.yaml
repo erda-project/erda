@@ -118,6 +118,18 @@ erda.core.user.uc:
   client_secret: "${OAUTH_CLIENT_SECRET}"
   session_cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
 
+erda.core.user.uc.event-sync:
+  _enable: ${UC_ENABLED:false}
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  uc_auditor_cron: "${UC_AUDITOR_CRON:0 */1 * * * ?}"
+  uc_auditor_pull_size: "${UC_AUDITOR_PULL_SIZE:30}"
+  compensation_exec_cron: "${COMPENSATION_EXEC_CRON:0 */5 * * * ?}"
+  uc_syncrecord_clean_cron: "${UC_SYNCRECORD_CLEAN_CRON:0 0 3 * * ?}"
+  compensation_batch_size: "${UC_COMPENSATION_BATCH_SIZE:10}"
+  clean_record_days: "${UC_SYNCRECORD_CLEAN_DAYS:7}"
+
 erda.core.user.oauth.uc:
   _enable: ${UC_ENABLED:false}
   frontend_url: "${UC_PUBLIC_URL}"

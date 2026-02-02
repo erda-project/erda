@@ -55,6 +55,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/user/auth/identity/uc"
 	_ "github.com/erda-project/erda/internal/core/user/auth/oauth/iam"
 	_ "github.com/erda-project/erda/internal/core/user/auth/oauth/uc"
+	_ "github.com/erda-project/erda/internal/core/user/impl/uc/eventsync"
 
 	// infra
 	"github.com/erda-project/erda-infra/base/servicehub"
