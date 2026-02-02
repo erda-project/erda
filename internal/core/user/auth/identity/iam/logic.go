@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -106,7 +105,7 @@ func (p *provider) getUserWithCookie(name *string, value string) (*commonpb.User
 
 	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.BackendHost).
-		Cookie(&http.Cookie{Name: cookieName, Value: value}).
+		Param("token", value).
 		Path(reqPath)
 
 	r, err := req.Do().Body(&body)

@@ -20,10 +20,15 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 )
+
+const DefaultLoginMethod = "DEFAULT"
+
+var loginMethod = pb.UserLoginMethod{
+	DisplayName: DefaultLoginMethod,
+}
 
 func (p *provider) UserPaging(ctx context.Context, req *pb.UserPagingRequest) (*pb.UserPagingResponse, error) {
 	conditions := map[string]any{
@@ -68,12 +73,7 @@ func (p *provider) UserPaging(ctx context.Context, req *pb.UserPagingRequest) (*
 func (p *provider) UserListLoginMethod(ctx context.Context, req *pb.UserListLoginMethodRequest) (*pb.UserListLoginMethodResponse, error) {
 	// TODO: support more login method
 	return &pb.UserListLoginMethodResponse{
-		Data: []*pb.UserLoginMethod{
-			{
-				DisplayName: "DEFAULT",
-				Value:       "",
-			},
-		},
+		Data: []*pb.UserLoginMethod{&loginMethod},
 	}, nil
 }
 
@@ -137,9 +137,41 @@ func (p *provider) UserCreate(_ context.Context, req *pb.UserCreateRequest) (*pb
 	return &pb.UserCreateResponse{}, nil
 }
 
-func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*emptypb.Empty, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *provider) UserExport(ctx context.Context, req *pb.UserPagingRequest) (*pb.UserExportResponse, error) {
+	var (
+		users []*pb.ManagedUser
+		total int64
+	)
+
+	if req.PageNo == 0 {
+		req.PageNo = 0
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
+
+	for {
+		data, err := p.UserPaging(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		if total == 0 {
+			total = data.Total
+		}
+
+		users = append(users, data.List...)
+		if int64(len(users)) >= total {
+			break
+		}
+		req.PageNo++
+	}
+
+	return &pb.UserExportResponse{
+		Total:        total,
+		List:         users,
+		LoginMethods: map[string]string{DefaultLoginMethod: ""},
+	}, nil
 }
 
 func (p *provider) UserFreeze(ctx context.Context, req *pb.UserFreezeRequest) (*pb.UserFreezeResponse, error) {
