@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"moul.io/http2curl"
 
 	"github.com/erda-project/erda/pkg/http/customhttp"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -127,7 +126,6 @@ func (r *Request) Do() AfterDo {
 }
 
 func (r *Request) GetUrl() string {
-	fmt.Println(http2curl.GetCurlCommand(r.internal))
 	return fmt.Sprintf("%s://%s%s?%s", r.proto, r.host, r.path, r.params.Encode())
 }
 
