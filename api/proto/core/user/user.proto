@@ -279,11 +279,7 @@ service UserService {
     option (erda.common.openapi) = {
       path: "/api/user/webhook/events",
       auth: {
-        no_check: false,
-        check_login: true,
-        try_check_login: false,
-        check_token: true,
-        check_basic_auth: false,
+        no_check: true,
       },
     };
   };
