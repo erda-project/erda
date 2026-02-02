@@ -42,10 +42,10 @@ func FindUserById(id string) (*commonpb.UserInfo, error) {
 	}
 	user := userResp.Data
 	return &commonpb.UserInfo{
-		Id:     user.ID,
+		Id:     user.Id,
 		Name:   user.Name,
 		Nick:   user.Nick,
-		Avatar: user.AvatarURL,
+		Avatar: user.Avatar,
 		Phone:  user.Phone,
 		Email:  user.Email,
 	}, nil
