@@ -3,6 +3,9 @@ package iam
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/url"
 	"time"
@@ -30,7 +33,8 @@ func (p *provider) ExchangeCode(ctx context.Context, r *pb.ExchangeCodeRequest) 
 
 func (p *provider) ExchangePassword(ctx context.Context, r *pb.ExchangePasswordRequest) (*pb.OAuthToken, error) {
 	if p.Config.UserTokenCacheEnabled {
-		cacheTokenAny, err := p.tokenCache.Get(userTokenCacheKey(r.Username, r.Password))
+		cacheKey := p.userTokenCacheKey(r.Username, r.Password)
+		cacheTokenAny, err := p.tokenCache.Get(cacheKey)
 		if err != nil {
 			p.Log.Warnf("failed to get user token from cache (username: %s), %v", r.Username, err)
 		} else {
@@ -55,8 +59,9 @@ func (p *provider) ExchangePassword(ctx context.Context, r *pb.ExchangePasswordR
 	}
 
 	if p.Config.UserTokenCacheEnabled {
-		expireTime := p.convertExpiresIn2Time(oauthToken.ExpiresIn)
-		if err := p.tokenCache.SetWithExpire(userTokenCacheKey(r.Username, r.Password), oauthToken, expireTime); err != nil {
+		expireTime := p.Config.UserTokenCacheExpireTime
+		cacheKey := p.userTokenCacheKey(r.Username, r.Password)
+		if err := p.tokenCache.SetWithExpire(cacheKey, oauthToken, expireTime); err != nil {
 			p.Log.Warnf("failed to set token with expire %s (username: %s), %v", expireTime.String(), r.Username, err)
 		}
 		p.Log.Infof("grant new password token with expire time %s (username: %s)", expireTime.String(), r.Username)
@@ -171,6 +176,10 @@ func (p *provider) convertExpiresIn2Time(expiresIn int64) time.Duration {
 	return time.Duration(float64(expiresIn)*p.Config.TokenCacheEarlyExpireRate) * time.Second
 }
 
-func userTokenCacheKey(username, password string) string {
-	return userTokenCachePrefix + username + ":" + password
+func (p *provider) userTokenCacheKey(username, password string) string {
+	mac := hmac.New(sha256.New, []byte(p.Config.OAuthTokenCacheSecret))
+	mac.Write([]byte(username))
+	mac.Write([]byte{':'})
+	mac.Write([]byte(password))
+	return userTokenCachePrefix + hex.EncodeToString(mac.Sum(nil))
 }
