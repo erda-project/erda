@@ -132,6 +132,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
+	github.com/samber/lo v1.39.0
 	github.com/sashabaranov/go-openai v1.40.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
@@ -507,7 +508,7 @@ require (
 	k8s.io/component-base v0.30.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99 // indirect
 	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
-	moul.io/http2curl v1.0.0
+	moul.io/http2curl v1.0.0 // indirect
 	oras.land/oras-go v1.2.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.29.0 // indirect
 	sigs.k8s.io/cli-utils v0.35.0 // indirect
@@ -516,8 +517,6 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
-
-require github.com/samber/lo v1.39.0
 
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
