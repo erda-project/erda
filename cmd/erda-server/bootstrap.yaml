@@ -109,6 +109,8 @@ erda.core.user.oauth.iam:
   token_cache_early_expire_rate: "${OAUTH_TOKEN_CACHE_EARLY_EXPIRE_RATE:0.8}"
   server_token_cache_enabled: "${OAUTH_SERVER_TOKEN_CACHE_ENABLED:true}"
   user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
+  oauth_token_cache_secret: "${OAUTH_TOKEN_CACHE_SECRET}"
+  user_token_cache_expire_time: "${USER_TOKEN_CACHE_EXPIRE_TIME:120s}"
 
 # uc user services server
 erda.core.user.uc:

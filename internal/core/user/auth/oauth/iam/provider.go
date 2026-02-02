@@ -15,6 +15,8 @@
 package iam
 
 import (
+	"time"
+
 	"github.com/bluele/gcache"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -25,7 +27,7 @@ import (
 
 const (
 	serverTokenCacheKey    = "server_token"
-	userTokenCachePrefix   = "user:"
+	userTokenCachePrefix   = "user:token:"
 	defaultEarlyExpireRate = 0.8
 )
 
@@ -37,10 +39,12 @@ type Config struct {
 	// Optional, only needed for authorization_code grant types
 	RedirectURI string `file:"redirect_uri"`
 	// token cache config
-	TokenCacheSize            int     `file:"token_cache_size" default:"20000"`
-	TokenCacheEarlyExpireRate float64 `file:"token_cache_early_expire_rate" default:"0.8"`
-	ServerTokenCacheEnabled   bool    `file:"server_token_cache_enabled" default:"true"`
-	UserTokenCacheEnabled     bool    `file:"user_token_cache_enabled" default:"true"`
+	TokenCacheSize            int           `file:"token_cache_size" default:"20000"`
+	TokenCacheEarlyExpireRate float64       `file:"token_cache_early_expire_rate" default:"0.8"`
+	ServerTokenCacheEnabled   bool          `file:"server_token_cache_enabled" default:"true"`
+	UserTokenCacheEnabled     bool          `file:"user_token_cache_enabled" default:"true"`
+	UserTokenCacheExpireTime  time.Duration `file:"user_token_cache_expire_time"`
+	OAuthTokenCacheSecret     string        `file:"oauth_token_cache_secret" default:"secret"`
 }
 
 type provider struct {
