@@ -66,7 +66,6 @@ func (u *userState) get(req *http.Request, targetState GetUserState) (interface{
 		case GetInit:
 			credential, err := u.credStore.Load(ctx, req)
 			if err != nil {
-				logrus.WithField("state", u.state).Errorf("failed to load token, %v", err)
 				return nil, domain.UserAuthResult{Code: domain.Unauthed, Detail: "User:State:GetInit"}
 			}
 			u.credential = credential
