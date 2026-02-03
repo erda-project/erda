@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
 	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -38,7 +39,7 @@ type (
 	Auther interface {
 		Weight() int64
 		Match(r *http.Request, opts Options) (bool, interface{})
-		Check(r *http.Request, data interface{}, opts Options) (ok bool, req *http.Request, user domain.UserAuthState, err error)
+		Check(r *http.Request, data interface{}, opts Options) (bool, *http.Request, error)
 	}
 	// Options .
 	Options interface {
@@ -107,22 +108,12 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 		}
 		for _, auther := range p.authers {
 			if ok, data := auther.Match(r, opts); ok {
-				ok, req, user, err := auther.Check(r, data, opts)
+				ok, req, err := auther.Check(r, data, opts)
 				if err != nil {
 					http.Error(rw, err.Error(), http.StatusUnauthorized)
 					return
 				}
 				if ok {
-					if user != nil {
-						if result := ApplyUserInfoHeaders(req, user); result.Code != domain.AuthSuccess {
-							detail := result.Detail
-							if detail == "" {
-								detail = "apply user info failed"
-							}
-							http.Error(rw, detail, http.StatusUnauthorized)
-							return
-						}
-					}
 					permissionAuthResult, err := p.executePermissionAuths(req, rw, opts)
 					if err != nil {
 						http.Error(rw, err.Error(), http.StatusUnauthorized)
@@ -131,7 +122,7 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 					if !permissionAuthResult {
 						break // execute error
 					}
-					if refresh := GetSessionRefresh(req.Context()); refresh != nil {
+					if refresh := sessionrefresh.Get(req.Context()); refresh != nil {
 						if writer := legacycontainer.Get[domain.RefreshWriter](); writer != nil {
 							if err := writer.WriteRefresh(rw, req, refresh); err != nil {
 								logrus.Warnf("failed to write session refresh: %v", err)
@@ -155,7 +146,7 @@ func (p *provider) executePermissionAuths(r *http.Request, rw http.ResponseWrite
 	}
 	for _, auth := range p.overPermissionAuthers {
 		if ok, data := auth.Match(r, opts); ok {
-			ok, _, _, err := auth.Check(r, data, opts)
+			ok, _, err := auth.Check(r, data, opts)
 			if err != nil {
 				return false, err
 			}

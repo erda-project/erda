@@ -17,9 +17,12 @@ package oauth
 import (
 	"math"
 	"net/http"
+	"strconv"
 
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/auth/sessionrefresh"
+	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 type loginChecker struct {
@@ -33,20 +36,20 @@ func (a *loginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, i
 	if check {
 		userAuthState := a.p.UserAuth.NewState()
 		if userAuthState.IsLogin(r).Code == domain.AuthSuccess {
-			return true, nil
+			return true, userAuthState
 		}
 	}
 	return false, nil
 }
 
-func (a *loginChecker) Check(r *http.Request, data interface{}, _ openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
-	user := a.p.UserAuth.NewState()
-	result := user.IsLogin(r)
+func (a *loginChecker) Check(r *http.Request, data interface{}, _ openapiauth.Options) (bool, *http.Request, error) {
+	user := data.(domain.UserAuthState)
+	result := applyUserInfoHeaders(r, user)
 	if result.Code != domain.AuthSuccess {
 		a.p.Log.Debugf("failed to auth: %v", result.Detail)
-		return false, r, nil, nil
+		return false, r, nil
 	}
-	return true, r, user, nil
+	return true, r, nil
 }
 
 type tryLoginChecker struct {
@@ -58,19 +61,41 @@ func (a *tryLoginChecker) Weight() int64 { return math.MinInt64 }
 func (a *tryLoginChecker) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
 	check, _ := opts.Get("TryCheckLogin").(bool)
 	if check {
-		userAuthState := a.p.UserAuth.NewState()
-		if userAuthState.IsLogin(r).Code == domain.AuthSuccess {
-			return true, ""
-		}
+		return true, ""
 	}
 	return false, nil
 }
 
-func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
+func (a *tryLoginChecker) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
 	user := a.p.UserAuth.NewState()
 	result := user.IsLogin(r)
 	if result.Code == domain.AuthSuccess {
-		return true, r, user, nil
+		applyUserInfoHeaders(r, user)
 	}
-	return true, r, nil, nil
+	return true, r, nil
+}
+
+func applyUserInfoHeaders(req *http.Request, user domain.UserAuthState) domain.UserAuthResult {
+	userinfo, r := user.GetInfo(req)
+	if r.Code != domain.AuthSuccess {
+		return r
+	}
+	// set User-ID
+	req.Header.Set("User-ID", userinfo.Id)
+
+	// with session refresh context
+	if newCtx := sessionrefresh.With(req.Context(), userinfo.SessionRefresh); newCtx != req.Context() {
+		*req = *req.WithContext(newCtx)
+	}
+
+	var scopeinfo common.UserScopeInfo
+	scopeinfo, r = user.GetScopeInfo(req)
+	if r.Code != domain.AuthSuccess {
+		return r
+	}
+	// set Org-ID
+	if scopeinfo.OrgID != 0 {
+		req.Header.Set("Org-ID", strconv.FormatUint(scopeinfo.OrgID, 10))
+	}
+	return domain.UserAuthResult{Code: domain.AuthSuccess}
 }
