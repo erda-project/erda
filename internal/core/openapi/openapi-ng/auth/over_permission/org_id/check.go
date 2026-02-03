@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda-proto-go/common/pb"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/match"
-	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -70,15 +69,15 @@ func trim(arr []string) []string {
 	return result
 }
 
-func (o *overPermissionOrgId) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, domain.UserAuthState, error) {
+func (o *overPermissionOrgId) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
 	orgId := r.Header.Get(httputil.OrgHeader)
 	if len(orgId) == 0 {
-		return false, r, nil, nil
+		return false, r, nil
 	}
 	if d, ok := data.(map[string]interface{}); ok {
 		if d["inParams.scope"] == "org" && d["inParams.scopeId"] != orgId {
-			return false, r, nil, nil
+			return false, r, nil
 		}
 	}
-	return true, r, nil, nil
+	return true, r, nil
 }
