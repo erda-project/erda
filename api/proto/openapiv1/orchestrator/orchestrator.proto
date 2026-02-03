@@ -1498,22 +1498,6 @@ service orchestrator {
             doc: "summary: 查询 ServiceGroup configuration",
         };
     };
-    rpc ORCHESTRATOR_RUNTIME_KILLPOD (RuntimeKillPodRequest) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            post: "/api/runtimes/actions/killpod",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/runtimes/actions/killpod",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "删除指定 pod",
-        };
-    };
     rpc ORCHESTRATOR_RUNTIME_LIST_MY_RUNTIMES (ORCHESTRATOR_RUNTIME_LIST_MY_RUNTIMES_Request) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             get: "/api/runtimes/actions/list-my-runtimes",
