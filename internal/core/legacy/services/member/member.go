@@ -135,7 +135,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					return err
 				}
 				if ownerCount+uint64(len(req.UserIDs))-oldCount > 1 {
-					return errors.Errorf(m.tran.Text(langCodes, "ErrAddMemberOwner"))
+					return errors.New(m.tran.Text(langCodes, "ErrAddMemberOwner"))
 				}
 			}
 		}

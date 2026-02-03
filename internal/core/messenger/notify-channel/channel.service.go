@@ -99,7 +99,7 @@ func (s notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.C
 		return nil, pkgerrors.NewAlreadyExistsError("Channel name")
 	}
 	creatorId := apis.GetUserID(ctx)
-	resp, err := s.p.Identity.GetUser(ctx, &userpb.GetUserRequest{UserID: creatorId})
+	resp, err := s.p.UserSvc.GetUser(ctx, &userpb.GetUserRequest{UserID: creatorId})
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
@@ -163,7 +163,7 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		Name:        channel.ChannelProvider,
 		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
 	}
-	resp, err := s.p.Identity.GetUser(
+	resp, err := s.p.UserSvc.GetUser(
 		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
 		&userpb.GetUserRequest{UserID: channel.CreatorId},
 	)

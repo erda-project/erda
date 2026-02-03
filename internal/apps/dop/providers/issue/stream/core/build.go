@@ -201,7 +201,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			for _, uid := range v {
 				userIds = append(userIds, uid.(string))
 			}
-			resp, err := p.Identity.FindUsers(
+			resp, err := p.UserSvc.FindUsers(
 				apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 				&userpb.FindUsersRequest{IDs: userIds, KeepOrder: true},
 			)
@@ -282,7 +282,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			for _, uid := range v {
 				userIds = append(userIds, uid.(string))
 			}
-			resp, err := p.Identity.FindUsers(
+			resp, err := p.UserSvc.FindUsers(
 				apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 				&userpb.FindUsersRequest{IDs: userIds, KeepOrder: true},
 			)
