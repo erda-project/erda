@@ -516,10 +516,7 @@ message RuntimeInspectRequest {
 message RuntimeInspectResponse {
     google.protobuf.Value data = 1;
 }
-message RuntimeKillPodRequest {
-    uint64 runtimeID = 1;
-    string podName = 2;
-}
+
 message RuntimeReleaseCreatePipelineResponse {
     uint64 pipelineID = 1 [json_name = "pipelineId"];
 }

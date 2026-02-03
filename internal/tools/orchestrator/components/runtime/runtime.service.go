@@ -31,6 +31,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/pkg/user"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -39,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -84,7 +86,7 @@ func (r *Service) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.
 		return nil, err
 	}
 
-	err = r.checkRuntimeScopePermission(operator, runtime, apistructs.DeleteAction)
+	err = r.checkRuntimeScopePermission(operator, runtime, apistructs.DeleteAction, apierrors.ErrDeleteRuntime)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +129,34 @@ func (r *Service) DelRuntime(ctx context.Context, req *pb.DelRuntimeRequest) (*p
 	}
 
 	return r.Delete(userID, orgID, runtimeID)
+}
+
+func (r *Service) KillPod(ctx context.Context, req *pb.KillPodRequest) (*cpb.VoidResponse, error) {
+	userID := user.ID(apis.GetUserID(ctx))
+	runtime, err := r.db.GetRuntime(req.RuntimeID)
+	if err != nil {
+		return nil, apierrors.ErrKillPod.InternalError(err)
+	}
+
+	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || req.PodName == "" {
+		return nil, apierrors.ErrKillPod.InternalError(errors.New("empty namespace or name or pod name"))
+	}
+
+	err = r.checkRuntimeScopePermission(userID, runtime, apistructs.DeleteAction, apierrors.ErrKillPod)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.serviceGroupImpl.KillPod(ctx, runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, req.PodName); err != nil {
+		return nil, apierrors.ErrKillPod.InternalError(err)
+	}
+	audit.ContextEntryMap(ctx, map[string]interface{}{
+		"workspace":     runtime.Workspace,
+		"runtime":       runtime.Name,
+		"podName":       req.PodName,
+		"applicationId": runtime.ApplicationID,
+	})
+	return &cpb.VoidResponse{}, nil
 }
 
 func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
@@ -178,7 +208,7 @@ func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID ui
 	return
 }
 
-func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
+func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string, apiErr *errorresp.APIError) error {
 	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.AppScope,
@@ -192,7 +222,7 @@ func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient.
 	}
 
 	if !perm.Access {
-		return apierrors.ErrGetRuntime.AccessDenied()
+		return apiErr.AccessDenied()
 	}
 
 	return nil
@@ -262,7 +292,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	if err != nil {
 		logrus.Warnf("[GetRuntime] get vpa rules for runtimeId %d failed.", runtime.ID)
 	}
-	if err = r.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction); err != nil {
+	if err = r.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction, apierrors.ErrGetRuntime); err != nil {
 		return nil, err
 	}
 

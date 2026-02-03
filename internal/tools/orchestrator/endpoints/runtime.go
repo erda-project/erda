@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,7 +30,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -726,40 +724,4 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 	}
 
 	return httpserver.OkResp(result)
-}
-
-// KillPod
-// TODO:
-// 1. refactor with erda-infra
-// 2. audit provider: internal/pkg/audit
-func (e *Endpoints) KillPod(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	userID, err := user.GetUserID(r)
-	if err != nil {
-		return apierrors.ErrKillPod.NotLogin().ToResp(), nil
-	}
-
-	var req apistructs.RuntimeKillPodRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return apierrors.ErrKillPod.InvalidParameter("req body").ToResp(), nil
-	}
-
-	audit := apistructs.Audit{
-		UserID:    userID.String(),
-		UserAgent: httputil.GetUserAgent(r.Header),
-		ClientIP:  utils.GetRealIP(r),
-		StartTime: strconv.FormatInt(time.Now().Unix(), 10),
-	}
-
-	if err := e.runtime.KillPod(req.RuntimeID, req.PodName, &audit); err != nil {
-		return apierrors.ErrKillPod.InternalError(err).ToResp(), nil
-	}
-
-	audit.Result = apistructs.SuccessfulResult
-	if err := e.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
-		Audit: audit,
-	}); err != nil {
-		logrus.Errorf("failed to create audit event: %v", err)
-	}
-
-	return httpserver.OkResp(nil)
 }

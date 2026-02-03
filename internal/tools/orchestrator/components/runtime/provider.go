@@ -15,6 +15,9 @@
 package runtime
 
 import (
+	"context"
+	"errors"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -22,6 +25,8 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -40,6 +45,7 @@ type provider struct {
 	ClusterSvc   clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 
 	runtimeService pb.RuntimeServiceServer
+	audit          audit.Auditor
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -51,8 +57,26 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		WithClusterSvc(p.ClusterSvc),
 	)
 
+	p.audit = audit.GetAuditor(ctx)
 	if p.Register != nil {
-		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options())
+		type RuntimeService = pb.RuntimeServiceServer
+		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options(),
+			p.audit.Audit(
+				audit.MethodWithError(RuntimeService.KillPod, audit.AppScope, string(apistructs.KillPodTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						entries := audit.GetContextEntryMap(ctx)
+						if entries == nil {
+							return nil, map[string]interface{}{}, nil
+						}
+						scopeID := entries["applicationId"]
+						if scopeID == "" {
+							return nil, nil, errors.New("illegal app scope id")
+						}
+						return scopeID, map[string]interface{}{}, nil
+					},
+				),
+			),
+		)
 	}
 	return nil
 }

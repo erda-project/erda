@@ -2,11 +2,9 @@ syntax = "proto3";
 
 package erda.orchestrator.runtime;
 import "google/api/annotations.proto";
-import "google/protobuf/struct.proto";
-import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
 import "common/http.proto";
-import "common/status.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb";
 
@@ -35,8 +33,8 @@ message Service {
   repeated string expose = 6;
   repeated ErrorResponse errors = 7;
   string type = 8;
-  string hpaEnabled = 9 [json_name ="hpaEnabled"];
-  string vpaEnabled = 10 [json_name ="vpaEnabled"];
+  string hpaEnabled = 9 [json_name = "hpaEnabled"];
+  string vpaEnabled = 10 [json_name = "vpaEnabled"];
 }
 
 message StatusMap {
@@ -109,7 +107,19 @@ message CheckRuntimeExistResp {
   bool ok = 1;
 }
 
+message KillPodRequest {
+  uint64 runtimeID = 1;
+  string podName = 2;
+}
+
 service RuntimeService {
+  option (erda.common.openapi_service) = {
+    service: "orchestrator",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
       get: "/api/runtimes/{nameOrID}?applicationId={appID}&workspace={workspace}",
@@ -121,6 +131,15 @@ service RuntimeService {
   rpc DelRuntime (DelRuntimeRequest) returns (Runtime) {
     option (google.api.http) = {
       delete: "/api/runtimes/{id}",
+    };
+  }
+
+  rpc KillPod (KillPodRequest) returns (erda.common.VoidResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/killpod",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/actions/killpod",
     };
   }
 }
