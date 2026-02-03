@@ -41,9 +41,9 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Identity userpb.UserServiceServer
+	Cfg     *config
+	Log     logs.Logger
+	UserSvc userpb.UserServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -157,7 +157,7 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 
 func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{}, userIDs []string) []byte {
 	desensitized, _ := strconv.ParseBool(r.Header.Get(httputil.UserInfoDesensitizedHeader))
-	resp, err := p.Identity.FindUsers(
+	resp, err := p.UserSvc.FindUsers(
 		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
 		&userpb.FindUsersRequest{IDs: userIDs},
 	)

@@ -52,10 +52,10 @@ func TestGetDefaultContent(t *testing.T) {
 						CurrentContent: "old",
 						NewContent:     "new",
 					},
-					Locale: "zh",
+					Locale: "en",
 				},
 			},
-			want:    `内容发生变更`,
+			want:    `content changed`,
 			wantErr: false,
 		},
 		{
@@ -68,13 +68,14 @@ func TestGetDefaultContent(t *testing.T) {
 						NewState:     "new",
 						ReasonDetail: "mrCreated",
 					},
-					Locale: "zh",
+					Locale: "en",
 				},
 			},
-			want:    `状态自 "old" 迁移至 "new" mrCreated`,
+			want:    `transfer state from "old" to "new" mrCreated`,
 			wantErr: false,
 		},
 		{
+			name: "transfer state without locale defaults to zh",
 			args: args{
 				req: StreamTemplateRequest{
 					StreamType: common.ISTTransferState,
@@ -134,7 +135,7 @@ func Test_getDefaultContentForMsgSending(t *testing.T) {
 					Comment: "hello world",
 				},
 			},
-			want:    `添加了备注: hello world`,
+			want:    `added a comment: hello world`,
 			wantErr: false,
 		},
 		{
@@ -142,13 +143,13 @@ func Test_getDefaultContentForMsgSending(t *testing.T) {
 			args: args{
 				ist: common.ISTChangeContent,
 			},
-			want:    common.IssueTemplate["zh"][common.ISTChangeContent],
+			want:    common.IssueTemplate["en"][common.ISTChangeContent],
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDefaultContentForMsgSending(tt.args.ist, tt.args.param, &mockTranslator{}, "zh")
+			got, err := getDefaultContentForMsgSending(tt.args.ist, tt.args.param, &mockTranslator{}, "en")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDefaultContentForMsgSending() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -176,10 +177,10 @@ func Test_renderTemplate(t *testing.T) {
 		{
 			name: "change iteration",
 			args: args{
-				templateContent: common.IssueTemplate["zh"][common.ISTChangeIteration],
+				templateContent: common.IssueTemplate["en"][common.ISTChangeIteration],
 				param:           common.ISTParam{CurrentIteration: "1.2", NewIteration: "1.3"},
 			},
-			want:    `迭代由 "1.2" 变更为 "1.3"`,
+			want:    `adjust Iteration from "1.2" to "1.3"`,
 			wantErr: false,
 		},
 	}
