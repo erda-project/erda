@@ -164,6 +164,26 @@ func (a *auditor) record(ctx context.Context, scope ScopeType, scopeID interface
 	}
 }
 
+func GetContextEntryMap(ctx context.Context) map[string]interface{} {
+	data, ok := ctx.Value(optionContextKey).(*optionContextData)
+	if !ok || len(data.opts) == 0 {
+		return nil
+	}
+	opts := newOptions()
+	for _, op := range data.opts {
+		op(opts)
+	}
+	result := make(map[string]interface{})
+	for e := opts.entries; e != nil; e = e.prev {
+		val, err := getValue(ctx, e.val)
+		if err != nil {
+			continue
+		}
+		result[e.key] = val
+	}
+	return result
+}
+
 func getValue(ctx context.Context, val interface{}) (interface{}, error) {
 	switch v := val.(type) {
 	case ValueFetcher:

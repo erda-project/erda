@@ -16,6 +16,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -28,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime/mock"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -259,4 +261,119 @@ func Test_DeleteRuntime(t *testing.T) {
 	r, err := svc.DelRuntime(ctx, &pb.DelRuntimeRequest{Id: "20"})
 	assert.Nil(err)
 	assert.NotNil(r)
+}
+
+func TestService_KillPod(t *testing.T) {
+	assert := require.New(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	bdlSvc := mock.NewMockBundleService(ctrl)
+	dbSvc := mock.NewMockDBService(ctrl)
+	sgiSvc := mock.NewMockServiceGroup(ctrl)
+	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc), WithServiceGroupImpl(sgiSvc))
+
+	runtimeID := uint64(100)
+	namespace := "default"
+	sgName := "test-sg"
+	podName := "pod-xyz"
+
+	validRuntime := &dbclient.Runtime{
+		BaseModel:     dbengine.BaseModel{ID: runtimeID},
+		ApplicationID: 1,
+		Workspace:     "dev",
+		Name:          "test-runtime",
+		ScheduleName:  dbclient.ScheduleName{Namespace: namespace, Name: sgName},
+	}
+
+	t.Run("without user in context", func(t *testing.T) {
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(validRuntime, nil).Times(1)
+		bdlSvc.EXPECT().CheckPermission(gomock.Any()).Return(
+			&apistructs.PermissionCheckResponseData{Access: false}, nil,
+		).Times(1)
+		_, err := svc.KillPod(context.Background(), &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   podName,
+		})
+		assert.Error(err)
+	})
+
+	t.Run("runtime not found", func(t *testing.T) {
+		ctx := apis.WithUserIDContext(context.Background(), "2")
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(nil, errors.New("runtime not found")).Times(1)
+		_, err := svc.KillPod(ctx, &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   podName,
+		})
+		assert.Error(err)
+	})
+
+	t.Run("empty namespace or name or pod name", func(t *testing.T) {
+		ctx := apis.WithUserIDContext(context.Background(), "2")
+		runtimeNoSchedule := &dbclient.Runtime{
+			BaseModel:     dbengine.BaseModel{ID: runtimeID},
+			ApplicationID: 1,
+			ScheduleName:  dbclient.ScheduleName{Namespace: "", Name: ""},
+		}
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(runtimeNoSchedule, nil).Times(1)
+		_, err := svc.KillPod(ctx, &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   podName,
+		})
+		assert.Error(err)
+	})
+
+	t.Run("empty pod name", func(t *testing.T) {
+		ctx := apis.WithUserIDContext(context.Background(), "2")
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(validRuntime, nil).Times(1)
+		_, err := svc.KillPod(ctx, &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   "",
+		})
+		assert.Error(err)
+	})
+
+	t.Run("permission denied", func(t *testing.T) {
+		ctx := apis.WithUserIDContext(context.Background(), "2")
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(validRuntime, nil).Times(1)
+		bdlSvc.EXPECT().CheckPermission(gomock.Any()).Return(
+			&apistructs.PermissionCheckResponseData{Access: false}, nil,
+		).Times(1)
+		_, err := svc.KillPod(ctx, &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   podName,
+		})
+		assert.Error(err)
+	})
+
+	t.Run("KillPod internal error", func(t *testing.T) {
+		ctx := apis.WithUserIDContext(context.Background(), "2")
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(validRuntime, nil).Times(1)
+		bdlSvc.EXPECT().CheckPermission(gomock.Any()).Return(
+			&apistructs.PermissionCheckResponseData{Access: true}, nil,
+		).Times(1)
+		sgiSvc.EXPECT().KillPod(gomock.Any(), gomock.Eq(namespace), gomock.Eq(sgName), gomock.Eq(podName)).
+			Return(errors.New("kill pod failed")).Times(1)
+		_, err := svc.KillPod(ctx, &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   podName,
+		})
+		assert.Error(err)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		ctx := apis.WithUserIDContext(context.Background(), "2")
+		dbSvc.EXPECT().GetRuntime(gomock.Eq(runtimeID)).Return(validRuntime, nil).Times(1)
+		bdlSvc.EXPECT().CheckPermission(gomock.Any()).Return(
+			&apistructs.PermissionCheckResponseData{Access: true}, nil,
+		).Times(1)
+		sgiSvc.EXPECT().KillPod(gomock.Any(), gomock.Eq(namespace), gomock.Eq(sgName), gomock.Eq(podName)).
+			Return(nil).Times(1)
+		resp, err := svc.KillPod(ctx, &pb.KillPodRequest{
+			RuntimeID: runtimeID,
+			PodName:   podName,
+		})
+		assert.NoError(err)
+		assert.NotNil(resp)
+	})
 }

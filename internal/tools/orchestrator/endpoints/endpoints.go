@@ -255,9 +255,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDeploymentOrder},
 		{Path: "/api/deployment-orders/actions/render-detail", Method: http.MethodGet, Handler: httpserver.Wrap(e.RenderDeploymentOrderDetail, httpserver.WithI18nCodes)},
 
-		// kill pod (only k8s)
-		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},
-
 		// deployment endpoints
 		{Path: "/api/deployments", Method: http.MethodGet, Handler: e.ListDeployments},
 		{Path: "/api/deployments/actions/list-launched-approval", Method: http.MethodGet, Handler: e.ListLaunchedApprovalDeployments},

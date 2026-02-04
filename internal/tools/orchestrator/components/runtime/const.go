@@ -12,22 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package orchestrator
+package runtime
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+const (
+	AuditKeyWorkspace     = "workspace"
+	AuditKeyRuntimeName   = "runtime"
+	AuditKeyPodName       = "podName"
+	AuditKeyApplicationID = "applicationId"
 )
-
-var ORCHESTRATOR_RUNTIME_KILLPOD = apis.ApiSpec{
-	Path:        "/api/runtimes/actions/killpod",
-	BackendPath: "/api/runtimes/actions/killpod",
-	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
-	Scheme:      "http",
-	Method:      "POST",
-	RequestType: apistructs.RuntimeKillPodRequest{},
-	CheckLogin:  true,
-	CheckToken:  true,
-	IsOpenAPI:   true,
-	Doc:         `删除指定 pod`,
-}
