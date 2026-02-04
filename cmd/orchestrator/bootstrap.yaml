@@ -47,16 +47,17 @@ erda.core.dicehub.release-client:
 
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
-erda.core.clustermanager.cluster-client: {}
+erda.core.clustermanager.cluster-client: { }
 
 grpc-client@erda.msp.tenant:
   addr: "${MSP_GRPC_ADDR:msp:7080}"
-erda.msp.tenant-client: {}
+erda.msp.tenant-client: { }
 
 grpc-client@erda.core.org:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
-erda.core.org-client: {}
-erda.core.org: {}
+erda.core.org-client: { }
+erda.core.org: { }
 http-server@admin:
   addr: ":7098"
-pprof: {}
+pprof: { }
+audit:
