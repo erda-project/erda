@@ -68,7 +68,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if entries == nil {
 							return nil, map[string]interface{}{}, nil
 						}
-						scopeID := entries["applicationId"]
+						scopeID := entries[AuditKeyApplicationID]
 						if scopeID == "" {
 							return nil, nil, errors.New("illegal app scope id")
 						}

@@ -151,10 +151,10 @@ func (r *Service) KillPod(ctx context.Context, req *pb.KillPodRequest) (*cpb.Voi
 		return nil, apierrors.ErrKillPod.InternalError(err)
 	}
 	audit.ContextEntryMap(ctx, map[string]interface{}{
-		"workspace":     runtime.Workspace,
-		"runtime":       runtime.Name,
-		"podName":       req.PodName,
-		"applicationId": runtime.ApplicationID,
+		AuditKeyPodName:       req.PodName,
+		AuditKeyWorkspace:     runtime.Workspace,
+		AuditKeyRuntimeName:   runtime.Name,
+		AuditKeyApplicationID: runtime.ApplicationID,
 	})
 	return &cpb.VoidResponse{}, nil
 }
