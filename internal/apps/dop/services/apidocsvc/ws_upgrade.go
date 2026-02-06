@@ -42,16 +42,17 @@ func (svc *Service) Upgrade(w http.ResponseWriter, r *http.Request, req *apistru
 	}
 
 	h := APIDocWSHandler{
-		orgID:     req.OrgID,
-		userID:    req.Identity.UserID,
-		appID:     appID,
-		branch:    ft.BranchName(),
-		filename:  filepath.Base(ft.PathFromRepoRoot()),
-		req:       req,
-		svc:       svc,
-		sessionID: uuid.New(),
-		ft:        ft,
-		trans:     svc.trans,
+		orgID:       req.OrgID,
+		userID:      req.Identity.UserID,
+		appID:       appID,
+		branch:      ft.BranchName(),
+		filename:    filepath.Base(ft.PathFromRepoRoot()),
+		req:         req,
+		svc:         svc,
+		sessionID:   uuid.New(),
+		userService: svc.UserService,
+		ft:          ft,
+		trans:       svc.trans,
 	}
 	if orgDTO, ok := orgCache.GetOrgByOrgID(strconv.FormatUint(req.OrgID, 10)); ok {
 		h.codes, _ = i18n.ParseLanguageCode(orgDTO.Locale)

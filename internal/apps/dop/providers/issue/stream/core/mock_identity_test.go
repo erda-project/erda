@@ -16,6 +16,7 @@ import (
 type MockUserServiceServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockUserServiceServerMockRecorder
+	pb.UnimplementedUserServiceServer
 }
 
 // MockUserServiceServerMockRecorder is the mock recorder for MockUserServiceServer.

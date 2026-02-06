@@ -1,0 +1,65 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package facade
+
+import (
+	"reflect"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
+)
+
+type Config struct {
+	CookieName string `file:"session_cookie_name"`
+}
+
+type provider struct {
+	Cfg *Config
+
+	UserOAuthSvc useroauthpb.UserOAuthServiceServer
+	IdentitySvc  identitypb.UserIdentityServiceServer
+	Bundle       *bundle.Bundle
+}
+
+func (p *provider) Init(_ servicehub.Context) error {
+	p.Bundle = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
+	legacycontainer.Register[domain.UserAuthFacade](p)
+	return nil
+}
+
+func (p *provider) NewState() domain.UserAuthState {
+	return &userState{
+		state:            GetInit,
+		UserOAuthService: p.UserOAuthSvc,
+		IdentitySvc:      p.IdentitySvc,
+		bundle:           p.Bundle,
+		credStore:        NewCookieStore(p.Cfg.CookieName),
+	}
+}
+
+func init() {
+	servicehub.Register("erda.core.user.auth.facade", &servicehub.Spec{
+		Services:   []string{"erda.core.user.auth.facade"},
+		Types:      []reflect.Type{reflect.TypeOf((*domain.UserAuthFacade)(nil)).Elem()},
+		ConfigFunc: func() interface{} { return &Config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
+}

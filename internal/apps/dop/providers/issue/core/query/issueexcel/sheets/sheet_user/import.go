@@ -22,7 +22,7 @@ import (
 
 	"github.com/mohae/deepcopy"
 
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -193,7 +193,7 @@ func collectUserKeysFromCustomFields(data *vars.DataForFulfill, model vars.Issue
 type Voucher struct {
 	Type   string
 	Value  string
-	Result map[string]*userpb.User // key is user id
+	Result map[string]*commonpb.UserInfo // key is user id
 }
 
 func tryToFindUserByUserKeys(data *vars.DataForFulfill, member apistructs.Member) (*apistructs.Member, error) {

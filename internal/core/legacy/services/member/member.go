@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
@@ -34,8 +35,9 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
-	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/desensitize"
+	"github.com/erda-project/erda/pkg/discover"
 	locale "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -108,7 +110,10 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 		return errors.Errorf("failed to create permission(invalid scope id)")
 	}
 
-	resp, err := m.uc.FindUsers(context.Background(), &pb.FindUsersRequest{IDs: req.UserIDs})
+	resp, err := m.uc.FindUsers(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&pb.FindUsersRequest{IDs: req.UserIDs},
+	)
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
 		return errors.Errorf("failed to get user info")
@@ -130,7 +135,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					return err
 				}
 				if ownerCount+uint64(len(req.UserIDs))-oldCount > 1 {
-					return errors.Errorf(m.tran.Text(langCodes, "ErrAddMemberOwner"))
+					return errors.New(m.tran.Text(langCodes, "ErrAddMemberOwner"))
 				}
 			}
 		}
@@ -213,7 +218,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 	parentIDMap := make(map[int64]int64)
 	for _, user := range users {
 		for _, targetScopeID := range targetScopeIDs {
-			members, err := m.db.GetMemberByScopeAndUserID(user.ID, targetScopeType, targetScopeID)
+			members, err := m.db.GetMemberByScopeAndUserID(user.Id, targetScopeType, targetScopeID)
 			if err != nil {
 				logrus.Infof("failed to get members, (%v)", err)
 				continue
@@ -230,7 +235,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 						Scope:     string(apistructs.OrgScope),
 						ScopeId:   req.Scope.ID,
 						Type:      mysqltokenstore.PAT.String(),
-						CreatorId: user.ID,
+						CreatorId: user.Id,
 					})
 					if err != nil {
 						return err
@@ -241,12 +246,12 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					ScopeID:       targetScopeID,
 					ScopeName:     m.db.GetScopeNameByScope(targetScopeType, targetScopeID),
 					ParentID:      parentID,
-					UserID:        user.ID,
+					UserID:        user.Id,
 					Email:         user.Email,
 					Mobile:        user.Phone,
 					Name:          user.Name,
 					Nick:          user.Nick,
-					Avatar:        user.AvatarURL,
+					Avatar:        user.Avatar,
 					UserSyncAt:    time.Now(),
 					OrgID:         orgID,
 					ProjectID:     projectID,
@@ -258,7 +263,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 			}
 		}
 
-		userIDStrs = append(userIDStrs, user.ID)
+		userIDStrs = append(userIDStrs, user.Id)
 	}
 
 	// 更新member的extra
@@ -581,10 +586,10 @@ func (m *Member) syncReqExtra2DB(userIDs []string, scopeType apistructs.ScopeTyp
 
 // 在判断最大管理员数量时，若是成员原本就有manager的角色，这次更新只是添加一个非管理员的角色，
 // 则不应该算作占用最大管理员数量中的一个
-func (m *Member) getMemberManagerCount(users []identity.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberManagerCount(users []*commonpb.UserInfo, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
-		userIDs = append(userIDs, user.ID)
+		userIDs = append(userIDs, user.Id)
 	}
 
 	count, err := m.db.GetManagerMemberCountByUserID(userIDs, scopeID, scopeType)
@@ -597,10 +602,10 @@ func (m *Member) getMemberManagerCount(users []identity.User, scopeID int64, sco
 
 // 在判断最大管理员数量时，若是成员原本就有owner的角色，这次更新只是添加一个非owner的角色，
 // 则不应该算作占用最大所有者数量中的一个
-func (m *Member) getMemberOwnerCount(users []*userpb.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberOwnerCount(users []*commonpb.UserInfo, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
-		userIDs = append(userIDs, user.ID)
+		userIDs = append(userIDs, user.Id)
 	}
 
 	count, err := m.db.GetOwnerMemberCountByUserID(userIDs, scopeID, scopeType)
@@ -798,39 +803,9 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		logrus.Debugf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
-		// TODO: some risk
-		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
-		if len(userID) > 11 && m.noOneAdminForKratos() { // len > 11 imply that is kratos user
-			logrus.Debugf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
-			if err := m.firstUserBecomeAdmin(userID); err != nil {
-				return false
-			}
-			return true
-		}
 		return false
 	}
 	return true
-}
-
-func (m *Member) noOneAdminForKratos() bool {
-	cnt := 1
-	if err := m.db.Model(&model.Member{}).
-		// only kratos user_id length greater than 11, add this check to prevent init sql's data: user_id=1 admin
-		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
-		Where("scope_type = ? AND length(user_id) > 11", apistructs.SysScope).
-		Count(&cnt).Error; err != nil {
-		return false
-	}
-	logrus.Debugf("CAUTION: there are %d admins", cnt)
-	return cnt == 0
-}
-
-func (m *Member) firstUserBecomeAdmin(userID string) error {
-	return m.db.Create(&model.Member{
-		ScopeType: apistructs.SysScope,
-		UserID:    userID,
-	}).Error
 }
 
 // ListByScopeTypeAndUser 根据scopeType & user 获取成员
@@ -970,9 +945,9 @@ func (m *Member) getMember(scopeType apistructs.ScopeType, scopeID int64) (map[s
 	return members, nil
 }
 
-func (m *Member) checkUCUserInfo(users []*userpb.User) error {
+func (m *Member) checkUCUserInfo(users []*commonpb.UserInfo) error {
 	for _, user := range users {
-		if user.ID == "" {
+		if user.Id == "" {
 			return errors.Errorf("failed to get user info")
 		}
 	}

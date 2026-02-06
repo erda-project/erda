@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mockgen -destination=./mock_usersvc_test.go -package notify_channel github.com/erda-project/erda-proto-go/core/user/pb UserServiceServer
+
 package notify_channel
 
 import (
@@ -24,11 +26,12 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-	gomock "github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
 	"github.com/jinzhu/copier"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -58,8 +61,8 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 	}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockUserServiceServer(ctrl)
-	identitySvc.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.GetUserResponse{Data: &userpb.User{ID: "1", Name: "a", Nick: "a"}}, nil)
+	userSvc := NewMockUserServiceServer(ctrl)
+	userSvc.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.GetUserResponse{Data: &commonpb.UserInfo{Id: "1", Name: "a", Nick: "a"}}, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,7 +120,7 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 			defer Language.Unpatch()
 
 			s := &notifyChannelService{
-				p: &provider{bdl: bundle.New(), Identity: identitySvc},
+				p: &provider{bdl: bundle.New(), UserSvc: userSvc},
 			}
 			_, err := s.CreateNotifyChannel(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -704,7 +707,7 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 				Cfg:                 nil,
 				Log:                 nil,
 				Register:            nil,
-				Identity:            nil,
+				UserSvc:             nil,
 				notifyChanelService: nil,
 				bdl:                 &bundle.Bundle{},
 				DB:                  nil,
@@ -772,13 +775,13 @@ func Test_notifyChannelService_CovertToPbNotifyChannel(t *testing.T) {
 	}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockUserServiceServer(ctrl)
-	identitySvc.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.GetUserResponse{Data: &userpb.User{Name: "test", Nick: "test_nick"}}, nil)
+	userSvc := NewMockUserServiceServer(ctrl)
+	userSvc.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.GetUserResponse{Data: &commonpb.UserInfo{Name: "test", Nick: "test_nick"}}, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &notifyChannelService{
-				p: &provider{I18n: &MockTran{}, Identity: identitySvc},
+				p: &provider{I18n: &MockTran{}, UserSvc: userSvc},
 			}
 			got := s.CovertToPbNotifyChannel(tt.args.lang, tt.args.channel, tt.args.needConfig)
 			if !reflect.DeepEqual(got, tt.want) {

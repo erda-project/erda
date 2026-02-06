@@ -50,6 +50,12 @@ import (
 	_ "github.com/erda-project/erda/internal/core/messenger/notifygroup"
 	_ "github.com/erda-project/erda/internal/core/project"
 	_ "github.com/erda-project/erda/internal/core/user"
+	_ "github.com/erda-project/erda/internal/core/user/auth/facade"
+	_ "github.com/erda-project/erda/internal/core/user/auth/identity/iam"
+	_ "github.com/erda-project/erda/internal/core/user/auth/identity/uc"
+	_ "github.com/erda-project/erda/internal/core/user/auth/oauth/iam"
+	_ "github.com/erda-project/erda/internal/core/user/auth/oauth/uc"
+	_ "github.com/erda-project/erda/internal/core/user/impl/uc/eventsync"
 
 	// infra
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -102,12 +108,11 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/compatibility"
-	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/ory-kratos"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/org_id"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/org_name"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/password"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/session"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/token"
-	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/uc-session"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/backend"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/custom-register"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/custom-route-source"
@@ -124,9 +129,6 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/watcher"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/openapi-v1"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/proto"
-
-	// uc-adaptor
-	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
 
 	// dop
 	_ "github.com/erda-project/erda/internal/apps/devflow/flow"

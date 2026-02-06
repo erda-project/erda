@@ -19,10 +19,10 @@ import (
 	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/stretchr/testify/assert"
 
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
@@ -44,11 +44,12 @@ func Test_checkCreateParam(t *testing.T) {
 
 func Test_CheckPermission(t *testing.T) {
 	var db *dao.DBClient
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "IsSysAdmin",
+	patches := gomonkey.NewPatches()
+	patches.ApplyMethod(reflect.TypeOf((*dao.DBClient)(nil)), "IsSysAdmin",
 		func(_ *dao.DBClient, userID string) (bool, error) {
 			return userID == "1", nil
 		})
-	defer monkey.UnpatchAll()
+	defer patches.Reset()
 	m := New()
 	m.db = db
 	err := m.CheckPermission("1", apistructs.SysScope, 0)
@@ -56,8 +57,8 @@ func Test_CheckPermission(t *testing.T) {
 }
 
 func Test_checkUCUserInfo(t *testing.T) {
-	emptyUsers := make([]*userpb.User, 0)
-	emptyUsers = append(emptyUsers, &userpb.User{})
+	emptyUsers := make([]*commonpb.UserInfo, 0)
+	emptyUsers = append(emptyUsers, &commonpb.UserInfo{})
 	m := New()
 	err := m.checkUCUserInfo(emptyUsers)
 	assert.Equal(t, "failed to get user info", err.Error())
@@ -79,15 +80,16 @@ func TestMember_UpdateMemberUserInfo(t *testing.T) {
 		},
 	}
 	var db *dao.DBClient
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetMemberByUserID",
+	patches := gomonkey.NewPatches()
+	patches.ApplyMethod(reflect.TypeOf((*dao.DBClient)(nil)), "GetMemberByUserID",
 		func(_ *dao.DBClient, userID string) ([]model.Member, error) {
 			return users, nil
 		})
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateMemberUserInfo",
+	patches.ApplyMethod(reflect.TypeOf((*dao.DBClient)(nil)), "UpdateMemberUserInfo",
 		func(_ *dao.DBClient, ids []int64, fields map[string]interface{}) error {
 			return nil
 		})
-	defer monkey.UnpatchAll()
+	defer patches.Reset()
 	type fields struct {
 		db *dao.DBClient
 	}

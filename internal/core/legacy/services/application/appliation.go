@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/gittarutil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -173,23 +174,25 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 	}
 
 	// 新增应用管理员至admin_members表
-	resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
+	resp, err := a.uc.GetUser(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.GetUserRequest{UserID: userID},
+	)
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
-	}
-	users := resp.Data
-	if len(users) > 0 {
+	} else {
+		user := resp.Data
 		member := model.Member{
 			ScopeType:     apistructs.AppScope,
 			ScopeID:       application.ID,
 			ScopeName:     application.Name,
 			ParentID:      application.ProjectID,
 			UserID:        userID,
-			Email:         users[0].Email,
-			Mobile:        users[0].Phone,
-			Name:          users[0].Name,
-			Nick:          users[0].Nick,
-			Avatar:        users[0].AvatarURL,
+			Email:         user.Email,
+			Mobile:        user.Phone,
+			Name:          user.Name,
+			Nick:          user.Nick,
+			Avatar:        user.Avatar,
 			UserSyncAt:    time.Now(),
 			OrgID:         org.ID,
 			ProjectID:     application.ProjectID,

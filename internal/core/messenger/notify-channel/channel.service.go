@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/core/messenger/notify-channel/kind"
 	"github.com/erda-project/erda/pkg/common/apis"
 	pkgerrors "github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
@@ -98,12 +99,12 @@ func (s notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.C
 		return nil, pkgerrors.NewAlreadyExistsError("Channel name")
 	}
 	creatorId := apis.GetUserID(ctx)
-	resp, err := s.p.Identity.GetUser(ctx, &userpb.GetUserRequest{UserID: creatorId})
+	resp, err := s.p.UserSvc.GetUser(ctx, &userpb.GetUserRequest{UserID: creatorId})
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
 	user := resp.Data
-	if user == nil || user.ID == "" {
+	if user == nil || user.Id == "" {
 		return nil, pkgerrors.NewNotFoundError("User")
 	}
 	orgId := apis.GetOrgID(ctx)
@@ -162,10 +163,15 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		Name:        channel.ChannelProvider,
 		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
 	}
-	resp, _ := s.p.Identity.GetUser(context.Background(), &userpb.GetUserRequest{UserID: channel.CreatorId})
-	if resp != nil {
+	resp, err := s.p.UserSvc.GetUser(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.GetUserRequest{UserID: channel.CreatorId},
+	)
+	if err != nil {
+		s.p.Log.Warnf("failed to get creator user info, %v", err)
+	} else {
 		user := resp.Data
-		if user != nil && user.Name != "" {
+		if user.Name != "" {
 			ncpb.CreatorName = user.Name
 			if user.Nick != "" {
 				ncpb.CreatorName = user.Nick

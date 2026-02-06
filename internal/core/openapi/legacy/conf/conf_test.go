@@ -18,7 +18,6 @@ import (
 	"os"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/pkg/discover"
@@ -30,16 +29,6 @@ func TestGetDomain(t *testing.T) {
 	domain, err := GetDomain(host, confDomain)
 	assert.NoError(t, err)
 	assert.Equal(t, ".erda.cloud", domain)
-}
-
-func TestGetUCRedirectHost(t *testing.T) {
-	referer := "https://erda.cloud"
-	guard := monkey.Patch(UCRedirectHost, func() string {
-		return "openapi.dev.terminus.io,openapi.erda.cloud"
-	})
-	defer guard.Unpatch()
-	host := GetUCRedirectHost(referer)
-	assert.Equal(t, "openapi.erda.cloud", host)
 }
 
 func Test_getSvcHostPortFromAddr(t *testing.T) {

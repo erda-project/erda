@@ -67,27 +67,6 @@ func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserList
 	return &userResp.Data, nil
 }
 
-func (b *Bundle) GetUcUserID(uuid string) (string, error) {
-	host, err := b.urls.ErdaServer()
-	if err != nil {
-		return "", err
-	}
-	hc := b.hc
-
-	var userResp apistructs.UserIDResponse
-	resp, err := hc.Get(host).Path("/api/users/actions/get-uc-user-id").
-		Header(httputil.InternalHeader, "bundle").
-		Param("id", uuid).
-		Do().JSON(&userResp)
-	if err != nil {
-		return "", apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !userResp.Success {
-		return "", toAPIError(resp.StatusCode(), userResp.Error)
-	}
-	return userResp.Data, nil
-}
-
 func (b *Bundle) SearchUser(params url.Values) (*apistructs.UserListResponseData, error) {
 	host, err := b.urls.ErdaServer()
 	if err != nil {

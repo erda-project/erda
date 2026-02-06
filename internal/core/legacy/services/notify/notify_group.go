@@ -15,30 +15,28 @@
 package notify
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
-	"time"
 
 	"github.com/jinzhu/gorm"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
-	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/i18n"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type NotifyGroup struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
+	db          *dao.DBClient
+	bdl         *bundle.Bundle
+	userService userpb.UserServiceServer
 }
 
 type Option func(*NotifyGroup)
@@ -58,10 +56,9 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-// WithBundle 配置 bundle
-func WithBundle(bdl *bundle.Bundle) Option {
+func WithUserService(userService userpb.UserServiceServer) Option {
 	return func(o *NotifyGroup) {
-		o.bdl = bdl
+		o.userService = userService
 	}
 }
 
@@ -125,7 +122,7 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 			for _, value := range target.Values {
 				userIDs = append(userIDs, value.Receiver)
 			}
-			notifyUsers, err := getNotifyUsersByIDs(userIDs)
+			notifyUsers, err := o.getNotifyUsersByIDs(userIDs)
 			if err != nil {
 				return nil, err
 			}
@@ -196,7 +193,7 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 			for _, member := range members {
 				userIDs = append(userIDs, member.UserID)
 			}
-			notifyUsers, err := getNotifyUsersByIDs(userIDs)
+			notifyUsers, err := o.getNotifyUsersByIDs(userIDs)
 			if err != nil {
 				return nil, err
 			}
@@ -230,48 +227,18 @@ func uniqueTargetList(list []apistructs.Target) []apistructs.Target {
 	return result
 }
 
-var (
-	once      sync.Once
-	tokenAuth *uc.UCTokenAuth
-	client    *httpclient.HTTPClient
-)
-
-type USERID string
-
-// User 用户中心用户数据结构
-type User struct {
-	ID        USERID `json:"user_id"`
-	Name      string `json:"username"`
-	AvatarURL string `json:"avatar_url"`
-	Phone     string `json:"phone_number"`
-	Email     string `json:"email"`
-	Nick      string `json:"nickname"`
-}
-
-// UnmarshalJSON maybe int or string, unmarshal them to string(USERID)
-func (u *USERID) UnmarshalJSON(b []byte) error {
-	var intid int
-	if err := json.Unmarshal(b, &intid); err != nil {
-		var stringid string
-		if err := json.Unmarshal(b, &stringid); err != nil {
-			return err
-		}
-		*u = USERID(stringid)
-		return nil
-	}
-	*u = USERID(strconv.Itoa(intid))
-	return nil
-}
-
-func getNotifyUsersByIDs(userIds []string) ([]apistructs.NotifyUser, error) {
-	users, err := getUsers(userIds)
+func (o *NotifyGroup) getNotifyUsersByIDs(userIds []string) ([]apistructs.NotifyUser, error) {
+	findUsersResp, err := o.userService.FindUsers(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.FindUsersRequest{IDs: userIds},
+	)
 	if err != nil {
 		return nil, err
 	}
 	var notifyUsers []apistructs.NotifyUser
-	for _, user := range users {
+	for _, user := range findUsersResp.Data {
 		user := apistructs.NotifyUser{
-			ID:       user.ID,
+			ID:       user.Id,
 			Type:     "inner",
 			Email:    user.Email,
 			Mobile:   user.Phone,
@@ -280,48 +247,4 @@ func getNotifyUsersByIDs(userIds []string) ([]apistructs.NotifyUser, error) {
 		notifyUsers = append(notifyUsers, user)
 	}
 	return notifyUsers, nil
-}
-
-func getUsers(IDs []string) (map[string]apistructs.UserInfo, error) {
-	once.Do(func() {
-		var err error
-		tokenAuth, err = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-		if err != nil {
-			panic(err)
-		}
-		client = httpclient.New(httpclient.WithDialerKeepAlive(10 * time.Second))
-	})
-	var (
-		err   error
-		token uc.OAuthToken
-	)
-	if token, err = tokenAuth.GetServerToken(false); err != nil {
-		return nil, err
-	}
-	parts := make([]string, len(IDs))
-	for i := range IDs {
-		parts[i] = strutil.Concat("user_id:", IDs[i])
-	}
-	query := strutil.Join(parts, " OR ")
-	var b []User
-	resp, err := client.Get(discover.UC()).Path("/api/open/v1/users").Param("query", query).
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).Do().JSON(&b)
-	if err != nil {
-		return nil, err
-	}
-	if !resp.IsOK() {
-		return nil, fmt.Errorf("failed to get users, status code: %d", resp.StatusCode())
-	}
-	users := make(map[string]apistructs.UserInfo, len(b))
-	for i := range b {
-		users[string(b[i].ID)] = apistructs.UserInfo{
-			ID:     string(b[i].ID),
-			Email:  b[i].Email,
-			Phone:  b[i].Phone,
-			Avatar: b[i].AvatarURL,
-			Name:   b[i].Name,
-			Nick:   b[i].Nick,
-		}
-	}
-	return users, nil
 }

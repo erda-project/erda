@@ -19,33 +19,27 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type Config struct {
-	UCClientID     string `default:"dice" file:"UC_CLIENT_ID"`
-	UCClientSecret string `default:"secret" file:"UC_CLIENT_SECRET"`
+	Host         string `file:"host"`
+	ClientID     string `file:"client_id"`
+	ClientSecret string `file:"client_secret"`
 }
 
 type provider struct {
 	Cfg *Config
 	Log logs.Logger
 
-	baseURL     string
-	client      *httpclient.HTTPClient
-	ucTokenAuth *UCTokenAuth
+	client       *httpclient.HTTPClient
+	UserOAuthSvc useroauthpb.UserOAuthServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.baseURL = discover.UC()
 	p.client = httpclient.New()
-	tokenAuth, err := NewUCTokenAuth(p.baseURL, p.Cfg.UCClientID, p.Cfg.UCClientSecret)
-	if err != nil {
-		return err
-	}
-	p.ucTokenAuth = tokenAuth
 	return nil
 }
 
