@@ -1,0 +1,60 @@
+{
+  "kimi-k2.5": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/kimi-k2.5"
+    },
+    "desc": "kimi-k2.5是月之暗面迄今发布最全能的模型，原生多模态架构设计，同时支持视觉与文本输入、思考与非思考模式、对话与Agent任务。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "moonshotai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 256000,
+            "max_completion_tokens": 224000,
+            "max_prompt_tokens": 16000
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0.000021",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0.000004",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
