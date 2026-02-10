@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -398,18 +399,33 @@ func loadInstanceConfig(ctx context.Context, name string, tag string) (*ConnectC
 		return nil, errors.New("failed to get clientId")
 	}
 
-	instance, err := client.MCPServerConfigInstanceClient().Get(ctx, name, tag, clientId)
-	if err != nil {
-		return nil, err
-	}
-	var config = make(map[string]string)
-	if err = json.Unmarshal([]byte(instance.Config), &config); err != nil {
+	template, err := client.MCPServerTemplateClient().Get(ctx, name, tag)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
-	template, err := client.MCPServerTemplateClient().Get(ctx, name, tag)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		template, err = client.MCPServerTemplateClient().Create(ctx, "[]", name, tag)
+		if err != nil {
+			err = fmt.Errorf("failed to create default template %s:%s, error: %v", name, tag, err)
+			logrus.Errorf("%s", err.Error())
+			return nil, err
+		}
+	}
+
+	instance, err := client.MCPServerConfigInstanceClient().Get(ctx, name, tag, clientId)
 	if err != nil {
-		return nil, err
+		if template.Template != "" && template.Template != "[]" {
+			err = fmt.Errorf("no instance %s:%s found for clientId: %s", name, tag, clientId)
+			logrus.Errorf("%s", err.Error())
+			return nil, err
+		}
+	}
+	var config = make(map[string]string)
+	if instance != nil {
+		if err = json.Unmarshal([]byte(instance.Config), &config); err != nil {
+			return nil, err
+		}
 	}
 
 	var items = make([]*mcp_server_template.TemplateConfigItem, 0)
