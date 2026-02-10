@@ -16,6 +16,8 @@ package vars
 
 import (
 	"strings"
+
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func ConcatBearer(v string) string {
@@ -23,7 +25,7 @@ func ConcatBearer(v string) string {
 }
 
 func TrimBearer(v string) string {
-	return strings.TrimPrefix(v, "Bearer ")
+	return strutil.TrimPrefixes(v, "Bearer ", "bearer ")
 }
 
 func ConcatChunkDataPrefix(v []byte) []byte {
