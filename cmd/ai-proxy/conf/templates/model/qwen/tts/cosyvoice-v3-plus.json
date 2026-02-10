@@ -1,0 +1,56 @@
+{
+  "cosyvoice-v3-plus": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/cosyvoice-v3-plus",
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "desc": "CosyVoice-v3-plus是通义实验室CosyVoice系列最新版的语音克隆大模型，具有更好的音质和复刻相似度，适用于更专业的场景。仅需提供5-20s的参考音频，即可迅速生成高度相似且听感自然的定制声音。合成能力：CosyVoice-v3-plus是通义实验室CosyVoice系列最新版的语音合成大模型，具有更好的音质和表现力，适用于更专业的场景。该模型支持文本至语音的实时流式合成。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "audio",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "audio"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

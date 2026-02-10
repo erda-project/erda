@@ -1,0 +1,56 @@
+{
+  "voice-enrollment": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/voice-enrollment",
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ]
+    },
+    "desc": "大模型声音复刻服务依托先进的大模型技术进行特征提取，无需训练过程就可以完成声音的复刻。仅需提供极短的音频，即可迅速生成高度相似且听感自然的定制声音。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "audio",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [],
+            "input_modalities": [
+              "audio"
+            ],
+            "output_modalities": [
+              "audio"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
