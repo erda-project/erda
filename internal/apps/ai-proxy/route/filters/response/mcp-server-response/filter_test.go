@@ -17,8 +17,9 @@ package mcp_server_response
 import (
 	"testing"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
 func TestParseSessionId(t *testing.T) {
