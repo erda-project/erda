@@ -15,18 +15,27 @@
 package user
 
 import (
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/core/user/pb"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
+	"github.com/erda-project/erda-proto-go/core/user/pb"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/impl/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/iam"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
-	OryEnabled bool `default:"false" file:"ORY_ENABLED" env:"ORY_ENABLED"`
+	OAuthProvider      string `default:"iam" file:"oauth_provider"`
+	EventWebhookSecret string `default:"erda" file:"event_webhook_secret"`
 }
 
 type provider struct {
@@ -34,23 +43,79 @@ type provider struct {
 	Log      logs.Logger
 	Register transport.Register
 
-	Kratos kratos.Interface
-	Uc     uc.Interface
-
+	IAM         iam.Interface
+	UC          uc.Interface
 	userService common.Interface
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	if p.Cfg.OryEnabled {
-		p.userService = p.Kratos
-		p.Log.Info("use kratos as user")
-	} else {
-		p.userService = p.Uc
-		p.Log.Info("use uc as user")
+func (p *provider) Init(_ servicehub.Context) error {
+	switch p.Cfg.OAuthProvider {
+	case domain.OAuthProviderIAM:
+		p.userService = p.IAM
+	case domain.OAuthProviderUC:
+		p.userService = p.UC
+	default:
+		return fmt.Errorf("illegal oauth provider %s", p.Cfg.OAuthProvider)
 	}
 
+	p.Log.Infof("use oauth provider %s as user service", p.Cfg.OAuthProvider)
 	if p.Register != nil {
-		pb.RegisterUserServiceImp(p.Register, p.userService, apis.Options())
+		pb.RegisterUserServiceImp(p.Register, p.userService, apis.Options(),
+			transport.WithHTTPOptions(
+				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, resp interface{}) error {
+					if r.URL.Path == "/api/users/actions/export" {
+						apiResp, ok := resp.(*apis.Response)
+						if !ok {
+							return fmt.Errorf("illegal response data, current data type: %T", resp)
+						}
+
+						reader, name, err := common.ExportExcel(apiResp)
+						if err != nil {
+							return err
+						}
+
+						rw.Header().Add("Content-Disposition", "attachment;fileName="+name+".xlsx")
+						rw.Header().Add("Content-Type", "application/vnd.ms-excel")
+						if _, err = io.Copy(rw, reader); err != nil {
+							return err
+						}
+						resp = nil
+					}
+					return encoding.EncodeResponse(rw, r, resp)
+				}),
+				transhttp.WithDecoder(func(r *http.Request, out interface{}) error {
+					switch body := out.(type) {
+					// Rewrap payload: [{},{}] -> {"users": [{},{}]}
+					case *pb.UserCreateRequest:
+						var recv []*pb.UserCreateItem
+						if err := encoding.DecodeRequest(r, &recv); err != nil {
+							return err
+						}
+						body.Users = recv
+						return nil
+					case *pb.UserEventWebhookRequest:
+						// iam
+						if secret := r.Header.Get("x-iam-secret"); secret != "" {
+							if secret != p.Cfg.EventWebhookSecret {
+								return errors.New("secret auth fail")
+							}
+							var recv *pb.UserEventIAM
+							if err := encoding.DecodeRequest(r, &recv); err != nil {
+								return err
+							}
+							body.EventType = pb.EventType_EVENT_IAM
+							body.Payload = &pb.UserEventWebhookRequest_Data{
+								Data: recv,
+							}
+							return nil
+						}
+						return encoding.DecodeRequest(r, out)
+					default:
+						return encoding.DecodeRequest(r, out)
+					}
+				}),
+			),
+		)
 	}
 	return nil
 }

@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -43,6 +42,7 @@ import (
 	mttestplan "github.com/erda-project/erda/internal/apps/dop/services/testplan"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -162,19 +162,19 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	}
 
 	// 生成活动记录
-	resp, err := i.identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: []string{req.IdentityInfo.UserID}})
+	resp, err := i.identity.GetUser(
+		apis.WithInternalClientContext(ctx, discover.SvcDOP),
+		&userpb.GetUserRequest{UserID: req.IdentityInfo.UserID},
+	)
 	if err != nil {
 		return nil, err
 	}
-	users := resp.Data
-	if len(users) != 1 {
-		return nil, errors.Errorf("not found user info")
-	}
+	user := resp.Data
 	streamReq := stream.IssueStreamCreateRequest{
 		IssueID:      int64(create.ID),
 		Operator:     req.IdentityInfo.UserID,
 		StreamType:   stream.ISTCreate,
-		StreamParams: stream.ISTParam{UserName: users[0].Nick},
+		StreamParams: stream.ISTParam{UserName: user.Nick},
 	}
 	// create stream and send issue create event
 	if _, err := i.stream.Create(&streamReq); err != nil {

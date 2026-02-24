@@ -108,6 +108,7 @@ type provider struct {
 	IssueCoreSvc          *core.IssueService               `autowired:"erda.dop.issue.core.IssueCoreService"`
 	GraphSvc              graphpb.GraphServiceServer       `autowired:"erda.core.pipeline.graph.GraphService"`
 	PipelineSvc           pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	UserSvc               userpb.UserServiceServer         `autowired:"erda.core.user.UserService"`
 	Query                 issuequery.Interface
 	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer

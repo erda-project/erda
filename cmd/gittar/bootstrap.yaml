@@ -37,3 +37,11 @@ erda.apps.aiproxy.session-client: { }
 ai-proxy-client:
   url: "${AI_PROXY_URL:http://ai-proxy:8082}"
   client_ak: "${AI_PROXY_CLIENT_AK:}"
+
+grpc-client@erda.core.user.oauth:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.user.oauth-client: { }
+
+grpc-client@erda.core.user.identity:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.user.identity-client: { }

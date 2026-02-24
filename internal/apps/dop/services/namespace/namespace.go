@@ -108,7 +108,7 @@ func (n *Namespace) GenerateAppExtraInfo(applicationID, projectID int64) string 
 		// 创建namespace
 		_, err := n.Create(&namespaceCreateReq)
 		if err != nil {
-			logrus.Errorf(err.Error())
+			logrus.Error(err.Error())
 		}
 	}
 
@@ -119,7 +119,7 @@ func (n *Namespace) GenerateAppExtraInfo(applicationID, projectID int64) string 
 	}
 
 	if err := n.CreateRelation(&relationCreateReq); err != nil {
-		logrus.Errorf(err.Error())
+		logrus.Error(err.Error())
 	}
 
 	extraInfo, err := json.Marshal(extra)

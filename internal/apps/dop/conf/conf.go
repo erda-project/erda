@@ -48,10 +48,6 @@ type Conf struct {
 	UIPublicURL       string `env:"UI_PUBLIC_URL" required:"true"`
 	UIDomain          string `env:"UI_PUBLIC_ADDR" required:"true"`
 
-	// ory/kratos config
-	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
-
 	CentralNexusPublicURL string `env:"NEXUS_PUBLIC_URL" required:"true"`
 	CentralNexusAddr      string `env:"NEXUS_ADDR" required:"true"`
 	CentralNexusUsername  string `env:"NEXUS_USERNAME" required:"false"`
@@ -172,22 +168,6 @@ func UIPublicURL() string {
 
 func UIDomain() string {
 	return cfg.UIDomain
-}
-
-func OryEnabled() bool {
-	return cfg.OryEnabled
-}
-
-func OryKratosPrivateAddr() string {
-	return cfg.OryKratosPrivateAddr
-}
-
-func OryCompatibleClientID() string {
-	return "kratos"
-}
-
-func OryCompatibleClientSecret() string {
-	return ""
 }
 
 // CentralNexusPublicURL 返回 中心集群 nexus 公网地址

@@ -34,7 +34,9 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/pkg/arrays"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/cron"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -295,13 +297,16 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 		userIDs = append(userIDs, k)
 	}
 
-	resp, err := a.uc.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userIDs})
+	resp, err := a.uc.FindUsers(
+		apis.WithInternalClientContext(ctx, discover.SvcCoreServices),
+		&userpb.FindUsersRequest{IDs: userIDs},
+	)
 	if err != nil {
 		return nil, err
 	}
 	users := resp.Data
 	for _, u := range users {
-		userIDNameMap[u.ID] = u.Nick
+		userIDNameMap[u.Id] = u.Nick
 	}
 
 	// 把r里的userID替换成userName

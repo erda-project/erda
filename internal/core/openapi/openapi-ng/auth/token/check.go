@@ -51,19 +51,10 @@ type clientToken struct {
 }
 
 // checkToken try:
-// 1. uc token
-// 2. openapi oauth2 token
-// 3. access key
+// 1. openapi oauth2 token
+// 2. access key
 func (p *provider) checkToken(opts openapiauth.Options, req *http.Request, token string) (clientToken, error) {
-	// 1. uc token
-	ucToken, err := auth.VerifyUCClientToken(token)
-	if err == nil {
-		return clientToken{
-			ClientID:   ucToken.ClientID,
-			ClientName: ucToken.ClientName,
-		}, nil
-	}
-	// 2. openapi oauth2 token
+	// 1. openapi oauth2 token
 	oauthToken, err := auth.VerifyOpenapiOAuth2Token(p.oauth2server, &OAuth2APISpec{opts}, req)
 	if err == nil {
 		return clientToken{
@@ -71,7 +62,7 @@ func (p *provider) checkToken(opts openapiauth.Options, req *http.Request, token
 			ClientName: oauthToken.ClientName,
 		}, nil
 	}
-	// 3. access key
+	// 2. access key
 	accesskey, err := auth.VerifyAccessKey(p.TokenService, req)
 	if err != nil {
 		return clientToken{}, err

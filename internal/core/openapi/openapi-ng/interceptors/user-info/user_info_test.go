@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mockgen -destination=./mock_usersvc_test.go -package userinfo github.com/erda-project/erda-proto-go/core/user/pb UserServiceServer
+
 package userinfo
 
 import (
@@ -20,8 +22,9 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
-	gomock "github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -29,10 +32,10 @@ import (
 func Test_provider_userInfoRetriever(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockUserServiceServer(ctrl)
-	identitySvc.EXPECT().FindUsers(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.FindUsersResponse{Data: []*userpb.User{{ID: "1"}}}, nil)
+	userSvc := NewMockUserServiceServer(ctrl)
+	userSvc.EXPECT().FindUsers(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.FindUsersResponse{Data: []*commonpb.UserInfo{{Id: "1"}}}, nil)
 
-	p := &provider{Identity: identitySvc}
+	p := &provider{UserSvc: userSvc}
 	type args struct {
 		r       *http.Request
 		data    map[string]interface{}

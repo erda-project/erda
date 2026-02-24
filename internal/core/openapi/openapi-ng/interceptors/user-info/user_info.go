@@ -30,6 +30,8 @@ import (
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors"
 	"github.com/erda-project/erda/internal/core/user/util"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -39,9 +41,9 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Identity userpb.UserServiceServer
+	Cfg     *config
+	Log     logs.Logger
+	UserSvc userpb.UserServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -155,7 +157,10 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 
 func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{}, userIDs []string) []byte {
 	desensitized, _ := strconv.ParseBool(r.Header.Get(httputil.UserInfoDesensitizedHeader))
-	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: userIDs})
+	resp, err := p.UserSvc.FindUsers(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.FindUsersRequest{IDs: userIDs},
+	)
 	if err != nil {
 		p.Log.Error(err)
 	} else {

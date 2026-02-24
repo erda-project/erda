@@ -38,6 +38,7 @@ type provider struct {
 	perm          *permission.Permission
 	DB            *gorm.DB                   `autowired:"mysql-client"`
 	TokenService  tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
+	UserSvc       userpb.UserServiceServer   `autowired:"erda.core.user.UserService"`
 	Org           org.Interface
 	Identity      userpb.UserServiceServer
 }

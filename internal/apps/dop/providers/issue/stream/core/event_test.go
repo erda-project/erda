@@ -19,17 +19,17 @@ import (
 	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alecthomas/assert"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/pkg/mock"
-	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type EventOrgMock struct {
@@ -68,80 +68,52 @@ func Test_filterReceiversByOperatorID(t *testing.T) {
 }
 
 func Test_groupEventContent(t *testing.T) {
-	content, err := groupEventContent([]string{common.ISTChangeContent}, common.ISTParam{}, &mockTranslator{}, "zh")
+	content, err := groupEventContent([]string{common.ISTChangeContent}, common.ISTParam{}, &mockTranslator{}, "en")
 	assert.NoError(t, err)
-	assert.Equal(t, "内容发生变更", content)
+	assert.Equal(t, "content changed", content)
 }
 
 func Test_provider_CreateIssueEvent(t *testing.T) {
-	var db *dao.DBClient
-	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssue",
-		func(d *dao.DBClient, id int64) (dao.Issue, error) {
-			return dao.Issue{
-				BaseModel: dbengine.BaseModel{
-					ID: 1,
-				},
-				Type: "TASK",
-			}, nil
+	db, mock, cleanup := setupMockDBClient(t)
+	defer cleanup()
+	mock.ExpectQuery("SELECT .* FROM `dice_issues`.*").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "project_id", "type", "assignee", "title", "creator"}).
+			AddRow(uint64(1), uint64(1), "TASK", "2", "issue-title", "1"))
+	mock.ExpectQuery("SELECT .* FROM `dice_issues`.*").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "project_id", "type", "assignee", "title", "creator"}).
+			AddRow(uint64(1), uint64(1), "TASK", "2", "issue-title", "1"))
+	mock.ExpectQuery("SELECT .* FROM `erda_issue_subscriber`.*").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"issue_id", "user_id"}).AddRow(int64(1), "2"))
+	mock.ExpectQuery("SELECT .*dice_issue_relation.*").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "name", "belong"}).
+			AddRow(uint64(1), "TASK", "parent", "belong"))
+	mock.ExpectClose()
+	mock.MatchExpectationsInOrder(false)
+
+	// Patch bundle methods with gomonkey to avoid network calls
+	bundleType := reflect.TypeOf((*bundle.Bundle)(nil))
+	patches := gomonkey.NewPatches()
+	patches.ApplyFunc(discover.GetEndpoint, func(string) (string, error) { return "http://localhost:9093", nil })
+	patches.ApplyMethod(bundleType, "GetProjectWithSetter",
+		func(_ *bundle.Bundle, _ uint64, _ ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{ID: 1, OrgID: 1, Name: "project"}, nil
 		},
 	)
-	defer p1.Unpatch()
-
-	p2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetReceiversByIssueID",
-		func(d *dao.DBClient, issueID int64) ([]string, error) {
-			return []string{"2"}, nil
+	patches.ApplyMethod(bundleType, "GetCurrentUser",
+		func(_ *bundle.Bundle, _ string) (*apistructs.UserInfo, error) {
+			return &apistructs.UserInfo{ID: "2", Nick: "tester"}, nil
 		},
 	)
-	defer p2.Unpatch()
-
-	var bdl *bundle.Bundle
-	p3 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProject",
-		func(d *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
-			return &apistructs.ProjectDTO{
-				ID: 1,
-			}, nil
-		},
+	patches.ApplyMethod(bundleType, "CreateEvent",
+		func(_ *bundle.Bundle, _ *apistructs.EventCreateRequest) error { return nil },
 	)
-	defer p3.Unpatch()
+	defer patches.Reset()
 
-	p5 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCurrentUser",
-		func(d *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
-			return &apistructs.UserInfo{
-				ID: "2",
-			}, nil
-		},
-	)
-	defer p5.Unpatch()
-
-	p6 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent",
-		func(d *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
-			return nil
-		},
-	)
-	defer p6.Unpatch()
-
-	p7 := monkey.Patch(getDefaultContentForMsgSending,
-		func(ist string, param common.ISTParam, tran i18n.Translator, locale string) (string, error) {
-			return "1", nil
-		},
-	)
-	defer p7.Unpatch()
-
-	p8 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssueParents",
-		func(d *dao.DBClient, issueID uint64, relationType []string) ([]dao.IssueItem, error) {
-			return []dao.IssueItem{
-				{
-					BaseModel: dbengine.BaseModel{
-						ID: 1,
-					},
-					Type: "TASK",
-				},
-			}, nil
-		},
-	)
-	defer p8.Unpatch()
-
-	p := &provider{db: db, bdl: bdl, Org: EventOrgMock{}}
+	bdl := bundle.New()
+	p := &provider{db: db, bdl: bdl, Org: EventOrgMock{}, commonTran: &mockTranslator{}}
 	err := p.CreateIssueEvent(&common.IssueStreamCreateRequest{
 		IssueID: 1,
 	})

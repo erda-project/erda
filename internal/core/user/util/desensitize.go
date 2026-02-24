@@ -15,20 +15,20 @@
 package util
 
 import (
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/desensitize"
 )
 
-func Densensitize(IDs []string, b []*userpb.User, needDesensitize bool) map[string]apistructs.UserInfo {
+func Densensitize(IDs []string, b []*commonpb.UserInfo, needDesensitize bool) map[string]apistructs.UserInfo {
 	users := make(map[string]apistructs.UserInfo, len(b))
 	if needDesensitize {
 		for i := range b {
-			users[string(b[i].ID)] = apistructs.UserInfo{
+			users[b[i].Id] = apistructs.UserInfo{
 				ID:     "",
 				Email:  desensitize.Email(b[i].Email),
 				Phone:  desensitize.Mobile(b[i].Phone),
-				Avatar: b[i].AvatarURL,
+				Avatar: b[i].Avatar,
 				Name:   desensitize.Name(b[i].Name),
 				Nick:   desensitize.Name(b[i].Nick),
 			}
@@ -36,11 +36,11 @@ func Densensitize(IDs []string, b []*userpb.User, needDesensitize bool) map[stri
 	} else {
 		// Desensitize email and phone info
 		for i := range b {
-			users[string(b[i].ID)] = apistructs.UserInfo{
-				ID:     string(b[i].ID),
+			users[b[i].Id] = apistructs.UserInfo{
+				ID:     b[i].Id,
 				Email:  desensitize.Email(b[i].Email),
 				Phone:  desensitize.Mobile(b[i].Phone),
-				Avatar: b[i].AvatarURL,
+				Avatar: b[i].Avatar,
 				Name:   b[i].Name,
 				Nick:   b[i].Nick,
 			}

@@ -18,14 +18,14 @@ import (
 	"reflect"
 	"testing"
 
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
 func TestDensensitize(t *testing.T) {
 	type args struct {
 		IDs             []string
-		b               []*userpb.User
+		b               []*commonpb.UserInfo
 		needDesensitize bool
 	}
 	tests := []struct {
@@ -36,9 +36,9 @@ func TestDensensitize(t *testing.T) {
 		{
 			args: args{
 				IDs: []string{"1"},
-				b: []*userpb.User{
+				b: []*commonpb.UserInfo{
 					{
-						ID:    "1",
+						Id:    "1",
 						Email: "test@test.com",
 					},
 				},
@@ -53,9 +53,9 @@ func TestDensensitize(t *testing.T) {
 		{
 			args: args{
 				IDs: []string{"1", "2"},
-				b: []*userpb.User{
+				b: []*commonpb.UserInfo{
 					{
-						ID:    "1",
+						Id:    "1",
 						Email: "test@test.com",
 					},
 				},

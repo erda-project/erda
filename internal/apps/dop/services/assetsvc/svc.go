@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 	"github.com/erda-project/erda/internal/core/org"
@@ -33,6 +34,7 @@ type Service struct {
 	branchRuleSvc *branchrule.BranchRule
 	bdl           *bundle.Bundle
 	org           org.Interface
+	userService   userpb.UserServiceServer
 }
 
 type Option func(*Service)
@@ -68,6 +70,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithOrg(org org.Interface) Option {
 	return func(svc *Service) {
 		svc.org = org
+	}
+}
+
+func WithUserService(userService userpb.UserServiceServer) Option {
+	return func(svc *Service) {
+		svc.userService = userService
 	}
 }
 

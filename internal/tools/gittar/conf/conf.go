@@ -35,9 +35,6 @@ type Conf struct {
 	Debug           bool   `env:"DEBUG" default:"false"`
 	DiceProtocol    string `env:"DICE_PROTOCOL"`
 
-	UCAddr            string `env:"UC_ADDR"`
-	UCClientID        string `env:"UC_CLIENT_ID"`
-	UCClientSecret    string `env:"UC_CLIENT_SECRET"`
 	UIPublicURL       string `env:"UI_PUBLIC_URL"`
 	RepoPathTemplate  string `env:"REPO_PATH_TEMPLATE" default:"/workBench/projects/{{projectId}}/apps/{{appId}}/repo"`
 	MergePathTemplate string `env:"MERGE_PATH_TEMPLATE" default:"/workBench/projects/{{projectId}}/apps/{{appId}}/repo/mr/open/{{mrId}}"`
@@ -54,11 +51,7 @@ type Conf struct {
 	GitGCMaxNum              int    `env:"GIT_GC_MAX_NUM" default:"1"`
 	GitGCCronExpression      string `env:"GIT_GC_CRON_EXPRESSION" default:"0 0 1 * * ?"`
 
-	// ory/kratos config
-	OryEnabled             bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr          string `default:"kratos-public" env:"ORY_KRATOS_ADDR"`
-	OryKratosPrivateAddr   string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
-	GitRepoTreeSearchDepth int64  `default:"5" env:"GIT_REPO_TREE_SEARCH_DEPTH"`
+	GitRepoTreeSearchDepth int64 `default:"5" env:"GIT_REPO_TREE_SEARCH_DEPTH"`
 
 	// metrics
 	RefreshPersonalContributorDuration time.Duration `default:"12h" env:"REFRESH_PERSONAL_CONTRIBUTOR_DURATION"`
@@ -113,21 +106,6 @@ func Debug() bool {
 	return cfg.Debug
 }
 
-// UCAddr 返回UC的地址
-func UCAddr() string {
-	return cfg.UCAddr
-}
-
-// UCClientID 返回UC的ClientID
-func UCClientID() string {
-	return cfg.UCClientID
-}
-
-// UCClientSecret 返回UC ClientSecret
-func UCClientSecret() string {
-	return cfg.UCClientSecret
-}
-
 // UIPublicURL UI URL
 func UIPublicURL() string {
 	return cfg.UIPublicURL
@@ -141,11 +119,6 @@ func RepoPathTemplate() string {
 // MergePathTemplate 在线代码仓库merge地址模板
 func MergePathTemplate() string {
 	return cfg.MergePathTemplate
-}
-
-// EventBoxAddr 返回 eventbox 地址
-func EventBoxAddr() string {
-	return cfg.EventBoxAddr
 }
 
 // GitMaxDiffLineCharacters 单行diff最大字符串
@@ -191,26 +164,6 @@ func GitGCMaxNum() int {
 // GitGCCronExpression cron run gc
 func GitGCCronExpression() string {
 	return cfg.GitGCCronExpression
-}
-
-func OryEnabled() bool {
-	return cfg.OryEnabled
-}
-
-func OryKratosAddr() string {
-	return cfg.OryKratosAddr
-}
-
-func OryCompatibleClientID() string {
-	return "kratos"
-}
-
-func OryCompatibleClientSecret() string {
-	return ""
-}
-
-func OryKratosPrivateAddr() string {
-	return cfg.OryKratosPrivateAddr
 }
 
 func GitRepoTreeSearchDepth() int64 {

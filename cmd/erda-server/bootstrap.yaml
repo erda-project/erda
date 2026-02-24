@@ -76,9 +76,79 @@ erda.core.messenger.notifygroup: { }
 erda.core.messenger.notifychannel: { }
 erda.core.token: { }
 erda.core.org: { }
-erda.core.user: { }
-erda.core.user.kratos: { }
-erda.core.user.uc: { }
+
+erda.core.user:
+  oauth_provider: "${OAUTH_PROVIDER:iam}"
+
+# user auth facade
+erda.core.user.auth.facade:
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
+
+# iam user services server
+erda.core.user.iam:
+  _enable: ${IAM_ENABLED:true}
+  host: "${IAM_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+# iam identity
+erda.core.user.identity.iam:
+  _enable: ${IAM_ENABLED:true}
+  host: "${IAM_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  application_name: "${IAM_APPLICATION_NAME:erda}"
+
+# iam oauth impl
+erda.core.user.oauth.iam:
+  _enable: ${IAM_ENABLED:true}
+  frontend_url: "${IAM_PUBLIC_URL}"
+  host: "${IAM_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
+  token_cache_size: "${OAUTH_TOKEN_CACHE_SIZE:20000}"
+  token_cache_early_expire_rate: "${OAUTH_TOKEN_CACHE_EARLY_EXPIRE_RATE:0.8}"
+  server_token_cache_enabled: "${OAUTH_SERVER_TOKEN_CACHE_ENABLED:true}"
+  user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
+  oauth_token_cache_secret: "${OAUTH_TOKEN_CACHE_SECRET}"
+  user_token_cache_expire_time: "${USER_TOKEN_CACHE_EXPIRE_TIME:120s}"
+
+# uc user services server
+erda.core.user.uc:
+  _enable: ${UC_ENABLED:false}
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_uc}"
+
+erda.core.user.uc.event-sync:
+  _enable: ${UC_ENABLED:false}
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  uc_auditor_cron: "${UC_AUDITOR_CRON:0 */1 * * * ?}"
+  uc_auditor_pull_size: "${UC_AUDITOR_PULL_SIZE:30}"
+  compensation_exec_cron: "${COMPENSATION_EXEC_CRON:0 */5 * * * ?}"
+  uc_syncrecord_clean_cron: "${UC_SYNCRECORD_CLEAN_CRON:0 0 3 * * ?}"
+  compensation_batch_size: "${UC_COMPENSATION_BATCH_SIZE:10}"
+  clean_record_days: "${UC_SYNCRECORD_CLEAN_DAYS:7}"
+
+erda.core.user.oauth.uc:
+  _enable: ${UC_ENABLED:false}
+  frontend_url: "${UC_PUBLIC_URL}"
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+  client_secret: "${OAUTH_CLIENT_SECRET}"
+  redirect_uri: "${OPENAPI_PUBLIC_URL}/logincb"
+  token_cache_size: "${OAUTH_TOKEN_CACHE_SIZE:20000}"
+  token_cache_early_expire_rate: "${OAUTH_TOKEN_CACHE_EARLY_EXPIRE_RATE:0.8}"
+  server_token_cache_enabled: "${OAUTH_SERVER_TOKEN_CACHE_ENABLED:true}"
+  user_token_cache_enabled: "${OAUTH_USER_TOKEN_CACHE_ENABLED:true}"
+
+erda.core.user.identity.uc:
+  _enable: ${UC_ENABLED:false}
+  host: "${UC_ADDR}"
+  client_id: "${OAUTH_CLIENT_ID}"
+
 erda.core.file: { }
 
 ############# dicehub
@@ -150,7 +220,7 @@ openapi-interceptor-filter-client-header:
 openapi-interceptor-auth-session-compatibility:
   order: 500
   old_cookie_domain: ${OLD_COOKIE_DOMAIN}
-  session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
 openapi-interceptor-user-info:
   order: 900
 openapi-interceptor-set-response-header:
@@ -158,27 +228,19 @@ openapi-interceptor-set-response-header:
   x_frame_options: "DENY"
 ### openapi-auth
 openapi-auth:
-openapi-auth-ory-kratos:
-  _enable: ${ORY_ENABLED:false}
-  weight: 100
-  ory_kratos_addr: "${ORY_KRATOS_ADDR:kratos-public}"
-openapi-auth-uc:
-  _enable: ${UC_ENABLED:true}
+openapi-auth-session:
   platform_protocol: "${DICE_PROTOCOL:https}"
   weight: 100
   redirect_after_login: "${UI_PUBLIC_ADDR}"
-  platform_domain: "${UI_PUBLIC_ADDR}"
+  platform_root_domain: "${DICE_ROOT_DOMAIN}"
   allowed_referrers: "${ALLOWED_REFERRERS}"
-  client_id: "${UC_CLIENT_ID:dice}"
-  uc_addr: "${UC_PUBLIC_ADDR}"
-  uc_redirect_addrs: "${SELF_PUBLIC_ADDR}"
-  session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  session_cookie_name: "${SESSION_COOKIE_NAME:erda_iam}"
   session_cookie_domain: "${COOKIE_DOMAIN}"
   cookie_max_age: "${UC_COOKIE_MAX_AGE:168h}"
   cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"
 openapi-auth-password:
-  _enable: ${UC_ENABLED:true}
   weight: 50
+  access_token_expred_in: "${ACCESS_TOKEN_EXPRED_IN:1h}"
 openapi-over-permission-org-name:
   _enable: ${AUTH_OVER_PERMISSION:true}
   weight: 30
@@ -186,7 +248,6 @@ openapi-over-permission-org-name:
 openapi-over-permission-org-id:
   _enable: ${AUTH_OVER_PERMISSION:true}
 openapi-auth-token:
-  _enable: ${UC_ENABLED:true}
   weight: 10
 ### openapi-routes
 openapi-protobuf-routes:
@@ -289,8 +350,6 @@ erda-discover:
   urls:
     example: "http://localhost:8080"
     erda.example: "http://localhost:8080"
-
-uc-adaptor:
 
 ########### dop
 dop: { }

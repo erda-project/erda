@@ -91,7 +91,7 @@ func CreateBuild(pipeline, branch, uid string, appId uint64) (*apistructs.QaBuil
 
 	openApiToken, err := getOpenapiToken()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get openapi token in qa")
 	}
 
 	var result apistructs.QaBuildCreateResponse

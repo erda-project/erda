@@ -19,45 +19,35 @@ import (
 	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
+	gojsonnet "github.com/google/go-jsonnet"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/jsonnet"
 )
 
 type mockidentity struct {
+	userpb.UnimplementedUserServiceServer
 }
 
 func (i *mockidentity) FindUsers(context.Context, *userpb.FindUsersRequest) (*userpb.FindUsersResponse, error) {
 	return &userpb.FindUsersResponse{
-		Data: []*userpb.User{
+		Data: []*commonpb.UserInfo{
 			{
-				ID:    "1",
+				Id:    "1",
 				Phone: "123",
 			},
 			{
-				ID: "2",
+				Id: "2",
 			},
 		},
 	}, nil
 }
 
-func (i *mockidentity) GetUser(context.Context, *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
-	return nil, nil
-}
-
-func (i *mockidentity) FindUsersByKey(context.Context, *userpb.FindUsersByKeyRequest) (*userpb.FindUsersByKeyResponse, error) {
-	return nil, nil
-}
-
 func Test_provider_getDingTalkConfig(t *testing.T) {
-	var engine *jsonnet.Engine
-	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(engine), "EvaluateBySnippet",
-		func(d *jsonnet.Engine, snippet string, configs []jsonnet.TLACodeConfig) (string, error) {
-			return "{}", nil
-		},
-	)
-	defer p1.Unpatch()
+	engine := &jsonnet.Engine{
+		JsonnetVM: gojsonnet.MakeVM(),
+	}
 
 	type args struct {
 		param *JsonnetParam
@@ -69,8 +59,12 @@ func Test_provider_getDingTalkConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "snippet returns empty object, identity returns users with phone",
 			args: args{
-				param: &JsonnetParam{},
+				param: &JsonnetParam{
+					Snippet: "{}",
+					TLARaw:  nil,
+				},
 			},
 			want: &DingTalkConfig{
 				Users: []string{"123"},
@@ -84,7 +78,6 @@ func Test_provider_getDingTalkConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := p.getDingTalkConfig(tt.args.param)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("provider.getDingTalkConfig() error = %v, wantErr %v", err, tt.wantErr)

@@ -33,6 +33,8 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/proxy"
 	phttp "github.com/erda-project/erda/internal/core/openapi/legacy/proxy/http"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/proxy/ws"
+	"github.com/erda-project/erda/internal/core/user/auth/domain"
+	"github.com/erda-project/erda/internal/core/user/legacycontainer"
 )
 
 type ReverseProxyWithAuth struct {
@@ -58,12 +60,22 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 		http.Error(rw, errStr, 404)
 		return
 	}
-	if authr := r.auth.Auth(spec, req); authr.Code != auth.AuthSucc {
+
+	if authr := r.auth.Auth(spec, req); authr.Code != domain.AuthSuccess {
 		errStr := fmt.Sprintf("auth failed: %v", authr.Detail)
 		logrus.Error(errStr)
 		http.Error(rw, errStr, authr.Code)
 		return
 	}
+
+	if refresh := auth.GetSessionRefresh(req.Context()); refresh != nil {
+		if writer := legacycontainer.Get[domain.RefreshWriter](); writer != nil {
+			if err := writer.WriteRefresh(rw, req, refresh); err != nil {
+				logrus.Warnf("failed to refresh refresh %v", err)
+			}
+		}
+	}
+
 	switch spec.Scheme {
 	case apispec.HTTP:
 		monitor.Notify(monitor.Info{

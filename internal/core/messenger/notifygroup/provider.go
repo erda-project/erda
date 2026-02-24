@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
@@ -44,6 +45,7 @@ type provider struct {
 	notifyGroupService *notifyGroupService
 	audit              audit.Auditor
 	Org                org.Interface
+	UserSvc            userpb.UserServiceServer `autowired:"erda.core.user.UserService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -53,9 +55,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		DB: p.DB,
 	}))
 	p.notifyGroupService.Permission = pm
-	p.notifyGroupService.NotifyGroup = notify.New(notify.WithDBClient(&dao.DBClient{
-		p.DB,
-	}))
+	p.notifyGroupService.NotifyGroup = notify.New(
+		notify.WithDBClient(&dao.DBClient{
+			p.DB,
+		}),
+		notify.WithUserService(p.UserSvc),
+	)
 	p.notifyGroupService.org = p.Org
 	p.notifyGroupService.bdl = bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
 	if p.Register != nil {
