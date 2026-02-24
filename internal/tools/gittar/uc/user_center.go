@@ -22,6 +22,7 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
@@ -49,4 +50,14 @@ func FindUserById(id string) (*commonpb.UserInfo, error) {
 		Phone:  user.Phone,
 		Email:  user.Email,
 	}, nil
+}
+
+func FindUserByIdWithDesensitize(id string) (*commonpb.UserInfo, error) {
+	userInfo, err := FindUserById(id)
+	if err != nil {
+		return nil, err
+	}
+	userInfo.Email = desensitize.Email(userInfo.Email)
+	userInfo.Phone = desensitize.Mobile(userInfo.Phone)
+	return userInfo, nil
 }

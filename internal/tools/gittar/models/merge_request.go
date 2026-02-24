@@ -133,7 +133,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	}
 
 	if result.AuthorId != "" {
-		dto, err := uc.FindUserById(result.AuthorId)
+		dto, err := uc.FindUserByIdWithDesensitize(result.AuthorId)
 		if err == nil {
 			result.AuthorUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
@@ -142,7 +142,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	}
 
 	if result.AssigneeId != "" {
-		dto, err := uc.FindUserById(result.AssigneeId)
+		dto, err := uc.FindUserByIdWithDesensitize(result.AssigneeId)
 		if err == nil {
 			result.AssigneeUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
@@ -151,7 +151,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	}
 
 	if result.CloseUserId != "" {
-		dto, err := uc.FindUserById(result.CloseUserId)
+		dto, err := uc.FindUserByIdWithDesensitize(result.CloseUserId)
 		if err == nil {
 			result.CloseUser = uc.ConverPbToUserInfoDto(dto)
 		} else {
@@ -160,7 +160,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	}
 
 	if result.MergeUserId != "" {
-		dto, err := uc.FindUserById(result.MergeUserId)
+		dto, err := uc.FindUserByIdWithDesensitize(result.MergeUserId)
 		if err == nil {
 			result.MergeUser = uc.ConverPbToUserInfoDto(dto)
 		} else {

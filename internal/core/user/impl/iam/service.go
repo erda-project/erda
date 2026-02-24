@@ -30,6 +30,18 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
+// GetUser get user detail info
+func (p *provider) GetUser(_ context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+	user, err := p.getUser(req.UserID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetUserResponse{
+		Data: user,
+	}, nil
+}
+
 func (p *provider) FindUsers(_ context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
 	if len(req.IDs) == 0 {
 		return &pb.FindUsersResponse{}, nil

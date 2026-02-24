@@ -215,18 +215,6 @@ func (p *provider) UserUpdateUserinfo(ctx context.Context, req *pb.UserUpdateInf
 	return &pb.UserUpdateInfoResponse{}, nil
 }
 
-// GetUser get user detail info
-func (p *provider) GetUser(_ context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	user, err := p.getUser(req.UserID, true)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.GetUserResponse{
-		Data: user,
-	}, nil
-}
-
 func (p *provider) PwdSecurityConfigGet(ctx context.Context, request *pb.PwdSecurityConfigGetRequest) (*pb.PwdSecurityConfigGetResponse, error) {
 	return nil, errors.New("iam not support get password security config direct")
 }
