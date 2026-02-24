@@ -44,6 +44,7 @@ import (
 const Name = "mcp-server-request"
 
 const TerminusRequestIdHeader = "Terminus-Request-Id"
+const RequestIdHeader = "__request_id__"
 
 const NotificationInitializedMethod = "notifications/initialized"
 
@@ -203,7 +204,9 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 		return err
 	}
 
-	if err = filterTerminusTraceId(rawBody, req); err != nil {
+	logger.Infof("raw body: %s", string(rawBody))
+
+	if rawBody, err = filterTerminusTraceId(rawBody, req); err != nil {
 		logger.Errorf("filter terminus trace id failed: %v", err)
 		return err
 	}
@@ -319,30 +322,39 @@ func parseEndpoint(endpoint string) (*ParsedEndpoint, error) {
 	}, nil
 }
 
-func filterTerminusTraceId(body []byte, rawReq *http.Request) error {
+func filterTerminusTraceId(body []byte, rawReq *http.Request) ([]byte, error) {
 	var req request.Request
 	if err := json.Unmarshal(body, &req); err != nil {
-		return err
+		return body, err
+	}
+	if req.Method != request.ToolCallMethod {
+		return body, nil
 	}
 
 	var traceId string
 
+	if _, exist := req.Params.Arguments[RequestIdHeader]; exist {
+		delete(req.Params.Arguments, RequestIdHeader)
+	}
+
 	if id, exist := req.Params.Arguments[TerminusRequestIdHeader]; exist {
+
 		traceId = fmt.Sprintf("%v", id)
 		delete(req.Params.Arguments, TerminusRequestIdHeader)
-	}
-	jsonData, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
-	rawReq.Body = io.NopCloser(bytes.NewReader(jsonData))
-	rawReq.ContentLength = int64(len(jsonData))
 
-	if traceId != "" {
-		rawReq.Header.Set(TerminusRequestIdHeader, traceId)
-	}
+		jsonData, err := json.Marshal(req)
+		if err != nil {
+			return body, err
+		}
+		rawReq.Body = io.NopCloser(bytes.NewReader(jsonData))
+		rawReq.ContentLength = int64(len(jsonData))
 
-	return nil
+		if traceId != "" {
+			rawReq.Header.Set(TerminusRequestIdHeader, traceId)
+		}
+		return jsonData, nil
+	}
+	return body, nil
 }
 
 func filterInitNotification(ctx context.Context, body []byte, client dao.DAO, name string, tag string) ([]byte, error) {

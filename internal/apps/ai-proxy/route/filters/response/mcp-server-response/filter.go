@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	Name = "mcp-server-response"
+	Name         = "mcp-server-response"
+	RouterSuffix = "/"
 )
 
 var (
@@ -80,8 +81,8 @@ func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (ou
 func buildMessage(info *ctxhelper.McpInfo, router string, chunk []byte) []byte {
 	// prefix：/proxy/message/{name}/{tag}
 	prefix := fmt.Sprintf("/proxy/message/%s/%s", info.Name, info.Version)
-	prefix = strings.Trim(prefix, "/")
-	router = strings.Trim(router, "/")
+	prefix = strings.TrimPrefix(strings.TrimSuffix(prefix, RouterSuffix), RouterSuffix)
+	router = strings.TrimPrefix(router, RouterSuffix)
 
 	// newRouter：/proxy/message/{name}/{tag}/{router}
 	newRouter := "/" + prefix
@@ -107,6 +108,7 @@ func buildMessage(info *ctxhelper.McpInfo, router string, chunk []byte) []byte {
 	if hasDataPrefix {
 		out = "data: " + out
 	}
+	out = out + "\n"
 	return []byte(out)
 }
 
