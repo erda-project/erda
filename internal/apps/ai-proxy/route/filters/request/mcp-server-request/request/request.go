@@ -14,6 +14,8 @@
 
 package request
 
+const ToolCallMethod = "tools/call"
+
 type Request struct {
 	JsonRPC string `json:"jsonrpc"`
 	ID      any    `json:"id"`
