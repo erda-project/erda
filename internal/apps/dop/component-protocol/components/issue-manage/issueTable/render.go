@@ -43,6 +43,8 @@ import (
 	issuemodel "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -204,13 +206,16 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)
 	if len(issues) > 0 {
-		resp, err := identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userids})
+		resp, err := identity.FindUsers(
+			apis.WithInternalClientContext(ctx, discover.SvcDOP),
+			&userpb.FindUsersRequest{IDs: userids},
+		)
 		if err != nil {
 			return err
 		}
 		ca.userMap = make(map[string]string, len(resp.Data))
 		for _, i := range resp.Data {
-			ca.userMap[i.ID] = i.Nick
+			ca.userMap[i.Id] = i.Nick
 		}
 	}
 

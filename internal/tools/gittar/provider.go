@@ -25,6 +25,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/session/client"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	identitypb "github.com/erda-project/erda-proto-go/core/user/identity/pb"
+	useroauthpb "github.com/erda-project/erda-proto-go/core/user/oauth/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/core/org"
@@ -37,7 +39,9 @@ type provider struct {
 	ETCD         etcd.Interface             // autowired
 	EtcdClient   *clientv3.Client           // autowired
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
-	Identity     userpb.UserServiceServer
+	UserSvc      userpb.UserServiceServer
+	UserOAuthSvc useroauthpb.UserOAuthServiceServer
+	IdentitySvc  identitypb.UserIdentityServiceServer
 	Org          org.ClientInterface
 	I18n         i18n.Translator `translator:"common"`
 }

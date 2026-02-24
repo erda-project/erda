@@ -28,13 +28,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/internal/apps/dop/services/uc"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 	"github.com/erda-project/erda/pkg/swagger/oas3"
@@ -436,10 +438,12 @@ func (svc *Service) getAPIDocContent(orgID uint64, userID, inode string) (*apist
 		if record := dbclient.Sq().First(&lock, where); record.RowsAffected > 0 {
 			meta.Lock.Locked = true
 			meta.Lock.UserID = lock.CreatorID
-			if users, _ := uc.GetUsers([]string{lock.CreatorID}); len(users) > 0 {
-				if user := users[lock.CreatorID]; user != nil {
-					meta.Lock.NickName = user.Nick
-				}
+			if user, _ := svc.UserService.GetUser(
+				apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+				&pb.GetUserRequest{
+					UserID: lock.CreatorID,
+				}); user != nil {
+				meta.Lock.NickName = user.Data.Nick
 			}
 		}
 	}

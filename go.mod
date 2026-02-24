@@ -13,7 +13,7 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/Masterminds/semver v1.5.0
 	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
-	github.com/agiledragon/gomonkey/v2 v2.12.0
+	github.com/agiledragon/gomonkey/v2 v2.14.0
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alibabacloud-go/darabonba-openapi v0.1.9
@@ -132,6 +132,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
+	github.com/samber/lo v1.39.0
 	github.com/sashabaranov/go-openai v1.40.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0

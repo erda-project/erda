@@ -426,7 +426,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/core/api/users", Method: http.MethodGet, Handler: e.ListUser},
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/core/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
-		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
 
 		// the interface of subscribe
 		{Path: "/api/subscribe", Method: http.MethodPost, Handler: e.Subscribe},

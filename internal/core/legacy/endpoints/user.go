@@ -21,12 +21,15 @@ import (
 
 	"github.com/pkg/errors"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/desensitize"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -39,7 +42,7 @@ const maxUserSize = 100
 func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	var (
-		users []*userpb.User
+		users []*commonpb.UserInfo
 		err   error
 	)
 
@@ -93,7 +96,10 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 			return apierrors.ErrListUser.InvalidParameter("user id too much").ToResp(), nil
 		}
 
-		resp, err := e.uc.FindUsers(ctx, &pb.FindUsersRequest{IDs: userIDs})
+		resp, err := e.uc.FindUsers(
+			apis.WithInternalClientContext(ctx, discover.SvcCoreServices),
+			&pb.FindUsersRequest{IDs: userIDs},
+		)
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
@@ -131,26 +137,16 @@ func (e *Endpoints) GetCurrentUser(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(*convertToUserInfo(resp.Data, false))
 }
 
-func (e *Endpoints) GetUcUserID(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	id := r.URL.Query().Get("id")
-	userID, err := e.db.GetUcUserID(id)
-	if err != nil {
-		return apierrors.ErrGetUser.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp(userID)
-}
-
-func convertToUserInfo(user *userpb.User, plaintext bool) *apistructs.UserInfo {
+func convertToUserInfo(user *commonpb.UserInfo, plaintext bool) *apistructs.UserInfo {
 	if !plaintext {
 		user.Phone = desensitize.Mobile(user.Phone)
 		user.Email = desensitize.Email(user.Email)
 	}
 	return &apistructs.UserInfo{
-		ID:     user.ID,
+		ID:     user.Id,
 		Name:   user.Name,
 		Nick:   user.Nick,
-		Avatar: user.AvatarURL,
+		Avatar: user.Avatar,
 		Phone:  user.Phone,
 		Email:  user.Email,
 	}

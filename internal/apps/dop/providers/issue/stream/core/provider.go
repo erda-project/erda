@@ -43,7 +43,7 @@ type provider struct {
 	I18n       i18n.Translator `translator:"issue-manage"`
 	CPTran     i18n.I18n       `autowired:"i18n"`
 	commonTran i18n.Translator
-	Identity   userpb.UserServiceServer
+	UserSvc    userpb.UserServiceServer
 	Org        org.Interface
 }
 

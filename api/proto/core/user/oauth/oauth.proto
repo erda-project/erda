@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package erda.core.user.oauth;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/user/oauth/pb";
+
+message OAuthToken {
+  string accessToken = 1;
+  string refreshToken = 2;
+  int64 expiresIn = 3;
+  string tokenType = 4;
+}
+
+message StringList {
+  repeated string values = 1;
+}
+
+message ExchangeCodeRequest {
+  string code = 1;
+  map<string, StringList> extraParams = 2;
+}
+
+message ExchangePasswordRequest {
+  string username = 1;
+  string password = 2;
+  map<string, StringList> extraParams = 3;
+}
+
+message ExchangeClientCredentialsRequest {
+  bool refresh = 1;
+  map<string, StringList> extraParams = 2;
+}
+
+message AuthURLRequest {
+  string referer = 1;
+}
+
+message AuthURLResponse {
+  string data = 1;
+}
+
+message LogoutURLRequest {
+  string referer = 1;
+}
+
+message LogoutURLResponse {
+  string data = 1;
+}
+
+service UserOAuthService {
+  rpc ExchangeCode(ExchangeCodeRequest) returns (OAuthToken);
+  rpc ExchangePassword(ExchangePasswordRequest) returns (OAuthToken);
+  rpc ExchangeClientCredentials(ExchangeClientCredentialsRequest) returns (OAuthToken);
+}
+
+service UserOAuthSessionService {
+  rpc AuthURL(AuthURLRequest) returns (AuthURLResponse);
+  rpc LogoutURL(LogoutURLRequest) returns (LogoutURLResponse);
+}

@@ -34,7 +34,7 @@ type provider struct {
 	Cfg                 *config
 	Log                 logs.Logger
 	Register            transport.Register
-	Identity            userpb.UserServiceServer
+	UserSvc             userpb.UserServiceServer
 	notifyChanelService *notifyChannelService
 	bdl                 *bundle.Bundle
 	DB                  *gorm.DB        `autowired:"mysql-client"`

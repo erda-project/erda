@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package erda.common;
+
+option go_package = "github.com/erda-project/erda-proto-go/common/pb";
+
+message UserInfo {
+  string id = 1;
+  string name = 2;
+  string nick = 3;
+  string avatar = 4;
+  string phone = 5;
+  string email = 6;
+}

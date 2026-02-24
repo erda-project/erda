@@ -18,10 +18,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 )
 
@@ -47,34 +45,10 @@ func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Opt
 	if len(parts) != 2 || len(parts[0]) <= 0 || len(parts[1]) <= 0 {
 		return false, r, fmt.Errorf("miss username or password")
 	}
-	user := auth.NewUser(p.Redis, p.Settings.GetSessionExpire())
-	_, err = user.PwdLogin(parts[0], parts[1], p.Settings.GetSessionExpire())
+	user := p.UserAuth.NewState()
+	err = user.PwdLogin(parts[0], parts[1])
 	if err != nil {
 		return false, r, nil
 	}
-	result := setUserInfoHeaders(r, user)
-	if result.Code != auth.AuthSucc {
-		return false, r, nil
-	}
 	return true, r, nil
-}
-
-func setUserInfoHeaders(req *http.Request, user *auth.User) auth.AuthResult {
-	userinfo, r := user.GetInfo(req)
-	if r.Code != auth.AuthSucc {
-		return r
-	}
-	// set User-ID
-	req.Header.Set("User-ID", string(userinfo.ID))
-
-	var scopeinfo auth.ScopeInfo
-	scopeinfo, r = user.GetScopeInfo(req)
-	if r.Code != auth.AuthSucc {
-		return r
-	}
-	// set Org-ID
-	if scopeinfo.OrgID != 0 {
-		req.Header.Set("Org-ID", strconv.FormatUint(scopeinfo.OrgID, 10))
-	}
-	return auth.AuthResult{Code: auth.AuthSucc}
 }

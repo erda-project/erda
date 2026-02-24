@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package erda.core.user.identity;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/user/identity/pb";
+
+import "common/userinfo.proto";
+import "google/protobuf/timestamp.proto";
+
+enum TokenSource {
+  Grant = 0;
+  Cookie = 1;
+}
+
+message GetCurrentUserRequest {
+  string accessToken = 1;
+  TokenSource source = 2;
+  // When source == Cookie: session cookie name. Used for backend Cookie header and SessionRefresh. Optional, identity may fall back to its config.
+  optional string cookieName = 3;
+}
+
+message SessionRefresh {
+  // Only set for cookie-based sessions.
+  CookieRefresh cookie = 1;
+}
+
+message CookieRefresh {
+  // Cookie name and value are required when refreshing.
+  string name = 1;
+  string value = 2;
+  // Optional. If present, openapi should set cookie Expires.
+  google.protobuf.Timestamp expireAt = 3;
+  // Optional cookie attributes.
+  string domain = 4;
+  string path = 5;
+  optional bool httpOnly = 6;
+  optional bool secure = 7;
+  CookieSameSite sameSite = 8;
+  // Optional. Seconds, maps to http.Cookie.MaxAge.
+  int32 maxAge = 9;
+}
+
+enum CookieSameSite {
+  Unspecified = 0;
+  Lax = 1;
+  Strict = 2;
+  None = 3;
+}
+
+message GetCurrentUserResponse {
+  common.UserInfo data = 1;
+  SessionRefresh sessionRefresh = 2;
+}
+
+service UserIdentityService {
+  // GetCurrentUser resolves current user by access token (grant or cookie). Pass cookie_name when source is Cookie.
+  rpc GetCurrentUser (GetCurrentUserRequest) returns (GetCurrentUserResponse);
+}

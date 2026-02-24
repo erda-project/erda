@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/types"
 	"github.com/erda-project/erda/internal/core/org/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
@@ -121,12 +122,14 @@ func (p *provider) Create(createReq *pb.CreateOrgRequest) (*db.Org, error) {
 	}
 
 	// 新增企业权限记录
-	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
+	resp, err := p.uc.GetUser(
+		apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+		&userpb.GetUserRequest{UserID: userID},
+	)
 	if err != nil {
 		logrus.Warnf("failed to query user info, (%v)", err)
-	}
-	users := resp.Data
-	if len(users) > 0 {
+	} else {
+		user := resp.Data
 		_, err := p.TokenService.CreateToken(context.Background(), &tokenpb.CreateTokenRequest{
 			Scope:     string(apistructs.OrgScope),
 			ScopeId:   strconv.FormatInt(org.ID, 10),
@@ -142,11 +145,11 @@ func (p *provider) Create(createReq *pb.CreateOrgRequest) (*db.Org, error) {
 			ScopeID:    org.ID,
 			ScopeName:  org.Name,
 			UserID:     userID,
-			Email:      users[0].Email,
-			Mobile:     users[0].Phone,
-			Name:       users[0].Name,
-			Nick:       users[0].Nick,
-			Avatar:     users[0].AvatarURL,
+			Email:      user.Email,
+			Mobile:     user.Phone,
+			Name:       user.Name,
+			Nick:       user.Nick,
+			Avatar:     user.Avatar,
 			UserSyncAt: time.Now(),
 			OrgID:      org.ID,
 		}
