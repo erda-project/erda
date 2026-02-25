@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
@@ -82,9 +81,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	serviceProviderCount := len(templatesByType[templatetypes.TemplateTypeServiceProvider])
-	modelCount := len(templatesByType[templatetypes.TemplateTypeModel])
-	p.L.Infof("template check passed: service_provider=%d model=%d total=%d", serviceProviderCount, modelCount, serviceProviderCount+modelCount)
 
 	// init lb state store
 	if _, _, err := p.initPolicyGroupStateStore(); err != nil {

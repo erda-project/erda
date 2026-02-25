@@ -17,23 +17,30 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
 )
 
 func main() {
-	templatesPath := flag.String("path", "cmd/ai-proxy/conf/templates", "path to templates root directory")
-	flag.Parse()
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("ai-proxy-template-check", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	templatesPath := fs.String("path", "cmd/ai-proxy/conf/templates", "path to templates root directory")
+	if err := fs.Parse(args); err != nil {
+		return 1
+	}
 
 	templatesByType, err := template.LoadTemplatesFromFS(nil, os.DirFS(*templatesPath))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "template check failed: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "template check failed: %v\n", err)
+		return 1
 	}
 
-	serviceProviderCount := len(templatesByType[templatetypes.TemplateTypeServiceProvider])
-	modelCount := len(templatesByType[templatetypes.TemplateTypeModel])
-	fmt.Printf("template check passed: service_provider=%d model=%d total=%d\n", serviceProviderCount, modelCount, serviceProviderCount+modelCount)
+	fmt.Fprintln(stdout, template.TemplateCheckSummary(templatesByType))
+	return 0
 }

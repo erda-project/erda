@@ -95,6 +95,16 @@ func LoadTemplatesFromFS(logger logs.Logger, templatesFS iofs.FS) (templatetypes
 	if err != nil {
 		return nil, fmt.Errorf("failed to walk templates filesystem: %w", err)
 	}
+	if logger != nil {
+		logger.Infof(TemplateCheckSummary(templatesByType))
+	}
 
 	return templatesByType, nil
+}
+
+// TemplateCheckSummary formats template count summary for logs and checks.
+func TemplateCheckSummary(templatesByType templatetypes.TemplatesByType) string {
+	serviceProviderCount := len(templatesByType[templatetypes.TemplateTypeServiceProvider])
+	modelCount := len(templatesByType[templatetypes.TemplateTypeModel])
+	return fmt.Sprintf("template check passed: service_provider=%d model=%d total=%d", serviceProviderCount, modelCount, serviceProviderCount+modelCount)
 }
