@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
@@ -86,13 +87,6 @@ var (
 	}
 )
 
-func getInt32Points(numeric int32) *int32 {
-	return &numeric
-}
-func getStringPoints(s string) *string {
-	return &s
-}
-
 func composeResources(res apistructs.BigdataResource) corev1.ResourceRequirements {
 	bigdataResource := corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
@@ -111,20 +105,6 @@ func composeResources(res apistructs.BigdataResource) corev1.ResourceRequirement
 		bigdataResource.Limits[corev1.ResourceMemory] = resource.MustParse(res.MaxMemory)
 	}
 	return bigdataResource
-}
-
-func composeEnvs(envs map[string]string) []corev1.EnvVar {
-	envVars := []corev1.EnvVar{}
-
-	for k, v := range envs {
-		envVars = append(envVars, corev1.EnvVar{
-			Name:      k,
-			Value:     v,
-			ValueFrom: nil,
-		})
-	}
-
-	return envVars
 }
 
 func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
@@ -147,8 +127,10 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				PullPolicy: logic.GetPullImagePolicy(),
 			},
 			JobManager: &flinkoperatorv1beta1.JobManagerSpec{
-				Replicas:  getInt32Points(data.Spec.FlinkConf.JobManagerResource.Replica),
-				Resources: composeResources(data.Spec.FlinkConf.JobManagerResource),
+				// Use a headless Service by default to expose additional loader ports
+				AccessScope: flinkoperatorv1beta1.AccessScopeHeadless,
+				Replicas:    pointer.Int32(data.Spec.FlinkConf.JobManagerResource.Replica),
+				Resources:   composeResources(data.Spec.FlinkConf.JobManagerResource),
 				PodLabels: map[string]string{
 					apistructs.TerminusDefineTag: containers.MakeFlinkJobManagerID(data.Name),
 				},
@@ -190,7 +172,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 	}
 	if data.Spec.FlinkConf.EnableUI {
 		flinkCluster.Spec.JobManager.Ingress = &flinkoperatorv1beta1.JobManagerIngressSpec{
-			HostFormat: getStringPoints(hostURL),
+			HostFormat: pointer.String(hostURL),
 		}
 	}
 
@@ -206,7 +188,7 @@ func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.B
 		JarFile:                     &data.Spec.Resource,
 		ClassName:                   &data.Spec.Class,
 		Args:                        data.Spec.Args,
-		Parallelism:                 getInt32Points(data.Spec.FlinkConf.Parallelism),
+		Parallelism:                 pointer.Int32(data.Spec.FlinkConf.Parallelism),
 		NoLoggingToStdout:           nil,
 		Volumes:                     nil,
 		VolumeMounts:                nil,
