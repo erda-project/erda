@@ -1,0 +1,76 @@
+{
+  "doubao-seed-2.0-mini": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "doubao-seed-2-0-mini"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark"
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2-0-mini"
+    },
+    "desc": "面向低时延、高并发与成本敏感场景，强调快速响应与灵活推理部署。模型效果与 Doubao-Seed-1.6 相当，支持 256k 上下文、4 档思考长度和多模态理解，适合成本与速度优先的轻量级任务。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "bytedance",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool",
+              "structured_output",
+              "image_recognition",
+              "video_recognition",
+              "enable_thinking",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 256000,
+            "max_prompt_tokens": 224000,
+            "max_completion_tokens": 32000
+          },
+          "pricing": {
+            "prompt": "0.0000004",
+            "completion": "0.000004",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.00000008",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing_tiers": [
+            {
+              "input_length_k_tokens": "(32,128]",
+              "prompt": "0.0000004",
+              "completion": "0.000004",
+              "input_cache_read": "0.00000008",
+              "input_cache_write": "0",
+              "unit": "CNY"
+            }
+          ]
+        },
+        "secret": {}
+      }
+    }
+  }
+}
