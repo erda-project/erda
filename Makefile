@@ -208,7 +208,8 @@ endif
 prepare-ai-proxy:
 	cd "${PROJ_PATH}" && \
 	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/common/ctxhelper && \
-	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/route/filters/all/generate
+	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/route/filters/all/generate && \
+	${GO_BUILD_ENV} go run ./internal/apps/ai-proxy/common/template/check
 
 proto-go-in-ci:
 	PROTO_PATH_PREFIX="$(PROTO_PATH_PREFIX)" $(MAKE) -C api/proto-go build-use-docker-image
