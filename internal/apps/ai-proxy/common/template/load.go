@@ -18,7 +18,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
+	iofs "io/fs"
 	"path/filepath"
 	"strings"
 
@@ -31,12 +31,17 @@ import (
 
 // LoadTemplatesFromEmbeddedFS reads template definitions from the embedded filesystem.
 func LoadTemplatesFromEmbeddedFS(logger logs.Logger, templatesFS embed.FS) (templatetypes.TemplatesByType, error) {
+	return LoadTemplatesFromFS(logger, templatesFS)
+}
+
+// LoadTemplatesFromFS reads template definitions from any filesystem.
+func LoadTemplatesFromFS(logger logs.Logger, templatesFS iofs.FS) (templatetypes.TemplatesByType, error) {
 	templatesByType := templatetypes.TemplatesByType{
 		templatetypes.TemplateTypeServiceProvider: make(templatetypes.TemplateSet),
 		templatetypes.TemplateTypeModel:           make(templatetypes.TemplateSet),
 	}
 
-	err := fs.WalkDir(templatesFS, ".", func(path string, d fs.DirEntry, walkErr error) error {
+	err := iofs.WalkDir(templatesFS, ".", func(path string, d iofs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -49,7 +54,7 @@ func LoadTemplatesFromEmbeddedFS(logger logs.Logger, templatesFS embed.FS) (temp
 			return nil
 		}
 
-		content, err := fs.ReadFile(templatesFS, path)
+		content, err := iofs.ReadFile(templatesFS, path)
 		if err != nil {
 			return fmt.Errorf("failed to read template file %s: %w", path, err)
 		}
