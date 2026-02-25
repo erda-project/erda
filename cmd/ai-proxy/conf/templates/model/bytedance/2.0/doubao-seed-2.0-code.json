@@ -1,0 +1,62 @@
+{
+  "doubao-seed-2.0-code": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "doubao-seed-2-0-code-preview-260215"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-ark"
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2-0-code"
+    },
+    "desc": "面向真实编程环境优化的 Coding 模型，可稳定调用 Claude Code 等常见 IDE 工具。模型重点优化前端能力，支持常见前端框架开发，并支持与 Skills 结合使用。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "bytedance",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool",
+              "structured_output",
+              "enable_thinking",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 256000,
+            "max_prompt_tokens": 256000,
+            "max_completion_tokens": 128000
+          },
+          "pricing": {
+            "prompt": "0.0000048",
+            "completion": "0.000024",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.00000096",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
