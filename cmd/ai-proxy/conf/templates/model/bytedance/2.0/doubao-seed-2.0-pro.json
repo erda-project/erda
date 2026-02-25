@@ -57,17 +57,7 @@
             "input_cache_write": "0",
             "unit": "CNY"
           },
-          "model_name": "${@template.placeholders.target-model-name}",
-          "pricing_tiers": [
-            {
-              "input_length_k_tokens": "[0,32]",
-              "prompt": "0.0000032",
-              "completion": "0.000016",
-              "input_cache_read": "0.00000064",
-              "input_cache_write": "0.000000017",
-              "unit": "CNY"
-            }
-          ]
+          "model_name": "${@template.placeholders.target-model-name}"
         },
         "secret": {}
       }

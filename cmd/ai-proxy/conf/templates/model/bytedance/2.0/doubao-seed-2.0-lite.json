@@ -5,7 +5,7 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "doubao-seed-2-0-lite"
+        "default": "doubao-seed-2-0-lite-260215"
       }
     ],
     "metadata": {
@@ -53,17 +53,7 @@
             "input_cache_write": "0",
             "unit": "CNY"
           },
-          "model_name": "${@template.placeholders.target-model-name}",
-          "pricing_tiers": [
-            {
-              "input_length_k_tokens": "(32,128]",
-              "prompt": "0.0000009",
-              "completion": "0.0000054",
-              "input_cache_read": "0.00000018",
-              "input_cache_write": "0",
-              "unit": "CNY"
-            }
-          ]
+          "model_name": "${@template.placeholders.target-model-name}"
         },
         "secret": {}
       }
