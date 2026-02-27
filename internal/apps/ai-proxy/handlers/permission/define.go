@@ -16,6 +16,7 @@ package permission
 
 import (
 	"context"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -28,13 +29,18 @@ import (
 	"github.com/erda-project/erda/internal/pkg/audit"
 )
 
+var (
+	noNeedAuthMethodsMu sync.RWMutex
+	noNeedAuthMethods   = map[string]struct{}{}
+)
+
 type MethodPermission struct {
 	Method            interface{}
 	OnlyAdmin         bool
 	OnlyClient        bool
 	AdminOrClient     bool // no client-token
 	LoggedIn          bool // just logged in
-	NoAuth            bool
+	NoNeedAuth        bool
 	SkipSetClientInfo bool
 }
 
@@ -43,11 +49,31 @@ func CheckPermissions(perms ...*MethodPermission) transport.ServiceOption {
 	for _, perm := range perms {
 		methodName := audit.GetMethodName(perm.Method)
 		methods[methodName] = perm
+		if perm.NoNeedAuth {
+			noNeedAuthMethodsMu.Lock()
+			noNeedAuthMethods[methodName] = struct{}{}
+			noNeedAuthMethodsMu.Unlock()
+		}
 	}
 	return transport.WithInterceptors(
 		checkOneMethodPermission(methods),
 		checkAndSetClientId(methods),
 	)
+}
+
+func IsNoNeedAuthMethod(ctx context.Context) bool {
+	info := transport.ContextServiceInfo(ctx)
+	if info == nil {
+		return false
+	}
+	return IsNoNeedAuthMethodName(info.Method())
+}
+
+func IsNoNeedAuthMethodName(methodName string) bool {
+	noNeedAuthMethodsMu.RLock()
+	_, ok := noNeedAuthMethods[methodName]
+	noNeedAuthMethodsMu.RUnlock()
+	return ok
 }
 
 var checkOneMethodPermission = func(methods map[string]*MethodPermission) interceptor.Interceptor {
@@ -60,7 +86,7 @@ var checkOneMethodPermission = func(methods map[string]*MethodPermission) interc
 				logrus.Errorf("[reject] permission undefined, method: %s", fullMethodName)
 				return nil, handlers.ErrNoPermission
 			}
-			if perm.NoAuth {
+			if perm.NoNeedAuth {
 				logrus.Infof("[pass] no auth permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}

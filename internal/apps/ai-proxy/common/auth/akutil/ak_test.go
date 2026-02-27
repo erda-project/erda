@@ -15,7 +15,10 @@
 package akutil
 
 import (
+	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
@@ -175,5 +178,47 @@ func TestAutoCheckAndSetClientInfoUnexportedFields(t *testing.T) {
 	}
 	if req.clientTokenId != "" {
 		t.Fatalf("expected unexported clientTokenId to remain empty, got %q", req.clientTokenId)
+	}
+}
+
+func TestIsAKMissing(t *testing.T) {
+	tests := []struct {
+		name          string
+		authorization string
+		want          bool
+	}{
+		{
+			name: "no authorization header",
+			want: true,
+		},
+		{
+			name:          "empty authorization header",
+			authorization: "",
+			want:          true,
+		},
+		{
+			name:          "bearer ak",
+			authorization: "Bearer ak_xxx",
+			want:          false,
+		},
+		{
+			name:          "raw ak",
+			authorization: "ak_xxx",
+			want:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			if tt.name != "no authorization header" {
+				req.Header.Set("Authorization", tt.authorization)
+			}
+
+			got := IsAKMissing(context.Background(), req, nil)
+			if got != tt.want {
+				t.Fatalf("IsAKMissing() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

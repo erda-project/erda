@@ -92,6 +92,11 @@ func (util *AKUtil) GetAkFromHTTPHeader(req any) (string, bool) {
 	return v, v != ""
 }
 
+func IsAKMissing(ctx context.Context, req any, cacheManager cachetypes.Manager) bool {
+	ak, ok := New(cacheManager).GetAkFromHeader(ctx, req)
+	return !ok || ak == ""
+}
+
 func CheckAdmin(ctx context.Context, req any, cacheManager cachetypes.Manager) (bool, error) {
 	ak, ok := New(cacheManager).GetAkFromHeader(ctx, req)
 	if !ok || ak == "" {
