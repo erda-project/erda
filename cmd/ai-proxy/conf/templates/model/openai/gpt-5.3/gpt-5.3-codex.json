@@ -1,0 +1,78 @@
+{
+  "gpt-5.3-codex": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ],
+      "website": "https://developers.openai.com/api/docs/models/gpt-5.3-codex"
+    },
+    "desc": "GPT-5.3-Codex is optimized for agentic coding tasks in Codex or similar environments. GPT-5.3-Codex supports low, medium, high, and xhigh reasoning effort settings. If you want to learn more about prompting GPT-5.3-Codex, refer to our dedicated guide.",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "image_recognition",
+              "responses_api",
+              "structured_output"
+            ],
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "api": {
+            "apiStyleConfigs": {
+              "POST:/v1/chat/completions": {
+                "body": {
+                  "force": {
+                    "temperature": 1
+                  },
+                  "rename": {
+                    "max_tokens": "max_completion_tokens"
+                  }
+                }
+              }
+            }
+          },
+          "context": {
+            "context_length": 400000,
+            "max_prompt_tokens": 272000,
+            "max_completion_tokens": 128000
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "prompt": "0.00000175",
+            "completion": "0.000014",
+            "request": "0",
+            "image": "0",
+            "image_output": "0",
+            "web_search": "0.01",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.000000175",
+            "unit": "USD"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
