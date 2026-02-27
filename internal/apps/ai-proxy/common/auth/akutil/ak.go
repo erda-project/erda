@@ -92,7 +92,7 @@ func (util *AKUtil) GetAkFromHTTPHeader(req any) (string, bool) {
 	return v, v != ""
 }
 
-func CheckNoAuth(ctx context.Context, req any, cacheManager cachetypes.Manager) bool {
+func IsAKMissing(ctx context.Context, req any, cacheManager cachetypes.Manager) bool {
 	ak, ok := New(cacheManager).GetAkFromHeader(ctx, req)
 	return !ok || ak == ""
 }

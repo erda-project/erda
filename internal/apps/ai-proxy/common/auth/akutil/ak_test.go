@@ -181,7 +181,7 @@ func TestAutoCheckAndSetClientInfoUnexportedFields(t *testing.T) {
 	}
 }
 
-func TestCheckNoAuth(t *testing.T) {
+func TestIsAKMissing(t *testing.T) {
 	tests := []struct {
 		name          string
 		authorization string
@@ -215,9 +215,9 @@ func TestCheckNoAuth(t *testing.T) {
 				req.Header.Set("Authorization", tt.authorization)
 			}
 
-			got := CheckNoAuth(context.Background(), req, nil)
+			got := IsAKMissing(context.Background(), req, nil)
 			if got != tt.want {
-				t.Fatalf("CheckNoAuth() = %v, want %v", got, tt.want)
+				t.Fatalf("IsAKMissing() = %v, want %v", got, tt.want)
 			}
 		})
 	}
