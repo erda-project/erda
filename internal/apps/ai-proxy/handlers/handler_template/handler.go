@@ -28,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template/templatetypes"
@@ -41,6 +42,8 @@ type TemplateHandler struct {
 }
 
 func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req *pb.TemplateListRequest) (*pb.TemplateListResponse, error) {
+	sanitizeTemplateListRequestByAuth(ctx, req)
+
 	_, allTemplatesV, err := t.Cache.ListAll(ctx, cachetypes.ItemTypeTemplate)
 	if err != nil {
 		return nil, err
@@ -124,6 +127,8 @@ func (t *TemplateHandler) ListServiceProviderTemplates(ctx context.Context, req 
 }
 
 func (t *TemplateHandler) ListModelTemplates(ctx context.Context, req *pb.TemplateListRequest) (*pb.TemplateListResponse, error) {
+	sanitizeTemplateListRequestByAuth(ctx, req)
+
 	_, allTemplatesV, err := t.Cache.ListAll(ctx, cachetypes.ItemTypeTemplate)
 	if err != nil {
 		return nil, err
@@ -264,6 +269,23 @@ func convertPlaceholdersForCreate(src []*pb.Placeholder) []*pb.PlaceholderForCre
 		})
 	}
 	return result
+}
+
+func sanitizeTemplateListRequestByAuth(ctx context.Context, req *pb.TemplateListRequest) {
+	if req == nil {
+		return
+	}
+	// Anonymous callers can query public templates only.
+	if !auth.IsLoggedIn(ctx) {
+		req.ClientId = ""
+		req.CheckInstance = false
+		req.ShowDeprecated = false
+		return
+	}
+	// Deprecated templates are visible to admin only.
+	if req.ShowDeprecated && !ctxhelper.MustGetIsAdmin(ctx) {
+		req.ShowDeprecated = false
+	}
 }
 
 func stringPtrValue(val *string) string {
