@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const count = 20
@@ -1598,4 +1599,159 @@ func TestInjectVersion(t *testing.T) {
 		assert.NoError(t, err, "Expected no error, but got ", err)
 	}
 
+}
+
+func TestAddon_preparePrebuildChanges_CreateNew(t *testing.T) {
+	a := &Addon{}
+	req := &apistructs.AddonCreateRequest{
+		ApplicationID: 1,
+		RuntimeID:     2,
+		RuntimeName:   "master",
+		Workspace:     "DEV",
+		Addons: []apistructs.AddonCreateItem{
+			{
+				Name: "roost",
+				Type: apistructs.AddonRoost,
+				Plan: apistructs.AddonBasic,
+			},
+		},
+	}
+
+	toCreate, toUpdate, newPrebuildList, err := a.preparePrebuildChanges(req, map[string]dbclient.AddonPrebuild{}, false, false)
+	assert.NoError(t, err)
+	assert.Empty(t, toUpdate)
+	assert.Len(t, toCreate, 1)
+	assert.Len(t, newPrebuildList, 1)
+
+	assert.Equal(t, "1", toCreate[0].ApplicationID)
+	assert.Equal(t, "2", toCreate[0].RuntimeID)
+	assert.Equal(t, "master", toCreate[0].GitBranch)
+	assert.Equal(t, "DEV", toCreate[0].Env)
+	assert.Equal(t, "roost", toCreate[0].InstanceName)
+	assert.Equal(t, apistructs.AddonZKProxy, toCreate[0].AddonName)
+	assert.Equal(t, apistructs.AddonBasic, toCreate[0].Plan)
+}
+
+func TestAddon_preparePrebuildChanges_UpdateDiceYmlDeleted(t *testing.T) {
+	a := &Addon{}
+	req := &apistructs.AddonCreateRequest{
+		ApplicationID: 1,
+		RuntimeID:     2,
+		RuntimeName:   "master",
+		Workspace:     "DEV",
+		Addons: []apistructs.AddonCreateItem{
+			{
+				Name: "zk",
+				Type: apistructs.AddonZookeeperAlias,
+				Plan: apistructs.AddonProfessional,
+			},
+		},
+	}
+
+	existed := dbclient.AddonPrebuild{
+		ID:           100,
+		RuntimeID:    "2",
+		InstanceName: "zk",
+		AddonName:    apistructs.AddonZookeeper,
+		Plan:         apistructs.AddonBasic,
+		DeleteStatus: apistructs.AddonPrebuildDiceYmlDeleted,
+		Options:      `{"k":"v"}`,
+	}
+	existBuildMap := map[string]dbclient.AddonPrebuild{
+		strutil.Concat(existed.RuntimeID, existed.AddonName, existed.InstanceName): existed,
+	}
+
+	toCreate, toUpdate, newPrebuildList, err := a.preparePrebuildChanges(req, existBuildMap, false, false)
+	assert.NoError(t, err)
+	assert.Empty(t, toCreate)
+	assert.Len(t, toUpdate, 1)
+	assert.Len(t, newPrebuildList, 1)
+
+	assert.Equal(t, uint64(100), toUpdate[0].ID)
+	assert.Equal(t, apistructs.AddonPrebuildNotDeleted, toUpdate[0].DeleteStatus)
+	assert.Equal(t, apistructs.AddonBasic, toUpdate[0].Plan)
+	assert.Equal(t, `{"k":"v"}`, toUpdate[0].Options)
+}
+
+func TestAddon_preparePrebuildChanges_UpdateNotDeleted_PlanAndOptions(t *testing.T) {
+	a := &Addon{}
+	req := &apistructs.AddonCreateRequest{
+		ApplicationID: 1,
+		RuntimeID:     2,
+		RuntimeName:   "master",
+		Workspace:     "DEV",
+		Addons: []apistructs.AddonCreateItem{
+			{
+				Name: "registercenter",
+				Type: RegisterCenterAddon,
+				Plan: apistructs.AddonProfessional,
+				Options: map[string]string{
+					"version": "2.0.0",
+				},
+			},
+		},
+	}
+
+	existed := dbclient.AddonPrebuild{
+		ID:           200,
+		RuntimeID:    "2",
+		InstanceName: "registercenter",
+		AddonName:    RegisterCenterAddon,
+		Plan:         apistructs.AddonBasic,
+		DeleteStatus: apistructs.AddonPrebuildNotDeleted,
+		Options:      `{"version":"1.0.0"}`,
+	}
+	existBuildMap := map[string]dbclient.AddonPrebuild{
+		strutil.Concat(existed.RuntimeID, existed.AddonName, existed.InstanceName): existed,
+	}
+
+	toCreate, toUpdate, newPrebuildList, err := a.preparePrebuildChanges(req, existBuildMap, false, false)
+	assert.NoError(t, err)
+	assert.Empty(t, toCreate)
+	assert.Len(t, toUpdate, 1)
+	assert.Len(t, newPrebuildList, 1)
+
+	assert.Equal(t, uint64(200), toUpdate[0].ID)
+	assert.Equal(t, apistructs.AddonProfessional, toUpdate[0].Plan)
+	assert.Equal(t, `{"version":"2.0.0"}`, toUpdate[0].Options)
+}
+
+func TestAddon_preparePrebuildChanges_NoUpdateWhenUnchanged(t *testing.T) {
+	a := &Addon{}
+	req := &apistructs.AddonCreateRequest{
+		ApplicationID: 1,
+		RuntimeID:     2,
+		RuntimeName:   "master",
+		Workspace:     "DEV",
+		Addons: []apistructs.AddonCreateItem{
+			{
+				Name: "registercenter",
+				Type: RegisterCenterAddon,
+				Plan: apistructs.AddonBasic,
+				Options: map[string]string{
+					"version": "1.0.0",
+				},
+			},
+		},
+	}
+
+	existed := dbclient.AddonPrebuild{
+		ID:           300,
+		RuntimeID:    "2",
+		InstanceName: "registercenter",
+		AddonName:    RegisterCenterAddon,
+		Plan:         apistructs.AddonBasic,
+		DeleteStatus: apistructs.AddonPrebuildNotDeleted,
+		Options:      `{"version":"1.0.0"}`,
+	}
+	existBuildMap := map[string]dbclient.AddonPrebuild{
+		strutil.Concat(existed.RuntimeID, existed.AddonName, existed.InstanceName): existed,
+	}
+
+	toCreate, toUpdate, newPrebuildList, err := a.preparePrebuildChanges(req, existBuildMap, false, false)
+	assert.NoError(t, err)
+	assert.Empty(t, toCreate)
+	assert.Empty(t, toUpdate)
+	assert.Len(t, newPrebuildList, 1)
+	assert.Equal(t, uint64(300), newPrebuildList[0].ID)
 }
