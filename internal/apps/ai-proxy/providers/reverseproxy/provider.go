@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -67,6 +68,9 @@ var (
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
+				if akutil.CheckNoAuth(ctx, req, cacheManager) && permission.IsNoAuthMethod(ctx) {
+					return h(ctx, req)
+				}
 				// check admin key first
 				isAdmin, err := akutil.CheckAdmin(ctx, req, cacheManager)
 				if err != nil {

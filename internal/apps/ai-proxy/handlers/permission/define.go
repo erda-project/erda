@@ -16,6 +16,7 @@ package permission
 
 import (
 	"context"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -26,6 +27,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/pkg/audit"
+)
+
+var (
+	noAuthMethodsMu sync.RWMutex
+	noAuthMethods   = map[string]struct{}{}
 )
 
 type MethodPermission struct {
@@ -43,11 +49,31 @@ func CheckPermissions(perms ...*MethodPermission) transport.ServiceOption {
 	for _, perm := range perms {
 		methodName := audit.GetMethodName(perm.Method)
 		methods[methodName] = perm
+		if perm.NoAuth {
+			noAuthMethodsMu.Lock()
+			noAuthMethods[methodName] = struct{}{}
+			noAuthMethodsMu.Unlock()
+		}
 	}
 	return transport.WithInterceptors(
 		checkOneMethodPermission(methods),
 		checkAndSetClientId(methods),
 	)
+}
+
+func IsNoAuthMethod(ctx context.Context) bool {
+	info := transport.ContextServiceInfo(ctx)
+	if info == nil {
+		return false
+	}
+	return IsNoAuthMethodName(info.Method())
+}
+
+func IsNoAuthMethodName(methodName string) bool {
+	noAuthMethodsMu.RLock()
+	_, ok := noAuthMethods[methodName]
+	noAuthMethodsMu.RUnlock()
+	return ok
 }
 
 var checkOneMethodPermission = func(methods map[string]*MethodPermission) interceptor.Interceptor {

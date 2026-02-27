@@ -1,6 +1,6 @@
 # AI Proxy Integration Tests Makefile
 
-.PHONY: help test test-chat test-embeddings test-audio test-audio-stt test-audio-tts test-images test-responses test-verbose test-concurrent test-quick clean setup
+.PHONY: help test test-chat test-embeddings test-audio test-audio-stt test-audio-tts test-images test-responses test-verbose test-concurrent test-quick clean setup test-template-list
 
 # Default target
 .DEFAULT_GOAL := help
@@ -31,6 +31,7 @@ help:
 	@echo "  test-responses-nonstream - Run responses non-stream tests"
 	@echo "  test-responses-stream  - Run responses stream tests"
 	@echo "  test-openai-v1-models  - Run OpenAI v1/models tests"
+	@echo "  test-template-list     - Run model/provider template list tests (auth + no-auth)"
 	@echo "  test-rich-client       - Run rich client API tests"
 	@echo "  test-thinking-curl     - Run thinking-handler curl-based tests"
 	@echo "  test-chat              - Alias for test-chat-completions"
@@ -54,19 +55,19 @@ setup:
 	fi
 
 ## Run all tests
-test: test-chat-completions test-audio-stt test-audio-tts test-images test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+test: test-chat-completions test-audio-stt test-audio-tts test-images test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl
 	@echo "✓ All tests completed!"
 
 ## Run all tests except image generation (faster execution)
-test-except-images: test-chat-completions test-audio-stt test-audio-tts test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+test-except-images: test-chat-completions test-audio-stt test-audio-tts test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl
 	@echo "✓ All tests completed (excluding image generation)!"
 
 ## Run all tests except audio (STT + TTS)
-test-except-audio: test-chat-completions test-images test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+test-except-audio: test-chat-completions test-images test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl
 	@echo "✓ All tests completed (excluding audio)!"
 
 ## Run all tests except images and audio
-test-except-image-audio: test-chat-completions test-embeddings test-responses test-openai-v1-models test-rich-client test-thinking-curl
+test-except-image-audio: test-chat-completions test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl
 	@echo "✓ All tests completed (excluding images and audio)!"
 
 
@@ -134,6 +135,12 @@ test-openai-v1-models: setup mod-init
 	@echo "Running OpenAI v1/models tests..."
 	go test -v -count=1 -timeout 300s -failfast -run "^TestV1Models" ./...
 	@echo "✓ All OpenAI v1/models tests completed!"
+
+## Run template list tests
+test-template-list: setup mod-init
+	@echo "Running Template List API tests..."
+	go test -v -count=1 -timeout 300s -failfast -run "^TestTemplateList" ./...
+	@echo "✓ Template List API tests completed!"
 
 ## Run rich client API tests
 test-rich-client: setup mod-init

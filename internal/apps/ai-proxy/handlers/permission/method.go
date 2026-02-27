@@ -143,8 +143,8 @@ var CheckTokenUsagePerm = CheckPermissions(
 )
 
 var CheckTemplatePerm = CheckPermissions(
-	&MethodPermission{Method: templatepb.TemplateServiceServer.ListServiceProviderTemplates, LoggedIn: true},
-	&MethodPermission{Method: templatepb.TemplateServiceServer.ListModelTemplates, LoggedIn: true},
+	&MethodPermission{Method: templatepb.TemplateServiceServer.ListServiceProviderTemplates, NoAuth: true},
+	&MethodPermission{Method: templatepb.TemplateServiceServer.ListModelTemplates, NoAuth: true},
 )
 
 var CheckPolicyGroupPerm = CheckPermissions(
