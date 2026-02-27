@@ -22,19 +22,19 @@ import (
 	"github.com/erda-project/erda/internal/pkg/audit"
 )
 
-func TestIsNoAuthMethodName(t *testing.T) {
+func TestIsNoNeedAuthMethodName(t *testing.T) {
 	modelTplMethod := audit.GetMethodName(templatepb.TemplateServiceServer.ListModelTemplates)
-	if !IsNoAuthMethodName(modelTplMethod) {
+	if !IsNoNeedAuthMethodName(modelTplMethod) {
 		t.Fatalf("expected template list-model method to be no-auth")
 	}
 
 	spTplMethod := audit.GetMethodName(templatepb.TemplateServiceServer.ListServiceProviderTemplates)
-	if !IsNoAuthMethodName(spTplMethod) {
+	if !IsNoNeedAuthMethodName(spTplMethod) {
 		t.Fatalf("expected template list-service-provider method to be no-auth")
 	}
 
 	clientGetMethod := audit.GetMethodName(clientpb.ClientServiceServer.Get)
-	if IsNoAuthMethodName(clientGetMethod) {
+	if IsNoNeedAuthMethodName(clientGetMethod) {
 		t.Fatalf("expected client get method not to be no-auth")
 	}
 }

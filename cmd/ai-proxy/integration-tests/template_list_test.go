@@ -134,6 +134,34 @@ func TestTemplateListAuthCheckInstanceVisible(t *testing.T) {
 	}
 }
 
+func TestTemplateListInvalidAuthShouldUnauthorized(t *testing.T) {
+	client := common.NewClient()
+	query := "?checkInstance=true&clientId=99999999-8888-7777-6666-555555555555&showDeprecated=true"
+
+	cases := []struct {
+		name string
+		path string
+	}{
+		{name: "ModelTemplates", path: "/api/ai-proxy/templates/types/model"},
+		{name: "ProviderTemplates", path: "/api/ai-proxy/templates/types/service-provider"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), config.Get().Timeout)
+			defer cancel()
+
+			resp := client.GetWithHeaders(ctx, tc.path+query, map[string]string{
+				"Authorization": "Bearer invalid-ak-for-test",
+			})
+			if resp.StatusCode != 401 {
+				t.Fatalf("expected 401 for invalid auth, got status=%d body=%s", resp.StatusCode, string(resp.Body))
+			}
+		})
+	}
+}
+
 func requestTemplateList(t *testing.T, client *common.Client, path string, noAuth bool) *common.APIResponse {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), config.Get().Timeout)

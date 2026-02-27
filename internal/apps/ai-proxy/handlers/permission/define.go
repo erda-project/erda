@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	noAuthMethodsMu sync.RWMutex
-	noAuthMethods   = map[string]struct{}{}
+	noNeedAuthMethodsMu sync.RWMutex
+	noNeedAuthMethods   = map[string]struct{}{}
 )
 
 type MethodPermission struct {
@@ -40,7 +40,7 @@ type MethodPermission struct {
 	OnlyClient        bool
 	AdminOrClient     bool // no client-token
 	LoggedIn          bool // just logged in
-	NoAuth            bool
+	NoNeedAuth        bool
 	SkipSetClientInfo bool
 }
 
@@ -49,10 +49,10 @@ func CheckPermissions(perms ...*MethodPermission) transport.ServiceOption {
 	for _, perm := range perms {
 		methodName := audit.GetMethodName(perm.Method)
 		methods[methodName] = perm
-		if perm.NoAuth {
-			noAuthMethodsMu.Lock()
-			noAuthMethods[methodName] = struct{}{}
-			noAuthMethodsMu.Unlock()
+		if perm.NoNeedAuth {
+			noNeedAuthMethodsMu.Lock()
+			noNeedAuthMethods[methodName] = struct{}{}
+			noNeedAuthMethodsMu.Unlock()
 		}
 	}
 	return transport.WithInterceptors(
@@ -61,18 +61,18 @@ func CheckPermissions(perms ...*MethodPermission) transport.ServiceOption {
 	)
 }
 
-func IsNoAuthMethod(ctx context.Context) bool {
+func IsNoNeedAuthMethod(ctx context.Context) bool {
 	info := transport.ContextServiceInfo(ctx)
 	if info == nil {
 		return false
 	}
-	return IsNoAuthMethodName(info.Method())
+	return IsNoNeedAuthMethodName(info.Method())
 }
 
-func IsNoAuthMethodName(methodName string) bool {
-	noAuthMethodsMu.RLock()
-	_, ok := noAuthMethods[methodName]
-	noAuthMethodsMu.RUnlock()
+func IsNoNeedAuthMethodName(methodName string) bool {
+	noNeedAuthMethodsMu.RLock()
+	_, ok := noNeedAuthMethods[methodName]
+	noNeedAuthMethodsMu.RUnlock()
 	return ok
 }
 
@@ -86,7 +86,7 @@ var checkOneMethodPermission = func(methods map[string]*MethodPermission) interc
 				logrus.Errorf("[reject] permission undefined, method: %s", fullMethodName)
 				return nil, handlers.ErrNoPermission
 			}
-			if perm.NoAuth {
+			if perm.NoNeedAuth {
 				logrus.Infof("[pass] no auth permission, method: %s", fullMethodName)
 				return h(ctx, req)
 			}

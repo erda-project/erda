@@ -68,7 +68,7 @@ var (
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
-				if akutil.IsAKMissing(ctx, req, cacheManager) && permission.IsNoAuthMethod(ctx) {
+				if akutil.IsAKMissing(ctx, req, cacheManager) && permission.IsNoNeedAuthMethod(ctx) {
 					return h(ctx, req)
 				}
 				// check admin key first
