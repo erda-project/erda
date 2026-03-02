@@ -37,7 +37,9 @@
               "video"
             ],
             "output_modalities": [
-              "text"
+              "text",
+              "image",
+              "video"
             ]
           },
           "context": {
