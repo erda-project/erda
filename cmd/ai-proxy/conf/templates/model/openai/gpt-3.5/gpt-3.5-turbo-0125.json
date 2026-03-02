@@ -12,8 +12,7 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ],
-      "website": "https://platform.openai.com/docs/models/gpt-3.5-turbo-0125"
+      ]
     },
     "desc": "gpt-3.5-turbo-0125, see: https://platform.openai.com/docs/models/gpt-3.5-turbo",
     "config": {

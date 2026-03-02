@@ -12,8 +12,7 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-1.5-thinking-vision-pro-250428"
+      ]
     },
     "desc": "doubao-1.5-thinking-vision-pro 全新视觉深度思考模型，具备更强的通用多模态理解和推理能力，在 59 个公开评测基准中的 37 个上取得 SOTA 表现。",
     "config": {
