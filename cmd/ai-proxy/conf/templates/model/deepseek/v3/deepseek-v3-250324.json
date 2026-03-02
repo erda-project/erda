@@ -12,7 +12,8 @@
       "recommended_service_provider_templates": [
         "volcengine-ark",
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-v3"
     },
     "desc": "deepseek-v3 由深度求索公司自研的MoE模型，多项评测成绩超越了 qwen2.5-72b 和 llama-3.1-405b 等开源模型，并在性能上和世界顶尖的闭源模型 gpt-4o 及 claude-3.5-Sonnet 不分伯仲。",
     "config": {
