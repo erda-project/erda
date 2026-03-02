@@ -1,5 +1,6 @@
 {
   "doubao-seed-1.6-250615": {
+    "deprecated": true,
     "placeholders": [
       {
         "name": "target-model-name",
@@ -11,8 +12,7 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1-6"
+      ]
     },
     "desc": "全新多模态深度思考模型，同时支持 thinking、non-thinking、auto三种思考模式。其中 non-thinking 模型对比 doubao-1.5-pro-32k-250115 模型大幅提升。",
     "config": {
@@ -63,7 +63,6 @@
         },
         "secret": {}
       }
-    },
-    "deprecated": true
+    }
   }
 }
