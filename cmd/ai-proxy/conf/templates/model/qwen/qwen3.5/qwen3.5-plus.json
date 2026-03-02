@@ -32,7 +32,8 @@
             ],
             "input_modalities": [
               "text",
-              "image"
+              "image",
+              "video"
             ],
             "output_modalities": [
               "text"

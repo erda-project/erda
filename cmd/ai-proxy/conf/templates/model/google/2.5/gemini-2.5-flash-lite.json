@@ -49,7 +49,8 @@
             "input_modalities": [
               "text",
               "image",
-              "audio"
+              "audio",
+              "video"
             ],
             "output_modalities": [
               "text"
