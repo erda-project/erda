@@ -1,0 +1,59 @@
+{
+  "glm-5": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/glm-5"
+    },
+    "desc": "智谱旗舰模型，具备强大的复杂推理能力，特别适合代码生成、智能体任务执行、复杂报告生成等高阶场景。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "zhipuai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 202752,
+            "max_prompt_tokens": 202752,
+            "max_completion_tokens": 16384
+          },
+          "pricing": {
+            "prompt": "0.000006",
+            "completion": "0.000022",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
