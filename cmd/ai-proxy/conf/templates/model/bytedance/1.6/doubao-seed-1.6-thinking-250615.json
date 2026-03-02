@@ -60,6 +60,7 @@
         },
         "secret": {}
       }
-    }
+    },
+    "deprecated": true
   }
 }

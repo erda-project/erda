@@ -51,6 +51,7 @@
         },
         "secret": {}
       }
-    }
+    },
+    "deprecated": true
   }
 }
