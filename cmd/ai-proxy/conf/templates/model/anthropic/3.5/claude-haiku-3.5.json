@@ -50,7 +50,8 @@
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
             "prompt": "0.00000068",
-            "completion": "0.0000034"
+            "completion": "0.0000034",
+            "unit": "USD"
           }
         },
         "pricing": {
