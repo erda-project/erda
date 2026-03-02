@@ -1,5 +1,6 @@
 {
   "doubao-1.5-thinking-pro-250415": {
+    "deprecated": true,
     "placeholders": [
       {
         "name": "target-model-name",
