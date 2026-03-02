@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "volcengine-ark"
       ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1.6-flash-250615"
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1-6-flash"
     },
     "desc": "有极致推理速度的多模态深度思考模型；同时支持文本和视觉理解。文本理解能力超过上一代 Lite 系列模型，视觉理解比肩友商 Pro 系列模型。",
     "config": {
