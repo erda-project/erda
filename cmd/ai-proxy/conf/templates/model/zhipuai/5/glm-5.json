@@ -1,0 +1,59 @@
+{
+  "glm-5": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/glm-5"
+    },
+    "desc": "GLM-5是面向Coding与Agent场景的新一代大模型，在复杂系统工程与长程任务中达到开源 SOTA，真实编程体验逼近 Claude Opus 级别；基于 744B 新基座、异步强化学习与稀疏注意力，实现从“写代码”到“写工程”的全面升级。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "zhipuai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 202752,
+            "max_prompt_tokens": 202752,
+            "max_completion_tokens": 16384
+          },
+          "pricing": {
+            "prompt": "0.000006",
+            "completion": "0.000022",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
