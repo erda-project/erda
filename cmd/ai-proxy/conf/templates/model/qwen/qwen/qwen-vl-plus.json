@@ -24,13 +24,14 @@
         "public": {
           "abilities": {
             "abilities": [
+              "reasoning",
               "image_recognition",
-              "tool",
               "video_recognition"
             ],
             "input_modalities": [
               "text",
-              "image"
+              "image",
+              "video"
             ],
             "output_modalities": [
               "text"

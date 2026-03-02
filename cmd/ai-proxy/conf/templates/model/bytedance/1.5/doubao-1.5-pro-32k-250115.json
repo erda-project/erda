@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ]
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-1.5-pro-32k-250115"
     },
     "desc": "Doubao-1.5-pro，全新一代主力模型，性能全面升级，在知识、代码、推理、等方面表现卓越。",
     "config": {

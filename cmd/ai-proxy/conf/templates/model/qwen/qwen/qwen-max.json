@@ -24,8 +24,8 @@
         "public": {
           "abilities": {
             "abilities": [
-              "structured_output",
-              "tool"
+              "reasoning",
+              "structured_output"
             ],
             "input_modalities": [
               "text"

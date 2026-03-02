@@ -24,18 +24,17 @@
         "public": {
           "abilities": {
             "abilities": [
-              "audio_recognition",
-              "enable_thinking",
               "image_recognition",
+              "video_recognition",
+              "audio_recognition",
               "reasoning",
-              "tool",
-              "video_recognition"
+              "enable_thinking"
             ],
             "input_modalities": [
               "text",
               "image",
-              "audio",
-              "video"
+              "video",
+              "audio"
             ],
             "output_modalities": [
               "text",
@@ -43,9 +42,9 @@
             ]
           },
           "context": {
-            "context_length": 65536,
+            "context_length": 64000,
             "max_prompt_tokens": 48000,
-            "max_completion_tokens": 16384
+            "max_completion_tokens": 16000
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {

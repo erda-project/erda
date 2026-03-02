@@ -39,7 +39,7 @@
           },
           "context": {
             "context_length": 32768,
-            "max_completion_tokens": 32768,
+            "max_completion_tokens": 4096,
             "max_prompt_tokens": 32768
           },
           "deployment_id": "${@template.placeholders.target-model-name}",

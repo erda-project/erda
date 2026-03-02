@@ -48,8 +48,8 @@
             "input_modalities": [
               "text",
               "image",
-              "audio",
-              "video"
+              "video",
+              "audio"
             ],
             "output_modalities": [
               "text"
@@ -57,7 +57,7 @@
           },
           "context": {
             "context_length": 1048576,
-            "max_completion_tokens": 65536,
+            "max_completion_tokens": 65535,
             "max_prompt_tokens": 1048576
           },
           "model_name": "${@template.placeholders.target-model-name}",

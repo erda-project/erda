@@ -44,7 +44,7 @@
           "context": {
             "context_length": 256000,
             "max_prompt_tokens": 224000,
-            "max_completion_tokens": 64000
+            "max_completion_tokens": 32000
           },
           "pricing": {
             "prompt": "0.0000004",

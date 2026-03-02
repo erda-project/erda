@@ -19,7 +19,7 @@
       "recommended_service_provider_templates": [
         "aws-bedrock"
       ],
-      "website": "https://docs.anthropic.com/en/docs/about-claude/models/claude-sonnet-3.7"
+      "website": "https://platform.claude.com/docs/en/about-claude/pricing"
     },
     "desc": "cross-region inference",
     "config": {
@@ -42,8 +42,8 @@
             ]
           },
           "context": {
-            "context_length": 196608,
-            "max_completion_tokens": 128000,
+            "context_length": 200000,
+            "max_completion_tokens": 64000,
             "max_prompt_tokens": null
           },
           "model_id": "${@template.placeholders.target-model-name}",

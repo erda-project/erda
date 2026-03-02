@@ -35,7 +35,7 @@
             ]
           },
           "context": {
-            "context_length": 128000,
+            "context_length": 0,
             "max_completion_tokens": 0,
             "max_prompt_tokens": 0
           },

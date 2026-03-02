@@ -19,7 +19,7 @@
       "recommended_service_provider_templates": [
         "aws-bedrock"
       ],
-      "website": "https://docs.anthropic.com/en/docs/about-claude/models/claude-opus-4.1"
+      "website": "https://platform.claude.com/docs/en/about-claude/pricing"
     },
     "desc": "cross-region inference",
     "config": {
@@ -36,8 +36,8 @@
               "image_recognition"
             ],
             "input_modalities": [
-              "image",
-              "text"
+              "text",
+              "image"
             ],
             "output_modalities": [
               "text"

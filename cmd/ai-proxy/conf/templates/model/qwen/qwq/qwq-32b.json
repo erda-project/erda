@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwq-32b"
     },
     "desc": "QwQ-32B 版本在性能上可媲美业界主流顶级推理模型，具备高效处理长文本和多轮对话的能力，同时提供 HuggingFace Transformers、vLLM、Llama.cpp 等多种兼容部署方式，广泛适用于学术研究和实际应用场景。",
     "config": {

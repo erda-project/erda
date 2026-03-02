@@ -24,15 +24,16 @@
         "public": {
           "abilities": {
             "abilities": [
-              "embedding",
-              "image_recognition",
-              "responses_api",
+              "tool",
               "structured_output",
-              "tool"
+              "reasoning",
+              "image_recognition",
+              "embedding",
+              "responses_api"
             ],
             "input_modalities": [
-              "text",
-              "image"
+              "image",
+              "text"
             ],
             "output_modalities": [
               "text"

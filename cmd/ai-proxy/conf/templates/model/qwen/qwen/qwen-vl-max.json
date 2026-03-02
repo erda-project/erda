@@ -25,6 +25,7 @@
           "abilities": {
             "abilities": [
               "image_recognition",
+              "reasoning",
               "tool"
             ],
             "input_modalities": [

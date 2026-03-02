@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ]
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1.8-preview"
     },
     "desc": "非公开模型，doubao-seed-1.8-preview 251115",
     "config": {

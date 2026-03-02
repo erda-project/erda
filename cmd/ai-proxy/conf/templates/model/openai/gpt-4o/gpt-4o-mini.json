@@ -24,13 +24,11 @@
         "public": {
           "abilities": {
             "abilities": [
-              "embedding",
-              "structured_output",
-              "tool"
+              "reasoning",
+              "embedding"
             ],
             "input_modalities": [
-              "text",
-              "image"
+              "text"
             ],
             "output_modalities": [
               "text"

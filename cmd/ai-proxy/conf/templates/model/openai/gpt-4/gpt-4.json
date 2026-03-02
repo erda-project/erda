@@ -25,8 +25,10 @@
         "public": {
           "abilities": {
             "abilities": [
+              "reasoning",
               "enable_thinking",
-              "tool"
+              "tool",
+              "structured_output"
             ],
             "input_modalities": [
               "text"
@@ -36,8 +38,8 @@
             ]
           },
           "context": {
-            "context_length": 8192,
-            "max_completion_tokens": 8192,
+            "context_length": 8191,
+            "max_completion_tokens": 4096,
             "max_prompt_tokens": 8191
           },
           "deployment_id": "${@template.placeholders.target-model-name}",

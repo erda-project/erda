@@ -33,16 +33,17 @@
             ],
             "input_modalities": [
               "text",
-              "image"
+              "image",
+              "video"
             ],
             "output_modalities": [
               "text"
             ]
           },
           "context": {
-            "context_length": 262144,
+            "context_length": 256000,
             "max_prompt_tokens": 254000,
-            "max_completion_tokens": 32768
+            "max_completion_tokens": 32000
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {

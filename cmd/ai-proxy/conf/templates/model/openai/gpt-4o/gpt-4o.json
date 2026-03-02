@@ -24,13 +24,13 @@
         "public": {
           "abilities": {
             "abilities": [
-              "enable_thinking",
+              "tool",
               "structured_output",
-              "tool"
+              "reasoning",
+              "enable_thinking"
             ],
             "input_modalities": [
-              "text",
-              "image"
+              "text"
             ],
             "output_modalities": [
               "text"

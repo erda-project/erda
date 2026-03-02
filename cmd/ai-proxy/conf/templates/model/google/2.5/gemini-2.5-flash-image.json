@@ -38,8 +38,7 @@
         "public": {
           "abilities": {
             "abilities": [
-              "image_recognition",
-              "reasoning"
+              "image_recognition"
             ],
             "input_modalities": [
               "text",

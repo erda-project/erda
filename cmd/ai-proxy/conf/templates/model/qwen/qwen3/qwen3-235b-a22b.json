@@ -24,9 +24,8 @@
         "public": {
           "abilities": {
             "abilities": [
-              "enable_thinking",
               "reasoning",
-              "tool"
+              "enable_thinking"
             ],
             "input_modalities": [
               "text"

@@ -24,11 +24,10 @@
         "public": {
           "abilities": {
             "abilities": [
-              "image_recognition",
+              "tool",
               "reasoning",
-              "responses_api",
-              "structured_output",
-              "tool"
+              "image_recognition",
+              "responses_api"
             ],
             "input_modalities": [
               "text",
@@ -55,7 +54,7 @@
           "context": {
             "context_length": 400000,
             "max_completion_tokens": 128000,
-            "max_prompt_tokens": 272000
+            "max_prompt_tokens": null
           },
           "deployment_id": "${@template.placeholders.target-model-name}",
           "model_name": "${@template.placeholders.target-model-name}",

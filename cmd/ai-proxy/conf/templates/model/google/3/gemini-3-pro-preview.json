@@ -56,8 +56,8 @@
             ]
           },
           "context": {
-            "context_length": 1000000,
-            "max_completion_tokens": 64000,
+            "context_length": 1048576,
+            "max_completion_tokens": 65535,
             "max_prompt_tokens": 1048576
           },
           "model_name": "${@template.placeholders.target-model-name}",
