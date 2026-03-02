@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "volcengine-ark"
       ],
-      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-v3.1-terminus"
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-v3.1"
     },
     "desc": "DeepSeek-V3.1 现已更新至 DeepSeek-V3.1-Terminus 版本。\n\n此次更新在保持模型原有能力的基础上，针对用户反馈的问题进行了改进，包括：\n\n语言一致性： 缓解了中英文混杂、偶发异常字符等情况；\n\nAgent 能力： 进一步优化了 Code Agent 与 Search Agent 的表现。",
     "config": {
