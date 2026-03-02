@@ -45,12 +45,13 @@
               "image"
             ],
             "output_modalities": [
-              "text"
+              "text",
+              "image"
             ]
           },
           "context": {
-            "context_length": 32768,
-            "max_completion_tokens": 64000,
+            "context_length": 65536,
+            "max_completion_tokens": 32768,
             "max_prompt_tokens": 65536
           },
           "model_name": "${@template.placeholders.target-model-name}",
