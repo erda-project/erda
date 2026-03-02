@@ -19,7 +19,7 @@
       "desc": "${@template.desc}",
       "apiKey": "",
       "type": "text_generation",
-      "publisher": "zhipuai",
+      "publisher": "zai-org",
       "metadata": {
         "public": {
           "abilities": {
