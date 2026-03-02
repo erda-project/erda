@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen-turbo"
     },
     "desc": "qwen-turbo",
     "config": {
@@ -23,7 +24,8 @@
         "public": {
           "abilities": {
             "abilities": [
-              "reasoning"
+              "reasoning",
+              "tool"
             ],
             "input_modalities": [
               "text"
@@ -34,17 +36,17 @@
           },
           "context": {
             "context_length": 1000000,
-            "max_completion_tokens": 0,
+            "max_completion_tokens": 16384,
             "max_prompt_tokens": 0
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.0000006",
+            "completion": "0.0000002",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000003",
+            "prompt": "0.00000005",
             "request": "0",
             "unit": "CNY",
             "web_search": "0.0000003"

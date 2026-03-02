@@ -12,7 +12,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-4-turbo-vision"
     },
     "desc": "GPT-4 Turbo with Vision 支持图片转文字能力，可通过 API 调用实现多模态内容理解。",
     "config": {
@@ -37,8 +38,8 @@
             ]
           },
           "context": {
-            "context_length": null,
-            "max_completion_tokens": null,
+            "context_length": 128000,
+            "max_completion_tokens": 4096,
             "max_prompt_tokens": null
           },
           "deployment_name": "${@template.placeholders.target-model-name}",

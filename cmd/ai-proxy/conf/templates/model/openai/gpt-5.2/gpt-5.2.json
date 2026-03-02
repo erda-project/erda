@@ -24,10 +24,11 @@
         "public": {
           "abilities": {
             "abilities": [
-              "tool",
-              "reasoning",
               "image_recognition",
-              "responses_api"
+              "reasoning",
+              "responses_api",
+              "structured_output",
+              "tool"
             ],
             "input_modalities": [
               "text",

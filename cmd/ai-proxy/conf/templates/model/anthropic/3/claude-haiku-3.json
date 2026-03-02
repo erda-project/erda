@@ -18,7 +18,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aws-bedrock"
-      ]
+      ],
+      "website": "https://docs.anthropic.com/en/docs/about-claude/models/claude-haiku-3"
     },
     "desc": "claude-3-haiku",
     "config": {
@@ -35,25 +36,26 @@
               "responses_api"
             ],
             "input_modalities": [
-              "text"
+              "text",
+              "image"
             ],
             "output_modalities": [
               "text"
             ]
           },
           "context": {
-            "context_length": 4096,
-            "max_completion_tokens": 4096,
+            "context_length": 189096,
+            "max_completion_tokens": 8192,
             "max_prompt_tokens": 0
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.00000125",
+            "completion": "0.0000011",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.00000025",
+            "prompt": "0.00000021",
             "request": "0",
             "unit": "USD",
             "web_search": "0"

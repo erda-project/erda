@@ -42,11 +42,11 @@
           "context": {
             "context_length": 1000000,
             "max_prompt_tokens": 991000,
-            "max_completion_tokens": 64000
+            "max_completion_tokens": 65536
           },
           "pricing": {
-            "prompt": "0.0000008",
-            "completion": "0.0000048",
+            "prompt": "0.0000004",
+            "completion": "0.0000024",
             "request": "0",
             "image": "0",
             "web_search": "0",

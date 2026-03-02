@@ -26,7 +26,7 @@
       "recommended_service_provider_templates": [
         "google-vertex-ai"
       ],
-      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite"
+      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini-2.5-flash-lite"
     },
     "desc": "Gemini 2.5 Flash-Lite is a lightweight reasoning model in the Gemini 2.5 family, optimized for ultra-low latency and cost efficiency. It offers improved throughput, faster token generation, and better performance across common benchmarks compared to earlier Flash models. By default, \\\"thinking\\\" (i.e. multi-pass reasoning) is disabled to prioritize speed, but developers can enable it via the [Reasoning API parameter](https://openrouter.ai/docs/use-cases/reasoning-tokens) to selectively trade off cost for intelligence.",
     "config": {
@@ -49,8 +49,8 @@
             "input_modalities": [
               "text",
               "image",
-              "video",
-              "audio"
+              "audio",
+              "video"
             ],
             "output_modalities": [
               "text"
@@ -58,7 +58,7 @@
           },
           "context": {
             "context_length": 1048576,
-            "max_completion_tokens": 65535,
+            "max_completion_tokens": 65536,
             "max_prompt_tokens": 1048576
           },
           "model_name": "${@template.placeholders.target-model-name}",

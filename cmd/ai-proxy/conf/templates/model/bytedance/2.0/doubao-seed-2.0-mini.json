@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "volcengine-ark"
       ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2-0-mini"
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2.0-mini"
     },
     "desc": "面向低时延、高并发与成本敏感场景，强调快速响应与灵活推理部署。模型效果与 Doubao-Seed-1.6 相当，支持 256k 上下文、4 档思考长度和多模态理解，适合成本与速度优先的轻量级任务。",
     "config": {
@@ -44,11 +44,11 @@
           "context": {
             "context_length": 256000,
             "max_prompt_tokens": 224000,
-            "max_completion_tokens": 32000
+            "max_completion_tokens": 64000
           },
           "pricing": {
-            "prompt": "0.0000004",
-            "completion": "0.000004",
+            "prompt": "0.00000003",
+            "completion": "0.00000028",
             "request": "0",
             "image": "0",
             "web_search": "0",

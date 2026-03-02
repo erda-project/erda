@@ -12,7 +12,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-3.5-turbo-0125"
     },
     "desc": "gpt-3.5-turbo-0125, see: https://platform.openai.com/docs/models/gpt-3.5-turbo",
     "config": {
@@ -32,8 +33,8 @@
             ]
           },
           "context": {
-            "context_length": 16385,
-            "max_completion_tokens": 4096,
+            "context_length": 16384,
+            "max_completion_tokens": 16384,
             "max_prompt_tokens": null
           },
           "model_name": "${@template.placeholders.target-model-name}",

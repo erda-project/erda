@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "volcengine-ark"
       ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2-0-pro"
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2.0-pro"
     },
     "desc": "旗舰级全能通用模型，面向 Agent 时代的复杂推理与长链路任务执行场景。强调多模态理解、长上下文推理、结构化生成与工具增强执行。复杂指令与多约束执行能力突出，可稳定应对多步复杂规划、复杂图文推理、视频内容理解与高难度分析等场景。",
     "config": {
@@ -44,11 +44,11 @@
           "context": {
             "context_length": 256000,
             "max_prompt_tokens": 256000,
-            "max_completion_tokens": 128000
+            "max_completion_tokens": 64000
           },
           "pricing": {
-            "prompt": "0.0000048",
-            "completion": "0.000024",
+            "prompt": "0.00000045",
+            "completion": "0.00000224",
             "request": "0",
             "image": "0",
             "web_search": "0",

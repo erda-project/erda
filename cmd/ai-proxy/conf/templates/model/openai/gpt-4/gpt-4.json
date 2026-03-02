@@ -12,7 +12,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-4"
     },
     "desc": "GPT-4 是 OpenAI 推出的先进大模型，具备更强的推理、创造力和多模态（文字+视觉）能力，相比 GPT-3.5 在准确性、安全性及对复杂任务的处理能力上显著提升，广泛应用于各类实际场景。",
     "config": {
@@ -24,10 +25,8 @@
         "public": {
           "abilities": {
             "abilities": [
-              "reasoning",
               "enable_thinking",
-              "tool",
-              "structured_output"
+              "tool"
             ],
             "input_modalities": [
               "text"
@@ -37,8 +36,8 @@
             ]
           },
           "context": {
-            "context_length": 8191,
-            "max_completion_tokens": 4096,
+            "context_length": 8192,
+            "max_completion_tokens": 8192,
             "max_prompt_tokens": 8191
           },
           "deployment_id": "${@template.placeholders.target-model-name}",

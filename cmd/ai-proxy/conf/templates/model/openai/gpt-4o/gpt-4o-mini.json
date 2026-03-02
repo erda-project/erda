@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-4o-mini"
     },
     "desc": "GPT-4o mini是OpenAI推出的新一代小型模型，兼具优异的多模态推理与文本智能，在性能大幅提升的同时显著降低了成本，让开发者和企业能够以更低的价格大规模部署高效、可靠的AI应用。\n\n",
     "config": {
@@ -23,11 +24,13 @@
         "public": {
           "abilities": {
             "abilities": [
-              "reasoning",
-              "embedding"
+              "embedding",
+              "structured_output",
+              "tool"
             ],
             "input_modalities": [
-              "text"
+              "text",
+              "image"
             ],
             "output_modalities": [
               "text"

@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen-max"
     },
     "desc": "Qwen2.5-Max 以超过 20 万亿 tokens 的海量数据进行预训练，并结合高质量的有监督微调（SFT）及人类反馈强化学习（RLHF）深度优化。",
     "config": {
@@ -23,8 +24,8 @@
         "public": {
           "abilities": {
             "abilities": [
-              "reasoning",
-              "structured_output"
+              "structured_output",
+              "tool"
             ],
             "input_modalities": [
               "text"
@@ -40,12 +41,12 @@
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.0000096",
+            "completion": "0.0000064",
             "image": "0",
             "input_cache_read": "0.00000064",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000024",
+            "prompt": "0.0000016",
             "request": "0",
             "unit": "CNY",
             "web_search": "0"

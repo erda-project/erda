@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "volcengine-ark"
       ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2-0-lite"
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-2.0-lite"
     },
     "desc": "面向高频企业场景兼顾性能与成本的均衡型模型，综合能力超越上一代 Doubao-Seed-1.8。可胜任非结构化信息处理、内容创作、搜索推荐、数据分析等生产型任务，支持长上下文、多源信息融合、多步指令执行与高保真结构化输出。",
     "config": {
@@ -31,7 +31,9 @@
               "responses_api"
             ],
             "input_modalities": [
-              "text"
+              "text",
+              "image",
+              "video"
             ],
             "output_modalities": [
               "text"
@@ -40,11 +42,11 @@
           "context": {
             "context_length": 256000,
             "max_prompt_tokens": 224000,
-            "max_completion_tokens": 32000
+            "max_completion_tokens": 64000
           },
           "pricing": {
-            "prompt": "0.0000009",
-            "completion": "0.0000054",
+            "prompt": "0.00000009",
+            "completion": "0.00000051",
             "request": "0",
             "image": "0",
             "web_search": "0",

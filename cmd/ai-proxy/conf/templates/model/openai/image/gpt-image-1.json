@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-image-1"
     },
     "desc": "gpt-image-1",
     "config": {
@@ -34,7 +35,7 @@
             ]
           },
           "context": {
-            "context_length": 0,
+            "context_length": 128000,
             "max_completion_tokens": 0,
             "max_prompt_tokens": 0
           },

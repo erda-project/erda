@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "aliyun-bailian"
       ],
-      "website": "https://bailian.console.aliyun.com/?tab=model#/model-market/detail/qwen3-vl-plus"
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-vl-plus"
     },
     "desc": "Qwen3系列视觉理解模型，实现思考模式和非思考模式的有效融合，视觉智能体能力在OS World等公开测试集上达到世界顶尖水平。此版本在视觉coding、空间感知、多模态思考等方向全面升级；视觉感知与识别能力大幅提升，支持超长视频理解。",
     "config": {
@@ -33,22 +33,21 @@
             ],
             "input_modalities": [
               "text",
-              "image",
-              "video"
+              "image"
             ],
             "output_modalities": [
               "text"
             ]
           },
           "context": {
-            "context_length": 256000,
+            "context_length": 262144,
             "max_prompt_tokens": 254000,
-            "max_completion_tokens": 32000
+            "max_completion_tokens": 32768
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "prompt": "0.0000015",
-            "completion": "0.000015",
+            "prompt": "0.0000002",
+            "completion": "0.0000016",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",

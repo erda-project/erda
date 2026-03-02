@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen-plus"
     },
     "desc": "Qwen-Plus 能力均衡，推理效果、成本和速度介于通义千问-Max和通义千问-Turbo之间，适合中等复杂任务。",
     "config": {
@@ -37,16 +38,18 @@
           "context": {
             "context-length": 131072,
             "max-completion-tokens": 16384,
-            "max-prompt-tokens": 129024
+            "max-prompt-tokens": 129024,
+            "context_length": 1000000,
+            "max_completion_tokens": 32768
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.000008",
+            "completion": "0.0000012",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000008",
+            "prompt": "0.0000004",
             "request": "0",
             "unit": "RMB",
             "web_search": "0"

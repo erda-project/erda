@@ -26,7 +26,7 @@
       "recommended_service_provider_templates": [
         "google-vertex-ai"
       ],
-      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-pro"
+      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini-2.5-pro"
     },
     "desc": "Gemini 2.5 Pro is Google’s state-of-the-art AI model designed for advanced reasoning, coding, mathematics, and scientific tasks. It employs “thinking” capabilities, enabling it to reason through responses with enhanced accuracy and nuanced context handling. Gemini 2.5 Pro achieves top-tier performance on multiple benchmarks, including first-place positioning on the LMArena leaderboard, reflecting superior human-preference alignment and complex problem-solving abilities.",
     "config": {
@@ -48,8 +48,8 @@
             "input_modalities": [
               "text",
               "image",
-              "video",
-              "audio"
+              "audio",
+              "video"
             ],
             "output_modalities": [
               "text"
@@ -57,7 +57,7 @@
           },
           "context": {
             "context_length": 1048576,
-            "max_completion_tokens": 65535,
+            "max_completion_tokens": 65536,
             "max_prompt_tokens": 1048576
           },
           "model_name": "${@template.placeholders.target-model-name}",

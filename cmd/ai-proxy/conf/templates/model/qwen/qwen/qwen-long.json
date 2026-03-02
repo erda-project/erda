@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen-long"
     },
     "desc": "qwen-long",
     "config": {
@@ -41,12 +42,12 @@
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.000002",
+            "completion": "0.000000287",
             "image": "0.0",
             "input_cache_read": "0.0",
             "input_cache_write": "0.0",
             "internal_reasoning": "0.0",
-            "prompt": "0.0000005",
+            "prompt": "0.000000072",
             "request": "0.0",
             "unit": "CNY",
             "web_search": "0.0"

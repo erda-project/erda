@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "aliyun-bailian"
       ],
-      "website": "https://bailian.console.aliyun.com/?tab=model#/model-market/detail/qwen3-omni-flash"
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-omni-flash"
     },
     "desc": "通义千问3-Omni-Flash多模态大模型，基于Thinker–Talker混合专家（MoE）架构，支持文本、图像、音频、视频的高效理解与语音生成能力，可进行119种语言文本交互和20种语言语音交互，生成类人语音实现跨语言精准沟通。模型具备强大指令跟随与系统提示定制功能，灵活适配对话风格与角色设定，广泛应用于文本创作、语音助手、多媒体分析等场景，提供自然流畅的多模态交互体验。",
     "config": {
@@ -24,17 +24,18 @@
         "public": {
           "abilities": {
             "abilities": [
-              "image_recognition",
-              "video_recognition",
               "audio_recognition",
+              "enable_thinking",
+              "image_recognition",
               "reasoning",
-              "enable_thinking"
+              "tool",
+              "video_recognition"
             ],
             "input_modalities": [
               "text",
               "image",
-              "video",
-              "audio"
+              "audio",
+              "video"
             ],
             "output_modalities": [
               "text",
@@ -42,14 +43,14 @@
             ]
           },
           "context": {
-            "context_length": 64000,
+            "context_length": 65536,
             "max_prompt_tokens": 48000,
-            "max_completion_tokens": 16000
+            "max_completion_tokens": 16384
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "prompt": "0.0000033",
-            "completion": "0.0000069",
+            "prompt": "0.00000043",
+            "completion": "0.00000166",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",

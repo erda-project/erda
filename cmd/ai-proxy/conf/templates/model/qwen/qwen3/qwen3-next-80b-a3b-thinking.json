@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-next-80b-a3b-thinking"
     },
     "desc": "基于Qwen3的新一代思考模式开源模型，相较上一版本（通义千问3-235B-A22B-Thinking-2507）指令遵循能力有提升、模型总结回复更加精简。",
     "config": {
@@ -35,17 +36,17 @@
           },
           "context": {
             "context_length": 131072,
-            "max_completion_tokens": 126976,
+            "max_completion_tokens": 32768,
             "max_prompt_tokens": 32768
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.00001",
+            "completion": "0.000006",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.000001",
+            "prompt": "0.0000005",
             "request": "0",
             "unit": "CNY",
             "web_search": "0"

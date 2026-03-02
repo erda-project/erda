@@ -24,6 +24,8 @@
         "public": {
           "abilities": {
             "abilities": [
+              "reasoning",
+              "structured_output",
               "tool"
             ],
             "input_modalities": [
@@ -36,18 +38,18 @@
             ]
           },
           "context": {
-            "context_length": 256000,
-            "max_completion_tokens": 224000,
+            "context_length": 262144,
+            "max_completion_tokens": 262144,
             "max_prompt_tokens": 16000
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.000021",
+            "completion": "0.000003",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.000004",
+            "prompt": "0.0000006",
             "request": "0",
             "unit": "CNY",
             "web_search": "0"

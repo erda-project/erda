@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
       ],
-      "website": "https://developers.openai.com/api/docs/models/gpt-5.3-codex"
+      "website": "https://platform.openai.com/docs/models/gpt-5.3-codex"
     },
     "desc": "GPT-5.3-Codex is optimized for agentic coding tasks in Codex or similar environments. GPT-5.3-Codex supports low, medium, high, and xhigh reasoning effort settings. If you want to learn more about prompting GPT-5.3-Codex, refer to our dedicated guide.",
     "config": {
