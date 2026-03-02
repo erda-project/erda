@@ -13,7 +13,7 @@
         "volcengine-ark",
         "aliyun-bailian"
       ],
-      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-r1-250528"
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-r1"
     },
     "desc": "deepseek-r1 是由深度求索推出的深度思考模型。在后训练阶段大规模使用了强化学习技术，在仅有极少标注数据的情况下，极大提升了模型推理能力。在数学、代码、自然语言推理等任务上，性能比肩 OpenAI o1 正式版。\n\ndeepseek-r1-250528:\n- 支持前缀缓存\n- 升级最大上下文长度：96k > 128k\n- 升级最大输入长度：64k > 96k\n- 可配置最大输出长度&默认最大输出长度保持不变",
     "config": {
