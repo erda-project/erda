@@ -12,7 +12,8 @@
       "recommended_service_provider_templates": [
         "volcengine-ark",
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-v3.1"
     },
     "desc": "是深度求索全新推出的混合推理模型，支持思考与非思考2种推理模式，较 deepseek-r1-0528 思考效率更高。",
     "config": {
