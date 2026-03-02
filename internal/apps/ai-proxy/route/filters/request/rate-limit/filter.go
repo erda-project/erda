@@ -78,6 +78,9 @@ func (ul *TokenLimiter) GetLimiter(token string) *rate.Limiter {
 func (f *RateLimiter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.In.Context()
 	l := ctxhelper.MustGetLogger(ctx)
+	if strings.EqualFold(strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyHealthProbe)), "true") {
+		return nil
+	}
 
 	// only limit token rate now
 	token, isTokenInvoke := isClientTokenInvoke(pr)

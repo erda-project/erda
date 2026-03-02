@@ -253,6 +253,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 
 		if rerr != nil { // EOF or real error
 			if rerr != io.EOF && !errors.Is(rerr, context.Canceled) {
+				reportModelNetworkFailure(resp.Request.Context(), resp.Request, rerr)
 				writeAndCloseWithErr(resp, pw, rerr)
 			}
 			// cleanup: call OnComplete; ensure call even if previous errors

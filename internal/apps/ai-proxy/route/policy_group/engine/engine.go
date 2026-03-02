@@ -51,7 +51,7 @@ func wrapNoAvailableBranch(groupName string) error {
 	return fmt.Errorf("policy group %q: %w", groupName, ErrNoAvailableBranch)
 }
 
-type HealthFilter func(instances []*policy_group.RoutingModelInstance) []*policy_group.RoutingModelInstance
+type HealthFilter func(req policy_group.RouteRequest, instances []*policy_group.RoutingModelInstance) []*policy_group.RoutingModelInstance
 
 type Engine struct {
 	store        state_store.LBStateStore
@@ -93,7 +93,7 @@ func NewEngine(store state_store.LBStateStore, opts ...Option) *Engine {
 	e := &Engine{
 		store:     store,
 		stickyTTL: defaultStickyTTL,
-		healthFilter: func(instances []*policy_group.RoutingModelInstance) []*policy_group.RoutingModelInstance {
+		healthFilter: func(_ policy_group.RouteRequest, instances []*policy_group.RoutingModelInstance) []*policy_group.RoutingModelInstance {
 			return instances
 		},
 	}
@@ -113,7 +113,7 @@ func (e *Engine) Route(ctx context.Context, req policy_group.RouteRequest) (*pol
 		return req.Instances[i].ModelWithProvider.Id < req.Instances[j].ModelWithProvider.Id
 	})
 
-	availableBranches := e.buildBranchCandidates(req.Group, req.Instances)
+	availableBranches := e.buildBranchCandidates(req, req.Instances)
 	if len(availableBranches) == 0 {
 		return nil, nil, wrapNoAvailableBranch(req.Group.Name)
 	}
@@ -153,12 +153,12 @@ func (e *Engine) Route(ctx context.Context, req policy_group.RouteRequest) (*pol
 	return instance, buildRouteTrace(req, stickyValue, fallbackFromSticky, branchCandidate), nil
 }
 
-func (e *Engine) buildBranchCandidates(group *pb.PolicyGroup, instances []*policy_group.RoutingModelInstance) []BranchCandidate {
+func (e *Engine) buildBranchCandidates(req policy_group.RouteRequest, instances []*policy_group.RoutingModelInstance) []BranchCandidate {
 	var ret []BranchCandidate
-	for i := range group.Branches {
-		br := group.Branches[i]
+	for i := range req.Group.Branches {
+		br := req.Group.Branches[i]
 		matched := selector.MatchSelector(instances, br.Selector)
-		matched = e.healthFilter(matched)
+		matched = e.healthFilter(req, matched)
 		if len(matched) == 0 {
 			continue
 		}

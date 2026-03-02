@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/lb/state_store"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	etcdstore "github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
@@ -44,8 +45,14 @@ const Name = "erda.app.ai-proxy"
 type Config struct {
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
 
-	LBStateStoreType      string        `file:"lb_state_store_type" env:"LB_STATE_STORE_TYPE" default:"memory"`
-	LBStateStoreStickyTTL time.Duration `file:"lb_state_store_sticky_ttl" env:"LB_STATE_STORE_STICKY_TTL" default:"10m"`
+	LBStateStoreType               string        `file:"lb_state_store_type" env:"LB_STATE_STORE_TYPE" default:"memory"`
+	LBStateStoreStickyTTL          time.Duration `file:"lb_state_store_sticky_ttl" env:"LB_STATE_STORE_STICKY_TTL" default:"10m"`
+	ModelHealthProbeBaseURL        string        `file:"model_health_probe_base_url" env:"MODEL_HEALTH_PROBE_BASE_URL" default:"http://127.0.0.1:8081"`
+	ModelHealthUnhealthyTTL        time.Duration `file:"model_health_unhealthy_ttl" env:"MODEL_HEALTH_UNHEALTHY_TTL" default:"24h"`
+	ModelHealthHealthyTTL          time.Duration `file:"model_health_healthy_ttl" env:"MODEL_HEALTH_HEALTHY_TTL" default:"1m"`
+	ModelHealthProbeTimeout        time.Duration `file:"model_health_probe_timeout" env:"MODEL_HEALTH_PROBE_TIMEOUT" default:"10s"`
+	ModelHealthProbeInitialBackoff time.Duration `file:"model_health_probe_initial_backoff" env:"MODEL_HEALTH_PROBE_INITIAL_BACKOFF" default:"3s"`
+	ModelHealthProbeMaxBackoff     time.Duration `file:"model_health_probe_max_backoff" env:"MODEL_HEALTH_PROBE_MAX_BACKOFF" default:"2m"`
 
 	// Redis settings (standalone or sentinel via redis.UniversalOptions)
 	RedisAddr          string `file:"redis_addr" env:"REDIS_ADDR"`
@@ -86,8 +93,21 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if _, _, err := p.initPolicyGroupStateStore(); err != nil {
 		return fmt.Errorf("init policy-group state store failed: %w", err)
 	}
+	healthManager := health.NewManager(state_store.GetStore(), health.Config{
+		ProbeBaseURL:   p.Config.ModelHealthProbeBaseURL,
+		UnhealthyTTL:   p.Config.ModelHealthUnhealthyTTL,
+		HealthyTTL:     p.Config.ModelHealthHealthyTTL,
+		ProbeTimeout:   p.Config.ModelHealthProbeTimeout,
+		InitialBackoff: p.Config.ModelHealthProbeInitialBackoff,
+		MaxBackoff:     p.Config.ModelHealthProbeMaxBackoff,
+	})
+	health.SetManager(healthManager)
 	// init policy group engine
-	engine.SetEngine(engine.NewEngine(state_store.GetStore(), engine.WithStickyTTL(p.Config.LBStateStoreStickyTTL)))
+	engine.SetEngine(engine.NewEngine(
+		state_store.GetStore(),
+		engine.WithStickyTTL(p.Config.LBStateStoreStickyTTL),
+		engine.WithHealthFilter(healthManager.FilterHealthyInstances),
+	))
 
 	// initialize cache manager
 	p.cache = cache.NewCacheManager(p.Dao, p.L, templatesByType, false)
