@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-235b-a22b"
     },
     "desc": "通义千问3-235B-A22B 实现思考模式和非思考模式的有效融合，可在对话中切换模式。推理能力显著超过QwQ、通用能力显著超过Qwen2.5-72B-Instruct，达到同规模业界SOTA水平。",
     "config": {

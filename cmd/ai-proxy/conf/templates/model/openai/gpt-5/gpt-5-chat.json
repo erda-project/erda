@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-5-chat"
     },
     "desc": "GPT-5 Chat is designed for advanced, natural, multimodal, and context-aware conversations for enterprise applications.",
     "config": {

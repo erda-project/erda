@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ]
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-embedding-large-text"
     },
     "desc": "doubao-embedding-large，一款由字节跳动研发的语义向量化模型，主要面向向量检索的使用场景，支持中、英双语。",
     "config": {

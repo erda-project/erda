@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen-image-edit"
     },
     "desc": "通义千问-图像编辑模型（Qwen-Image-Edit）支持精准的中英双语文字编辑、调色、细节增强、风格迁移、增删物体、改变位置和动作等操作，可实现复杂的图文编辑。\n计费：0.3元/张\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2976416",
     "config": {

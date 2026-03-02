@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-next-80b-a3b-instruct"
     },
     "desc": "基于Qwen3的新一代非思考模式开源模型，相较上一版本（通义千问3-235B-A22B-Instruct-2507）中文文本理解能力更佳、逻辑推理能力有增强、文本生成类任务表现更好。",
     "config": {

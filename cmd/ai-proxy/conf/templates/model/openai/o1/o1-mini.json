@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/o1-mini"
     },
     "desc": "OpenAI o1‑mini 是专为高效推理优化的小型模型，特别擅长数学和编程任务，在主要 STEM（理工）评测中逼近旗舰模型 o1 的表现，并以极低成本和更快速度服务于需要强推理能力但不依赖广泛知识的实际应用。",
     "config": {

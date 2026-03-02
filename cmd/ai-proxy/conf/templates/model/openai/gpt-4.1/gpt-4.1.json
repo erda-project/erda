@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-4.1"
     },
     "desc": "GPT-4.1是OpenAI最新发布的通用大模型系列，在代码能力、指令遵循和超长上下文（支持百万tokens）上都有重大提升，整体超越GPT-4o系列，并以更低成本和更高速度覆盖API各类应用场景，是当前前沿AI智能的新标杆。",
     "config": {

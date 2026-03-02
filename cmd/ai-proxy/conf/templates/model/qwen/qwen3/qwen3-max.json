@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-max"
     },
     "desc": "最新的qwen3-max模型：相较qwen3-max-preview版本，在智能体编程与工具调用方向进行了专项升级。本次发布的正式版模型达到领域SOTA水平，适配场景更加复杂的智能体需求。",
     "config": {

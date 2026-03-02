@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ]
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1-6-thinking"
     },
     "desc": "不支持关闭思考，即不支持 API 中的 thinking 字段。全新多模态深度思考模型，同时支持 thinking、non-thinking、auto三种思考模式。其中 non-thinking 模型对比 doubao-1.5-pro-32k-250115 模型大幅提升。",
     "config": {

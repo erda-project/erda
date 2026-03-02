@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/text-embedding-ada-002"
     },
     "desc": "text-embedding-ada-002",
     "config": {
