@@ -31,8 +31,7 @@
               "video_recognition"
             ],
             "input_modalities": [
-              "text",
-              "image"
+              "text"
             ],
             "output_modalities": [
               "text"

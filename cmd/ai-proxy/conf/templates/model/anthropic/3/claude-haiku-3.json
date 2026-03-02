@@ -36,7 +36,8 @@
               "responses_api"
             ],
             "input_modalities": [
-              "text"
+              "text",
+              "image"
             ],
             "output_modalities": [
               "text"

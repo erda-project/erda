@@ -30,8 +30,8 @@
               "audio_translation"
             ],
             "input_modalities": [
-              "image",
-              "text"
+              "text",
+              "image"
             ],
             "output_modalities": [
               "text"

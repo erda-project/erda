@@ -32,14 +32,10 @@
               "structured_output"
             ],
             "input_modalities": [
-              "text",
-              "image",
-              "video"
+              "text"
             ],
             "output_modalities": [
-              "text",
-              "image",
-              "video"
+              "text"
             ]
           },
           "context": {
