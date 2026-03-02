@@ -41,12 +41,12 @@
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.0000064",
+            "completion": "0.0000096",
             "image": "0",
             "input_cache_read": "0.00000064",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000016",
+            "prompt": "0.0000024",
             "request": "0",
             "unit": "CNY",
             "web_search": "0"

@@ -47,8 +47,8 @@
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "prompt": "0.00000011",
-            "completion": "0.00000028",
+            "prompt": "0.0000012",
+            "completion": "0.000016",
             "image": "0",
             "input_cache_read": "0.00000016",
             "input_cache_write": "0.000000017",

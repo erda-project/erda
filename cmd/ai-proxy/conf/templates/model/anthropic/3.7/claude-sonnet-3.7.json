@@ -49,12 +49,12 @@
           "model_id": "${@template.placeholders.target-model-name}",
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.000013",
+            "completion": "0.000015",
             "image": "0.0048",
             "input_cache_read": "0.0000003",
             "input_cache_write": "0.00000375",
             "internal_reasoning": "0",
-            "prompt": "0.0000026",
+            "prompt": "0.000003",
             "request": "0",
             "unit": "USD",
             "web_search": "0"

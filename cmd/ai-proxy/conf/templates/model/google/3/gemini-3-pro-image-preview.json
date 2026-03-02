@@ -57,7 +57,7 @@
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
             "prompt": "0.000002",
-            "completion": "0.00012",
+            "completion": "0.000012",
             "request": "0",
             "image": "0.067",
             "image_token": "0.0000000011",

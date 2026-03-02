@@ -43,12 +43,12 @@
           "deployment_name": "${@template.placeholders.target-model-name}",
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.0000044",
+            "completion": "0.000012",
             "image": "0",
             "input_cache_read": "0.000000605",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000011",
+            "prompt": "0.000003",
             "request": "0",
             "unit": "USD",
             "web_search": "0"

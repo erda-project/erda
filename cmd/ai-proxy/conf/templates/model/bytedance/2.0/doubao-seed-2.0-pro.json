@@ -47,8 +47,8 @@
             "max_completion_tokens": 64000
           },
           "pricing": {
-            "prompt": "0.00000045",
-            "completion": "0.00000224",
+            "prompt": "0.0000048",
+            "completion": "0.000024",
             "request": "0",
             "image": "0",
             "web_search": "0",

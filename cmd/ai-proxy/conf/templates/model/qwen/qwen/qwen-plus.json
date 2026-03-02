@@ -44,12 +44,12 @@
           },
           "model_name": "${@template.placeholders.target-model-name}",
           "pricing": {
-            "completion": "0.0000012",
+            "completion": "0.000008",
             "image": "0",
             "input_cache_read": "0",
             "input_cache_write": "0",
             "internal_reasoning": "0",
-            "prompt": "0.0000004",
+            "prompt": "0.0000008",
             "request": "0",
             "unit": "RMB",
             "web_search": "0"
