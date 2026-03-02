@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-235b-a22b-instruct-2507"
     },
     "desc": "基于Qwen3的非思考模式开源模型，创作能力与模型安全性均有提升。",
     "config": {

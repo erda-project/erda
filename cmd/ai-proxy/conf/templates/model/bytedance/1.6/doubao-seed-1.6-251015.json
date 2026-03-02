@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "volcengine-ark"
-      ]
+      ],
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1-6"
     },
     "desc": "Doubao-Seed-1.6全新多模态深度思考模型，同时支持minimal/low/medium/high 四种reasoning effort。 更强模型效果，服务复杂任务和有挑战场景。支持 256k 上下文窗口，输出长度支持最大 32k tokens。",
     "config": {

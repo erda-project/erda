@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "azure-ai-foundry"
-      ]
+      ],
+      "website": "https://platform.openai.com/docs/models/gpt-5"
     },
     "desc": "GPT-5 is OpenAI’s most advanced model, offering major improvements in reasoning, code quality, and user experience. It is optimized for complex tasks that require step-by-step reasoning, instruction following, and accuracy in high-stakes use cases. It supports test-time routing features and advanced prompt understanding, including user-specified intent like \\\"think hard about this.\\\" Improvements include reductions in hallucination, sycophancy, and better performance in coding, writing, and health-related tasks.\\n\\nNote that BYOK is required for this model. Set up here: https://openrouter.ai/settings/integrations",
     "config": {

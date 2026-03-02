@@ -18,7 +18,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aws-bedrock"
-      ]
+      ],
+      "website": "https://platform.claude.com/docs/en/about-claude/pricing"
     },
     "desc": "claude-3-haiku",
     "config": {

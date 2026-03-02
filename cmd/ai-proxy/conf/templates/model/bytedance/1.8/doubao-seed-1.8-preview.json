@@ -1,5 +1,6 @@
 {
   "doubao-seed-1.8-preview": {
+    "deprecated": true,
     "placeholders": [
       {
         "name": "target-model-name",

@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/wan2.2-t2i-flash"
     },
     "desc": "万相2.2极速版，当前最新模型。\n在创意性、稳定性、写实质感上全面升级，生成速度快，性价比高。\n计费：0.14元/张\n详情：https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2862677",
     "config": {

@@ -1,5 +1,6 @@
 {
   "kimi-k2": {
+    "deprecated": true,
     "placeholders": [
       {
         "name": "target-model-name",

@@ -1,5 +1,6 @@
 {
   "qwen3-max-preview": {
+    "deprecated": true,
     "placeholders": [
       {
         "name": "target-model-name",

@@ -1,5 +1,6 @@
 {
   "doubao-seed-1.6-250615": {
+    "deprecated": true,
     "placeholders": [
       {
         "name": "target-model-name",

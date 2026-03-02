@@ -11,7 +11,8 @@
     "metadata": {
       "recommended_service_provider_templates": [
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-tts-flash"
     },
     "desc": "Qwen3 TTS Flash is a high-speed, cost-effective text-to-speech model.",
     "config": {
