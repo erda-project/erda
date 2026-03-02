@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "volcengine-ark"
       ],
-      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1.8"
+      "website": "https://console.volcengine.com/ark/region:ark+cn-beijing/model/detail?Id=doubao-seed-1-8"
     },
     "desc": "Doubao-Seed-1.8 面向多模态 Agent 场景定向优化。Agent 能力上，Tool Use、复杂指令遵循等能力均大幅增强。多模态理解方面，视觉基础能力显著提升，可低帧率理解超长视频，视频运动理解、复杂空间理解及文档结构化解析能力也有所优化，还原生支持智能上下文管理，用户可配置上下文策略。",
     "config": {

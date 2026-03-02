@@ -12,7 +12,7 @@
       "recommended_service_provider_templates": [
         "aliyun-bailian"
       ],
-      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3-vl-plus"
+      "website": "https://bailian.console.aliyun.com/?tab=model#/model-market/detail/qwen3-vl-plus"
     },
     "desc": "Qwen3系列视觉理解模型，实现思考模式和非思考模式的有效融合，视觉智能体能力在OS World等公开测试集上达到世界顶尖水平。此版本在视觉coding、空间感知、多模态思考等方向全面升级；视觉感知与识别能力大幅提升，支持超长视频理解。",
     "config": {

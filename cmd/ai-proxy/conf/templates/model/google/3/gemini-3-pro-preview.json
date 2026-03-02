@@ -26,7 +26,7 @@
       "recommended_service_provider_templates": [
         "google-vertex-ai"
       ],
-      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini-3-pro-preview"
+      "website": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro"
     },
     "desc": "Gemini 3 Pro is our most advanced reasoning Gemini model, capable of solving complex problems. Gemini 3 Pro can comprehend vast datasets and challenging problems from different information sources, including text, audio, images, video, PDFs, and even entire code repositories with its 1M token context window.",
     "config": {
