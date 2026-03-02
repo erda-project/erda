@@ -12,7 +12,8 @@
       "recommended_service_provider_templates": [
         "volcengine-ark",
         "aliyun-bailian"
-      ]
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-v3"
     },
     "desc": "DeepSeek-V3 是一款 6710 亿参数的高性能开源稀疏专家大模型（MoE），在代码、数学、推理、多语言等领域全面超越现有开源模型，在多项标准评测中逼近或赶超前沿闭源大模型，并支持128K超长上下文、FP8混合精度推理与灵活部署，成为当前最强大的开源通用大语言模型之一。",
     "config": {
