@@ -45,8 +45,7 @@
               "image"
             ],
             "output_modalities": [
-              "text",
-              "image"
+              "text"
             ]
           },
           "context": {

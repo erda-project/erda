@@ -28,7 +28,8 @@
               "embedding"
             ],
             "input_modalities": [
-              "text"
+              "text",
+              "image"
             ],
             "output_modalities": [
               "text"

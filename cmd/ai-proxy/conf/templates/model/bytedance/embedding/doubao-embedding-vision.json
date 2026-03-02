@@ -27,8 +27,8 @@
               "embedding"
             ],
             "input_modalities": [
-              "audio",
               "text",
+              "audio",
               "video"
             ],
             "output_modalities": [

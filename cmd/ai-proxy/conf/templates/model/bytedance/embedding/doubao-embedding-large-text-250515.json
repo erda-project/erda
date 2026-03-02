@@ -29,8 +29,8 @@
               "audio_translation"
             ],
             "input_modalities": [
-              "audio",
-              "text"
+              "text",
+              "audio"
             ],
             "output_modalities": [
               "text"
