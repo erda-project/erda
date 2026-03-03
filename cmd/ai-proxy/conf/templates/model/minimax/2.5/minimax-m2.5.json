@@ -5,7 +5,8 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "MiniMax-M2.5"
+        "default": "MiniMax-M2.5",
+        "desc": "MiniMax-M2.5 是百炼部署的，MiniMax/MiniMax-M2.5 是 MiniMax 直供的。"
       }
     ],
     "metadata": {
