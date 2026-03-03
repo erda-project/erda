@@ -1,0 +1,59 @@
+{
+  "minimax-m2.5": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "MiniMax-M2.5"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/MiniMax-M2.5"
+    },
+    "desc": "MiniMax 是由稀宇科技（MiniMax）公司推出的大语言模型，聚焦真实世界复杂任务，其核心优势包括多语言编程和 Agent 任务处理能力。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "minimax",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "tool"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 204800,
+            "max_prompt_tokens": 196608,
+            "max_completion_tokens": 131072
+          },
+          "pricing": {
+            "prompt": "0.0000021",
+            "completion": "0.0000084",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
