@@ -5,7 +5,8 @@
         "name": "target-model-name",
         "type": "string",
         "required": false,
-        "default": "${@template.name}"
+        "default": "${@template.name}",
+        "desc": "当服务提供商为阿里云百炼时：kimi-k2.5 调用的是部署在百炼上的模型服务；kimi/kimi-k2.5 则是在百炼上销售，但由月之暗面三方直供。"
       }
     ],
     "metadata": {
