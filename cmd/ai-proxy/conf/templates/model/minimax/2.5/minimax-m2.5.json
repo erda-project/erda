@@ -6,7 +6,7 @@
         "type": "string",
         "required": false,
         "default": "MiniMax-M2.5",
-        "desc": "MiniMax-M2.5 是百炼部署的，MiniMax/MiniMax-M2.5 是 MiniMax 直供的。"
+        "desc": "当服务提供商为阿里云百炼时：MiniMax-M2.5 调用的是部署在百炼上的模型服务；MiniMax/MiniMax-M2.5 则是在百炼上销售，但由 MiniMax 三方直供。"
       }
     ],
     "metadata": {
