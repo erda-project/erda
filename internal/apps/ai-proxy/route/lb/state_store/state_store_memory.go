@@ -75,6 +75,20 @@ func (s *MemoryStateStore) SetBinding(_ context.Context, bindingKey BindingKey, 
 	return nil
 }
 
+func (s *MemoryStateStore) DeleteBinding(_ context.Context, bindingKey BindingKey, stickyValue string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	group, ok := s.bindings[bindingKey]
+	if !ok {
+		return nil
+	}
+	delete(group, stickyValue)
+	if len(group) == 0 {
+		delete(s.bindings, bindingKey)
+	}
+	return nil
+}
+
 func (s *MemoryStateStore) NextCounter(_ context.Context, key CounterKey) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

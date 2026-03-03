@@ -79,6 +79,7 @@ func (f *RateLimiter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.In.Context()
 	l := ctxhelper.MustGetLogger(ctx)
 	if strings.EqualFold(strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyHealthProbe)), "true") {
+		// Health probe requests are internal recovery traffic and should not consume user rate-limit quota.
 		return nil
 	}
 

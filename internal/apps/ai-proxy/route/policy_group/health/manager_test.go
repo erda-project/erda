@@ -27,6 +27,7 @@ import (
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/lb/state_store"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -34,7 +35,12 @@ import (
 
 func TestFilterHealthyInstances(t *testing.T) {
 	store := state_store.NewMemoryStateStore()
-	manager := NewManager(store, Config{})
+	manager := NewManager(store, Config{
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     20 * time.Millisecond,
+		},
+	})
 
 	unhealthy := ModelHealthState{
 		State:     stateUnhealthy,
@@ -53,9 +59,17 @@ func TestFilterHealthyInstances(t *testing.T) {
 		testRoutingInstance("i1"),
 		testRoutingInstance("i2"),
 	}
-	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{}, instances)
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{Ctx: ctx}, instances)
 	if len(filtered) != 1 || filtered[0].ModelWithProvider.Id != "i2" {
 		t.Fatalf("expected only i2 after health filter, got %v", collectIDs(filtered))
+	}
+	meta, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
+	if !ok || meta == nil {
+		t.Fatal("expected policy group health meta in ctx")
+	}
+	if len(meta.FilteredUnhealthyInstanceIDs) != 1 || meta.FilteredUnhealthyInstanceIDs[0] != "i1" {
+		t.Fatalf("expected filtered unhealthy instance id i1, got %#v", meta.FilteredUnhealthyInstanceIDs)
 	}
 
 	// Probe request should bypass health filter so unhealthy instance can be checked.
@@ -70,6 +84,16 @@ func TestFilterHealthyInstances(t *testing.T) {
 	if len(filteredProbe) != 2 {
 		t.Fatalf("expected probe request to bypass health filter, got %v", collectIDs(filteredProbe))
 	}
+}
+
+func TestNewManagerPanicWhenRescueBackoffUnset(t *testing.T) {
+	store := state_store.NewMemoryStateStore()
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic when rescue backoff is unset")
+		}
+	}()
+	_ = NewManager(store, Config{})
 }
 
 func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
@@ -90,12 +114,13 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL:   server.URL,
-		UnhealthyTTL:   time.Hour,
-		HealthyTTL:     time.Minute,
-		ProbeTimeout:   2 * time.Second,
-		InitialBackoff: 10 * time.Millisecond,
-		MaxBackoff:     20 * time.Millisecond,
+		ProbeBaseURL: server.URL,
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 2 * time.Second,
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     20 * time.Millisecond,
+		},
 	})
 
 	headers := http.Header{"Authorization": []string{"Bearer t_test"}}
@@ -118,9 +143,43 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 	close(releaseFirstProbe)
 
 	waitFor(t, 2*time.Second, func() bool {
-		state, ok, _ := manager.GetState(context.Background(), "i1")
-		return ok && state != nil && state.State == stateHealthy
+		_, ok, _ := manager.GetState(context.Background(), "i1")
+		return !ok
 	})
+}
+
+func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
+	t.Parallel()
+
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		ProbeBaseURL: "http://127.0.0.1:1",
+		UnhealthyTTL: 40 * time.Millisecond,
+		ProbeTimeout: 20 * time.Millisecond,
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     10 * time.Millisecond,
+		},
+	})
+
+	manager.MarkUnhealthy(context.Background(), "i-fail", APITypeChatCompletions, "connection reset by peer", http.Header{
+		"Authorization": []string{"Bearer t_fail"},
+	})
+
+	// If unhealthy TTL is not refreshed by failed probes, the state should expire quickly.
+	// We wait much longer than unhealthy_ttl and still expect unhealthy state to exist.
+	time.Sleep(220 * time.Millisecond)
+
+	state, ok, err := manager.GetState(context.Background(), "i-fail")
+	if err != nil {
+		t.Fatalf("get state failed: %v", err)
+	}
+	if !ok || state == nil {
+		t.Fatal("expected unhealthy state kept by failed probe refresh, but state expired")
+	}
+	if state.State != stateUnhealthy {
+		t.Fatalf("expected state=%s, got %s", stateUnhealthy, state.State)
+	}
 }
 
 func TestBuildProbeHeaders(t *testing.T) {
@@ -132,13 +191,163 @@ func TestBuildProbeHeaders(t *testing.T) {
 	probeHeaders := BuildProbeHeaders(headers)
 
 	if probeHeaders.Get("Authorization") == "" || probeHeaders.Get("AK-Token") == "" {
-		t.Fatalf("expected auth headers kept, got: %v", probeHeaders)
+		t.Fatalf("expected headers kept, got: %v", probeHeaders)
 	}
-	if probeHeaders.Get("X-Trace-Id") != "" {
-		t.Fatalf("unexpected non-auth header copied: %v", probeHeaders)
+	if probeHeaders.Get("X-Trace-Id") != "trace-1" {
+		t.Fatalf("expected x-trace-id kept, got: %v", probeHeaders)
 	}
-	if probeHeaders.Get(vars.XAIProxyHealthProbe) != "" {
-		t.Fatalf("unexpected probe marker copied into probe headers: %v", probeHeaders)
+	if probeHeaders.Get(vars.XAIProxyHealthProbe) != "true" {
+		t.Fatalf("expected probe marker kept, got: %v", probeHeaders)
+	}
+}
+
+func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
+	t.Parallel()
+
+	var probeHits int32
+	var gotAuth atomic.Value
+	var gotTraceID atomic.Value
+	gotAuth.Store("")
+	gotTraceID.Store("")
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth.Store(r.Header.Get("Authorization"))
+		gotTraceID.Store(r.Header.Get("X-Trace-Id"))
+		atomic.AddInt32(&probeHits, 1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		ProbeBaseURL: server.URL,
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 2 * time.Second,
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     20 * time.Millisecond,
+		},
+	})
+
+	stateBytes, err := json.Marshal(&ModelHealthState{
+		State:     stateUnhealthy,
+		APIType:   APITypeChatCompletions,
+		LastError: "read tcp: connection reset by peer",
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatalf("marshal unhealthy state failed: %v", err)
+	}
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, "i1", string(stateBytes), time.Hour); err != nil {
+		t.Fatalf("set unhealthy state failed: %v", err)
+	}
+
+	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{
+		Meta: policygroup.RequestMeta{
+			Keys: map[string]string{
+				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower("Authorization"): "Bearer t_from_request",
+				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower("X-Trace-Id"):    "trace-123",
+			},
+		},
+	}, []*policygroup.RoutingModelInstance{
+		testRoutingInstance("i1"),
+		testRoutingInstance("i2"),
+	})
+	if len(filtered) != 1 || filtered[0].ModelWithProvider.Id != "i2" {
+		t.Fatalf("expected i1 filtered out and i2 kept, got %v", collectIDs(filtered))
+	}
+
+	waitFor(t, 2*time.Second, func() bool {
+		_, ok, _ := manager.GetState(context.Background(), "i1")
+		return !ok
+	})
+	if atomic.LoadInt32(&probeHits) == 0 {
+		t.Fatal("expected re-armed worker to trigger probe request")
+	}
+	if gotAuth.Load().(string) != "Bearer t_from_request" {
+		t.Fatalf("expected authorization forwarded from request meta, got %q", gotAuth.Load().(string))
+	}
+	if gotTraceID.Load().(string) != "trace-123" {
+		t.Fatalf("expected x-trace-id forwarded from request meta, got %q", gotTraceID.Load().(string))
+	}
+}
+
+func TestUnsupportedAPITypeDoesNotKeepUnhealthyForever(t *testing.T) {
+	t.Parallel()
+
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		ProbeBaseURL: "http://127.0.0.1:1",
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 20 * time.Millisecond,
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     10 * time.Millisecond,
+		},
+	})
+
+	manager.MarkUnhealthy(context.Background(), "i-unsupported", APIType("unsupported"), "network error", http.Header{
+		"Authorization": []string{"Bearer t_unsupported"},
+	})
+
+	waitFor(t, 2*time.Second, func() bool {
+		_, ok, _ := manager.GetState(context.Background(), "i-unsupported")
+		return !ok
+	})
+}
+
+func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {
+	t.Parallel()
+
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		ProbeBaseURL: "http://127.0.0.1:1",
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 20 * time.Millisecond,
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     10 * time.Millisecond,
+		},
+	})
+
+	stateBytes, err := json.Marshal(&ModelHealthState{
+		State:     stateUnhealthy,
+		APIType:   APIType("embeddings"),
+		LastError: "read tcp: connection reset by peer",
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatalf("marshal unhealthy state failed: %v", err)
+	}
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, "i1", string(stateBytes), time.Hour); err != nil {
+		t.Fatalf("set unhealthy state failed: %v", err)
+	}
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{
+		Ctx: ctx,
+	}, []*policygroup.RoutingModelInstance{
+		testRoutingInstance("i1"),
+		testRoutingInstance("i2"),
+	})
+	if len(filtered) != 2 {
+		t.Fatalf("expected unsupported api_type instance released, got %v", collectIDs(filtered))
+	}
+	if _, ok, _ := manager.GetState(context.Background(), "i1"); ok {
+		t.Fatal("expected unhealthy state deleted for unsupported api_type")
+	}
+	meta, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
+	if !ok || meta == nil {
+		t.Fatal("expected policy group health meta in ctx")
+	}
+	if meta.ReleasedUnsupportedCount != 1 {
+		t.Fatalf("expected released unsupported count=1, got %d", meta.ReleasedUnsupportedCount)
+	}
+	if len(meta.ReleasedUnsupportedAPITypes) != 1 || meta.ReleasedUnsupportedAPITypes[0] != "embeddings" {
+		t.Fatalf("expected released unsupported api type embeddings, got %#v", meta.ReleasedUnsupportedAPITypes)
+	}
+	if len(meta.FilteredUnhealthyInstanceIDs) != 0 {
+		t.Fatalf("expected no filtered unhealthy instance ids, got %#v", meta.FilteredUnhealthyInstanceIDs)
 	}
 }
 

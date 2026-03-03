@@ -77,18 +77,14 @@ func TestIsNetworkFailureError(t *testing.T) {
 }
 
 func TestReportModelNetworkFailure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
 	manager := health.NewManager(state_store.NewMemoryStateStore(), health.Config{
-		ProbeBaseURL:   server.URL,
-		UnhealthyTTL:   time.Hour,
-		HealthyTTL:     time.Minute,
-		ProbeTimeout:   2 * time.Second,
-		InitialBackoff: 10 * time.Millisecond,
-		MaxBackoff:     50 * time.Millisecond,
+		ProbeBaseURL: "http://127.0.0.1:65530",
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 2 * time.Second,
+		Rescue: health.RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     50 * time.Millisecond,
+		},
 	})
 	health.SetManager(manager)
 	defer health.SetManager(nil)
@@ -120,12 +116,13 @@ func TestReportModelNetworkFailure(t *testing.T) {
 
 func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	manager := health.NewManager(state_store.NewMemoryStateStore(), health.Config{
-		ProbeBaseURL:   "http://127.0.0.1:65530",
-		UnhealthyTTL:   time.Hour,
-		HealthyTTL:     time.Minute,
-		ProbeTimeout:   100 * time.Millisecond,
-		InitialBackoff: 50 * time.Millisecond,
-		MaxBackoff:     100 * time.Millisecond,
+		ProbeBaseURL: "http://127.0.0.1:65530",
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 100 * time.Millisecond,
+		Rescue: health.RescueConfig{
+			InitialBackoff: 50 * time.Millisecond,
+			MaxBackoff:     100 * time.Millisecond,
+		},
 	})
 	health.SetManager(manager)
 	defer health.SetManager(nil)

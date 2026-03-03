@@ -30,6 +30,7 @@ func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
 	_handlePolicyTraceHeader(resp)
+	_handleModelHealthMetaHeader(resp)
 	_handleRequestIdHeaders(resp)
 	_handleRequestBodyTransformHeaders(resp)
 	_handleRequestThinkingTransformHeaders(resp)
@@ -63,6 +64,31 @@ func _handlePolicyTraceHeader(resp *http.Response) {
 		return
 	}
 	resp.Header.Set(vars.XAIProxyPolicyGroupTrace, string(b))
+}
+
+type modelHealthMetaHeader struct {
+	Version                     string   `json:"version"`
+	ReleasedUnsupportedCount    int      `json:"released_unsupported_count"`
+	ReleasedUnsupportedAPITypes []string `json:"released_unsupported_api_types,omitempty"`
+	Reason                      string   `json:"reason,omitempty"`
+}
+
+func _handleModelHealthMetaHeader(resp *http.Response) {
+	meta, ok := ctxhelper.GetPolicyGroupHealthMeta(resp.Request.Context())
+	if !ok || meta == nil || meta.ReleasedUnsupportedCount <= 0 {
+		return
+	}
+	headerValue := modelHealthMetaHeader{
+		Version:                     "v1",
+		ReleasedUnsupportedCount:    meta.ReleasedUnsupportedCount,
+		ReleasedUnsupportedAPITypes: meta.ReleasedUnsupportedAPITypes,
+		Reason:                      "unsupported_probe_api_type",
+	}
+	b, err := json.Marshal(headerValue)
+	if err != nil {
+		return
+	}
+	resp.Header.Set(vars.XAIProxyModelHealthMeta, string(b))
 }
 
 // _handleRequestIdHeaders handles request ID related header settings

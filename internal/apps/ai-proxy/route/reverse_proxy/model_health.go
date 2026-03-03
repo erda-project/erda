@@ -66,6 +66,8 @@ func reportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, e
 
 	apiType, ok := health.ResolveAPIType(sourceReq.Method, sourceReq.URL.Path)
 	if !ok {
+		// Current phase only reports unhealthy for chat/responses;
+		// embeddings and other APIs do not enter unhealthy lifecycle.
 		return
 	}
 

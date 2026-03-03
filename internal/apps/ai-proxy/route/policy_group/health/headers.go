@@ -21,16 +21,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-var probeForwardedHeaders = []string{
-	"Authorization",
-	"AK-Token",
-	"X-AK-Token",
-	"X-Access-Key",
-	"X-API-Key",
-	"Api-Key",
-	"Cookie",
-}
-
 func IsHealthProbeRequest(headers http.Header) bool {
 	if len(headers) == 0 {
 		return false
@@ -39,15 +29,5 @@ func IsHealthProbeRequest(headers http.Header) bool {
 }
 
 func BuildProbeHeaders(headers http.Header) http.Header {
-	if len(headers) == 0 {
-		return http.Header{}
-	}
-	out := make(http.Header, len(probeForwardedHeaders))
-	for _, key := range probeForwardedHeaders {
-		values := headers.Values(key)
-		for _, value := range values {
-			out.Add(key, value)
-		}
-	}
-	return out
+	return cloneHeaders(headers)
 }

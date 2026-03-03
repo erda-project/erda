@@ -33,7 +33,6 @@ const (
 const (
 	modelHealthBindingKey state_store.BindingKey = "global:model-health"
 	stateUnhealthy                               = "unhealthy"
-	stateHealthy                                 = "healthy"
 )
 
 type ModelHealthState struct {
