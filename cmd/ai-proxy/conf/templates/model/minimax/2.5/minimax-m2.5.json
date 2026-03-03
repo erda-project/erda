@@ -15,7 +15,7 @@
       ],
       "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/MiniMax-M2.5"
     },
-    "desc": "MiniMax 是由稀宇科技（MiniMax）公司推出的大语言模型，聚焦真实世界复杂任务，其核心优势包括多语言编程和 Agent 任务处理能力。",
+    "desc": "MiniMax-M2.5 是 MiniMax 推出的旗舰级开源大模型，经过数十万个真实复杂环境中的大规模强化学习训练，M2.5 在编程、工具调用和搜索、办公等生产力场景都达到或者刷新了行业的 SOTA。",
     "config": {
       "desc": "${@template.desc}",
       "apiKey": "",
