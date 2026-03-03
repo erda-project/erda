@@ -208,3 +208,22 @@ func TestHandleModelHealthMetaHeader(t *testing.T) {
 	assert.Len(t, apiTypes, 1)
 	assert.EqualValues(t, "embeddings", apiTypes[0])
 }
+
+func TestHandleModelMarkUnhealthyHeader(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutModelMarkUnhealthyInstanceID(ctx, "m-123")
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	assert.Equal(t, "m-123", resp.Header.Get(vars.XAIProxyModelMarkUnhealthy))
+}

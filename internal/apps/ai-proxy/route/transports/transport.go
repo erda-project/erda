@@ -117,6 +117,14 @@ var BaseTransport http.RoundTripper = &http.Transport{
 		return http.ProxyFromEnvironment(req)
 	},
 	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialer := baseDialer
+		if timeout, ok := getForwardDialTimeoutFromContext(ctx); ok {
+			// Per-request override from internal request header.
+			dialer = &net.Dialer{
+				Timeout:   timeout,
+				KeepAlive: baseDialer.KeepAlive,
+			}
+		}
 		// When SOCKS5 is enabled and the destination host matches FORWARD_PROXY_HOSTS,
 		// route the connection through the SOCKS5 proxy.
 		if socksProxyEnabled() {
@@ -129,11 +137,12 @@ var BaseTransport http.RoundTripper = &http.Transport{
 					logrus.Debugf("%s use socks5 dialer via %s", host, socksProxyURL)
 					// x/net/proxy.Dialer does not have a context-aware API;
 					// we ignore ctx here and rely on underlying dialer timeouts.
+					// NOTE: per-request timeout override is not supported for SOCKS dialer path.
 					return socksDialer.Dial(network, addr)
 				}
 			}
 		}
-		return baseDialer.DialContext(ctx, network, addr)
+		return dialer.DialContext(ctx, network, addr)
 	},
 	TLSHandshakeTimeout:   10 * time.Second,
 	MaxIdleConns:          100,

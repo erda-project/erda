@@ -15,6 +15,7 @@
 package transports
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -28,16 +29,18 @@ import (
 )
 
 const (
-	envKeyForwardProxyHosts = "FORWARD_PROXY_HOSTS"
-	envKeyForwardHttpProxy  = "FORWARD_HTTP_PROXY"
-	envKeyForwardHttpsProxy = "FORWARD_HTTPS_PROXY"
-	envKeyNoProxy           = "NO_PROXY"
+	envKeyForwardProxyHosts  = "FORWARD_PROXY_HOSTS"
+	envKeyForwardHttpProxy   = "FORWARD_HTTP_PROXY"
+	envKeyForwardHttpsProxy  = "FORWARD_HTTPS_PROXY"
+	envKeyNoProxy            = "NO_PROXY"
+	envKeyForwardDialTimeout = "FORWARD_DIAL_TIMEOUT"
+	envKeyForwardKeepAlive   = "FORWARD_KEEPALIVE"
 )
 
 // shared base dialer for all outbound connections
 var baseDialer = &net.Dialer{
-	Timeout:   60 * time.Second, // Timeout for establishing a TCP connection, even when routing through proxies.
-	KeepAlive: 60 * time.Second, // Keep-alive interval to keep long-lived TCP connections reusable.
+	Timeout:   getDurationFromEnv(envKeyForwardDialTimeout, 60*time.Second), // Timeout for establishing a TCP connection, even when routing through proxies.
+	KeepAlive: getDurationFromEnv(envKeyForwardKeepAlive, 60*time.Second),   // Keep-alive interval to keep long-lived TCP connections reusable.
 }
 
 // forwardProxyHosts caches the FORWARD_PROXY_HOSTS list for both HTTP and SOCKS proxy decisions.
@@ -60,6 +63,8 @@ var (
 	socksProxyURL *url.URL
 	socksDialer   proxy.Dialer
 )
+
+type ctxKeyForwardDialTimeout struct{}
 
 // init forward proxy configuration (HTTP/HTTPS) and optional SOCKS5 dialer.
 func init() {
@@ -124,6 +129,37 @@ func init() {
 
 func socksProxyEnabled() bool {
 	return socksDialer != nil && socksProxyURL != nil
+}
+
+func WithForwardDialTimeout(ctx context.Context, timeout time.Duration) context.Context {
+	if ctx == nil || timeout <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxKeyForwardDialTimeout{}, timeout)
+}
+
+func getForwardDialTimeoutFromContext(ctx context.Context) (time.Duration, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	timeout, ok := ctx.Value(ctxKeyForwardDialTimeout{}).(time.Duration)
+	if !ok || timeout <= 0 {
+		return 0, false
+	}
+	return timeout, true
+}
+
+func getDurationFromEnv(key string, defaultValue time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil || parsed <= 0 {
+		logrus.Warnf("invalid %s=%q, fallback to %s", key, raw, defaultValue)
+		return defaultValue
+	}
+	return parsed
 }
 
 // ProxyConfig is forward proxy configuration, i.e., proxy configuration for transport outbound traffic

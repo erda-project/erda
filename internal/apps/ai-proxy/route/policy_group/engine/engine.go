@@ -48,7 +48,7 @@ func wrapNoAvailableBranch(groupName string) error {
 	if groupName == "" {
 		return ErrNoAvailableBranch
 	}
-	return fmt.Errorf("policy group %q: %w", groupName, ErrNoAvailableBranch)
+	return fmt.Errorf("%w for policy group: %s", ErrNoAvailableBranch, groupName)
 }
 
 type HealthFilter func(req policy_group.RouteRequest, instances []*policy_group.RoutingModelInstance) []*policy_group.RoutingModelInstance

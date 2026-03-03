@@ -148,6 +148,45 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 	})
 }
 
+func TestProbeNon2xxShouldKeepUnhealthy(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"context deadline exceeded"}`))
+	}))
+	defer server.Close()
+
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		ProbeBaseURL: server.URL,
+		UnhealthyTTL: 500 * time.Millisecond,
+		ProbeTimeout: 200 * time.Millisecond,
+		Rescue: RescueConfig{
+			InitialBackoff: 20 * time.Millisecond,
+			MaxBackoff:     20 * time.Millisecond,
+		},
+	})
+
+	manager.MarkUnhealthy(context.Background(), "i-non2xx", APITypeChatCompletions, "network timeout", http.Header{
+		vars.XAIProxyGeneratedCallId: []string{"call-1"},
+	})
+
+	// Give probe worker enough time to attempt and fail at least once.
+	time.Sleep(150 * time.Millisecond)
+
+	state, ok, err := manager.GetState(context.Background(), "i-non2xx")
+	if err != nil {
+		t.Fatalf("get state failed: %v", err)
+	}
+	if !ok || state == nil {
+		t.Fatal("expected unhealthy state to remain after non-2xx probe response")
+	}
+	if state.State != stateUnhealthy {
+		t.Fatalf("expected state=%s, got %s", stateUnhealthy, state.State)
+	}
+}
+
 func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 	t.Parallel()
 
@@ -294,6 +333,26 @@ func TestUnsupportedAPITypeDoesNotKeepUnhealthyForever(t *testing.T) {
 		_, ok, _ := manager.GetState(context.Background(), "i-unsupported")
 		return !ok
 	})
+}
+
+func TestMarkUnhealthyWritesModelMarkHeaderContext(t *testing.T) {
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		ProbeBaseURL: "http://127.0.0.1:1",
+		UnhealthyTTL: time.Hour,
+		ProbeTimeout: 20 * time.Millisecond,
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     10 * time.Millisecond,
+		},
+	})
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	manager.MarkUnhealthy(ctx, "m-ctx", APITypeChatCompletions, "network timeout", http.Header{})
+	got, ok := ctxhelper.GetModelMarkUnhealthyInstanceID(ctx)
+	if !ok || got != "m-ctx" {
+		t.Fatalf("expected model mark unhealthy instance id m-ctx, got %q", got)
+	}
 }
 
 func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {

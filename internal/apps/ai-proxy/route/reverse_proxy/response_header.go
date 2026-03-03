@@ -29,6 +29,7 @@ import (
 func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
+	_handleModelMarkUnhealthyHeader(resp)
 	_handlePolicyTraceHeader(resp)
 	_handleModelHealthMetaHeader(resp)
 	_handleRequestIdHeaders(resp)
@@ -48,6 +49,14 @@ func _handleModelHeaders(resp *http.Response) {
 			resp.Header.Set(vars.XAIProxyProviderName, provider.Name)
 		}
 	}
+}
+
+func _handleModelMarkUnhealthyHeader(resp *http.Response) {
+	instanceID, ok := ctxhelper.GetModelMarkUnhealthyInstanceID(resp.Request.Context())
+	if !ok || instanceID == "" {
+		return
+	}
+	resp.Header.Set(vars.XAIProxyModelMarkUnhealthy, instanceID)
 }
 
 func _handlePolicyTraceHeader(resp *http.Response) {

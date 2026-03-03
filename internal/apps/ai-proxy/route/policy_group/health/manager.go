@@ -27,6 +27,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/lb/state_store"
@@ -152,6 +154,14 @@ func (m *Manager) MarkUnhealthy(ctx context.Context, instanceID string, apiType 
 	if m == nil || instanceID == "" || apiType == "" {
 		return
 	}
+	callID := extractCallID(headers)
+	logrus.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"api_type":    apiType,
+		"error":       lastErr,
+		"call_id":     callID,
+	}).Warn("mark model instance unhealthy")
+	ctxhelper.PutModelMarkUnhealthyInstanceID(ctx, instanceID)
 	m.writeUnhealthyState(ctx, instanceID, apiType, lastErr)
 	m.startOrUpdateProbeWorker(instanceID, apiType, headers)
 }
@@ -173,14 +183,25 @@ func (m *Manager) startOrUpdateProbeWorker(instanceID string, apiType APIType, h
 		apiType: apiType,
 		headers: cloneHeaders(headers),
 	}
+	callID := extractCallID(headers)
 	actual, loaded := m.workers.LoadOrStore(instanceID, newState)
 	if loaded {
 		existing, _ := actual.(*workerState)
 		if existing != nil {
 			existing.Update(apiType, headers)
 		}
+		logrus.WithFields(logrus.Fields{
+			"instance_id": instanceID,
+			"api_type":    apiType,
+			"call_id":     callID,
+		}).Warn("probe worker already running, update worker state")
 		return
 	}
+	logrus.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"api_type":    apiType,
+		"call_id":     callID,
+	}).Warn("start probe worker for unhealthy instance")
 	go m.probeWorker(instanceID, newState)
 }
 
@@ -190,20 +211,37 @@ func (m *Manager) probeWorker(instanceID string, worker *workerState) {
 	backoff := m.cfg.Rescue.InitialBackoff
 	for {
 		apiType, headers := worker.Snapshot()
-		err := m.probeOnce(instanceID, apiType, headers)
+		callID, err := m.probeOnce(instanceID, apiType, headers)
 		if err == nil {
 			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instanceID)
+			logrus.WithFields(logrus.Fields{
+				"instance_id": instanceID,
+				"api_type":    apiType,
+				"call_id":     callID,
+			}).Warn("probe success, recovered unhealthy instance")
 			return
 		}
 		if errors.Is(err, errUnsupportedAPIType) {
 			// Unsupported api_type cannot be actively probed; fail-open to avoid
 			// keeping the instance in unhealthy set indefinitely.
 			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instanceID)
+			logrus.WithFields(logrus.Fields{
+				"instance_id": instanceID,
+				"api_type":    apiType,
+				"error":       err.Error(),
+				"call_id":     callID,
+			}).Warn("unsupported api_type for probe, release unhealthy instance immediately")
 			return
 		}
 		// Keep refreshing unhealthy state on every failed probe so the instance
 		// is only released after a successful recovery probe.
 		m.writeUnhealthyState(context.Background(), instanceID, apiType, err.Error())
+		logrus.WithFields(logrus.Fields{
+			"instance_id": instanceID,
+			"api_type":    apiType,
+			"backoff":     backoff.String(),
+			"call_id":     callID,
+		}).Warnf("probe failed, keep unhealthy and retry, err: %v", err)
 		delay := withJitter(backoff)
 		time.Sleep(delay)
 
@@ -214,16 +252,16 @@ func (m *Manager) probeWorker(instanceID string, worker *workerState) {
 	}
 }
 
-func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Header) error {
+func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Header) (string, error) {
 	path, body, ok := buildProbeRequest(apiType)
 	if !ok {
-		return errUnsupportedAPIType
+		return extractCallID(headers), errUnsupportedAPIType
 	}
 
 	baseURL := strings.TrimRight(m.cfg.ProbeBaseURL, "/")
 	req, err := http.NewRequest(http.MethodPost, baseURL+path, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("health probe build http request failed: %w", err)
+		return extractCallID(headers), fmt.Errorf("health probe build http request failed: %w", err)
 	}
 
 	for key, values := range headers {
@@ -238,13 +276,18 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 
 	resp, err := m.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("health probe request failed: %w", err)
+		return extractCallID(req.Header), fmt.Errorf("health probe request failed: %w", err)
 	}
 	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, resp.Body)
-
-	// For network-failure recovery, receiving any HTTP response means the path is reachable.
-	return nil
+	callID := extractCallID(resp.Header)
+	if callID == "" {
+		callID = extractCallID(req.Header)
+	}
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return callID, fmt.Errorf("health probe got non-2xx status=%d body=%q", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+	return callID, nil
 }
 
 func (m *Manager) writeUnhealthyState(ctx context.Context, instanceID string, apiType APIType, lastErr string) {
@@ -332,6 +375,19 @@ func withJitter(backoff time.Duration) time.Duration {
 	}
 	delta := time.Duration(rand.Int63n(int64(jitterRange)))
 	return backoff + delta
+}
+
+func extractCallID(headers http.Header) string {
+	if len(headers) == 0 {
+		return ""
+	}
+	if v := strings.TrimSpace(headers.Get(vars.XAIProxyGeneratedCallId)); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(headers.Get(vars.XRequestId)); v != "" {
+		return v
+	}
+	return ""
 }
 
 func (m *Manager) String() string {

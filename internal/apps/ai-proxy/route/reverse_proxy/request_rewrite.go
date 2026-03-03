@@ -16,6 +16,7 @@ package reverse_proxy
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -133,6 +135,27 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 }
 
 func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
+	// Support request-level outbound TLS handshake timeout override:
+	// x-ai-proxy-forward-tls-handshake-timeout: 5s
+	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardTLSHandshakeTimeout)); raw != "" {
+		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
+			outCtx, _ := context.WithTimeout(pr.Out.Context(), timeout)
+			pr.Out = pr.Out.WithContext(outCtx)
+		} else {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardTLSHandshakeTimeout, raw)
+		}
+	}
+
+	// Support request-level outbound dial timeout override:
+	// x-ai-proxy-forward-dial-timeout: 5s
+	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardDialTimeout)); raw != "" {
+		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
+			pr.Out = pr.Out.WithContext(transports.WithForwardDialTimeout(pr.Out.Context(), timeout))
+		} else {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardDialTimeout, raw)
+		}
+	}
+
 	// del all X-AI-Proxy-* headers before invoking llm
 	for k := range pr.Out.Header {
 		if strings.HasPrefix(strings.ToUpper(k), strings.ToUpper(vars.XAIProxyHeaderPrefix)) {
