@@ -62,6 +62,7 @@ var forwardProxyHosts = func() []string {
 var (
 	socksProxyURL *url.URL
 	socksDialer   proxy.Dialer
+	socksAuth     *proxy.Auth // stored for per-request SOCKS dialer creation
 )
 
 type ctxKeyForwardDialTimeout struct{}
@@ -109,6 +110,7 @@ func init() {
 			if d, err := proxy.SOCKS5("tcp", u.Host, auth, baseDialer); err == nil {
 				socksProxyURL = u
 				socksDialer = d
+				socksAuth = auth
 			} else {
 				logrus.WithError(err).Errorf("failed to init socks5 proxy for %s", raw)
 			}
@@ -130,6 +132,15 @@ func init() {
 
 func socksProxyEnabled() bool {
 	return socksDialer != nil && socksProxyURL != nil
+}
+
+// newSocksDialerWithForward creates a SOCKS5 dialer with a custom forward dialer,
+// enabling per-request dial timeout override for the SOCKS5 path.
+func newSocksDialerWithForward(forward *net.Dialer) (proxy.Dialer, error) {
+	if socksProxyURL == nil || socksAuth == nil {
+		return nil, fmt.Errorf("SOCKS5 proxy not configured")
+	}
+	return proxy.SOCKS5("tcp", socksProxyURL.Host, socksAuth, forward)
 }
 
 func WithForwardDialTimeout(ctx context.Context, timeout time.Duration) context.Context {

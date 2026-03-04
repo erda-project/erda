@@ -12,19 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ctxhelper
-
-import "context"
-
-type mapKeyPolicyGroupHealthMeta struct{ any }
-
-func GetPolicyGroupHealthMeta(ctx context.Context) (any, bool) {
-	return getFromMapKeyAs[any](ctx, mapKeyPolicyGroupHealthMeta{})
-}
-
-func PutPolicyGroupHealthMeta(ctx context.Context, meta any) {
-	if ctx == nil || meta == nil {
-		return
-	}
-	putToMapKey(ctx, mapKeyPolicyGroupHealthMeta{}, meta)
-}
+package health

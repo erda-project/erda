@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -37,17 +36,7 @@ import (
 
 var (
 	_ http.RoundTripper = (*DoNothingTransport)(nil)
-
-	tlsTimeoutTransportCache = struct {
-		mu    sync.Mutex
-		items map[string]*http.Transport
-		order []string
-	}{
-		items: make(map[string]*http.Transport),
-	}
 )
-
-const tlsTimeoutTransportCacheCap = 16
 
 type DoNothingTransport struct {
 	Response *http.Response
@@ -146,10 +135,16 @@ var BaseTransport http.RoundTripper = &http.Transport{
 			for _, h := range forwardProxyHosts {
 				if strings.HasSuffix(host, h) {
 					logrus.Debugf("%s use socks5 dialer via %s", host, socksProxyURL)
-					// x/net/proxy.Dialer does not have a context-aware API;
-					// we ignore ctx here and rely on underlying dialer timeouts.
-					// NOTE: per-request timeout override is not supported for SOCKS dialer path.
-					return socksDialer.Dial(network, addr)
+					if dialer == baseDialer {
+						return socksDialer.Dial(network, addr)
+					}
+					// Per-request dial timeout override: create a SOCKS dialer with the overridden dialer.
+					d, err := newSocksDialerWithForward(dialer)
+					if err != nil {
+						logrus.Warnf("failed to create per-request SOCKS5 dialer: %v, using default", err)
+						return socksDialer.Dial(network, addr)
+					}
+					return d.Dial(network, addr)
 				}
 			}
 		}
@@ -175,30 +170,13 @@ func roundTripWithForwardTLSHandshakeTimeout(inner http.RoundTripper, req *http.
 	if timeout == transport.TLSHandshakeTimeout {
 		return inner.RoundTrip(req)
 	}
-	return getOrCreateTLSHandshakeTimeoutTransport(transport, timeout).RoundTrip(req)
-}
-
-func getOrCreateTLSHandshakeTimeoutTransport(base *http.Transport, timeout time.Duration) *http.Transport {
-	cacheKey := fmt.Sprintf("%p:%d", base, timeout.Nanoseconds())
-	tlsTimeoutTransportCache.mu.Lock()
-	defer tlsTimeoutTransportCache.mu.Unlock()
-
-	if cached, ok := tlsTimeoutTransportCache.items[cacheKey]; ok {
-		return cached
-	}
-	cloned := base.Clone()
+	// Clone transport with overridden TLS handshake timeout.
+	// Not cached: this path is used by infrequent health probes,
+	// so per-request clone avoids connection pool fragmentation.
+	cloned := transport.Clone()
 	cloned.TLSHandshakeTimeout = timeout
-	tlsTimeoutTransportCache.items[cacheKey] = cloned
-	tlsTimeoutTransportCache.order = append(tlsTimeoutTransportCache.order, cacheKey)
-	if len(tlsTimeoutTransportCache.order) > tlsTimeoutTransportCacheCap {
-		evicted := tlsTimeoutTransportCache.order[0]
-		tlsTimeoutTransportCache.order = tlsTimeoutTransportCache.order[1:]
-		if old, ok := tlsTimeoutTransportCache.items[evicted]; ok {
-			old.CloseIdleConnections()
-			delete(tlsTimeoutTransportCache.items, evicted)
-		}
-	}
-	return cloned
+	defer cloned.CloseIdleConnections()
+	return cloned.RoundTrip(req)
 }
 
 func GenCurl(req *http.Request) string {
