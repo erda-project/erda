@@ -60,7 +60,7 @@ func reportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, e
 	if sourceReq == nil || sourceReq.URL == nil {
 		return
 	}
-	if health.IsTrustedHealthProbeRequest(sourceReq.Header) {
+	if trusted, ok := ctxhelper.GetTrustedHealthProbe(ctx); ok && trusted {
 		return
 	}
 

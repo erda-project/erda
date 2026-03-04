@@ -15,16 +15,11 @@
 package health
 
 import (
-	"crypto/rand"
-	"crypto/subtle"
-	"encoding/hex"
 	"net/http"
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
-
-var internalProbeToken = generateInternalProbeToken()
 
 func IsHealthProbeRequest(headers http.Header) bool {
 	if len(headers) == 0 {
@@ -33,28 +28,8 @@ func IsHealthProbeRequest(headers http.Header) bool {
 	return strings.EqualFold(strings.TrimSpace(headers.Get(vars.XAIProxyHealthProbe)), "true")
 }
 
-func IsTrustedHealthProbeRequest(headers http.Header) bool {
-	if !IsHealthProbeRequest(headers) {
-		return false
-	}
-	token := strings.TrimSpace(headers.Get(vars.XAIProxyHealthProbeToken))
-	if token == "" {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(token), []byte(internalProbeToken)) == 1
-}
-
 func BuildProbeHeaders(headers http.Header) http.Header {
 	cloned := cloneHeaders(headers)
 	cloned.Set(vars.XAIProxyHealthProbe, "true")
-	cloned.Set(vars.XAIProxyHealthProbeToken, internalProbeToken)
 	return cloned
-}
-
-func generateInternalProbeToken() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		panic("failed to generate internal health probe token: " + err.Error())
-	}
-	return hex.EncodeToString(b)
 }

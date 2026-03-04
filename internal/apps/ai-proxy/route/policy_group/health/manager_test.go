@@ -72,16 +72,10 @@ func TestFilterHealthyInstances(t *testing.T) {
 		t.Fatalf("expected filtered unhealthy instance id i1, got %#v", meta.FilteredUnhealthyInstanceIDs)
 	}
 
-	// Probe request should bypass health filter so unhealthy instance can be checked.
-	probeHeaders := BuildProbeHeaders(http.Header{})
-	probeReq := policygroup.RouteRequest{
-		Meta: policygroup.RequestMeta{
-			Keys: map[string]string{
-				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbe):      probeHeaders.Get(vars.XAIProxyHealthProbe),
-				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbeToken): probeHeaders.Get(vars.XAIProxyHealthProbeToken),
-			},
-		},
-	}
+	// Trusted internal probe request should bypass health filter so unhealthy instance can be checked.
+	probeCtx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutTrustedHealthProbe(probeCtx, true)
+	probeReq := policygroup.RouteRequest{Ctx: probeCtx}
 	filteredProbe := manager.FilterHealthyInstances(probeReq, instances)
 	if len(filteredProbe) != 2 {
 		t.Fatalf("expected probe request to bypass health filter, got %v", collectIDs(filteredProbe))
@@ -116,9 +110,11 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: server.URL,
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 2 * time.Second,
+		Probe: ProbeConfig{
+			BaseURL:      server.URL,
+			UnhealthyTTL: time.Hour,
+			Timeout:      2 * time.Second,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     20 * time.Millisecond,
@@ -161,9 +157,11 @@ func TestProbeNon2xxShouldKeepUnhealthy(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: server.URL,
-		UnhealthyTTL: 500 * time.Millisecond,
-		ProbeTimeout: 200 * time.Millisecond,
+		Probe: ProbeConfig{
+			BaseURL:      server.URL,
+			UnhealthyTTL: 500 * time.Millisecond,
+			Timeout:      200 * time.Millisecond,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 20 * time.Millisecond,
 			MaxBackoff:     20 * time.Millisecond,
@@ -194,9 +192,11 @@ func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: "http://127.0.0.1:1",
-		UnhealthyTTL: 40 * time.Millisecond,
-		ProbeTimeout: 20 * time.Millisecond,
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:1",
+			UnhealthyTTL: 40 * time.Millisecond,
+			Timeout:      20 * time.Millisecond,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     10 * time.Millisecond,
@@ -239,12 +239,6 @@ func TestBuildProbeHeaders(t *testing.T) {
 	if probeHeaders.Get(vars.XAIProxyHealthProbe) != "true" {
 		t.Fatalf("expected probe marker kept, got: %v", probeHeaders)
 	}
-	if probeHeaders.Get(vars.XAIProxyHealthProbeToken) == "" {
-		t.Fatalf("expected probe token generated, got: %v", probeHeaders)
-	}
-	if !IsTrustedHealthProbeRequest(probeHeaders) {
-		t.Fatalf("expected probe headers treated as trusted, got: %v", probeHeaders)
-	}
 }
 
 func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
@@ -266,9 +260,11 @@ func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: server.URL,
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 2 * time.Second,
+		Probe: ProbeConfig{
+			BaseURL:      server.URL,
+			UnhealthyTTL: time.Hour,
+			Timeout:      2 * time.Second,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     20 * time.Millisecond,
@@ -323,9 +319,11 @@ func TestUnsupportedAPITypeDoesNotKeepUnhealthyForever(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: "http://127.0.0.1:1",
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 20 * time.Millisecond,
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:1",
+			UnhealthyTTL: time.Hour,
+			Timeout:      20 * time.Millisecond,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     10 * time.Millisecond,
@@ -345,9 +343,11 @@ func TestUnsupportedAPITypeDoesNotKeepUnhealthyForever(t *testing.T) {
 func TestMarkUnhealthyWritesModelMarkHeaderContext(t *testing.T) {
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: "http://127.0.0.1:1",
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 20 * time.Millisecond,
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:1",
+			UnhealthyTTL: time.Hour,
+			Timeout:      20 * time.Millisecond,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     10 * time.Millisecond,
@@ -367,9 +367,11 @@ func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
-		ProbeBaseURL: "http://127.0.0.1:1",
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 20 * time.Millisecond,
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:1",
+			UnhealthyTTL: time.Hour,
+			Timeout:      20 * time.Millisecond,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     10 * time.Millisecond,

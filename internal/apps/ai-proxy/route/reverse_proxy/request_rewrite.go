@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"runtime/debug"
@@ -134,6 +135,10 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 }
 
 func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
+	if isInternalTrustedHealthProbe(pr.In) {
+		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
+	}
+
 	// Support request-level outbound TLS handshake timeout override:
 	// x-ai-proxy-forward-tls-handshake-timeout: 5s
 	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardTLSHandshakeTimeout)); raw != "" {
@@ -162,4 +167,27 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	}
 	// del Origin to avoid upstream CORS header
 	pr.Out.Header.Del(echo.HeaderOrigin)
+}
+
+func isInternalTrustedHealthProbe(req *http.Request) bool {
+	if req == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(req.Header.Get(vars.XAIProxyHealthProbe)), "true") {
+		return false
+	}
+	return isLoopbackRemoteAddr(req.RemoteAddr)
+}
+
+func isLoopbackRemoteAddr(remoteAddr string) bool {
+	if strings.TrimSpace(remoteAddr) == "" {
+		return false
+	}
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+	host = strings.Trim(host, "[]")
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

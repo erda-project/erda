@@ -78,9 +78,11 @@ func TestIsNetworkFailureError(t *testing.T) {
 
 func TestReportModelNetworkFailure(t *testing.T) {
 	manager := health.NewManager(state_store.NewMemoryStateStore(), health.Config{
-		ProbeBaseURL: "http://127.0.0.1:65530",
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 2 * time.Second,
+		Probe: health.ProbeConfig{
+			BaseURL:      "http://127.0.0.1:65530",
+			UnhealthyTTL: time.Hour,
+			Timeout:      2 * time.Second,
+		},
 		Rescue: health.RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     50 * time.Millisecond,
@@ -116,9 +118,11 @@ func TestReportModelNetworkFailure(t *testing.T) {
 
 func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	manager := health.NewManager(state_store.NewMemoryStateStore(), health.Config{
-		ProbeBaseURL: "http://127.0.0.1:65530",
-		UnhealthyTTL: time.Hour,
-		ProbeTimeout: 100 * time.Millisecond,
+		Probe: health.ProbeConfig{
+			BaseURL:      "http://127.0.0.1:65530",
+			UnhealthyTTL: time.Hour,
+			Timeout:      100 * time.Millisecond,
+		},
 		Rescue: health.RescueConfig{
 			InitialBackoff: 50 * time.Millisecond,
 			MaxBackoff:     100 * time.Millisecond,
@@ -129,8 +133,9 @@ func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 
 	ctxProbe := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutModel(ctxProbe, &modelpb.Model{Id: "m-probe"})
+	ctxhelper.PutTrustedHealthProbe(ctxProbe, true)
 	probeReq := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1ChatCompletions, nil).WithContext(ctxProbe)
-	probeReq.Header = health.BuildProbeHeaders(probeReq.Header)
+	probeReq.Header.Set(vars.XAIProxyHealthProbe, "true")
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctxProbe, probeReq)
 	reportModelNetworkFailure(ctxProbe, probeReq, errors.New("read tcp x->y: read: connection reset by peer"))
 

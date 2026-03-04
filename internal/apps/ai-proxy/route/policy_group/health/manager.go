@@ -37,10 +37,14 @@ import (
 )
 
 type Config struct {
-	ProbeBaseURL string        `file:"probe_base_url" env:"MODEL_HEALTH_PROBE_BASE_URL" default:"http://127.0.0.1:8081"`
+	Probe  ProbeConfig  `file:"probe"`
+	Rescue RescueConfig `file:"rescue"`
+}
+
+type ProbeConfig struct {
+	BaseURL      string        `file:"base_url" env:"MODEL_HEALTH_PROBE_BASE_URL" default:"http://127.0.0.1:8081"`
+	Timeout      time.Duration `file:"timeout" env:"MODEL_HEALTH_PROBE_TIMEOUT" default:"10s"`
 	UnhealthyTTL time.Duration `file:"unhealthy_ttl" env:"MODEL_HEALTH_UNHEALTHY_TTL" default:"1h"`
-	ProbeTimeout time.Duration `file:"probe_timeout" env:"MODEL_HEALTH_PROBE_TIMEOUT" default:"10s"`
-	Rescue       RescueConfig  `file:"rescue"`
 }
 
 type RescueConfig struct {
@@ -51,14 +55,14 @@ type RescueConfig struct {
 var errUnsupportedAPIType = errors.New("health probe build request failed: unsupported api_type")
 
 func (cfg *Config) normalize() {
-	if cfg.ProbeBaseURL == "" {
-		cfg.ProbeBaseURL = "http://127.0.0.1:8081"
+	if cfg.Probe.BaseURL == "" {
+		cfg.Probe.BaseURL = "http://127.0.0.1:8081"
 	}
-	if cfg.UnhealthyTTL <= 0 {
-		cfg.UnhealthyTTL = time.Hour
+	if cfg.Probe.UnhealthyTTL <= 0 {
+		cfg.Probe.UnhealthyTTL = time.Hour
 	}
-	if cfg.ProbeTimeout <= 0 {
-		cfg.ProbeTimeout = 10 * time.Second
+	if cfg.Probe.Timeout <= 0 {
+		cfg.Probe.Timeout = 10 * time.Second
 	}
 	if cfg.Rescue.InitialBackoff <= 0 {
 		panic("model health rescue initial_backoff must be > 0")
@@ -106,7 +110,7 @@ func NewManager(store state_store.LBStateStore, cfg Config) *Manager {
 	return &Manager{
 		store:  store,
 		cfg:    cfg,
-		client: &http.Client{Timeout: cfg.ProbeTimeout},
+		client: &http.Client{Timeout: cfg.Probe.Timeout},
 	}
 }
 
@@ -114,8 +118,10 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 	if m == nil || len(instances) == 0 {
 		return instances
 	}
-	if isHealthProbeRequestMeta(req.Meta) {
-		return instances
+	if req.Ctx != nil {
+		if trusted, ok := ctxhelper.GetTrustedHealthProbe(req.Ctx); ok && trusted {
+			return instances
+		}
 	}
 
 	probeHeadersFromMeta := buildProbeHeadersFromRequestMeta(req.Meta)
@@ -258,7 +264,7 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 		return extractCallID(headers), errUnsupportedAPIType
 	}
 
-	baseURL := strings.TrimRight(m.cfg.ProbeBaseURL, "/")
+	baseURL := strings.TrimRight(m.cfg.Probe.BaseURL, "/")
 	req, err := http.NewRequest(http.MethodPost, baseURL+path, bytes.NewReader(body))
 	if err != nil {
 		return extractCallID(headers), fmt.Errorf("health probe build http request failed: %w", err)
@@ -272,7 +278,6 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(vars.XAIProxyModelId, instanceID)
 	req.Header.Set(vars.XAIProxyHealthProbe, "true")
-	req.Header.Set(vars.XAIProxyHealthProbeToken, internalProbeToken)
 	req.Header.Del("Content-Length")
 
 	resp, err := m.client.Do(req)
@@ -303,7 +308,7 @@ func (m *Manager) writeUnhealthyState(ctx context.Context, instanceID string, ap
 	if err != nil {
 		return
 	}
-	_ = m.store.SetBinding(ctx, modelHealthBindingKey, instanceID, string(b), m.cfg.UnhealthyTTL)
+	_ = m.store.SetBinding(ctx, modelHealthBindingKey, instanceID, string(b), m.cfg.Probe.UnhealthyTTL)
 }
 
 func buildProbeRequest(apiType APIType) (path string, body []byte, ok bool) {
@@ -320,31 +325,6 @@ func buildProbeRequest(apiType APIType) (path string, body []byte, ok bool) {
 func isAPITypeProbeSupported(apiType APIType) bool {
 	_, _, ok := buildProbeRequest(apiType)
 	return ok
-}
-
-func isHealthProbeRequestMeta(meta policygroup.RequestMeta) bool {
-	probeV, probeOK := meta.Get(common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbe))
-	if !probeOK {
-		probeV, probeOK = meta.Get(strings.ToLower(vars.XAIProxyHealthProbe))
-	}
-	if !probeOK {
-		probeV, probeOK = meta.Get(vars.XAIProxyHealthProbe)
-	}
-	if !probeOK || !strings.EqualFold(strings.TrimSpace(probeV), "true") {
-		return false
-	}
-
-	tokenV, tokenOK := meta.Get(common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbeToken))
-	if !tokenOK {
-		tokenV, tokenOK = meta.Get(strings.ToLower(vars.XAIProxyHealthProbeToken))
-	}
-	if !tokenOK {
-		tokenV, tokenOK = meta.Get(vars.XAIProxyHealthProbeToken)
-	}
-	if !tokenOK {
-		return false
-	}
-	return strings.TrimSpace(tokenV) == internalProbeToken
 }
 
 func buildProbeHeadersFromRequestMeta(meta policygroup.RequestMeta) http.Header {
@@ -405,5 +385,5 @@ func (m *Manager) String() string {
 	if m == nil {
 		return "nil-health-manager"
 	}
-	return fmt.Sprintf("health-manager(base=%s)", m.cfg.ProbeBaseURL)
+	return fmt.Sprintf("health-manager(base=%s)", m.cfg.Probe.BaseURL)
 }

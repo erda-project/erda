@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -79,8 +78,8 @@ func (ul *TokenLimiter) GetLimiter(token string) *rate.Limiter {
 func (f *RateLimiter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.In.Context()
 	l := ctxhelper.MustGetLogger(ctx)
-	if health.IsTrustedHealthProbeRequest(pr.In.Header) {
-		// Skip rate limit only for internally signed health probes.
+	if trusted, ok := ctxhelper.GetTrustedHealthProbe(ctx); ok && trusted {
+		// Skip rate limit only for trusted internal health probe requests.
 		return nil
 	}
 

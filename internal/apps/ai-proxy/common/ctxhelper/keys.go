@@ -87,6 +87,7 @@ type (
 
 	mapKeyRequestBodyTransformChanges     struct{ any }
 	mapKeyRequestThinkingTransformChanges struct{ any }
+	mapKeyTrustedHealthProbe              struct{ bool }
 
 	mapKeyRequestBeginAt struct{ time.Time }
 
