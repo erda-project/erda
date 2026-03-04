@@ -29,10 +29,11 @@ import (
 )
 
 const (
-	envKeyForwardProxyHosts  = "FORWARD_PROXY_HOSTS"
-	envKeyForwardHttpProxy   = "FORWARD_HTTP_PROXY"
-	envKeyForwardHttpsProxy  = "FORWARD_HTTPS_PROXY"
-	envKeyNoProxy            = "NO_PROXY"
+	envKeyForwardProxyHosts = "FORWARD_PROXY_HOSTS"
+	envKeyForwardHttpProxy  = "FORWARD_HTTP_PROXY"
+	envKeyForwardHttpsProxy = "FORWARD_HTTPS_PROXY"
+	envKeyNoProxy           = "NO_PROXY"
+
 	envKeyForwardDialTimeout = "FORWARD_DIAL_TIMEOUT"
 	envKeyForwardKeepAlive   = "FORWARD_KEEPALIVE"
 )

@@ -104,9 +104,8 @@ func (m *Manager) probeWorker(instanceID string, worker *workerState) {
 			logrus.WithFields(logrus.Fields{
 				"instance_id": instanceID,
 				"api_type":    apiType,
-				"error":       err.Error(),
 				"request_id":  requestID,
-			}).Warn("unsupported api_type for probe, release unhealthy instance immediately")
+			}).Warnf("unsupported api_type for probe, release unhealthy instance immediately, err: %v", err)
 			return
 		}
 		m.writeUnhealthyState(context.Background(), instanceID, apiType, err.Error())
