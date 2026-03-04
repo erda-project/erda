@@ -34,7 +34,7 @@ type Manager struct {
 	store   state_store.LBStateStore
 	client  *http.Client
 	cfg     Config
-	workers sync.Map // map[instanceID]*workerState
+	workers sync.Map // map[client+instance]*workerState
 }
 
 func NewManager(store state_store.LBStateStore, cfg Config) *Manager {
@@ -76,13 +76,14 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 		if instance == nil || instance.ModelWithProvider == nil {
 			continue
 		}
-		state, ok, err := m.GetState(storeCtx, instance.ModelWithProvider.Id)
+		state, ok, err := m.GetState(storeCtx, req.ClientID, instance.ModelWithProvider.Id)
 		if err != nil {
 			return instances
 		}
 		if ok && strings.EqualFold(state.State, stateUnhealthy) {
+			bindingID := makeModelHealthBindingID(req.ClientID, instance.ModelWithProvider.Id)
 			if !isAPITypeProbeSupported(state.APIType) {
-				_ = m.store.DeleteBinding(storeCtx, modelHealthBindingKey, instance.ModelWithProvider.Id)
+				_ = m.store.DeleteBinding(storeCtx, modelHealthBindingKey, bindingID)
 				if req.Ctx != nil {
 					AppendReleasedUnsupportedAPIType(req.Ctx, string(state.APIType))
 				}
@@ -92,7 +93,7 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 			if req.Ctx != nil {
 				AppendFilteredUnhealthyInstanceID(req.Ctx, instance.ModelWithProvider.Id)
 			}
-			m.startOrUpdateProbeWorker(instance.ModelWithProvider.Id, state.APIType, probeHeadersFromMeta)
+			m.startOrUpdateProbeWorker(req.ClientID, instance.ModelWithProvider.Id, state.APIType, probeHeadersFromMeta)
 			continue
 		}
 		filtered = append(filtered, instance)
@@ -100,7 +101,7 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 	return filtered
 }
 
-func (m *Manager) MarkUnhealthy(ctx context.Context, instanceID string, apiType APIType, lastErr string, headers http.Header) {
+func (m *Manager) MarkUnhealthy(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string, headers http.Header) {
 	if m == nil || instanceID == "" || apiType == "" {
 		return
 	}
@@ -114,18 +115,22 @@ func (m *Manager) MarkUnhealthy(ctx context.Context, instanceID string, apiType 
 	}
 	callID := extractCallID(headers)
 	logrus.WithFields(logrus.Fields{
+		"client_id":   clientID,
 		"instance_id": instanceID,
 		"api_type":    apiType,
 		"error":       lastErr,
 		"call_id":     callID,
 	}).Warn("mark model instance unhealthy")
 	tryPutModelMarkUnhealthyInstanceID(ctx, instanceID)
-	m.writeUnhealthyState(ctx, instanceID, apiType, lastErr)
-	m.startOrUpdateProbeWorker(instanceID, apiType, headers)
+	m.writeUnhealthyState(ctx, clientID, instanceID, apiType, lastErr)
+	m.startOrUpdateProbeWorker(clientID, instanceID, apiType, headers)
 }
 
-func (m *Manager) GetState(ctx context.Context, instanceID string) (*ModelHealthState, bool, error) {
-	val, ok, err := m.store.GetBinding(ctx, modelHealthBindingKey, instanceID)
+func (m *Manager) GetState(ctx context.Context, clientID, instanceID string) (*ModelHealthState, bool, error) {
+	if instanceID == "" {
+		return nil, false, nil
+	}
+	val, ok, err := m.store.GetBinding(ctx, modelHealthBindingKey, makeModelHealthBindingID(clientID, instanceID))
 	if err != nil || !ok || val == "" {
 		return nil, ok, err
 	}

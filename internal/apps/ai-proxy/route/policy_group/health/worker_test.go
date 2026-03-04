@@ -32,6 +32,7 @@ import (
 
 func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 	t.Parallel()
+	clientID := "client-a"
 
 	var probeHits int32
 	firstProbeStarted := make(chan struct{}, 1)
@@ -50,7 +51,7 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 	manager := newTestManager(store, server.URL)
 
 	headers := http.Header{"Authorization": []string{"Bearer t_test"}}
-	manager.MarkUnhealthy(context.Background(), "i1", APITypeChatCompletions, "read tcp: connection reset by peer", headers)
+	manager.MarkUnhealthy(context.Background(), clientID, "i1", APITypeChatCompletions, "read tcp: connection reset by peer", headers)
 
 	select {
 	case <-firstProbeStarted:
@@ -58,7 +59,7 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 		t.Fatal("probe worker did not start")
 	}
 
-	manager.MarkUnhealthy(context.Background(), "i1", APITypeChatCompletions, "read tcp: connection reset by peer", headers)
+	manager.MarkUnhealthy(context.Background(), clientID, "i1", APITypeChatCompletions, "read tcp: connection reset by peer", headers)
 	time.Sleep(100 * time.Millisecond)
 
 	if got := atomic.LoadInt32(&probeHits); got != 1 {
@@ -68,13 +69,14 @@ func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
 	close(releaseFirstProbe)
 
 	waitFor(t, 2*time.Second, func() bool {
-		_, ok, _ := manager.GetState(context.Background(), "i1")
+		_, ok, _ := manager.GetState(context.Background(), clientID, "i1")
 		return !ok
 	})
 }
 
 func TestProbeNon2xxShouldKeepUnhealthy(t *testing.T) {
 	t.Parallel()
+	clientID := "client-a"
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -95,13 +97,13 @@ func TestProbeNon2xxShouldKeepUnhealthy(t *testing.T) {
 		},
 	})
 
-	manager.MarkUnhealthy(context.Background(), "i-non2xx", APITypeChatCompletions, "network timeout", http.Header{
+	manager.MarkUnhealthy(context.Background(), clientID, "i-non2xx", APITypeChatCompletions, "network timeout", http.Header{
 		vars.XAIProxyGeneratedCallId: []string{"call-1"},
 	})
 
 	time.Sleep(150 * time.Millisecond)
 
-	state, ok, err := manager.GetState(context.Background(), "i-non2xx")
+	state, ok, err := manager.GetState(context.Background(), clientID, "i-non2xx")
 	if err != nil {
 		t.Fatalf("get state failed: %v", err)
 	}
@@ -115,6 +117,7 @@ func TestProbeNon2xxShouldKeepUnhealthy(t *testing.T) {
 
 func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 	t.Parallel()
+	clientID := "client-a"
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
@@ -129,13 +132,13 @@ func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 		},
 	})
 
-	manager.MarkUnhealthy(context.Background(), "i-fail", APITypeChatCompletions, "connection reset by peer", http.Header{
+	manager.MarkUnhealthy(context.Background(), clientID, "i-fail", APITypeChatCompletions, "connection reset by peer", http.Header{
 		"Authorization": []string{"Bearer t_fail"},
 	})
 
 	time.Sleep(220 * time.Millisecond)
 
-	state, ok, err := manager.GetState(context.Background(), "i-fail")
+	state, ok, err := manager.GetState(context.Background(), clientID, "i-fail")
 	if err != nil {
 		t.Fatalf("get state failed: %v", err)
 	}
@@ -149,6 +152,7 @@ func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 
 func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
 	t.Parallel()
+	clientID := "client-a"
 
 	var probeHits int32
 	var gotAuth atomic.Value
@@ -176,11 +180,12 @@ func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal unhealthy state failed: %v", err)
 	}
-	if err := store.SetBinding(context.Background(), modelHealthBindingKey, "i1", string(stateBytes), time.Hour); err != nil {
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID(clientID, "i1"), string(stateBytes), time.Hour); err != nil {
 		t.Fatalf("set unhealthy state failed: %v", err)
 	}
 
 	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{
+		ClientID: clientID,
 		Meta: policygroup.RequestMeta{
 			Keys: map[string]string{
 				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower("Authorization"): "Bearer t_from_request",
@@ -196,7 +201,7 @@ func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
 	}
 
 	waitFor(t, 2*time.Second, func() bool {
-		_, ok, _ := manager.GetState(context.Background(), "i1")
+		_, ok, _ := manager.GetState(context.Background(), clientID, "i1")
 		return !ok
 	})
 	if atomic.LoadInt32(&probeHits) == 0 {
@@ -212,16 +217,17 @@ func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
 
 func TestUnsupportedAPITypeDoesNotKeepUnhealthyForever(t *testing.T) {
 	t.Parallel()
+	clientID := "client-a"
 
 	store := state_store.NewMemoryStateStore()
 	manager := newTestManager(store, "http://127.0.0.1:1")
 
-	manager.MarkUnhealthy(context.Background(), "i-unsupported", APIType("unsupported"), "network error", http.Header{
+	manager.MarkUnhealthy(context.Background(), clientID, "i-unsupported", APIType("unsupported"), "network error", http.Header{
 		"Authorization": []string{"Bearer t_unsupported"},
 	})
 
 	waitFor(t, 2*time.Second, func() bool {
-		_, ok, _ := manager.GetState(context.Background(), "i-unsupported")
+		_, ok, _ := manager.GetState(context.Background(), clientID, "i-unsupported")
 		return !ok
 	})
 }

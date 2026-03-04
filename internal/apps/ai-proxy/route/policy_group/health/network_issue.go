@@ -72,7 +72,15 @@ func ReportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, e
 	if !ok || model == nil || model.Id == "" {
 		return
 	}
-	manager.MarkUnhealthy(ctx, model.Id, apiType, err.Error(), BuildProbeHeaders(sourceReq.Header))
+
+	clientID, _ := ctxhelper.GetClientId(ctx)
+	if clientID == "" {
+		if client, ok := ctxhelper.GetClient(ctx); ok && client != nil {
+			clientID = client.Id
+		}
+	}
+
+	manager.MarkUnhealthy(ctx, clientID, model.Id, apiType, err.Error(), BuildProbeHeaders(sourceReq.Header))
 }
 
 func IsNetworkFailureError(err error) bool {
