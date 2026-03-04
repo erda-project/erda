@@ -59,3 +59,23 @@ func TestWithForwardTLSHandshakeTimeoutInvalid(t *testing.T) {
 		t.Fatal("expected no tls handshake timeout in context when input is invalid")
 	}
 }
+
+func TestWithForwardResponseTimeout(t *testing.T) {
+	ctx := context.Background()
+	next := WithForwardResponseTimeout(ctx, 5*time.Second)
+	got, ok := getForwardResponseTimeoutFromContext(next)
+	if !ok {
+		t.Fatal("expected forward response timeout in context")
+	}
+	if got != 5*time.Second {
+		t.Fatalf("expected timeout 5s, got %s", got)
+	}
+}
+
+func TestWithForwardResponseTimeoutInvalid(t *testing.T) {
+	ctx := context.Background()
+	next := WithForwardResponseTimeout(ctx, 0)
+	if _, ok := getForwardResponseTimeoutFromContext(next); ok {
+		t.Fatal("expected no response timeout in context when input is invalid")
+	}
+}

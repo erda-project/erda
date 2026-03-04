@@ -25,7 +25,7 @@ func IsHealthProbeRequest(headers http.Header) bool {
 	if len(headers) == 0 {
 		return false
 	}
-	return strings.EqualFold(strings.TrimSpace(headers.Get(vars.XAIProxyHealthProbe)), "true")
+	return strings.EqualFold(strings.TrimSpace(headers.Get(vars.XAIProxyModelHealthProbe)), "true")
 }
 
 func BuildProbeHeaders(headers http.Header) http.Header {
@@ -33,6 +33,7 @@ func BuildProbeHeaders(headers http.Header) http.Header {
 	// Ignore client-provided forward timeout overrides for recovery probes.
 	cloned.Del(vars.XAIProxyForwardDialTimeout)
 	cloned.Del(vars.XAIProxyForwardTLSHandshakeTimeout)
-	cloned.Set(vars.XAIProxyHealthProbe, "true")
+	cloned.Del(vars.XAIProxyForwardResponseTimeout)
+	cloned.Set(vars.XAIProxyModelHealthProbe, "true")
 	return cloned
 }

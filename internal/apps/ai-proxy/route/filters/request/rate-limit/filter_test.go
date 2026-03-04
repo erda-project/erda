@@ -48,7 +48,7 @@ func TestRateLimiter_ProbeHeaderWithoutTrustedContextShouldNotBypass(t *testing.
 
 	limiter := &RateLimiter{}
 	proxyReq := newProxyRequestForTest()
-	proxyReq.In.Header.Set(vars.XAIProxyHealthProbe, "true")
+	proxyReq.In.Header.Set(vars.XAIProxyModelHealthProbe, "true")
 
 	if err := limiter.OnProxyRequest(proxyReq); err != nil {
 		t.Fatalf("first request should pass, got %v", err)

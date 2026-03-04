@@ -57,7 +57,7 @@ func _handleModelMarkUnhealthyHeader(resp *http.Response) {
 	if !ok || instanceID == "" {
 		return
 	}
-	resp.Header.Set(vars.XAIProxyModelMarkUnhealthy, instanceID)
+	resp.Header.Set(vars.XAIProxyModelHealthMarkUnhealthy, instanceID)
 }
 
 func _handlePolicyTraceHeader(resp *http.Response) {

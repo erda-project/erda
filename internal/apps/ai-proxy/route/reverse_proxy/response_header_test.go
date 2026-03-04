@@ -226,5 +226,5 @@ func TestHandleModelMarkUnhealthyHeader(t *testing.T) {
 	}
 	handleAIProxyResponseHeader(resp)
 
-	assert.Equal(t, "m-123", resp.Header.Get(vars.XAIProxyModelMarkUnhealthy))
+	assert.Equal(t, "m-123", resp.Header.Get(vars.XAIProxyModelHealthMarkUnhealthy))
 }

@@ -140,6 +140,7 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	}
 	applyForwardTLSHandshakeTimeoutOverride(pr)
 	applyForwardDialTimeoutOverride(pr)
+	applyForwardResponseTimeoutOverride(pr)
 
 	stripAIProxyHeaders(pr)
 }
@@ -176,6 +177,25 @@ func applyForwardDialTimeoutOverride(pr *httputil.ProxyRequest) {
 	}
 }
 
+func applyForwardResponseTimeoutOverride(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
+
+	// Support request-level outbound response header timeout override:
+	// x-ai-proxy-forward-response-timeout: 5s
+	// This limits the time waiting for the server's response headers
+	// AFTER the request has been fully written. It does NOT include
+	// dial or TLS handshake time.
+	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardResponseTimeout)); raw != "" {
+		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
+			pr.Out = pr.Out.WithContext(transports.WithForwardResponseTimeout(pr.Out.Context(), timeout))
+		} else {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardResponseTimeout, raw)
+		}
+	}
+}
+
 func stripAIProxyHeaders(pr *httputil.ProxyRequest) {
 	if pr == nil || pr.Out == nil {
 		return
@@ -194,7 +214,7 @@ func isInternalTrustedHealthProbe(req *http.Request) bool {
 	if req == nil {
 		return false
 	}
-	if !strings.EqualFold(strings.TrimSpace(req.Header.Get(vars.XAIProxyHealthProbe)), "true") {
+	if !strings.EqualFold(strings.TrimSpace(req.Header.Get(vars.XAIProxyModelHealthProbe)), "true") {
 		return false
 	}
 	return isLoopbackRemoteAddr(req.RemoteAddr)

@@ -21,48 +21,14 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/lb/state_store"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
-
-type Config struct {
-	Probe  ProbeConfig  `file:"probe"`
-	Rescue RescueConfig `file:"rescue"`
-}
-
-type ProbeConfig struct {
-	BaseURL      string        `file:"base_url" env:"MODEL_HEALTH_PROBE_BASE_URL"`
-	Timeout      time.Duration `file:"timeout" env:"MODEL_HEALTH_PROBE_TIMEOUT" default:"10s"`
-	UnhealthyTTL time.Duration `file:"unhealthy_ttl" env:"MODEL_HEALTH_UNHEALTHY_TTL" default:"1h"`
-}
-
-type RescueConfig struct {
-	InitialBackoff time.Duration `file:"initial_backoff" env:"MODEL_HEALTH_RESCUE_INITIAL_BACKOFF" default:"3s"`
-	MaxBackoff     time.Duration `file:"max_backoff" env:"MODEL_HEALTH_RESCUE_MAX_BACKOFF" default:"2m"`
-}
-
-func (cfg *Config) normalize() {
-	if strings.TrimSpace(cfg.Probe.BaseURL) == "" {
-		panic("model health probe base_url must not be empty")
-	}
-	if cfg.Probe.UnhealthyTTL <= 0 {
-		cfg.Probe.UnhealthyTTL = time.Hour
-	}
-	if cfg.Probe.Timeout <= 0 {
-		cfg.Probe.Timeout = 10 * time.Second
-	}
-	if cfg.Rescue.InitialBackoff <= 0 {
-		panic("model health rescue initial_backoff must be > 0")
-	}
-	if cfg.Rescue.MaxBackoff <= 0 {
-		panic("model health rescue max_backoff must be > 0")
-	}
-}
 
 type Manager struct {
 	store   state_store.LBStateStore
@@ -94,6 +60,13 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 	}
 
 	probeHeadersFromMeta := buildProbeHeadersFromRequestMeta(req.Meta)
+	if req.Ctx != nil {
+		if reqID, ok := ctxhelper.GetRequestID(req.Ctx); ok && reqID != "" {
+			if probeHeadersFromMeta.Get(vars.XRequestId) == "" {
+				probeHeadersFromMeta.Set(vars.XRequestId, reqID)
+			}
+		}
+	}
 	storeCtx := req.Ctx
 	if storeCtx == nil {
 		storeCtx = context.Background()
@@ -130,6 +103,14 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 func (m *Manager) MarkUnhealthy(ctx context.Context, instanceID string, apiType APIType, lastErr string, headers http.Header) {
 	if m == nil || instanceID == "" || apiType == "" {
 		return
+	}
+	if headers == nil {
+		headers = make(http.Header)
+	}
+	if ctx != nil && headers.Get(vars.XRequestId) == "" {
+		if reqID, ok := ctxhelper.GetRequestID(ctx); ok && reqID != "" {
+			headers.Set(vars.XRequestId, reqID)
+		}
 	}
 	callID := extractCallID(headers)
 	logrus.WithFields(logrus.Fields{

@@ -73,7 +73,7 @@ func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Inner == nil {
 		t.Inner = BaseTransport
 	}
-	res, err := roundTripWithForwardTLSHandshakeTimeout(t.Inner, req)
+	res, err := roundTripWithForwardTransportOverrides(t.Inner, req)
 	ctxhelper.MustGetLoggerBase(req.Context()).Sub(reflect.TypeOf(t).String()).
 		Infof("RoundTrip costs: %s", time.Now().Sub(start).String())
 	return res, err
@@ -158,23 +158,41 @@ var BaseTransport http.RoundTripper = &http.Transport{
 	DisableCompression:    false,
 }
 
-func roundTripWithForwardTLSHandshakeTimeout(inner http.RoundTripper, req *http.Request) (*http.Response, error) {
-	timeout, ok := getForwardTLSHandshakeTimeoutFromContext(req.Context())
-	if !ok {
+func roundTripWithForwardTransportOverrides(inner http.RoundTripper, req *http.Request) (*http.Response, error) {
+	ctx := req.Context()
+	tlsTimeout, hasTLS := getForwardTLSHandshakeTimeoutFromContext(ctx)
+	respTimeout, hasResp := getForwardResponseTimeoutFromContext(ctx)
+
+	if !hasTLS && !hasResp {
 		return inner.RoundTrip(req)
 	}
+
 	transport, ok := inner.(*http.Transport)
 	if !ok {
 		return inner.RoundTrip(req)
 	}
-	if timeout == transport.TLSHandshakeTimeout {
+
+	needClone := false
+	if hasTLS && tlsTimeout != transport.TLSHandshakeTimeout {
+		needClone = true
+	}
+	if hasResp && respTimeout != transport.ResponseHeaderTimeout {
+		needClone = true
+	}
+	if !needClone {
 		return inner.RoundTrip(req)
 	}
-	// Clone transport with overridden TLS handshake timeout.
+
+	// Clone transport with per-request overrides.
 	// Not cached: this path is used by infrequent health probes,
 	// so per-request clone avoids connection pool fragmentation.
 	cloned := transport.Clone()
-	cloned.TLSHandshakeTimeout = timeout
+	if hasTLS {
+		cloned.TLSHandshakeTimeout = tlsTimeout
+	}
+	if hasResp {
+		cloned.ResponseHeaderTimeout = respTimeout
+	}
 	defer cloned.CloseIdleConnections()
 	return cloned.RoundTrip(req)
 }

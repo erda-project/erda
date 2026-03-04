@@ -128,6 +128,7 @@ func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
 			audithelper.Note(ctx, "policy_group.branch_name", trace.Branch.Name)
 		}
 	}
+	// model health related
 	if healthMetaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx); ok && healthMetaVal != nil {
 		if healthMeta, ok := healthMetaVal.(*health.PolicyGroupHealthMeta); ok && healthMeta != nil {
 			filteredUnhealthyIDs := healthMeta.FilteredUnhealthyInstanceIDs

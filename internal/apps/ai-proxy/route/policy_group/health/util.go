@@ -99,6 +99,13 @@ func extractCallID(headers http.Header) string {
 	return ""
 }
 
+func extractRequestID(headers http.Header) string {
+	if len(headers) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(headers.Get(vars.XRequestId))
+}
+
 func tryPutModelMarkUnhealthyInstanceID(ctx context.Context, instanceID string) {
 	if ctx == nil || instanceID == "" {
 		return
