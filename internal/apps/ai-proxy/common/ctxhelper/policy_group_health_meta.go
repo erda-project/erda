@@ -14,68 +14,17 @@
 
 package ctxhelper
 
-import (
-	"context"
-	"sync"
-)
+import "context"
 
-type mapKeyPolicyGroupHealthMeta struct {
-	*PolicyGroupHealthMeta
+type mapKeyPolicyGroupHealthMeta struct{ any }
+
+func GetPolicyGroupHealthMeta(ctx context.Context) (any, bool) {
+	return getFromMapKeyAs[any](ctx, mapKeyPolicyGroupHealthMeta{})
 }
 
-type PolicyGroupHealthMeta struct {
-	FilteredUnhealthyInstanceIDs []string
-	ReleasedUnsupportedCount     int
-	ReleasedUnsupportedAPITypes  []string
-
-	mu                          sync.Mutex
-	filteredUnhealthyInstanceID map[string]struct{}
-	releasedUnsupportedAPIType  map[string]struct{}
-}
-
-func ensurePolicyGroupHealthMeta(ctx context.Context) *PolicyGroupHealthMeta {
-	meta, ok := getFromMapKeyAs[*PolicyGroupHealthMeta](ctx, mapKeyPolicyGroupHealthMeta{})
-	if ok && meta != nil {
-		return meta
-	}
-	meta = &PolicyGroupHealthMeta{
-		filteredUnhealthyInstanceID: make(map[string]struct{}),
-		releasedUnsupportedAPIType:  make(map[string]struct{}),
+func PutPolicyGroupHealthMeta(ctx context.Context, meta any) {
+	if ctx == nil || meta == nil {
+		return
 	}
 	putToMapKey(ctx, mapKeyPolicyGroupHealthMeta{}, meta)
-	return meta
-}
-
-func GetPolicyGroupHealthMeta(ctx context.Context) (*PolicyGroupHealthMeta, bool) {
-	meta, ok := getFromMapKeyAs[*PolicyGroupHealthMeta](ctx, mapKeyPolicyGroupHealthMeta{})
-	return meta, ok && meta != nil
-}
-
-func AppendFilteredUnhealthyInstanceID(ctx context.Context, instanceID string) {
-	if ctx == nil || instanceID == "" {
-		return
-	}
-	meta := ensurePolicyGroupHealthMeta(ctx)
-	meta.mu.Lock()
-	defer meta.mu.Unlock()
-	if _, exists := meta.filteredUnhealthyInstanceID[instanceID]; exists {
-		return
-	}
-	meta.filteredUnhealthyInstanceID[instanceID] = struct{}{}
-	meta.FilteredUnhealthyInstanceIDs = append(meta.FilteredUnhealthyInstanceIDs, instanceID)
-}
-
-func AppendReleasedUnsupportedAPIType(ctx context.Context, apiType string) {
-	if ctx == nil || apiType == "" {
-		return
-	}
-	meta := ensurePolicyGroupHealthMeta(ctx)
-	meta.mu.Lock()
-	defer meta.mu.Unlock()
-	meta.ReleasedUnsupportedCount++
-	if _, exists := meta.releasedUnsupportedAPIType[apiType]; exists {
-		return
-	}
-	meta.releasedUnsupportedAPIType[apiType] = struct{}{}
-	meta.ReleasedUnsupportedAPITypes = append(meta.ReleasedUnsupportedAPITypes, apiType)
 }

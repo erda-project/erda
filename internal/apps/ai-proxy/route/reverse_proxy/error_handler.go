@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 )
 
 var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err error) {
@@ -64,7 +65,7 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 		}
 		// Only transport network errors should be reported here.
 		if !hasRewriteErr && !hasResponseErr {
-			reportModelNetworkFailure(r.Context(), r, err)
+			health.ReportModelNetworkFailure(r.Context(), r, err)
 		}
 
 		// set ai-proxy response header

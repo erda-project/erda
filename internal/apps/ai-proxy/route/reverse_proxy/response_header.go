@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
 	policy_group "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -83,7 +84,11 @@ type modelHealthMetaHeader struct {
 }
 
 func _handleModelHealthMetaHeader(resp *http.Response) {
-	meta, ok := ctxhelper.GetPolicyGroupHealthMeta(resp.Request.Context())
+	metaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(resp.Request.Context())
+	if !ok || metaVal == nil {
+		return
+	}
+	meta, ok := metaVal.(*health.PolicyGroupHealthMeta)
 	if !ok || meta == nil || meta.ReleasedUnsupportedCount <= 0 {
 		return
 	}

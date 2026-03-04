@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -36,7 +37,17 @@ import (
 
 var (
 	_ http.RoundTripper = (*DoNothingTransport)(nil)
+
+	tlsTimeoutTransportCache = struct {
+		mu    sync.Mutex
+		items map[string]*http.Transport
+		order []string
+	}{
+		items: make(map[string]*http.Transport),
+	}
 )
+
+const tlsTimeoutTransportCacheCap = 16
 
 type DoNothingTransport struct {
 	Response *http.Response
@@ -164,11 +175,30 @@ func roundTripWithForwardTLSHandshakeTimeout(inner http.RoundTripper, req *http.
 	if timeout == transport.TLSHandshakeTimeout {
 		return inner.RoundTrip(req)
 	}
+	return getOrCreateTLSHandshakeTimeoutTransport(transport, timeout).RoundTrip(req)
+}
 
-	cloned := transport.Clone()
+func getOrCreateTLSHandshakeTimeoutTransport(base *http.Transport, timeout time.Duration) *http.Transport {
+	cacheKey := fmt.Sprintf("%p:%d", base, timeout.Nanoseconds())
+	tlsTimeoutTransportCache.mu.Lock()
+	defer tlsTimeoutTransportCache.mu.Unlock()
+
+	if cached, ok := tlsTimeoutTransportCache.items[cacheKey]; ok {
+		return cached
+	}
+	cloned := base.Clone()
 	cloned.TLSHandshakeTimeout = timeout
-	defer cloned.CloseIdleConnections()
-	return cloned.RoundTrip(req)
+	tlsTimeoutTransportCache.items[cacheKey] = cloned
+	tlsTimeoutTransportCache.order = append(tlsTimeoutTransportCache.order, cacheKey)
+	if len(tlsTimeoutTransportCache.order) > tlsTimeoutTransportCacheCap {
+		evicted := tlsTimeoutTransportCache.order[0]
+		tlsTimeoutTransportCache.order = tlsTimeoutTransportCache.order[1:]
+		if old, ok := tlsTimeoutTransportCache.items[evicted]; ok {
+			old.CloseIdleConnections()
+			delete(tlsTimeoutTransportCache.items, evicted)
+		}
+	}
+	return cloned
 }
 
 func GenCurl(req *http.Request) string {

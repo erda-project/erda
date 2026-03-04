@@ -24,6 +24,7 @@ import (
 
 	audittypes "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -75,9 +76,9 @@ func TestSaveContextToAuditWritesPolicyGroupHealthMeta(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	sink := &fakeAuditSink{notes: map[string]any{}}
 	ctxhelper.PutAuditSink(ctx, sink)
-	ctxhelper.AppendFilteredUnhealthyInstanceID(ctx, "i1")
-	ctxhelper.AppendFilteredUnhealthyInstanceID(ctx, "i2")
-	ctxhelper.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
+	health.AppendFilteredUnhealthyInstanceID(ctx, "i1")
+	health.AppendFilteredUnhealthyInstanceID(ctx, "i2")
+	health.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
 
 	req := httptest.NewRequest("POST", "http://example.com/v1/chat/completions", nil).WithContext(ctx)
 	req.Header.Set(vars.XAIProxySource, "unit-test")

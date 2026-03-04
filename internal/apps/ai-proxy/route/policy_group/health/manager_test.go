@@ -36,6 +36,11 @@ import (
 func TestFilterHealthyInstances(t *testing.T) {
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:65530",
+			UnhealthyTTL: time.Hour,
+			Timeout:      20 * time.Millisecond,
+		},
 		Rescue: RescueConfig{
 			InitialBackoff: 10 * time.Millisecond,
 			MaxBackoff:     20 * time.Millisecond,
@@ -64,7 +69,11 @@ func TestFilterHealthyInstances(t *testing.T) {
 	if len(filtered) != 1 || filtered[0].ModelWithProvider.Id != "i2" {
 		t.Fatalf("expected only i2 after health filter, got %v", collectIDs(filtered))
 	}
-	meta, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
+	metaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
+	if !ok || metaVal == nil {
+		t.Fatal("expected policy group health meta in ctx")
+	}
+	meta, ok := metaVal.(*PolicyGroupHealthMeta)
 	if !ok || meta == nil {
 		t.Fatal("expected policy group health meta in ctx")
 	}
@@ -89,7 +98,13 @@ func TestNewManagerPanicWhenRescueBackoffUnset(t *testing.T) {
 			t.Fatal("expected panic when rescue backoff is unset")
 		}
 	}()
-	_ = NewManager(store, Config{})
+	_ = NewManager(store, Config{
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:65530",
+			UnhealthyTTL: time.Hour,
+			Timeout:      20 * time.Millisecond,
+		},
+	})
 }
 
 func TestMarkUnhealthyStartsSingleProbeWorker(t *testing.T) {
@@ -412,7 +427,11 @@ func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {
 	if _, ok, _ := manager.GetState(context.Background(), "i1"); ok {
 		t.Fatal("expected unhealthy state deleted for unsupported api_type")
 	}
-	meta, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
+	metaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
+	if !ok || metaVal == nil {
+		t.Fatal("expected policy group health meta in ctx")
+	}
+	meta, ok := metaVal.(*PolicyGroupHealthMeta)
 	if !ok || meta == nil {
 		t.Fatal("expected policy group health meta in ctx")
 	}

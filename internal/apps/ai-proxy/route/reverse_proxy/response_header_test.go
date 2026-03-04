@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -184,8 +185,8 @@ func TestHandleModelHealthMetaHeader(t *testing.T) {
 	req = req.WithContext(ctx)
 	ctxhelper.PutRequestID(ctx, "client-1")
 	ctxhelper.PutGeneratedCallID(ctx, "call-1")
-	ctxhelper.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
-	ctxhelper.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
+	health.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
+	health.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
 
 	resp := &http.Response{
 		Header:  make(http.Header),

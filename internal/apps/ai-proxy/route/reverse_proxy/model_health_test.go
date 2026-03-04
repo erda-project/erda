@@ -69,8 +69,8 @@ func TestIsNetworkFailureError(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isNetworkFailureError(tt.err); got != tt.want {
-				t.Fatalf("isNetworkFailureError(%v)=%v, want=%v", tt.err, got, tt.want)
+			if got := health.IsNetworkFailureError(tt.err); got != tt.want {
+				t.Fatalf("IsNetworkFailureError(%v)=%v, want=%v", tt.err, got, tt.want)
 			}
 		})
 	}
@@ -97,7 +97,7 @@ func TestReportModelNetworkFailure(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer t_chat")
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctx, req)
 
-	reportModelNetworkFailure(ctx, req, errors.New("read tcp 127.0.0.1:1->127.0.0.1:2: read: connection reset by peer"))
+	health.ReportModelNetworkFailure(ctx, req, errors.New("read tcp 127.0.0.1:1->127.0.0.1:2: read: connection reset by peer"))
 
 	waitForCondition(t, 2*time.Second, func() bool {
 		state, ok, _ := manager.GetState(context.Background(), "m-chat")
@@ -137,7 +137,7 @@ func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	probeReq := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1ChatCompletions, nil).WithContext(ctxProbe)
 	probeReq.Header.Set(vars.XAIProxyHealthProbe, "true")
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctxProbe, probeReq)
-	reportModelNetworkFailure(ctxProbe, probeReq, errors.New("read tcp x->y: read: connection reset by peer"))
+	health.ReportModelNetworkFailure(ctxProbe, probeReq, errors.New("read tcp x->y: read: connection reset by peer"))
 
 	if _, ok, _ := manager.GetState(context.Background(), "m-probe"); ok {
 		t.Fatal("probe request should not report unhealthy")
@@ -147,7 +147,7 @@ func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	ctxhelper.PutModel(ctxOtherPath, &modelpb.Model{Id: "m-other"})
 	otherPathReq := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1Embeddings, nil).WithContext(ctxOtherPath)
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctxOtherPath, otherPathReq)
-	reportModelNetworkFailure(ctxOtherPath, otherPathReq, errors.New("read tcp x->y: read: connection reset by peer"))
+	health.ReportModelNetworkFailure(ctxOtherPath, otherPathReq, errors.New("read tcp x->y: read: connection reset by peer"))
 
 	if _, ok, _ := manager.GetState(context.Background(), "m-other"); ok {
 		t.Fatal("non chat/responses request should not report unhealthy")

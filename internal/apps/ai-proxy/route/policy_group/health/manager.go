@@ -15,13 +15,9 @@
 package health
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -29,11 +25,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/lb/state_store"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type Config struct {
@@ -42,7 +36,7 @@ type Config struct {
 }
 
 type ProbeConfig struct {
-	BaseURL      string        `file:"base_url" env:"MODEL_HEALTH_PROBE_BASE_URL" default:"http://127.0.0.1:8081"`
+	BaseURL      string        `file:"base_url" env:"MODEL_HEALTH_PROBE_BASE_URL"`
 	Timeout      time.Duration `file:"timeout" env:"MODEL_HEALTH_PROBE_TIMEOUT" default:"10s"`
 	UnhealthyTTL time.Duration `file:"unhealthy_ttl" env:"MODEL_HEALTH_UNHEALTHY_TTL" default:"1h"`
 }
@@ -52,11 +46,9 @@ type RescueConfig struct {
 	MaxBackoff     time.Duration `file:"max_backoff" env:"MODEL_HEALTH_RESCUE_MAX_BACKOFF" default:"2m"`
 }
 
-var errUnsupportedAPIType = errors.New("health probe build request failed: unsupported api_type")
-
 func (cfg *Config) normalize() {
-	if cfg.Probe.BaseURL == "" {
-		cfg.Probe.BaseURL = "http://127.0.0.1:8081"
+	if strings.TrimSpace(cfg.Probe.BaseURL) == "" {
+		panic("model health probe base_url must not be empty")
 	}
 	if cfg.Probe.UnhealthyTTL <= 0 {
 		cfg.Probe.UnhealthyTTL = time.Hour
@@ -70,29 +62,6 @@ func (cfg *Config) normalize() {
 	if cfg.Rescue.MaxBackoff <= 0 {
 		panic("model health rescue max_backoff must be > 0")
 	}
-}
-
-type workerState struct {
-	mu      sync.Mutex
-	apiType APIType
-	headers http.Header
-}
-
-func (w *workerState) Update(apiType APIType, headers http.Header) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if apiType != "" {
-		w.apiType = apiType
-	}
-	if len(headers) > 0 {
-		w.headers = cloneHeaders(headers)
-	}
-}
-
-func (w *workerState) Snapshot() (APIType, http.Header) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.apiType, cloneHeaders(w.headers)
 }
 
 type Manager struct {
@@ -125,29 +94,31 @@ func (m *Manager) FilterHealthyInstances(req policygroup.RouteRequest, instances
 	}
 
 	probeHeadersFromMeta := buildProbeHeadersFromRequestMeta(req.Meta)
+	storeCtx := req.Ctx
+	if storeCtx == nil {
+		storeCtx = context.Background()
+	}
 	filtered := make([]*policygroup.RoutingModelInstance, 0, len(instances))
 	for _, instance := range instances {
 		if instance == nil || instance.ModelWithProvider == nil {
 			continue
 		}
-		state, ok, err := m.GetState(context.Background(), instance.ModelWithProvider.Id)
+		state, ok, err := m.GetState(storeCtx, instance.ModelWithProvider.Id)
 		if err != nil {
 			return instances
 		}
 		if ok && strings.EqualFold(state.State, stateUnhealthy) {
 			if !isAPITypeProbeSupported(state.APIType) {
-				_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instance.ModelWithProvider.Id)
+				_ = m.store.DeleteBinding(storeCtx, modelHealthBindingKey, instance.ModelWithProvider.Id)
 				if req.Ctx != nil {
-					ctxhelper.AppendReleasedUnsupportedAPIType(req.Ctx, string(state.APIType))
+					AppendReleasedUnsupportedAPIType(req.Ctx, string(state.APIType))
 				}
 				filtered = append(filtered, instance)
 				continue
 			}
 			if req.Ctx != nil {
-				ctxhelper.AppendFilteredUnhealthyInstanceID(req.Ctx, instance.ModelWithProvider.Id)
+				AppendFilteredUnhealthyInstanceID(req.Ctx, instance.ModelWithProvider.Id)
 			}
-			// When process restarts, in-memory workers are gone but unhealthy state may still exist.
-			// Re-arm probe worker from live user request context to avoid waiting for TTL.
 			m.startOrUpdateProbeWorker(instance.ModelWithProvider.Id, state.APIType, probeHeadersFromMeta)
 			continue
 		}
@@ -167,7 +138,7 @@ func (m *Manager) MarkUnhealthy(ctx context.Context, instanceID string, apiType 
 		"error":       lastErr,
 		"call_id":     callID,
 	}).Warn("mark model instance unhealthy")
-	ctxhelper.PutModelMarkUnhealthyInstanceID(ctx, instanceID)
+	tryPutModelMarkUnhealthyInstanceID(ctx, instanceID)
 	m.writeUnhealthyState(ctx, instanceID, apiType, lastErr)
 	m.startOrUpdateProbeWorker(instanceID, apiType, headers)
 }
@@ -182,203 +153,6 @@ func (m *Manager) GetState(ctx context.Context, instanceID string) (*ModelHealth
 		return nil, false, err
 	}
 	return &state, true, nil
-}
-
-func (m *Manager) startOrUpdateProbeWorker(instanceID string, apiType APIType, headers http.Header) {
-	newState := &workerState{
-		apiType: apiType,
-		headers: cloneHeaders(headers),
-	}
-	callID := extractCallID(headers)
-	actual, loaded := m.workers.LoadOrStore(instanceID, newState)
-	if loaded {
-		existing, _ := actual.(*workerState)
-		if existing != nil {
-			existing.Update(apiType, headers)
-		}
-		logrus.WithFields(logrus.Fields{
-			"instance_id": instanceID,
-			"api_type":    apiType,
-			"call_id":     callID,
-		}).Warn("probe worker already running, update worker state")
-		return
-	}
-	logrus.WithFields(logrus.Fields{
-		"instance_id": instanceID,
-		"api_type":    apiType,
-		"call_id":     callID,
-	}).Warn("start probe worker for unhealthy instance")
-	go m.probeWorker(instanceID, newState)
-}
-
-func (m *Manager) probeWorker(instanceID string, worker *workerState) {
-	defer m.workers.Delete(instanceID)
-
-	backoff := m.cfg.Rescue.InitialBackoff
-	for {
-		apiType, headers := worker.Snapshot()
-		callID, err := m.probeOnce(instanceID, apiType, headers)
-		if err == nil {
-			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instanceID)
-			logrus.WithFields(logrus.Fields{
-				"instance_id": instanceID,
-				"api_type":    apiType,
-				"call_id":     callID,
-			}).Warn("probe success, recovered unhealthy instance")
-			return
-		}
-		if errors.Is(err, errUnsupportedAPIType) {
-			// Unsupported api_type cannot be actively probed; fail-open to avoid
-			// keeping the instance in unhealthy set indefinitely.
-			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instanceID)
-			logrus.WithFields(logrus.Fields{
-				"instance_id": instanceID,
-				"api_type":    apiType,
-				"error":       err.Error(),
-				"call_id":     callID,
-			}).Warn("unsupported api_type for probe, release unhealthy instance immediately")
-			return
-		}
-		// Keep refreshing unhealthy state on every failed probe so the instance
-		// is only released after a successful recovery probe.
-		m.writeUnhealthyState(context.Background(), instanceID, apiType, err.Error())
-		logrus.WithFields(logrus.Fields{
-			"instance_id": instanceID,
-			"api_type":    apiType,
-			"backoff":     backoff.String(),
-			"call_id":     callID,
-		}).Warnf("probe failed, keep unhealthy and retry, err: %v", err)
-		delay := withJitter(backoff)
-		time.Sleep(delay)
-
-		backoff = backoff * 2
-		if backoff > m.cfg.Rescue.MaxBackoff {
-			backoff = m.cfg.Rescue.MaxBackoff
-		}
-	}
-}
-
-func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Header) (string, error) {
-	path, body, ok := buildProbeRequest(apiType)
-	if !ok {
-		return extractCallID(headers), errUnsupportedAPIType
-	}
-
-	baseURL := strings.TrimRight(m.cfg.Probe.BaseURL, "/")
-	req, err := http.NewRequest(http.MethodPost, baseURL+path, bytes.NewReader(body))
-	if err != nil {
-		return extractCallID(headers), fmt.Errorf("health probe build http request failed: %w", err)
-	}
-
-	for key, values := range headers {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(vars.XAIProxyModelId, instanceID)
-	req.Header.Set(vars.XAIProxyHealthProbe, "true")
-	req.Header.Del("Content-Length")
-
-	resp, err := m.client.Do(req)
-	if err != nil {
-		return extractCallID(req.Header), fmt.Errorf("health probe request failed: %w", err)
-	}
-	defer resp.Body.Close()
-	callID := extractCallID(resp.Header)
-	if callID == "" {
-		callID = extractCallID(req.Header)
-	}
-	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return callID, fmt.Errorf("health probe got non-2xx status=%d body=%q", resp.StatusCode, strings.TrimSpace(string(respBody)))
-	}
-	return callID, nil
-}
-
-func (m *Manager) writeUnhealthyState(ctx context.Context, instanceID string, apiType APIType, lastErr string) {
-	now := time.Now()
-	state := ModelHealthState{
-		State:     stateUnhealthy,
-		APIType:   apiType,
-		LastError: lastErr,
-		UpdatedAt: now,
-	}
-	b, err := json.Marshal(&state)
-	if err != nil {
-		return
-	}
-	_ = m.store.SetBinding(ctx, modelHealthBindingKey, instanceID, string(b), m.cfg.Probe.UnhealthyTTL)
-}
-
-func buildProbeRequest(apiType APIType) (path string, body []byte, ok bool) {
-	switch apiType {
-	case APITypeChatCompletions:
-		return vars.RequestPathPrefixV1ChatCompletions, []byte(`{"model":"health-probe","messages":[{"role":"user","content":"hello"}],"stream":false}`), true
-	case APITypeResponses:
-		return vars.RequestPathPrefixV1Responses, []byte(`{"model":"health-probe","input":"hello","stream":false}`), true
-	default:
-		return "", nil, false
-	}
-}
-
-func isAPITypeProbeSupported(apiType APIType) bool {
-	_, _, ok := buildProbeRequest(apiType)
-	return ok
-}
-
-func buildProbeHeadersFromRequestMeta(meta policygroup.RequestMeta) http.Header {
-	headers := make(http.Header)
-	for metaKey, metaValue := range meta.Keys {
-		if !strings.HasPrefix(strings.ToLower(metaKey), common_types.StickyKeyPrefixFromReqHeader) {
-			continue
-		}
-		headerKey := strings.TrimSpace(metaKey[len(common_types.StickyKeyPrefixFromReqHeader):])
-		if headerKey == "" {
-			continue
-		}
-		if strings.TrimSpace(metaValue) == "" {
-			continue
-		}
-		headers.Set(http.CanonicalHeaderKey(headerKey), metaValue)
-	}
-	return headers
-}
-
-func cloneHeaders(headers http.Header) http.Header {
-	if len(headers) == 0 {
-		return http.Header{}
-	}
-	cloned := make(http.Header, len(headers))
-	for key, values := range headers {
-		cloned[key] = append([]string(nil), values...)
-	}
-	return cloned
-}
-
-func withJitter(backoff time.Duration) time.Duration {
-	if backoff <= 0 {
-		return 0
-	}
-	jitterRange := backoff / 4
-	if jitterRange <= 0 {
-		return backoff
-	}
-	delta := time.Duration(rand.Int63n(int64(jitterRange)))
-	return backoff + delta
-}
-
-func extractCallID(headers http.Header) string {
-	if len(headers) == 0 {
-		return ""
-	}
-	if v := strings.TrimSpace(headers.Get(vars.XAIProxyGeneratedCallId)); v != "" {
-		return v
-	}
-	if v := strings.TrimSpace(headers.Get(vars.XRequestId)); v != "" {
-		return v
-	}
-	return ""
 }
 
 func (m *Manager) String() string {

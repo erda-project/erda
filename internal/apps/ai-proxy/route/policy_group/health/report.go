@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverse_proxy
+package health
 
 import (
 	"context"
@@ -25,7 +25,6 @@ import (
 	"syscall"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 )
 
 var networkErrorMarkers = []string{
@@ -43,12 +42,12 @@ var networkErrorMarkers = []string{
 	"tls handshake timeout",
 }
 
-func reportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, err error) {
-	if !isNetworkFailureError(err) {
+func ReportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, err error) {
+	if !IsNetworkFailureError(err) {
 		return
 	}
 
-	manager := health.GetManager()
+	manager := GetManager()
 	if manager == nil {
 		return
 	}
@@ -64,10 +63,8 @@ func reportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, e
 		return
 	}
 
-	apiType, ok := health.ResolveAPIType(sourceReq.Method, sourceReq.URL.Path)
+	apiType, ok := ResolveAPIType(sourceReq.Method, sourceReq.URL.Path)
 	if !ok {
-		// Current phase only reports unhealthy for chat/responses;
-		// embeddings and other APIs do not enter unhealthy lifecycle.
 		return
 	}
 
@@ -75,10 +72,10 @@ func reportModelNetworkFailure(ctx context.Context, fallbackReq *http.Request, e
 	if !ok || model == nil || model.Id == "" {
 		return
 	}
-	manager.MarkUnhealthy(ctx, model.Id, apiType, err.Error(), health.BuildProbeHeaders(sourceReq.Header))
+	manager.MarkUnhealthy(ctx, model.Id, apiType, err.Error(), BuildProbeHeaders(sourceReq.Header))
 }
 
-func isNetworkFailureError(err error) bool {
+func IsNetworkFailureError(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -91,7 +88,7 @@ func isNetworkFailureError(err error) bool {
 
 	var urlErr *url.Error
 	if errors.As(err, &urlErr) {
-		if urlErr.Timeout() || isNetworkFailureError(urlErr.Err) {
+		if urlErr.Timeout() || IsNetworkFailureError(urlErr.Err) {
 			return true
 		}
 	}

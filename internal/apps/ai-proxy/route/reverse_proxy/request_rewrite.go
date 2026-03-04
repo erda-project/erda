@@ -138,6 +138,16 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	if isInternalTrustedHealthProbe(pr.In) {
 		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
 	}
+	applyForwardTLSHandshakeTimeoutOverride(pr)
+	applyForwardDialTimeoutOverride(pr)
+
+	stripAIProxyHeaders(pr)
+}
+
+func applyForwardTLSHandshakeTimeoutOverride(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
 
 	// Support request-level outbound TLS handshake timeout override:
 	// x-ai-proxy-forward-tls-handshake-timeout: 5s
@@ -147,6 +157,12 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 		} else {
 			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardTLSHandshakeTimeout, raw)
 		}
+	}
+}
+
+func applyForwardDialTimeoutOverride(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
 	}
 
 	// Support request-level outbound dial timeout override:
@@ -158,7 +174,12 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardDialTimeout, raw)
 		}
 	}
+}
 
+func stripAIProxyHeaders(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.Out == nil {
+		return
+	}
 	// del all X-AI-Proxy-* headers before invoking llm
 	for k := range pr.Out.Header {
 		if strings.HasPrefix(strings.ToUpper(k), strings.ToUpper(vars.XAIProxyHeaderPrefix)) {

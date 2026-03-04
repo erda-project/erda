@@ -87,7 +87,6 @@ type (
 
 	mapKeyRequestBodyTransformChanges     struct{ any }
 	mapKeyRequestThinkingTransformChanges struct{ any }
-	mapKeyTrustedHealthProbe              struct{ bool }
 
 	mapKeyRequestBeginAt struct{ time.Time }
 
@@ -96,6 +95,9 @@ type (
 	mapKeyAudioTTSResponseFormat struct{ string }
 
 	mapKeyIsLastBodyChunk struct{ bool }
+
+	mapKeyModelMarkUnhealthyInstanceID struct{ string }
+	mapKeyTrustedHealthProbe           struct{ bool }
 )
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)
