@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"runtime/debug"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -133,6 +135,71 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 }
 
 func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
+	if isInternalTrustedHealthProbe(pr.In) {
+		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
+	}
+	applyForwardTLSHandshakeTimeoutOverride(pr)
+	applyForwardDialTimeoutOverride(pr)
+	applyForwardResponseTimeoutOverride(pr)
+
+	stripAIProxyHeaders(pr)
+}
+
+func applyForwardTLSHandshakeTimeoutOverride(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
+
+	// Support request-level outbound TLS handshake timeout override:
+	// x-ai-proxy-forward-tls-handshake-timeout: 5s
+	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardTLSHandshakeTimeout)); raw != "" {
+		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
+			pr.Out = pr.Out.WithContext(transports.WithForwardTLSHandshakeTimeout(pr.Out.Context(), timeout))
+		} else {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardTLSHandshakeTimeout, raw)
+		}
+	}
+}
+
+func applyForwardDialTimeoutOverride(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
+
+	// Support request-level outbound dial timeout override:
+	// x-ai-proxy-forward-dial-timeout: 5s
+	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardDialTimeout)); raw != "" {
+		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
+			pr.Out = pr.Out.WithContext(transports.WithForwardDialTimeout(pr.Out.Context(), timeout))
+		} else {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardDialTimeout, raw)
+		}
+	}
+}
+
+func applyForwardResponseTimeoutOverride(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
+
+	// Support request-level outbound response header timeout override:
+	// x-ai-proxy-forward-response-timeout: 5s
+	// This limits the time waiting for the server's response headers
+	// AFTER the request has been fully written. It does NOT include
+	// dial or TLS handshake time.
+	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardResponseTimeout)); raw != "" {
+		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
+			pr.Out = pr.Out.WithContext(transports.WithForwardResponseTimeout(pr.Out.Context(), timeout))
+		} else {
+			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardResponseTimeout, raw)
+		}
+	}
+}
+
+func stripAIProxyHeaders(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.Out == nil {
+		return
+	}
 	// del all X-AI-Proxy-* headers before invoking llm
 	for k := range pr.Out.Header {
 		if strings.HasPrefix(strings.ToUpper(k), strings.ToUpper(vars.XAIProxyHeaderPrefix)) {
@@ -141,4 +208,27 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	}
 	// del Origin to avoid upstream CORS header
 	pr.Out.Header.Del(echo.HeaderOrigin)
+}
+
+func isInternalTrustedHealthProbe(req *http.Request) bool {
+	if req == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(req.Header.Get(vars.XAIProxyModelHealthProbe)), "true") {
+		return false
+	}
+	return isLoopbackRemoteAddr(req.RemoteAddr)
+}
+
+func isLoopbackRemoteAddr(remoteAddr string) bool {
+	if strings.TrimSpace(remoteAddr) == "" {
+		return false
+	}
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+	host = strings.Trim(host, "[]")
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

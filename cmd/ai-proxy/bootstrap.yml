@@ -12,6 +12,14 @@ erda.app.ai-proxy:
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
   lb_state_store_type: ${LB_STATE_STORE_TYPE:memory} # memory / redis / etcd
   lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
+  model_health:
+    probe:
+      base_url: ${MODEL_HEALTH_PROBE_BASE_URL:http://127.0.0.1:8081}
+      timeout: ${MODEL_HEALTH_PROBE_TIMEOUT:10s}
+      unhealthy_ttl: ${MODEL_HEALTH_UNHEALTHY_TTL:1h}
+    rescue:
+      initial_backoff: ${MODEL_HEALTH_RESCUE_INITIAL_BACKOFF:3s}
+      max_backoff: ${MODEL_HEALTH_RESCUE_MAX_BACKOFF:2m}
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}

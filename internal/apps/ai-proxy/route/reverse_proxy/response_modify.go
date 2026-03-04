@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
 	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -253,6 +254,7 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 
 		if rerr != nil { // EOF or real error
 			if rerr != io.EOF && !errors.Is(rerr, context.Canceled) {
+				health.ReportModelNetworkFailure(resp.Request.Context(), resp.Request, rerr)
 				writeAndCloseWithErr(resp, pw, rerr)
 			}
 			// cleanup: call OnComplete; ensure call even if previous errors

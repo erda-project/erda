@@ -23,13 +23,16 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
 	policy_group "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
+	_handleModelMarkUnhealthyHeader(resp)
 	_handlePolicyTraceHeader(resp)
+	_handleModelHealthMetaHeader(resp)
 	_handleRequestIdHeaders(resp)
 	_handleRequestBodyTransformHeaders(resp)
 	_handleRequestThinkingTransformHeaders(resp)
@@ -49,6 +52,14 @@ func _handleModelHeaders(resp *http.Response) {
 	}
 }
 
+func _handleModelMarkUnhealthyHeader(resp *http.Response) {
+	instanceID, ok := ctxhelper.GetModelMarkUnhealthyInstanceID(resp.Request.Context())
+	if !ok || instanceID == "" {
+		return
+	}
+	resp.Header.Set(vars.XAIProxyModelHealthMarkUnhealthy, instanceID)
+}
+
 func _handlePolicyTraceHeader(resp *http.Response) {
 	traceVal, ok := ctxhelper.GetPolicyTrace(resp.Request.Context())
 	if !ok || traceVal == nil {
@@ -63,6 +74,35 @@ func _handlePolicyTraceHeader(resp *http.Response) {
 		return
 	}
 	resp.Header.Set(vars.XAIProxyPolicyGroupTrace, string(b))
+}
+
+type modelHealthMetaHeader struct {
+	Version                     string   `json:"version"`
+	ReleasedUnsupportedCount    int      `json:"released_unsupported_count"`
+	ReleasedUnsupportedAPITypes []string `json:"released_unsupported_api_types,omitempty"`
+	Reason                      string   `json:"reason,omitempty"`
+}
+
+func _handleModelHealthMetaHeader(resp *http.Response) {
+	metaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(resp.Request.Context())
+	if !ok || metaVal == nil {
+		return
+	}
+	meta, ok := metaVal.(*health.PolicyGroupHealthMeta)
+	if !ok || meta == nil || meta.ReleasedUnsupportedCount <= 0 {
+		return
+	}
+	headerValue := modelHealthMetaHeader{
+		Version:                     "v1",
+		ReleasedUnsupportedCount:    meta.ReleasedUnsupportedCount,
+		ReleasedUnsupportedAPITypes: meta.ReleasedUnsupportedAPITypes,
+		Reason:                      "unsupported_probe_api_type",
+	}
+	b, err := json.Marshal(headerValue)
+	if err != nil {
+		return
+	}
+	resp.Header.Set(vars.XAIProxyModelHealthMeta, string(b))
 }
 
 // _handleRequestIdHeaders handles request ID related header settings
