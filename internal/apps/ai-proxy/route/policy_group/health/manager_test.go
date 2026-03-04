@@ -228,6 +228,8 @@ func TestBuildProbeHeaders(t *testing.T) {
 	headers.Set("Authorization", "Bearer t_x")
 	headers.Set("AK-Token", "ak-token-x")
 	headers.Set("X-Trace-Id", "trace-1")
+	headers.Set(vars.XAIProxyForwardDialTimeout, "1ms")
+	headers.Set(vars.XAIProxyForwardTLSHandshakeTimeout, "1ms")
 	probeHeaders := BuildProbeHeaders(headers)
 
 	if probeHeaders.Get("Authorization") == "" || probeHeaders.Get("AK-Token") == "" {
@@ -238,6 +240,12 @@ func TestBuildProbeHeaders(t *testing.T) {
 	}
 	if probeHeaders.Get(vars.XAIProxyHealthProbe) != "true" {
 		t.Fatalf("expected probe marker kept, got: %v", probeHeaders)
+	}
+	if probeHeaders.Get(vars.XAIProxyForwardDialTimeout) != "" {
+		t.Fatalf("expected forward dial timeout dropped, got: %v", probeHeaders)
+	}
+	if probeHeaders.Get(vars.XAIProxyForwardTLSHandshakeTimeout) != "" {
+		t.Fatalf("expected forward tls handshake timeout dropped, got: %v", probeHeaders)
 	}
 }
 

@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -37,14 +36,7 @@ import (
 
 var (
 	_ http.RoundTripper = (*DoNothingTransport)(nil)
-
-	tlsHandshakeTimeoutTransportCache sync.Map // map[tlsHandshakeTransportCacheKey]*http.Transport
 )
-
-type tlsHandshakeTransportCacheKey struct {
-	basePtr uintptr
-	timeout time.Duration
-}
 
 type DoNothingTransport struct {
 	Response *http.Response
@@ -172,17 +164,11 @@ func roundTripWithForwardTLSHandshakeTimeout(inner http.RoundTripper, req *http.
 	if timeout == transport.TLSHandshakeTimeout {
 		return inner.RoundTrip(req)
 	}
-	key := tlsHandshakeTransportCacheKey{
-		basePtr: reflect.ValueOf(transport).Pointer(),
-		timeout: timeout,
-	}
-	if cached, ok := tlsHandshakeTimeoutTransportCache.Load(key); ok {
-		return cached.(*http.Transport).RoundTrip(req)
-	}
+
 	cloned := transport.Clone()
 	cloned.TLSHandshakeTimeout = timeout
-	actual, _ := tlsHandshakeTimeoutTransportCache.LoadOrStore(key, cloned)
-	return actual.(*http.Transport).RoundTrip(req)
+	defer cloned.CloseIdleConnections()
+	return cloned.RoundTrip(req)
 }
 
 func GenCurl(req *http.Request) string {

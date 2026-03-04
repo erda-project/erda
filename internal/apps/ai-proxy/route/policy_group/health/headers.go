@@ -30,6 +30,9 @@ func IsHealthProbeRequest(headers http.Header) bool {
 
 func BuildProbeHeaders(headers http.Header) http.Header {
 	cloned := cloneHeaders(headers)
+	// Ignore client-provided forward timeout overrides for recovery probes.
+	cloned.Del(vars.XAIProxyForwardDialTimeout)
+	cloned.Del(vars.XAIProxyForwardTLSHandshakeTimeout)
 	cloned.Set(vars.XAIProxyHealthProbe, "true")
 	return cloned
 }
