@@ -179,6 +179,64 @@ func TestSticky_BindingInvalidatedWhenInstanceGone(t *testing.T) {
 	}
 }
 
+func TestSticky_FallbackWhenBoundInstanceFilteredByHealth(t *testing.T) {
+	store := state_store.NewMemoryStateStore()
+	unhealthyID := ""
+	engine := NewEngine(store, WithHealthFilter(func(_ policygroup.RouteRequest, instances []*policygroup.RoutingModelInstance) []*policygroup.RoutingModelInstance {
+		if unhealthyID == "" {
+			return instances
+		}
+		filtered := make([]*policygroup.RoutingModelInstance, 0, len(instances))
+		for _, instance := range instances {
+			if instance.ModelWithProvider.Id == unhealthyID {
+				continue
+			}
+			filtered = append(filtered, instance)
+		}
+		return filtered
+	}))
+
+	group := &pb.PolicyGroup{
+		Name:      "g1",
+		Mode:      common_types.PolicyGroupModeWeighted.String(),
+		StickyKey: "x-request-id",
+		Branches: []*pb.PolicyBranch{
+			{
+				Name:     "b1",
+				Weight:   1,
+				Strategy: common_types.PolicyGroupBranchStrategyRoundRobin.String(),
+			},
+		},
+	}
+
+	req := policygroup.RouteRequest{
+		ClientID: "c1",
+		Group:    group,
+		Instances: []*policygroup.RoutingModelInstance{
+			testInstance("i1", nil),
+			testInstance("i2", nil),
+		},
+		Meta: policygroup.RequestMeta{Keys: map[string]string{"x-request-id": "req-1"}},
+	}
+
+	first, _, err := engine.Route(context.Background(), req)
+	if err != nil {
+		t.Fatalf("first route failed: %v", err)
+	}
+	unhealthyID = first.ModelWithProvider.Id
+
+	second, trace2, err := engine.Route(context.Background(), req)
+	if err != nil {
+		t.Fatalf("second route failed: %v", err)
+	}
+	if second.ModelWithProvider.Id == first.ModelWithProvider.Id {
+		t.Fatalf("expected sticky fallback to a different healthy instance, got same %s", second.ModelWithProvider.Id)
+	}
+	if trace2.Sticky == nil || !trace2.Sticky.FallbackFromSticky {
+		t.Fatalf("expected fallbackFromSticky=true when sticky target is filtered by health")
+	}
+}
+
 func TestSticky_WithHeaderPrefix(t *testing.T) {
 	store := state_store.NewMemoryStateStore()
 	engine := NewEngine(store)

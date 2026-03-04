@@ -68,6 +68,12 @@ func (s *EtcdStateStore) SetBinding(ctx context.Context, bindingKey BindingKey, 
 	return err
 }
 
+func (s *EtcdStateStore) DeleteBinding(ctx context.Context, bindingKey BindingKey, stickyValue string) error {
+	key := s.bindingKey(bindingKey, stickyValue)
+	_, err := s.client.Delete(ctx, key)
+	return err
+}
+
 func (s *EtcdStateStore) NextCounter(ctx context.Context, key CounterKey) (int64, error) {
 	k := s.counterKey(key)
 	for {

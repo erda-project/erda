@@ -47,6 +47,14 @@ const (
 	XAIProxyRequestThinkingTransform = "X-AI-Proxy-Request-Thinking-Transform"
 	XAIProxyPolicyGroupTrace         = "X-AI-Proxy-Policy-Group-Trace"
 
+	XAIProxyModelHealthMeta          = "X-AI-Proxy-Model-Health-Meta"
+	XAIProxyModelHealthProbe         = "X-AI-Proxy-Model-Health-Probe"
+	XAIProxyModelHealthMarkUnhealthy = "X-AI-Proxy-Model-Health-Mark-Unhealthy"
+
+	XAIProxyForwardDialTimeout         = "X-AI-Proxy-Forward-Dial-Timeout"
+	XAIProxyForwardTLSHandshakeTimeout = "X-AI-Proxy-Forward-TLS-Handshake-Timeout"
+	XAIProxyForwardResponseTimeout     = "X-AI-Proxy-Forward-Response-Timeout"
+
 	UIValueUndefined = "undefined"
 )
 

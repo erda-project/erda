@@ -16,6 +16,7 @@ package handler_policy_group
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
+
+var ErrPolicyGroupNotFoundInDB = errors.New("policy group not found in db")
 
 // UpsertForModelTemplate provides a simplified upsert for a model/template: instances + weights => policy group.
 func (h *Handler) UpsertForModelTemplate(ctx context.Context, req *pb.PolicyGroupForModelTemplateUpsertRequest) (*pb.PolicyGroupForModelTemplateResponse, error) {
@@ -68,7 +71,11 @@ func (h *Handler) UpsertForModelTemplate(ctx context.Context, req *pb.PolicyGrou
 	// query exists
 	existGroup, err := h.queryGroupByName(ctx, req.ClientId, req.TemplateId)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ErrPolicyGroupNotFoundInDB) {
+			existGroup = nil
+		} else {
+			return nil, err
+		}
 	}
 	// upsert
 	var newGroup *pb.PolicyGroup
@@ -92,7 +99,7 @@ func (h *Handler) UpsertForModelTemplate(ctx context.Context, req *pb.PolicyGrou
 		newGroup = created
 	}
 	go ctxhelper.MustGetCacheManager(ctx).(cachetypes.Manager).TriggerRefresh(ctx, cachetypes.ItemTypePolicyGroup)
-	return buildForModelTemplateResponse(newGroup), err
+	return buildForModelTemplateResponse(newGroup), nil
 }
 
 // GetForModelTemplate fetches a simplified policy group view by model template name.
@@ -115,7 +122,7 @@ func (h *Handler) queryGroupByName(ctx context.Context, clientID string, name st
 		return nil, err
 	}
 	if pagingResp.Total == 0 {
-		return nil, fmt.Errorf("policy group not found: %s", name)
+		return nil, fmt.Errorf("%w: %s", ErrPolicyGroupNotFoundInDB, name)
 	}
 	return pagingResp.List[0], nil
 }

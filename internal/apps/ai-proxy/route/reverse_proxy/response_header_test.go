@@ -15,12 +15,15 @@
 package reverse_proxy
 
 import (
+	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -172,4 +175,56 @@ func TestHandleRequestIdHeaders(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandleModelHealthMetaHeader(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	health.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
+	health.AppendReleasedUnsupportedAPIType(ctx, "embeddings")
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	raw := resp.Header.Get(vars.XAIProxyModelHealthMeta)
+	assert.NotEmpty(t, raw)
+	assert.NotContains(t, strings.ToLower(raw), "instance_id")
+
+	var payload map[string]any
+	assert.NoError(t, json.Unmarshal([]byte(raw), &payload))
+	assert.EqualValues(t, "v1", payload["version"])
+	assert.EqualValues(t, 2, payload["released_unsupported_count"])
+	assert.EqualValues(t, "unsupported_probe_api_type", payload["reason"])
+
+	apiTypes, ok := payload["released_unsupported_api_types"].([]any)
+	assert.True(t, ok)
+	assert.Len(t, apiTypes, 1)
+	assert.EqualValues(t, "embeddings", apiTypes[0])
+}
+
+func TestHandleModelMarkUnhealthyHeader(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutModelMarkUnhealthyInstanceID(ctx, "m-123")
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	assert.Equal(t, "m-123", resp.Header.Get(vars.XAIProxyModelHealthMarkUnhealthy))
 }

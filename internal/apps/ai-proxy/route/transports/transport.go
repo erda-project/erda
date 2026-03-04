@@ -73,7 +73,7 @@ func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Inner == nil {
 		t.Inner = BaseTransport
 	}
-	res, err := t.Inner.RoundTrip(req)
+	res, err := roundTripWithForwardTransportOverrides(t.Inner, req)
 	ctxhelper.MustGetLoggerBase(req.Context()).Sub(reflect.TypeOf(t).String()).
 		Infof("RoundTrip costs: %s", time.Now().Sub(start).String())
 	return res, err
@@ -117,6 +117,14 @@ var BaseTransport http.RoundTripper = &http.Transport{
 		return http.ProxyFromEnvironment(req)
 	},
 	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialer := baseDialer
+		if timeout, ok := getForwardDialTimeoutFromContext(ctx); ok {
+			// Per-request override from internal request header.
+			dialer = &net.Dialer{
+				Timeout:   timeout,
+				KeepAlive: baseDialer.KeepAlive,
+			}
+		}
 		// When SOCKS5 is enabled and the destination host matches FORWARD_PROXY_HOSTS,
 		// route the connection through the SOCKS5 proxy.
 		if socksProxyEnabled() {
@@ -127,13 +135,20 @@ var BaseTransport http.RoundTripper = &http.Transport{
 			for _, h := range forwardProxyHosts {
 				if strings.HasSuffix(host, h) {
 					logrus.Debugf("%s use socks5 dialer via %s", host, socksProxyURL)
-					// x/net/proxy.Dialer does not have a context-aware API;
-					// we ignore ctx here and rely on underlying dialer timeouts.
-					return socksDialer.Dial(network, addr)
+					if dialer == baseDialer {
+						return socksDialer.Dial(network, addr)
+					}
+					// Per-request dial timeout override: create a SOCKS dialer with the overridden dialer.
+					d, err := newSocksDialerWithForward(dialer)
+					if err != nil {
+						logrus.Warnf("failed to create per-request SOCKS5 dialer: %v, using default", err)
+						return socksDialer.Dial(network, addr)
+					}
+					return d.Dial(network, addr)
 				}
 			}
 		}
-		return baseDialer.DialContext(ctx, network, addr)
+		return dialer.DialContext(ctx, network, addr)
 	},
 	TLSHandshakeTimeout:   10 * time.Second,
 	MaxIdleConns:          100,
@@ -141,6 +156,45 @@ var BaseTransport http.RoundTripper = &http.Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 	ForceAttemptHTTP2:     true,
 	DisableCompression:    false,
+}
+
+func roundTripWithForwardTransportOverrides(inner http.RoundTripper, req *http.Request) (*http.Response, error) {
+	ctx := req.Context()
+	tlsTimeout, hasTLS := getForwardTLSHandshakeTimeoutFromContext(ctx)
+	respTimeout, hasResp := getForwardResponseTimeoutFromContext(ctx)
+
+	if !hasTLS && !hasResp {
+		return inner.RoundTrip(req)
+	}
+
+	transport, ok := inner.(*http.Transport)
+	if !ok {
+		return inner.RoundTrip(req)
+	}
+
+	needClone := false
+	if hasTLS && tlsTimeout != transport.TLSHandshakeTimeout {
+		needClone = true
+	}
+	if hasResp && respTimeout != transport.ResponseHeaderTimeout {
+		needClone = true
+	}
+	if !needClone {
+		return inner.RoundTrip(req)
+	}
+
+	// Clone transport with per-request overrides.
+	// Not cached: this path is used by infrequent health probes,
+	// so per-request clone avoids connection pool fragmentation.
+	cloned := transport.Clone()
+	if hasTLS {
+		cloned.TLSHandshakeTimeout = tlsTimeout
+	}
+	if hasResp {
+		cloned.ResponseHeaderTimeout = respTimeout
+	}
+	defer cloned.CloseIdleConnections()
+	return cloned.RoundTrip(req)
 }
 
 func GenCurl(req *http.Request) string {

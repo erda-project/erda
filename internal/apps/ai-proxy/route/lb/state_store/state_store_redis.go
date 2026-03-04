@@ -73,6 +73,11 @@ func (s *RedisStateStore) SetBinding(_ context.Context, bindingKey BindingKey, s
 	return s.client.Set(key, instanceID, ttl).Err()
 }
 
+func (s *RedisStateStore) DeleteBinding(_ context.Context, bindingKey BindingKey, stickyValue string) error {
+	key := s.bindingKey(bindingKey, stickyValue)
+	return s.client.Del(key).Err()
+}
+
 func (s *RedisStateStore) NextCounter(_ context.Context, key CounterKey) (int64, error) {
 	return s.client.Incr(s.counterKey(key)).Result()
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -125,6 +126,22 @@ func (f *Context) saveContextToAudit(pr *httputil.ProxyRequest) error {
 			audithelper.Note(ctx, "policy_group.name", trace.Group.Name)
 			audithelper.Note(ctx, "policy_group.source", trace.Group.Source)
 			audithelper.Note(ctx, "policy_group.branch_name", trace.Branch.Name)
+		}
+	}
+	// model health related
+	if healthMetaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx); ok && healthMetaVal != nil {
+		if healthMeta, ok := healthMetaVal.(*health.PolicyGroupHealthMeta); ok && healthMeta != nil {
+			filteredUnhealthyIDs := healthMeta.FilteredUnhealthyInstanceIDs
+			if len(filteredUnhealthyIDs) > 0 {
+				audithelper.Note(ctx, "policy_group.health.filtered_unhealthy_instance_ids", filteredUnhealthyIDs)
+			}
+			audithelper.Note(ctx, "policy_group.health.filtered_unhealthy_count", len(filteredUnhealthyIDs))
+
+			releasedUnsupportedAPITypes := healthMeta.ReleasedUnsupportedAPITypes
+			if len(releasedUnsupportedAPITypes) > 0 {
+				audithelper.Note(ctx, "policy_group.health.released_unsupported_api_types", releasedUnsupportedAPITypes)
+			}
+			audithelper.Note(ctx, "policy_group.health.released_unsupported_count", healthMeta.ReleasedUnsupportedCount)
 		}
 	}
 

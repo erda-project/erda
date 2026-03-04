@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 )
 
 var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err error) {
@@ -34,8 +35,11 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 		}()
 
 		var defaultStatus = http.StatusBadRequest
+		var hasRewriteErr bool
+		var hasResponseErr bool
 		// check error at request rewrite stage
 		if rewriteErr, _ := ctxhelper.GetReverseProxyRequestRewriteError(r.Context()); rewriteErr != nil {
+			hasRewriteErr = true
 			audithelper.Note(r.Context(), "request.rewrite.error.stage", rewriteErr.Stage)
 			audithelper.Note(r.Context(), "request.rewrite.error.filter", rewriteErr.FilterName)
 			audithelper.Note(r.Context(), "request.rewrite.error.message", rewriteErr.Error.Error())
@@ -48,6 +52,7 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 
 		// check error at response modify stage
 		if responseErr, _ := ctxhelper.GetReverseProxyResponseModifyError(r.Context()); responseErr != nil {
+			hasResponseErr = true
 			audithelper.Note(r.Context(), "response.modify.error.stage", responseErr.Stage)
 			audithelper.Note(r.Context(), "response.modify.error.filter", responseErr.FilterName)
 			audithelper.Note(r.Context(), "response.modify.error.message", responseErr.Error.Error())
@@ -57,6 +62,10 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 				err = responseErr.Error
 			}
 			defaultStatus = http.StatusInternalServerError
+		}
+		// Only transport network errors should be reported here.
+		if !hasRewriteErr && !hasResponseErr {
+			health.ReportModelNetworkFailure(r.Context(), r, err)
 		}
 
 		// set ai-proxy response header
@@ -73,6 +82,9 @@ var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err err
 			httpError.WriteJSONHTTPError(w)
 			return
 		default:
+			if err == nil {
+				err = errors.New(http.StatusText(defaultStatus))
+			}
 			httperror.NewHTTPError(r.Context(), defaultStatus, err.Error()).WriteJSONHTTPError(w)
 			return
 		}

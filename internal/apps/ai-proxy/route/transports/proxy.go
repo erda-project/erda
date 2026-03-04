@@ -15,6 +15,7 @@
 package transports
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -32,12 +33,15 @@ const (
 	envKeyForwardHttpProxy  = "FORWARD_HTTP_PROXY"
 	envKeyForwardHttpsProxy = "FORWARD_HTTPS_PROXY"
 	envKeyNoProxy           = "NO_PROXY"
+
+	envKeyForwardDialTimeout = "FORWARD_DIAL_TIMEOUT"
+	envKeyForwardKeepAlive   = "FORWARD_KEEPALIVE"
 )
 
 // shared base dialer for all outbound connections
 var baseDialer = &net.Dialer{
-	Timeout:   60 * time.Second, // Timeout for establishing a TCP connection, even when routing through proxies.
-	KeepAlive: 60 * time.Second, // Keep-alive interval to keep long-lived TCP connections reusable.
+	Timeout:   getDurationFromEnv(envKeyForwardDialTimeout, 60*time.Second), // Timeout for establishing a TCP connection, even when routing through proxies.
+	KeepAlive: getDurationFromEnv(envKeyForwardKeepAlive, 60*time.Second),   // Keep-alive interval to keep long-lived TCP connections reusable.
 }
 
 // forwardProxyHosts caches the FORWARD_PROXY_HOSTS list for both HTTP and SOCKS proxy decisions.
@@ -59,7 +63,12 @@ var forwardProxyHosts = func() []string {
 var (
 	socksProxyURL *url.URL
 	socksDialer   proxy.Dialer
+	socksAuth     *proxy.Auth // stored for per-request SOCKS dialer creation
 )
+
+type ctxKeyForwardDialTimeout struct{}
+type ctxKeyForwardTLSHandshakeTimeout struct{}
+type ctxKeyForwardResponseTimeout struct{}
 
 // init forward proxy configuration (HTTP/HTTPS) and optional SOCKS5 dialer.
 func init() {
@@ -103,6 +112,7 @@ func init() {
 			if d, err := proxy.SOCKS5("tcp", u.Host, auth, baseDialer); err == nil {
 				socksProxyURL = u
 				socksDialer = d
+				socksAuth = auth
 			} else {
 				logrus.WithError(err).Errorf("failed to init socks5 proxy for %s", raw)
 			}
@@ -124,6 +134,82 @@ func init() {
 
 func socksProxyEnabled() bool {
 	return socksDialer != nil && socksProxyURL != nil
+}
+
+// newSocksDialerWithForward creates a SOCKS5 dialer with a custom forward dialer,
+// enabling per-request dial timeout override for the SOCKS5 path.
+func newSocksDialerWithForward(forward *net.Dialer) (proxy.Dialer, error) {
+	if socksProxyURL == nil || socksAuth == nil {
+		return nil, fmt.Errorf("SOCKS5 proxy not configured")
+	}
+	return proxy.SOCKS5("tcp", socksProxyURL.Host, socksAuth, forward)
+}
+
+func WithForwardDialTimeout(ctx context.Context, timeout time.Duration) context.Context {
+	if ctx == nil || timeout <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxKeyForwardDialTimeout{}, timeout)
+}
+
+func getForwardDialTimeoutFromContext(ctx context.Context) (time.Duration, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	timeout, ok := ctx.Value(ctxKeyForwardDialTimeout{}).(time.Duration)
+	if !ok || timeout <= 0 {
+		return 0, false
+	}
+	return timeout, true
+}
+
+func WithForwardTLSHandshakeTimeout(ctx context.Context, timeout time.Duration) context.Context {
+	if ctx == nil || timeout <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxKeyForwardTLSHandshakeTimeout{}, timeout)
+}
+
+func getForwardTLSHandshakeTimeoutFromContext(ctx context.Context) (time.Duration, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	timeout, ok := ctx.Value(ctxKeyForwardTLSHandshakeTimeout{}).(time.Duration)
+	if !ok || timeout <= 0 {
+		return 0, false
+	}
+	return timeout, true
+}
+
+func WithForwardResponseTimeout(ctx context.Context, timeout time.Duration) context.Context {
+	if ctx == nil || timeout <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxKeyForwardResponseTimeout{}, timeout)
+}
+
+func getForwardResponseTimeoutFromContext(ctx context.Context) (time.Duration, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	timeout, ok := ctx.Value(ctxKeyForwardResponseTimeout{}).(time.Duration)
+	if !ok || timeout <= 0 {
+		return 0, false
+	}
+	return timeout, true
+}
+
+func getDurationFromEnv(key string, defaultValue time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil || parsed <= 0 {
+		logrus.Warnf("invalid %s=%q, fallback to %s", key, raw, defaultValue)
+		return defaultValue
+	}
+	return parsed
 }
 
 // ProxyConfig is forward proxy configuration, i.e., proxy configuration for transport outbound traffic

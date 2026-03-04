@@ -15,6 +15,7 @@
 package policy_group
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -51,6 +52,7 @@ type RouteRequest struct {
 	Group     *pb.PolicyGroup
 	Instances []*RoutingModelInstance // Instances is the pool of instances under the client.
 	Meta      RequestMeta
+	Ctx       context.Context
 }
 
 func (r RouteRequest) GetStickyKey() string {

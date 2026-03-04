@@ -47,6 +47,15 @@ func TestRedisStateStore(t *testing.T) {
 	if val, ok, err := store.GetBinding(ctx, "bk", "sv"); err != nil || !ok || val != "ins-1" {
 		t.Fatalf("unexpected binding result val=%s ok=%v err=%v", val, ok, err)
 	}
+	if err := store.DeleteBinding(ctx, "bk", "sv"); err != nil {
+		t.Fatalf("delete binding failed: %v", err)
+	}
+	if _, ok, err := store.GetBinding(ctx, "bk", "sv"); err != nil || ok {
+		t.Fatalf("expected binding deleted, ok=%v err=%v", ok, err)
+	}
+	if err := store.SetBinding(ctx, "bk", "sv", "ins-1", 500*time.Millisecond); err != nil {
+		t.Fatalf("set binding failed: %v", err)
+	}
 	keys := mr.Keys()
 	if len(keys) != 1 {
 		t.Fatalf("expected 1 key, got %v", keys)

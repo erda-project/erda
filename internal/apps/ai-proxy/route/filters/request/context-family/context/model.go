@@ -74,6 +74,7 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 		Group:     group,
 		Instances: routingInstances,
 		Meta:      policygroup.BuildRequestMetaFromHeader(headers),
+		Ctx:       ctx,
 	})
 	if err != nil {
 		return nil, nil, err
