@@ -65,6 +65,7 @@ var (
 )
 
 type ctxKeyForwardDialTimeout struct{}
+type ctxKeyForwardTLSHandshakeTimeout struct{}
 
 // init forward proxy configuration (HTTP/HTTPS) and optional SOCKS5 dialer.
 func init() {
@@ -143,6 +144,24 @@ func getForwardDialTimeoutFromContext(ctx context.Context) (time.Duration, bool)
 		return 0, false
 	}
 	timeout, ok := ctx.Value(ctxKeyForwardDialTimeout{}).(time.Duration)
+	if !ok || timeout <= 0 {
+		return 0, false
+	}
+	return timeout, true
+}
+
+func WithForwardTLSHandshakeTimeout(ctx context.Context, timeout time.Duration) context.Context {
+	if ctx == nil || timeout <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxKeyForwardTLSHandshakeTimeout{}, timeout)
+}
+
+func getForwardTLSHandshakeTimeoutFromContext(ctx context.Context) (time.Duration, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	timeout, ok := ctx.Value(ctxKeyForwardTLSHandshakeTimeout{}).(time.Duration)
 	if !ok || timeout <= 0 {
 		return 0, false
 	}

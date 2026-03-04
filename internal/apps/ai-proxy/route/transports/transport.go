@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -36,7 +37,14 @@ import (
 
 var (
 	_ http.RoundTripper = (*DoNothingTransport)(nil)
+
+	tlsHandshakeTimeoutTransportCache sync.Map // map[tlsHandshakeTransportCacheKey]*http.Transport
 )
+
+type tlsHandshakeTransportCacheKey struct {
+	basePtr uintptr
+	timeout time.Duration
+}
 
 type DoNothingTransport struct {
 	Response *http.Response
@@ -73,7 +81,7 @@ func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Inner == nil {
 		t.Inner = BaseTransport
 	}
-	res, err := t.Inner.RoundTrip(req)
+	res, err := roundTripWithForwardTLSHandshakeTimeout(t.Inner, req)
 	ctxhelper.MustGetLoggerBase(req.Context()).Sub(reflect.TypeOf(t).String()).
 		Infof("RoundTrip costs: %s", time.Now().Sub(start).String())
 	return res, err
@@ -150,6 +158,31 @@ var BaseTransport http.RoundTripper = &http.Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 	ForceAttemptHTTP2:     true,
 	DisableCompression:    false,
+}
+
+func roundTripWithForwardTLSHandshakeTimeout(inner http.RoundTripper, req *http.Request) (*http.Response, error) {
+	timeout, ok := getForwardTLSHandshakeTimeoutFromContext(req.Context())
+	if !ok {
+		return inner.RoundTrip(req)
+	}
+	transport, ok := inner.(*http.Transport)
+	if !ok {
+		return inner.RoundTrip(req)
+	}
+	if timeout == transport.TLSHandshakeTimeout {
+		return inner.RoundTrip(req)
+	}
+	key := tlsHandshakeTransportCacheKey{
+		basePtr: reflect.ValueOf(transport).Pointer(),
+		timeout: timeout,
+	}
+	if cached, ok := tlsHandshakeTimeoutTransportCache.Load(key); ok {
+		return cached.(*http.Transport).RoundTrip(req)
+	}
+	cloned := transport.Clone()
+	cloned.TLSHandshakeTimeout = timeout
+	actual, _ := tlsHandshakeTimeoutTransportCache.LoadOrStore(key, cloned)
+	return actual.(*http.Transport).RoundTrip(req)
 }
 
 func GenCurl(req *http.Request) string {

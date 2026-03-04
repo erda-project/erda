@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -34,12 +35,30 @@ func TestRateLimiter_BypassHealthProbe(t *testing.T) {
 
 	limiter := &RateLimiter{}
 	proxyReq := newProxyRequestForTest()
-	proxyReq.In.Header.Set(vars.XAIProxyHealthProbe, "true")
+	proxyReq.In.Header = health.BuildProbeHeaders(proxyReq.In.Header)
 
 	for i := 0; i < 10; i++ {
 		if err := limiter.OnProxyRequest(proxyReq); err != nil {
 			t.Fatalf("probe request should bypass rate limit, got err at %d: %v", i, err)
 		}
+	}
+}
+
+func TestRateLimiter_ProbeHeaderWithoutTrustedTokenShouldNotBypass(t *testing.T) {
+	resetTokenLimiterForTest()
+
+	limiter := &RateLimiter{}
+	proxyReq := newProxyRequestForTest()
+	proxyReq.In.Header.Set(vars.XAIProxyHealthProbe, "true")
+
+	if err := limiter.OnProxyRequest(proxyReq); err != nil {
+		t.Fatalf("first request should pass, got %v", err)
+	}
+	if err := limiter.OnProxyRequest(proxyReq); err != nil {
+		t.Fatalf("second request should pass, got %v", err)
+	}
+	if err := limiter.OnProxyRequest(proxyReq); err == nil {
+		t.Fatal("third request should be rate limited without trusted probe token")
 	}
 }
 

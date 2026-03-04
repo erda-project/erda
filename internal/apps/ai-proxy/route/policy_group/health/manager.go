@@ -272,6 +272,7 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(vars.XAIProxyModelId, instanceID)
 	req.Header.Set(vars.XAIProxyHealthProbe, "true")
+	req.Header.Set(vars.XAIProxyHealthProbeToken, internalProbeToken)
 	req.Header.Del("Content-Length")
 
 	resp, err := m.client.Do(req)
@@ -322,18 +323,28 @@ func isAPITypeProbeSupported(apiType APIType) bool {
 }
 
 func isHealthProbeRequestMeta(meta policygroup.RequestMeta) bool {
-	inputKeys := []string{
-		common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbe),
-		strings.ToLower(vars.XAIProxyHealthProbe),
-		vars.XAIProxyHealthProbe,
+	probeV, probeOK := meta.Get(common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbe))
+	if !probeOK {
+		probeV, probeOK = meta.Get(strings.ToLower(vars.XAIProxyHealthProbe))
 	}
-	for _, key := range inputKeys {
-		v, ok := meta.Get(key)
-		if ok && strings.EqualFold(v, "true") {
-			return true
-		}
+	if !probeOK {
+		probeV, probeOK = meta.Get(vars.XAIProxyHealthProbe)
 	}
-	return false
+	if !probeOK || !strings.EqualFold(strings.TrimSpace(probeV), "true") {
+		return false
+	}
+
+	tokenV, tokenOK := meta.Get(common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbeToken))
+	if !tokenOK {
+		tokenV, tokenOK = meta.Get(strings.ToLower(vars.XAIProxyHealthProbeToken))
+	}
+	if !tokenOK {
+		tokenV, tokenOK = meta.Get(vars.XAIProxyHealthProbeToken)
+	}
+	if !tokenOK {
+		return false
+	}
+	return strings.TrimSpace(tokenV) == internalProbeToken
 }
 
 func buildProbeHeadersFromRequestMeta(meta policygroup.RequestMeta) http.Header {

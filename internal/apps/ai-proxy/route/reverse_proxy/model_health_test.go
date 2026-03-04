@@ -130,7 +130,7 @@ func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	ctxProbe := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutModel(ctxProbe, &modelpb.Model{Id: "m-probe"})
 	probeReq := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1ChatCompletions, nil).WithContext(ctxProbe)
-	probeReq.Header.Set(vars.XAIProxyHealthProbe, "true")
+	probeReq.Header = health.BuildProbeHeaders(probeReq.Header)
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctxProbe, probeReq)
 	reportModelNetworkFailure(ctxProbe, probeReq, errors.New("read tcp x->y: read: connection reset by peer"))
 

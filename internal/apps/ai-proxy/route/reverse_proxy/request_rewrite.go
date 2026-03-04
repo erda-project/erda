@@ -16,7 +16,6 @@ package reverse_proxy
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -139,8 +138,7 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	// x-ai-proxy-forward-tls-handshake-timeout: 5s
 	if raw := strings.TrimSpace(pr.In.Header.Get(vars.XAIProxyForwardTLSHandshakeTimeout)); raw != "" {
 		if timeout, err := time.ParseDuration(raw); err == nil && timeout > 0 {
-			outCtx, _ := context.WithTimeout(pr.Out.Context(), timeout)
-			pr.Out = pr.Out.WithContext(outCtx)
+			pr.Out = pr.Out.WithContext(transports.WithForwardTLSHandshakeTimeout(pr.Out.Context(), timeout))
 		} else {
 			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("invalid %s=%q", vars.XAIProxyForwardTLSHandshakeTimeout, raw)
 		}

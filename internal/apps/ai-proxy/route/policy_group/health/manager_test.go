@@ -73,10 +73,12 @@ func TestFilterHealthyInstances(t *testing.T) {
 	}
 
 	// Probe request should bypass health filter so unhealthy instance can be checked.
+	probeHeaders := BuildProbeHeaders(http.Header{})
 	probeReq := policygroup.RouteRequest{
 		Meta: policygroup.RequestMeta{
 			Keys: map[string]string{
-				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbe): "true",
+				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbe):      probeHeaders.Get(vars.XAIProxyHealthProbe),
+				common_types.StickyKeyPrefixFromReqHeader + strings.ToLower(vars.XAIProxyHealthProbeToken): probeHeaders.Get(vars.XAIProxyHealthProbeToken),
 			},
 		},
 	}
@@ -226,7 +228,6 @@ func TestBuildProbeHeaders(t *testing.T) {
 	headers.Set("Authorization", "Bearer t_x")
 	headers.Set("AK-Token", "ak-token-x")
 	headers.Set("X-Trace-Id", "trace-1")
-	headers.Set(vars.XAIProxyHealthProbe, "true")
 	probeHeaders := BuildProbeHeaders(headers)
 
 	if probeHeaders.Get("Authorization") == "" || probeHeaders.Get("AK-Token") == "" {
@@ -237,6 +238,12 @@ func TestBuildProbeHeaders(t *testing.T) {
 	}
 	if probeHeaders.Get(vars.XAIProxyHealthProbe) != "true" {
 		t.Fatalf("expected probe marker kept, got: %v", probeHeaders)
+	}
+	if probeHeaders.Get(vars.XAIProxyHealthProbeToken) == "" {
+		t.Fatalf("expected probe token generated, got: %v", probeHeaders)
+	}
+	if !IsTrustedHealthProbeRequest(probeHeaders) {
+		t.Fatalf("expected probe headers treated as trusted, got: %v", probeHeaders)
 	}
 }
 

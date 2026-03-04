@@ -39,3 +39,23 @@ func TestWithForwardDialTimeoutInvalid(t *testing.T) {
 		t.Fatal("expected no timeout in context when input is invalid")
 	}
 }
+
+func TestWithForwardTLSHandshakeTimeout(t *testing.T) {
+	ctx := context.Background()
+	next := WithForwardTLSHandshakeTimeout(ctx, 5*time.Second)
+	got, ok := getForwardTLSHandshakeTimeoutFromContext(next)
+	if !ok {
+		t.Fatal("expected forward tls handshake timeout in context")
+	}
+	if got != 5*time.Second {
+		t.Fatalf("expected timeout 5s, got %s", got)
+	}
+}
+
+func TestWithForwardTLSHandshakeTimeoutInvalid(t *testing.T) {
+	ctx := context.Background()
+	next := WithForwardTLSHandshakeTimeout(ctx, 0)
+	if _, ok := getForwardTLSHandshakeTimeoutFromContext(next); ok {
+		t.Fatal("expected no tls handshake timeout in context when input is invalid")
+	}
+}

@@ -48,6 +48,7 @@ const (
 	XAIProxyPolicyGroupTrace           = "X-AI-Proxy-Policy-Group-Trace"
 	XAIProxyModelHealthMeta            = "X-AI-Proxy-Model-Health-Meta"
 	XAIProxyHealthProbe                = "X-AI-Proxy-Health-Probe"
+	XAIProxyHealthProbeToken           = "X-AI-Proxy-Health-Probe-Token"
 	XAIProxyForwardDialTimeout         = "X-AI-Proxy-Forward-Dial-Timeout"
 	XAIProxyForwardTLSHandshakeTimeout = "X-AI-Proxy-Forward-TLS-Handshake-Timeout"
 	XAIProxyModelMarkUnhealthy         = "X-AI-Proxy-Model-Mark-Unhealthy"
