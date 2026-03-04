@@ -15,6 +15,7 @@
 package health
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -31,9 +32,11 @@ const (
 )
 
 const (
-	modelHealthBindingKey state_store.BindingKey = "global:model-health"
+	modelHealthBindingKey state_store.BindingKey = "client:model-health"
 	stateUnhealthy                               = "unhealthy"
 )
+
+const emptyClientIDPlaceholder = "__empty_client__"
 
 type ModelHealthState struct {
 	State     string    `json:"state"`
@@ -55,4 +58,12 @@ func ResolveAPIType(method, path string) (APIType, bool) {
 	default:
 		return "", false
 	}
+}
+
+func makeModelHealthBindingID(clientID, instanceID string) string {
+	normalizedClientID := strings.TrimSpace(clientID)
+	if normalizedClientID == "" {
+		normalizedClientID = emptyClientIDPlaceholder
+	}
+	return fmt.Sprintf("client:%s|instance:%s", normalizedClientID, instanceID)
 }

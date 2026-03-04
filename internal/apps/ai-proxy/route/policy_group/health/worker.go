@@ -56,19 +56,21 @@ func (w *workerState) Snapshot() (APIType, http.Header) {
 	return w.apiType, cloneHeaders(w.headers)
 }
 
-func (m *Manager) startOrUpdateProbeWorker(instanceID string, apiType APIType, headers http.Header) {
+func (m *Manager) startOrUpdateProbeWorker(clientID, instanceID string, apiType APIType, headers http.Header) {
 	newState := &workerState{
 		apiType: apiType,
 		headers: cloneHeaders(headers),
 	}
 	requestID := extractRequestID(headers)
-	actual, loaded := m.workers.LoadOrStore(instanceID, newState)
+	workerKey := makeModelHealthBindingID(clientID, instanceID)
+	actual, loaded := m.workers.LoadOrStore(workerKey, newState)
 	if loaded {
 		existing, _ := actual.(*workerState)
 		if existing != nil {
 			existing.Update(apiType, headers)
 		}
 		logrus.WithFields(logrus.Fields{
+			"client_id":   clientID,
 			"instance_id": instanceID,
 			"api_type":    apiType,
 			"request_id":  requestID,
@@ -76,23 +78,26 @@ func (m *Manager) startOrUpdateProbeWorker(instanceID string, apiType APIType, h
 		return
 	}
 	logrus.WithFields(logrus.Fields{
+		"client_id":   clientID,
 		"instance_id": instanceID,
 		"api_type":    apiType,
 		"request_id":  requestID,
 	}).Warn("start probe worker for unhealthy instance")
-	go m.probeWorker(instanceID, newState)
+	go m.probeWorker(clientID, instanceID, newState)
 }
 
-func (m *Manager) probeWorker(instanceID string, worker *workerState) {
-	defer m.workers.Delete(instanceID)
+func (m *Manager) probeWorker(clientID, instanceID string, worker *workerState) {
+	workerKey := makeModelHealthBindingID(clientID, instanceID)
+	defer m.workers.Delete(workerKey)
 
 	backoff := m.cfg.Rescue.InitialBackoff
 	for {
 		apiType, headers := worker.Snapshot()
 		requestID, err := m.probeOnce(instanceID, apiType, headers)
 		if err == nil {
-			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instanceID)
+			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID(clientID, instanceID))
 			logrus.WithFields(logrus.Fields{
+				"client_id":   clientID,
 				"instance_id": instanceID,
 				"api_type":    apiType,
 				"request_id":  requestID,
@@ -100,16 +105,18 @@ func (m *Manager) probeWorker(instanceID string, worker *workerState) {
 			return
 		}
 		if errors.Is(err, errUnsupportedAPIType) {
-			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, instanceID)
+			_ = m.store.DeleteBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID(clientID, instanceID))
 			logrus.WithFields(logrus.Fields{
+				"client_id":   clientID,
 				"instance_id": instanceID,
 				"api_type":    apiType,
 				"request_id":  requestID,
 			}).Warnf("unsupported api_type for probe, release unhealthy instance immediately, err: %v", err)
 			return
 		}
-		m.writeUnhealthyState(context.Background(), instanceID, apiType, err.Error())
+		m.writeUnhealthyState(context.Background(), clientID, instanceID, apiType, err.Error())
 		logrus.WithFields(logrus.Fields{
+			"client_id":   clientID,
 			"instance_id": instanceID,
 			"api_type":    apiType,
 			"backoff":     backoff.String(),
@@ -163,7 +170,7 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 	return requestID, nil
 }
 
-func (m *Manager) writeUnhealthyState(ctx context.Context, instanceID string, apiType APIType, lastErr string) {
+func (m *Manager) writeUnhealthyState(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string) {
 	now := time.Now()
 	state := ModelHealthState{
 		State:     stateUnhealthy,
@@ -175,5 +182,5 @@ func (m *Manager) writeUnhealthyState(ctx context.Context, instanceID string, ap
 	if err != nil {
 		return
 	}
-	_ = m.store.SetBinding(ctx, modelHealthBindingKey, instanceID, string(b), m.cfg.Probe.UnhealthyTTL)
+	_ = m.store.SetBinding(ctx, modelHealthBindingKey, makeModelHealthBindingID(clientID, instanceID), string(b), m.cfg.Probe.UnhealthyTTL)
 }

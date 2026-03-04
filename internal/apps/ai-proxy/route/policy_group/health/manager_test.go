@@ -28,6 +28,7 @@ import (
 func TestFilterHealthyInstances(t *testing.T) {
 	store := state_store.NewMemoryStateStore()
 	manager := newTestManager(store, "http://127.0.0.1:65530")
+	clientID := "client-a"
 
 	unhealthy := ModelHealthState{
 		State:     stateUnhealthy,
@@ -38,7 +39,7 @@ func TestFilterHealthyInstances(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal unhealthy state failed: %v", err)
 	}
-	if err := store.SetBinding(context.Background(), modelHealthBindingKey, "i1", string(data), time.Hour); err != nil {
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID(clientID, "i1"), string(data), time.Hour); err != nil {
 		t.Fatalf("set unhealthy state failed: %v", err)
 	}
 
@@ -47,7 +48,7 @@ func TestFilterHealthyInstances(t *testing.T) {
 		testRoutingInstance("i2"),
 	}
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{Ctx: ctx}, instances)
+	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{Ctx: ctx, ClientID: clientID}, instances)
 	if len(filtered) != 1 || filtered[0].ModelWithProvider.Id != "i2" {
 		t.Fatalf("expected only i2 after health filter, got %v", collectIDs(filtered))
 	}
@@ -65,7 +66,7 @@ func TestFilterHealthyInstances(t *testing.T) {
 
 	probeCtx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutTrustedHealthProbe(probeCtx, true)
-	probeReq := policygroup.RouteRequest{Ctx: probeCtx}
+	probeReq := policygroup.RouteRequest{Ctx: probeCtx, ClientID: clientID}
 	filteredProbe := manager.FilterHealthyInstances(probeReq, instances)
 	if len(filteredProbe) != 2 {
 		t.Fatalf("expected probe request to bypass health filter, got %v", collectIDs(filteredProbe))
@@ -77,6 +78,7 @@ func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := newTestManager(store, "http://127.0.0.1:1")
+	clientID := "client-a"
 
 	stateBytes, err := json.Marshal(&ModelHealthState{
 		State:     stateUnhealthy,
@@ -87,13 +89,14 @@ func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal unhealthy state failed: %v", err)
 	}
-	if err := store.SetBinding(context.Background(), modelHealthBindingKey, "i1", string(stateBytes), time.Hour); err != nil {
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID(clientID, "i1"), string(stateBytes), time.Hour); err != nil {
 		t.Fatalf("set unhealthy state failed: %v", err)
 	}
 
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{
-		Ctx: ctx,
+		Ctx:      ctx,
+		ClientID: clientID,
 	}, []*policygroup.RoutingModelInstance{
 		testRoutingInstance("i1"),
 		testRoutingInstance("i2"),
@@ -101,7 +104,7 @@ func TestFilterUnhealthyUnsupportedAPITypeReleasedAndRecorded(t *testing.T) {
 	if len(filtered) != 2 {
 		t.Fatalf("expected unsupported api_type instance released, got %v", collectIDs(filtered))
 	}
-	if _, ok, _ := manager.GetState(context.Background(), "i1"); ok {
+	if _, ok, _ := manager.GetState(context.Background(), clientID, "i1"); ok {
 		t.Fatal("expected unhealthy state deleted for unsupported api_type")
 	}
 	metaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(ctx)
@@ -128,9 +131,48 @@ func TestMarkUnhealthyWritesModelMarkHeaderContext(t *testing.T) {
 	manager := newTestManager(store, "http://127.0.0.1:1")
 
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	manager.MarkUnhealthy(ctx, "m-ctx", APITypeChatCompletions, "network timeout", nil)
+	manager.MarkUnhealthy(ctx, "client-a", "m-ctx", APITypeChatCompletions, "network timeout", nil)
 	got, ok := ctxhelper.GetModelMarkUnhealthyInstanceID(ctx)
 	if !ok || got != "m-ctx" {
 		t.Fatalf("expected model mark unhealthy instance id m-ctx, got %q", got)
+	}
+}
+
+func TestFilterHealthyInstancesIsolatedByClient(t *testing.T) {
+	store := state_store.NewMemoryStateStore()
+	manager := newTestManager(store, "http://127.0.0.1:65530")
+
+	unhealthy := ModelHealthState{
+		State:     stateUnhealthy,
+		APIType:   APITypeChatCompletions,
+		UpdatedAt: time.Now(),
+	}
+	data, err := json.Marshal(unhealthy)
+	if err != nil {
+		t.Fatalf("marshal unhealthy state failed: %v", err)
+	}
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID("client-a", "i1"), string(data), time.Hour); err != nil {
+		t.Fatalf("set unhealthy state failed: %v", err)
+	}
+
+	instances := []*policygroup.RoutingModelInstance{
+		testRoutingInstance("i1"),
+		testRoutingInstance("i2"),
+	}
+
+	filteredA := manager.FilterHealthyInstances(policygroup.RouteRequest{
+		Ctx:      ctxhelper.InitCtxMapIfNeed(context.Background()),
+		ClientID: "client-a",
+	}, instances)
+	if len(filteredA) != 1 || filteredA[0].ModelWithProvider.Id != "i2" {
+		t.Fatalf("expected client-a only i2 after health filter, got %v", collectIDs(filteredA))
+	}
+
+	filteredB := manager.FilterHealthyInstances(policygroup.RouteRequest{
+		Ctx:      ctxhelper.InitCtxMapIfNeed(context.Background()),
+		ClientID: "client-b",
+	}, instances)
+	if len(filteredB) != 2 {
+		t.Fatalf("expected client-b not affected by client-a unhealthy mark, got %v", collectIDs(filteredB))
 	}
 }
