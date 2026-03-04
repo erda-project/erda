@@ -76,6 +76,7 @@ func TestIsNetworkFailureError(t *testing.T) {
 }
 
 func TestReportModelNetworkFailure(t *testing.T) {
+	clientID := "client-a"
 	manager := NewManager(state_store.NewMemoryStateStore(), Config{
 		Probe: ProbeConfig{
 			BaseURL:      "http://127.0.0.1:65530",
@@ -91,6 +92,7 @@ func TestReportModelNetworkFailure(t *testing.T) {
 	defer SetManager(nil)
 
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutClientId(ctx, clientID)
 	ctxhelper.PutModel(ctx, &modelpb.Model{Id: "m-chat"})
 	req := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1ChatCompletions, nil).WithContext(ctx)
 	req.Header.Set("Authorization", "Bearer t_chat")
@@ -99,11 +101,11 @@ func TestReportModelNetworkFailure(t *testing.T) {
 	ReportModelNetworkFailure(ctx, req, errors.New("read tcp 127.0.0.1:1->127.0.0.1:2: read: connection reset by peer"))
 
 	waitFor(t, 2*time.Second, func() bool {
-		state, ok, _ := manager.GetState(context.Background(), "m-chat")
+		state, ok, _ := manager.GetState(context.Background(), clientID, "m-chat")
 		return ok && state != nil
 	})
 
-	state, ok, err := manager.GetState(context.Background(), "m-chat")
+	state, ok, err := manager.GetState(context.Background(), clientID, "m-chat")
 	if err != nil {
 		t.Fatalf("get health state failed: %v", err)
 	}
@@ -131,6 +133,7 @@ func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	defer SetManager(nil)
 
 	ctxProbe := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutClientId(ctxProbe, "client-probe")
 	ctxhelper.PutModel(ctxProbe, &modelpb.Model{Id: "m-probe"})
 	ctxhelper.PutTrustedHealthProbe(ctxProbe, true)
 	probeReq := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1ChatCompletions, nil).WithContext(ctxProbe)
@@ -138,17 +141,18 @@ func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctxProbe, probeReq)
 	ReportModelNetworkFailure(ctxProbe, probeReq, errors.New("read tcp x->y: read: connection reset by peer"))
 
-	if _, ok, _ := manager.GetState(context.Background(), "m-probe"); ok {
+	if _, ok, _ := manager.GetState(context.Background(), "client-probe", "m-probe"); ok {
 		t.Fatal("probe request should not report unhealthy")
 	}
 
 	ctxOtherPath := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutClientId(ctxOtherPath, "client-other")
 	ctxhelper.PutModel(ctxOtherPath, &modelpb.Model{Id: "m-other"})
 	otherPathReq := httptest.NewRequest(http.MethodPost, vars.RequestPathPrefixV1Embeddings, nil).WithContext(ctxOtherPath)
 	ctxhelper.PutReverseProxyRequestInSnapshot(ctxOtherPath, otherPathReq)
 	ReportModelNetworkFailure(ctxOtherPath, otherPathReq, errors.New("read tcp x->y: read: connection reset by peer"))
 
-	if _, ok, _ := manager.GetState(context.Background(), "m-other"); ok {
+	if _, ok, _ := manager.GetState(context.Background(), "client-other", "m-other"); ok {
 		t.Fatal("non chat/responses request should not report unhealthy")
 	}
 }
