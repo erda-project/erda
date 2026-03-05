@@ -39,6 +39,12 @@ func TestBuildProbeHeaders(t *testing.T) {
 	if probeHeaders.Get(vars.XAIProxyModelHealthProbe) != "true" {
 		t.Fatalf("expected probe marker kept, got: %v", probeHeaders)
 	}
+	if probeHeaders.Get(vars.XAIProxyRetry) != "false" {
+		t.Fatalf("expected retry disabled flag %s=false, got: %v", vars.XAIProxyRetry, probeHeaders)
+	}
+	if probeHeaders.Get(vars.XAIProxyRetryDisabled) != "true" {
+		t.Fatalf("expected retry disabled flag %s=true, got: %v", vars.XAIProxyRetryDisabled, probeHeaders)
+	}
 	if probeHeaders.Get(vars.XAIProxyForwardDialTimeout) != "" {
 		t.Fatalf("expected forward dial timeout dropped, got: %v", probeHeaders)
 	}

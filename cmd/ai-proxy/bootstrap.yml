@@ -6,6 +6,13 @@ grpc-server@ai:
 
 erda.app.reverse-proxy:
   log_level: ${LOG_LEVEL:info}
+  model_retry:
+    enabled: ${AI_PROXY_MODEL_RETRY_ENABLED:true}
+    max_attempts: ${AI_PROXY_MODEL_RETRY_MAX_ATTEMPTS:3}
+    backoff:
+      base: ${AI_PROXY_MODEL_RETRY_BACKOFF_BASE:1s}
+    retryable_http_statuses: [] # e.g. [429, 502, 503, 504]
+    enable_response_body_network_issue_match: ${AI_PROXY_MODEL_RETRY_ENABLE_RESPONSE_BODY_NETWORK_ISSUE_MATCH:false}
 
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}

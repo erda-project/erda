@@ -27,6 +27,8 @@ import (
 
 func TestHandleAIProxyRequestHeaderSetsTrustedHealthProbeForLoopback(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutRequestID(ctx, "req-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8081/v1/chat/completions", nil).WithContext(ctx)
 	req.RemoteAddr = "127.0.0.1:43123"
 	req.Header.Set(vars.XAIProxyModelHealthProbe, "true")
@@ -43,6 +45,8 @@ func TestHandleAIProxyRequestHeaderSetsTrustedHealthProbeForLoopback(t *testing.
 
 func TestHandleAIProxyRequestHeaderDoesNotSetTrustedHealthProbeForNonLoopback(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutRequestID(ctx, "req-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8081/v1/chat/completions", nil).WithContext(ctx)
 	req.RemoteAddr = "10.20.30.40:43123"
 	req.Header.Set(vars.XAIProxyModelHealthProbe, "true")

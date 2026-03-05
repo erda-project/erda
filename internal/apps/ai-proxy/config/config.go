@@ -17,6 +17,8 @@ package config
 import (
 	"embed"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -27,8 +29,24 @@ type Config struct {
 
 	SelfURL string `file:"self_url" env:"SELF_URL" required:"true"`
 
+	ModelRetry ModelRetryConfig `file:"model_retry"`
+
 	EmbedRoutesFS    embed.FS
 	EmbedTemplatesFS embed.FS
+}
+
+type ModelRetryConfig struct {
+	Enabled                             bool              `file:"enabled" env:"AI_PROXY_MODEL_RETRY_ENABLED" default:"true"`
+	MaxAttempts                         int               `file:"max_attempts" env:"AI_PROXY_MODEL_RETRY_MAX_ATTEMPTS" default:"3"`
+	Backoff                             ModelRetryBackoff `file:"backoff"`
+	RetryableHTTPStatuses               []int             `file:"retryable_http_statuses"`
+	EnableResponseBodyNetworkIssueMatch bool              `file:"enable_response_body_network_issue_match" env:"AI_PROXY_MODEL_RETRY_ENABLE_RESPONSE_BODY_NETWORK_ISSUE_MATCH" default:"false"`
+}
+
+type ModelRetryBackoff struct {
+	// Base is the retry backoff base duration.
+	// Retry #1 waits 1*Base, retry #2 waits 3*Base, retry #3 waits 7*Base, ...
+	Base time.Duration `file:"base" env:"AI_PROXY_MODEL_RETRY_BACKOFF_BASE" default:"1s"`
 }
 
 var (
@@ -59,5 +77,33 @@ func (cfg *Config) DoPost() error {
 	logrus.SetLevel(level)
 	cfg.LogLevel = level
 
+	cfg.normalizeModelRetry()
+
 	return nil
+}
+
+func (cfg *Config) normalizeModelRetry() {
+	if cfg.ModelRetry.MaxAttempts <= 0 {
+		cfg.ModelRetry.MaxAttempts = 1
+	}
+	if cfg.ModelRetry.Backoff.Base < 0 {
+		cfg.ModelRetry.Backoff.Base = 0
+	}
+	if len(cfg.ModelRetry.RetryableHTTPStatuses) == 0 {
+		return
+	}
+	statuses := make([]int, 0, len(cfg.ModelRetry.RetryableHTTPStatuses))
+	seen := make(map[int]struct{})
+	for _, code := range cfg.ModelRetry.RetryableHTTPStatuses {
+		if code < 100 || code > 599 {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		statuses = append(statuses, code)
+	}
+	sort.Ints(statuses)
+	cfg.ModelRetry.RetryableHTTPStatuses = statuses
 }

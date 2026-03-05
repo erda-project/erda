@@ -35,5 +35,8 @@ func BuildProbeHeaders(headers http.Header) http.Header {
 	cloned.Del(vars.XAIProxyForwardTLSHandshakeTimeout)
 	cloned.Del(vars.XAIProxyForwardResponseTimeout)
 	cloned.Set(vars.XAIProxyModelHealthProbe, "true")
+	// Ensure probe requests don't trigger transparent retries.
+	cloned.Set(vars.XAIProxyRetry, "false")
+	cloned.Set(vars.XAIProxyRetryDisabled, "true")
 	return cloned
 }

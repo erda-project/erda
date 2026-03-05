@@ -228,3 +228,28 @@ func TestHandleModelMarkUnhealthyHeader(t *testing.T) {
 
 	assert.Equal(t, "m-123", resp.Header.Get(vars.XAIProxyModelHealthMarkUnhealthy))
 }
+
+func TestHandleModelRetryMetaHeader(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutReverseProxyRetryAttempt(ctx, 2)
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	raw := resp.Header.Get(vars.XAIProxyModelRetryMeta)
+	assert.NotEmpty(t, raw)
+
+	var payload map[string]any
+	assert.NoError(t, json.Unmarshal([]byte(raw), &payload))
+	assert.EqualValues(t, "v1", payload["version"])
+	assert.EqualValues(t, 2, payload["attempt"])
+}

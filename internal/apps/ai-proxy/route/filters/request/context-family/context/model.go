@@ -67,6 +67,7 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 	if err != nil {
 		return nil, nil, err
 	}
+	routingInstances = filterRetryExcludedInstances(ctx, routingInstances)
 
 	// route by engine
 	instance, trace, err := engine.GetEngine().Route(ctx, policygroup.RouteRequest{
@@ -80,4 +81,22 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 		return nil, nil, err
 	}
 	return trace, instance, nil
+}
+
+func filterRetryExcludedInstances(ctx context.Context, instances []*policygroup.RoutingModelInstance) []*policygroup.RoutingModelInstance {
+	excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(ctx)
+	if !ok || len(excluded) == 0 {
+		return instances
+	}
+	filtered := make([]*policygroup.RoutingModelInstance, 0, len(instances))
+	for _, instance := range instances {
+		if instance == nil || instance.ModelWithProvider == nil {
+			continue
+		}
+		if _, hit := excluded[instance.ModelWithProvider.Id]; hit {
+			continue
+		}
+		filtered = append(filtered, instance)
+	}
+	return filtered
 }

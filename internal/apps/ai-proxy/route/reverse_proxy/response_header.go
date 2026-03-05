@@ -31,6 +31,7 @@ func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
 	_handleModelMarkUnhealthyHeader(resp)
+	_handleModelRetryMetaHeader(resp)
 	_handlePolicyTraceHeader(resp)
 	_handleModelHealthMetaHeader(resp)
 	_handleRequestIdHeaders(resp)
@@ -81,6 +82,31 @@ type modelHealthMetaHeader struct {
 	ReleasedUnsupportedCount    int      `json:"released_unsupported_count"`
 	ReleasedUnsupportedAPITypes []string `json:"released_unsupported_api_types,omitempty"`
 	Reason                      string   `json:"reason,omitempty"`
+}
+
+type modelRetryMetaHeader struct {
+	Version         string `json:"version"`
+	Attempt         int    `json:"attempt"`
+	FinalInstanceID string `json:"final_instance_id,omitempty"`
+}
+
+func _handleModelRetryMetaHeader(resp *http.Response) {
+	attempt, ok := ctxhelper.GetReverseProxyRetryAttempt(resp.Request.Context())
+	if !ok || attempt <= 1 {
+		return
+	}
+	payload := modelRetryMetaHeader{
+		Version: "v1",
+		Attempt: attempt,
+	}
+	if model, ok := ctxhelper.GetModel(resp.Request.Context()); ok && model != nil && model.Id != "" {
+		payload.FinalInstanceID = model.Id
+	}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	resp.Header.Set(vars.XAIProxyModelRetryMeta, string(b))
 }
 
 func _handleModelHealthMetaHeader(resp *http.Response) {

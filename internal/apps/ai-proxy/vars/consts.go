@@ -50,10 +50,25 @@ const (
 	XAIProxyModelHealthMeta          = "X-AI-Proxy-Model-Health-Meta"
 	XAIProxyModelHealthProbe         = "X-AI-Proxy-Model-Health-Probe"
 	XAIProxyModelHealthMarkUnhealthy = "X-AI-Proxy-Model-Health-Mark-Unhealthy"
+	XAIProxyModelRetryMeta           = "X-AI-Proxy-Model-Retry-Meta"
 
 	XAIProxyForwardDialTimeout         = "X-AI-Proxy-Forward-Dial-Timeout"
 	XAIProxyForwardTLSHandshakeTimeout = "X-AI-Proxy-Forward-TLS-Handshake-Timeout"
 	XAIProxyForwardResponseTimeout     = "X-AI-Proxy-Forward-Response-Timeout"
+
+	// XAIProxyRetry controls server-side transparent retries.
+	//
+	// - Default: enabled.
+	// - Disable per request: set to "false".
+	XAIProxyRetry = "X-AI-Proxy-Retry"
+	// XAIProxyRetryDisabled explicitly disables server-side transparent retries
+	// when set to a truthy bool value (for example: "true").
+	XAIProxyRetryDisabled = "X-AI-Proxy-Retry-Disabled"
+	// XAIProxyRetryMax overrides max attempt count (including first attempt),
+	// e.g. "3" means first attempt + up to 2 retries.
+	XAIProxyRetryMax = "X-AI-Proxy-Retry-Max"
+	// IdempotencyKey is forwarded to upstream using call-id to deduplicate retries.
+	IdempotencyKey = "Idempotency-Key"
 
 	UIValueUndefined = "undefined"
 )

@@ -39,3 +39,19 @@ func GetPathParam(ctx context.Context, key string) (string, bool) {
 	}
 	return pm.GetValue(key)
 }
+
+func GetReverseProxyRetryExcludedModelIDs(ctx context.Context) (map[string]struct{}, bool) {
+	return getFromMapKeyAs[map[string]struct{}](ctx, mapKeyReverseProxyRetryExcludedModels{})
+}
+
+func AddReverseProxyRetryExcludedModelID(ctx context.Context, modelID string) {
+	if modelID == "" {
+		return
+	}
+	excluded, ok := GetReverseProxyRetryExcludedModelIDs(ctx)
+	if !ok || excluded == nil {
+		excluded = map[string]struct{}{}
+	}
+	excluded[modelID] = struct{}{}
+	putToMapKey(ctx, mapKeyReverseProxyRetryExcludedModels{}, excluded)
+}

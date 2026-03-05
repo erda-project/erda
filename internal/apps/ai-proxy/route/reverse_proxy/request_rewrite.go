@@ -79,6 +79,8 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 				panic(brokenInErr)
 			}
 			_ = pr.In.Body.Close()
+			// keep a full copy for transparent retries
+			ctxhelper.PutReverseProxyRequestBodyBytes(pr.In.Context(), bytes.Clone(save))
 			pr.In.Body = io.NopCloser(bytes.NewReader(save))
 			pr.Out.Body = io.NopCloser(bytes.NewReader(bytes.Clone(save)))
 		}
@@ -138,11 +140,20 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	if isInternalTrustedHealthProbe(pr.In) {
 		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
 	}
+	setRequestTraceAndIdempotencyHeaders(pr)
 	applyForwardTLSHandshakeTimeoutOverride(pr)
 	applyForwardDialTimeoutOverride(pr)
 	applyForwardResponseTimeoutOverride(pr)
 
 	stripAIProxyHeaders(pr)
+}
+
+func setRequestTraceAndIdempotencyHeaders(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
+	pr.Out.Header.Set(vars.XRequestId, ctxhelper.MustGetRequestID(pr.In.Context()))
+	pr.Out.Header.Set(vars.IdempotencyKey, ctxhelper.MustGetGeneratedCallID(pr.In.Context()))
 }
 
 func applyForwardTLSHandshakeTimeoutOverride(pr *httputil.ProxyRequest) {
