@@ -172,8 +172,15 @@ func (p *provider) serveWithTransparentRetry(
 	}
 
 	for attempt := 1; attempt <= totalAttempts; attempt++ {
-		prepareRequestForAttempt(ctx, r, attempt)
+		// isolate context per attempt to avoid audit/state contamination
+		r = prepareRequestForAttempt(r.Context(), r, attempt)
+		ctx = r.Context()
 		ctxhelper.PutReverseProxyRetryAttempt(ctx, attempt)
+
+		// add cancel layer for this attempt to prevent leaked goroutines (e.g. asyncHandleRespBody)
+		retryCtx, attemptCancel := context.WithCancel(ctx)
+		r = r.WithContext(retryCtx)
+		ctx = retryCtx
 
 		result := proxyAttemptResult{}
 		proxy := httputil.ReverseProxy{
@@ -198,6 +205,10 @@ func (p *provider) serveWithTransparentRetry(
 				if result.StatusCode == 0 {
 					health.ReportModelNetworkFailure(ctx, req, err)
 				}
+
+				// Ensure audit data of the suppressed attempt is persisted before retry.
+				audithelper.Note(req.Context(), "retry.attempt_failed_reason", retryReason(result))
+				audithelper.Flush(req.Context())
 				return
 			}
 			defaultErrorHandler(w, req, err)
@@ -208,6 +219,13 @@ func (p *provider) serveWithTransparentRetry(
 		}
 
 		proxy.ServeHTTP(tw, r)
+
+		// cancel background goroutines of this attempt if we are going to retry
+		if result.Suppressed {
+			attemptCancel()
+		} else {
+			defer attemptCancel()
+		}
 
 		result.WroteHeader = tw.WroteHeader()
 		result.InstanceID = getCurrentInstanceID(ctx)
@@ -286,26 +304,31 @@ func (p *provider) resolveTransparentRetryPolicy(r *http.Request) transparentRet
 	return policy
 }
 
-func prepareRequestForAttempt(ctx context.Context, r *http.Request, attempt int) {
-	if attempt <= 1 {
-		return
-	}
-	bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(ctx)
-	if ok {
-		if bodyBytes, ok := bodyValue.([]byte); ok {
-			copied := bytes.Clone(bodyBytes)
-			r.Body = io.NopCloser(bytes.NewReader(copied))
-			r.GetBody = func() (io.ReadCloser, error) {
-				return io.NopCloser(bytes.NewReader(bytes.Clone(bodyBytes))), nil
+func prepareRequestForAttempt(ctx context.Context, r *http.Request, attempt int) *http.Request {
+	// Always reset ctx to isolate per-attempt state (model, audit sink, filters).
+	newCtx := ctxhelper.ResetForRetry(ctx)
+	newReq := r.WithContext(newCtx)
+
+	if attempt > 1 {
+		bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(newCtx)
+		if ok {
+			if bodyBytes, ok := bodyValue.([]byte); ok {
+				copied := bytes.Clone(bodyBytes)
+				newReq.Body = io.NopCloser(bytes.NewReader(copied))
+				newReq.GetBody = func() (io.ReadCloser, error) {
+					return io.NopCloser(bytes.NewReader(bytes.Clone(bodyBytes))), nil
+				}
+				newReq.ContentLength = int64(len(copied))
 			}
-			r.ContentLength = int64(len(copied))
 		}
+		newReq.Form = nil
+		newReq.PostForm = nil
+		newReq.MultipartForm = nil
 	}
-	r.Form = nil
-	r.PostForm = nil
-	r.MultipartForm = nil
-	ctxhelper.PutReverseProxyRequestRewriteError(ctx, nil)
-	ctxhelper.PutReverseProxyResponseModifyError(ctx, nil)
+
+	ctxhelper.PutReverseProxyRequestRewriteError(newCtx, nil)
+	ctxhelper.PutReverseProxyResponseModifyError(newCtx, nil)
+	return newReq
 }
 
 func isRetryableProxyError(err error, statusCode int, policy transparentRetryPolicy) bool {

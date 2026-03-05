@@ -29,6 +29,47 @@ func InitCtxMapIfNeed(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxKeyMap{}, &sync.Map{})
 }
 
+// ResetForRetry creates a fresh sync.Map context for a retry attempt.
+//
+// It carries over infrastructure-lifetime keys (DB, Logger, RequestID, etc.)
+// from the old context, while clearing per-attempt keys (Model, AuditSink,
+// Filter states).
+func ResetForRetry(ctx context.Context) context.Context {
+	oldMap, _ := ctx.Value(ctxKeyMap{}).(*sync.Map)
+	if oldMap == nil {
+		return ctx
+	}
+
+	newMap := &sync.Map{}
+	newCtx := context.WithValue(ctx, ctxKeyMap{}, newMap)
+
+	retryCarryOverKeys := []any{
+		reflect.TypeOf(mapKeyDBClient{}),
+		reflect.TypeOf(mapKeyLogger{}),
+		reflect.TypeOf(mapKeyLoggerBase{}),
+		reflect.TypeOf(mapKeyPathMatcher{}),
+		reflect.TypeOf(mapKeyCacheManager{}),
+		reflect.TypeOf(mapKeyAIProxyHandlers{}),
+		reflect.TypeOf(mapKeyRequestID{}),
+		reflect.TypeOf(mapKeyGeneratedCallID{}),
+		reflect.TypeOf(mapKeyClient{}),
+		reflect.TypeOf(mapKeyClientId{}),
+		reflect.TypeOf(mapKeyClientToken{}),
+		reflect.TypeOf(mapKeyIsAdmin{}),
+		reflect.TypeOf(mapKeyAccessLang{}),
+		// retry needs body copy and excluded models across attempts
+		reflect.TypeOf(mapKeyReverseProxyRequestBodyBytes{}),
+		reflect.TypeOf(mapKeyReverseProxyRetryExcludedModels{}),
+	}
+
+	for _, key := range retryCarryOverKeys {
+		if v, ok := oldMap.Load(key); ok {
+			newMap.Store(key, v)
+		}
+	}
+	return newCtx
+}
+
 // getFromMapKey generic function to get value from sync.Map in context
 func getFromMapKey(ctx context.Context, key any) (any, bool) {
 	m, ok := ctx.Value(ctxKeyMap{}).(*sync.Map)
