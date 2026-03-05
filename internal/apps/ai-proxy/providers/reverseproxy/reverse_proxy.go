@@ -179,8 +179,7 @@ func (p *provider) serveWithTransparentRetry(
 
 		// add cancel layer for this attempt to prevent leaked goroutines (e.g. asyncHandleRespBody)
 		retryCtx, attemptCancel := context.WithCancel(ctx)
-		r = r.WithContext(retryCtx)
-		ctx = retryCtx
+		reqForAttempt := r.WithContext(retryCtx)
 
 		result := proxyAttemptResult{}
 		proxy := httputil.ReverseProxy{
@@ -218,7 +217,7 @@ func (p *provider) serveWithTransparentRetry(
 			option(ctx, &proxy)
 		}
 
-		proxy.ServeHTTP(tw, r)
+		proxy.ServeHTTP(tw, reqForAttempt)
 
 		// cancel background goroutines of this attempt if we are going to retry
 		if result.Suppressed {
@@ -228,8 +227,8 @@ func (p *provider) serveWithTransparentRetry(
 		}
 
 		result.WroteHeader = tw.WroteHeader()
-		result.InstanceID = getCurrentInstanceID(ctx)
-		noteRetryAttempt(ctx, attempt, result)
+		result.InstanceID = getCurrentInstanceID(retryCtx)
+		noteRetryAttempt(retryCtx, attempt, result)
 
 		if result.Err == nil {
 			noteRetryFinal(ctx, attempt, result.InstanceID)
