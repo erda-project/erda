@@ -78,16 +78,15 @@ func _handlePolicyTraceHeader(resp *http.Response) {
 }
 
 type modelHealthMetaHeader struct {
-	Version                     string   `json:"version"`
 	ReleasedUnsupportedCount    int      `json:"released_unsupported_count"`
 	ReleasedUnsupportedAPITypes []string `json:"released_unsupported_api_types,omitempty"`
 	Reason                      string   `json:"reason,omitempty"`
 }
 
 type modelRetryMetaHeader struct {
-	Version         string `json:"version"`
-	Attempt         int    `json:"attempt"`
-	FinalInstanceID string `json:"final_instance_id,omitempty"`
+	RawLLMBackendRequestCount int    `json:"raw_llm_backend_request_count"`
+	RawLLMBackendRetryCount   int    `json:"raw_llm_backend_retry_count"`
+	FinalModelInstanceID      string `json:"final_model_instance_id,omitempty"`
 }
 
 func _handleModelRetryMetaHeader(resp *http.Response) {
@@ -96,11 +95,11 @@ func _handleModelRetryMetaHeader(resp *http.Response) {
 		return
 	}
 	payload := modelRetryMetaHeader{
-		Version: "v1",
-		Attempt: attempt,
+		RawLLMBackendRequestCount: attempt,
+		RawLLMBackendRetryCount:   attempt - 1,
 	}
 	if model, ok := ctxhelper.GetModel(resp.Request.Context()); ok && model != nil && model.Id != "" {
-		payload.FinalInstanceID = model.Id
+		payload.FinalModelInstanceID = model.Id
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {
@@ -119,7 +118,6 @@ func _handleModelHealthMetaHeader(resp *http.Response) {
 		return
 	}
 	headerValue := modelHealthMetaHeader{
-		Version:                     "v1",
 		ReleasedUnsupportedCount:    meta.ReleasedUnsupportedCount,
 		ReleasedUnsupportedAPITypes: meta.ReleasedUnsupportedAPITypes,
 		Reason:                      "unsupported_probe_api_type",

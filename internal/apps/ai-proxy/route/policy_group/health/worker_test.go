@@ -86,6 +86,7 @@ func TestProbeNon2xxShouldKeepUnhealthy(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
+		Enabled: true,
 		Probe: ProbeConfig{
 			BaseURL:      server.URL,
 			UnhealthyTTL: 500 * time.Millisecond,
@@ -121,6 +122,7 @@ func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 
 	store := state_store.NewMemoryStateStore()
 	manager := NewManager(store, Config{
+		Enabled: true,
 		Probe: ProbeConfig{
 			BaseURL:      "http://127.0.0.1:1",
 			UnhealthyTTL: 40 * time.Millisecond,

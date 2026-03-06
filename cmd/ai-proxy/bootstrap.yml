@@ -20,6 +20,7 @@ erda.app.ai-proxy:
   lb_state_store_type: ${LB_STATE_STORE_TYPE:memory} # memory / redis / etcd
   lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
   model_health:
+    enabled: ${MODEL_HEALTH_ENABLED:true}
     probe:
       base_url: ${MODEL_HEALTH_PROBE_BASE_URL:http://127.0.0.1:8081}
       timeout: ${MODEL_HEALTH_PROBE_TIMEOUT:10s}

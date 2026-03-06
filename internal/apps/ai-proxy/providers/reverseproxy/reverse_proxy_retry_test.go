@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	rproxy "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
 )
 
@@ -194,6 +195,81 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 	}
 	if got := rec.Body.String(); got != "ok" {
 		t.Fatalf("expected retry path to continue and return success body, got %q", got)
+	}
+}
+
+func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
+	p := &provider{}
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutLogger(ctx, logrusx.New())
+	ctxhelper.PutLoggerBase(ctx, logrusx.New())
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, []byte("{}"))
+	ctxhelper.PutRequestID(ctx, "req-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+
+	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", strings.NewReader("{}"))
+	req.Header.Set(vars.XRequestId, "req-1")
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	tw := rproxy.NewTrackedResponseWriter(rec)
+
+	targetURL, err := url.Parse("http://upstream.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	attempts := 0
+	var requestIDs []string
+	var callIDs []string
+	policy := transparentRetryPolicy{
+		Enabled:               true,
+		MaxAttempts:           2,
+		BackoffBase:           0,
+		RetryableHTTPStatuses: map[int]struct{}{},
+	}
+	options := []OptionFunc{
+		func(_ context.Context, proxy *httputil.ReverseProxy) {
+			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
+				pr.SetURL(targetURL)
+				requestIDs = append(requestIDs, ctxhelper.MustGetRequestID(pr.In.Context()))
+				callIDs = append(callIDs, ctxhelper.MustGetGeneratedCallID(pr.In.Context()))
+			}
+			proxy.ModifyResponse = nil
+			proxy.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				attempts++
+				if attempts == 1 {
+					return nil, errors.New("dial tcp 127.0.0.1:80: connect: connection refused")
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader("ok")),
+					Request:    req,
+				}, nil
+			})
+		},
+	}
+
+	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+
+	if attempts != 2 {
+		t.Fatalf("expected 2 attempts, got %d", attempts)
+	}
+	if len(requestIDs) != 2 || requestIDs[0] != "req-1" || requestIDs[1] != "req-1" {
+		t.Fatalf("expected same request id for all attempts, got %v", requestIDs)
+	}
+	if len(callIDs) != 2 {
+		t.Fatalf("expected call ids for both attempts, got %v", callIDs)
+	}
+	if callIDs[0] != "call-1" {
+		t.Fatalf("expected first attempt keep initial call id, got %q", callIDs[0])
+	}
+	if callIDs[1] == "call-1" {
+		t.Fatalf("expected retry attempt to regenerate call id, got %v", callIDs)
+	}
+	if callIDs[0] == callIDs[1] {
+		t.Fatalf("expected different call ids across attempts, got %v", callIDs)
 	}
 }
 

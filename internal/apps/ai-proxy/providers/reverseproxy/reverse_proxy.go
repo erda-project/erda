@@ -206,6 +206,7 @@ func (p *provider) serveWithTransparentRetry(
 				}
 
 				// Ensure audit data of the suppressed attempt is persisted before retry.
+				reverse_proxy.NoteAttemptCompleted(req.Context())
 				audithelper.Note(req.Context(), "retry.attempt_failed_reason", retryReason(result))
 				audithelper.Flush(req.Context())
 				return
@@ -307,6 +308,10 @@ func prepareRequestForAttempt(ctx context.Context, r *http.Request, attempt int)
 	// Always reset ctx to isolate per-attempt state (model, audit sink, filters).
 	newCtx := ctxhelper.ResetForRetry(ctx)
 	newReq := r.WithContext(newCtx)
+
+	if attempt > 1 {
+		ctxhelper.PutGeneratedCallID(newCtx, requestid.GetCallID(newReq))
+	}
 
 	if attempt > 1 {
 		bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(newCtx)

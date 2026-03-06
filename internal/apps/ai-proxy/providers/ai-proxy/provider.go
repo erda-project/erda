@@ -91,10 +91,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	healthManager := health.NewManager(state_store.GetStore(), p.Config.ModelHealth)
 	health.SetManager(healthManager)
 	// init policy group engine
+	engineOpts := []pgengine.Option{
+		pgengine.WithStickyTTL(p.Config.LBStateStoreStickyTTL),
+	}
+	if healthManager != nil {
+		engineOpts = append(engineOpts, pgengine.WithHealthFilter(healthManager.FilterHealthyInstances))
+	}
 	pgengine.SetEngine(pgengine.NewEngine(
 		state_store.GetStore(),
-		pgengine.WithStickyTTL(p.Config.LBStateStoreStickyTTL),
-		pgengine.WithHealthFilter(healthManager.FilterHealthyInstances),
+		engineOpts...,
 	))
 
 	// initialize cache manager
