@@ -125,6 +125,19 @@ check-copyright:
 check-imports:
 	go run tools/gotools/go-imports-order/main.go
 
+# check gofmt formatting
+check-gofmt:
+	@files="$(FILES)"; \
+	if [ -z "$$files" ]; then \
+		echo "No go files to check"; \
+		exit 0; \
+	fi; \
+	if [ -n "$$(gofmt -l $$files)" ]; then \
+		echo "The following files are not gofmt-formatted:"; \
+		gofmt -l $$files; \
+		exit 1; \
+	fi
+
 # test and generate go.test.sum
 run-test:
 	go run tools/gotools/go-test-sum/main.go

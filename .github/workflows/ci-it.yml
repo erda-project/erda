@@ -130,6 +130,15 @@ jobs:
         run: make prepare
       - name: Check Go Imports
         run: make check-imports
+      - name: Check Go Fmt
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          GOFMT_FILES="$(git diff --name-only "$BASE_SHA"...HEAD -- '*.go')"
+          make check-gofmt FILES="$GOFMT_FILES"
       - name: Run SQL Lint
         run: make miglint
       - name: Run Go Lint
@@ -138,10 +147,6 @@ jobs:
           version: v2.4.0
           # Use both GitHub annotations and plain log output with filenames
           args: --output.tab.path=stdout --output.tab.print-linter-name --output.tab.colors --timeout=30m
-          #skip-go-installation: true # not available in v1.49.0
-          #skip-cache: true # not available in v1.49.0
-          skip-pkg-cache: true
-          skip-build-cache: true
 
   CODE-TEST:
     runs-on: ubuntu-latest

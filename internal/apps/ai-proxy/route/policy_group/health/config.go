@@ -20,9 +20,9 @@ import (
 )
 
 type Config struct {
-	Enabled bool        `file:"enabled" env:"MODEL_HEALTH_ENABLED" default:"true"`
-	Probe  ProbeConfig  `file:"probe"`
-	Rescue RescueConfig `file:"rescue"`
+	Enabled bool         `file:"enabled" env:"MODEL_HEALTH_ENABLED" default:"true"`
+	Probe   ProbeConfig  `file:"probe"`
+	Rescue  RescueConfig `file:"rescue"`
 }
 
 type ProbeConfig struct {
