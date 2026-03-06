@@ -236,16 +236,13 @@ func (p *provider) serveWithTransparentRetry(
 
 		result.WroteHeader = tw.WroteHeader()
 		result.InstanceID = getCurrentInstanceID(retryCtx)
-		noteRetryAttempt(retryCtx, attempt, result)
 
 		if result.Err == nil {
-			noteRetryFinal(ctx, attempt, result.InstanceID)
 			logger.Infof("transparent retry finished, attempt=%d, instance=%s", attempt, result.InstanceID)
 			return
 		}
 
 		if !result.Suppressed {
-			noteRetryFinal(ctx, attempt, result.InstanceID)
 			logger.Warnf("transparent retry stop at attempt=%d, instance=%s, wrote_header=%v, retryable=%v, err=%v", attempt, result.InstanceID, result.WroteHeader, result.Retryable, result.Err)
 			return
 		}
@@ -451,30 +448,6 @@ func retryReason(result proxyAttemptResult) string {
 		return result.Err.Error()
 	}
 	return "unknown"
-}
-
-func noteRetryAttempt(ctx context.Context, attempt int, result proxyAttemptResult) {
-	audithelper.NoteAppend(ctx, "reverse_proxy.retry.attempts", map[string]any{
-		"attempt":      attempt,
-		"instance_id":  result.InstanceID,
-		"retryable":    result.Retryable,
-		"status_code":  result.StatusCode,
-		"wrote_header": result.WroteHeader,
-		"suppressed":   result.Suppressed,
-		"error": func() string {
-			if result.Err == nil {
-				return ""
-			}
-			return result.Err.Error()
-		}(),
-	})
-}
-
-func noteRetryFinal(ctx context.Context, attempt int, instanceID string) {
-	audithelper.Note(ctx, "reverse_proxy.retry.final_llm_backend_request_count", attempt)
-	if instanceID != "" {
-		audithelper.Note(ctx, "reverse_proxy.retry.final_instance_id", instanceID)
-	}
 }
 
 func nextRetryBackoff(policy transparentRetryPolicy, attempt int) time.Duration {

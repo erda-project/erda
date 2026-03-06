@@ -16,6 +16,7 @@ package reverse_proxy
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -97,6 +98,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 		if err := auditskeleton.CreateSkeleton(pr.In); err != nil {
 			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("failed to create audit skeleton: %v", err)
 		}
+		noteRetryAuditMetadata(pr.In.Context())
 
 		// dump request in
 		dumplog.DumpRequestIn(pr.In)
@@ -139,8 +141,9 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	if isInternalTrustedHealthProbe(pr.In) {
 		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
+		audithelper.Note(pr.In.Context(), "model_health.trusted_probe", true)
 	}
-	setRequestTraceAndIdempotencyHeaders(pr)
+	setRequestTraceHeaders(pr)
 	applyForwardTLSHandshakeTimeoutOverride(pr)
 	applyForwardDialTimeoutOverride(pr)
 	applyForwardResponseTimeoutOverride(pr)
@@ -148,12 +151,11 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	stripAIProxyHeaders(pr)
 }
 
-func setRequestTraceAndIdempotencyHeaders(pr *httputil.ProxyRequest) {
+func setRequestTraceHeaders(pr *httputil.ProxyRequest) {
 	if pr == nil || pr.In == nil || pr.Out == nil {
 		return
 	}
 	pr.Out.Header.Set(vars.XRequestId, ctxhelper.MustGetRequestID(pr.In.Context()))
-	pr.Out.Header.Set(vars.IdempotencyKey, ctxhelper.MustGetGeneratedCallID(pr.In.Context()))
 }
 
 func applyForwardTLSHandshakeTimeoutOverride(pr *httputil.ProxyRequest) {
@@ -242,4 +244,13 @@ func isLoopbackRemoteAddr(remoteAddr string) bool {
 	host = strings.Trim(host, "[]")
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
+}
+
+func noteRetryAuditMetadata(ctx context.Context) {
+	attempt, ok := ctxhelper.GetReverseProxyRetryAttempt(ctx)
+	if !ok || attempt <= 1 {
+		return
+	}
+	audithelper.Note(ctx, "model_retry.raw_llm_backend_request_count", attempt)
+	audithelper.Note(ctx, "model_retry.raw_llm_backend_retry_count", attempt-1)
 }

@@ -67,8 +67,6 @@ const (
 	// XAIProxyRetryMax overrides max attempt count (including first attempt),
 	// e.g. "3" means first attempt + up to 2 retries.
 	XAIProxyRetryMax = "X-AI-Proxy-Retry-Max"
-	// IdempotencyKey is forwarded to upstream using call-id to deduplicate retries.
-	IdempotencyKey = "Idempotency-Key"
 
 	UIValueUndefined = "undefined"
 )
