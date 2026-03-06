@@ -257,3 +257,23 @@ func TestHandleModelRetryMetaHeader(t *testing.T) {
 	assert.EqualValues(t, 1, payload["raw_llm_backend_retry_count"])
 	assert.EqualValues(t, "m-2", payload["final_model_instance_id"])
 }
+
+func TestHandleModelRetryMetaHeaderDisabled(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutReverseProxyRetryAttempt(ctx, 2)
+	ctxhelper.PutModelRetryResponseHeaderMetaEnabled(ctx, false)
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	assert.Empty(t, resp.Header.Get(vars.XAIProxyModelRetryMeta))
+}

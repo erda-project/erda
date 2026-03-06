@@ -90,6 +90,9 @@ type modelRetryMetaHeader struct {
 }
 
 func _handleModelRetryMetaHeader(resp *http.Response) {
+	if enabled, ok := ctxhelper.GetModelRetryResponseHeaderMetaEnabled(resp.Request.Context()); ok && !enabled {
+		return
+	}
 	attempt, ok := ctxhelper.GetReverseProxyRetryAttempt(resp.Request.Context())
 	if !ok || attempt <= 1 {
 		return

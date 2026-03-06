@@ -17,7 +17,10 @@ package config
 import (
 	"embed"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -36,17 +39,36 @@ type Config struct {
 }
 
 type ModelRetryConfig struct {
-	Enabled                             bool              `file:"enabled" env:"AI_PROXY_MODEL_RETRY_ENABLED" default:"true"`
-	MaxAttempts                         int               `file:"max_attempts" env:"AI_PROXY_MODEL_RETRY_MAX_ATTEMPTS" default:"3"`
-	Backoff                             ModelRetryBackoff `file:"backoff"`
-	RetryableHTTPStatuses               []int             `file:"retryable_http_statuses"`
-	EnableResponseBodyNetworkIssueMatch bool              `file:"enable_response_body_network_issue_match" env:"AI_PROXY_MODEL_RETRY_ENABLE_RESPONSE_BODY_NETWORK_ISSUE_MATCH" default:"false"`
+	Enabled       bool                    `file:"enabled" env:"AI_PROXY_MODEL_RETRY_ENABLED" default:"true"`
+	Conditions    ModelRetryConditions    `file:"conditions"`
+	Actions       ModelRetryActions       `file:"actions"`
+	Observability ModelRetryObservability `file:"observability"`
+}
+
+type ModelRetryConditions struct {
+	MaxLLMBackendRequestCount         int               `file:"max_llm_backend_request_count" env:"AI_PROXY_MODEL_RETRY_MAX_LLM_BACKEND_REQUEST_COUNT" default:"3"`
+	Backoff                           ModelRetryBackoff `file:"backoff"`
+	RetryableHTTPStatuses             []int             `file:"retryable_http_statuses"`
+	RetryableHTTPStatusesRaw          string            `file:"-" env:"AI_PROXY_MODEL_RETRY_RETRYABLE_HTTP_STATUSES"`
+	MatchNetworkIssueFromResponseBody bool              `file:"match_network_issue_from_response_body" env:"AI_PROXY_MODEL_RETRY_MATCH_NETWORK_ISSUE_FROM_RESPONSE_BODY" default:"false"`
 }
 
 type ModelRetryBackoff struct {
 	// Base is the retry backoff base duration.
 	// Retry #1 waits 1*Base, retry #2 waits 3*Base, retry #3 waits 7*Base, ...
 	Base time.Duration `file:"base" env:"AI_PROXY_MODEL_RETRY_BACKOFF_BASE" default:"1s"`
+	Max  time.Duration `file:"max" default:"10s"`
+}
+
+type ModelRetryActions struct {
+	// ExcludeFailedInstance only affects the retry layer's per-request exclusion set.
+	// It does not override model health filtering. When model health is enabled,
+	// a failed instance may already be filtered out before the next attempt.
+	ExcludeFailedInstance bool `file:"exclude_failed_instance" env:"AI_PROXY_MODEL_RETRY_EXCLUDE_FAILED_INSTANCE" default:"true"`
+}
+
+type ModelRetryObservability struct {
+	ResponseHeaderMeta bool `file:"response_header_meta" default:"true"`
 }
 
 var (
@@ -83,18 +105,48 @@ func (cfg *Config) DoPost() error {
 }
 
 func (cfg *Config) normalizeModelRetry() {
-	if cfg.ModelRetry.MaxAttempts <= 0 {
-		cfg.ModelRetry.MaxAttempts = 1
+	if raw, ok := os.LookupEnv("AI_PROXY_MODEL_RETRY_RETRYABLE_HTTP_STATUSES"); ok {
+		cfg.ModelRetry.Conditions.RetryableHTTPStatusesRaw = raw
 	}
-	if cfg.ModelRetry.Backoff.Base < 0 {
-		cfg.ModelRetry.Backoff.Base = 0
+	if cfg.ModelRetry.Conditions.MaxLLMBackendRequestCount <= 0 {
+		cfg.ModelRetry.Conditions.MaxLLMBackendRequestCount = 1
 	}
-	if len(cfg.ModelRetry.RetryableHTTPStatuses) == 0 {
-		return
+	if cfg.ModelRetry.Conditions.Backoff.Base < 0 {
+		cfg.ModelRetry.Conditions.Backoff.Base = 0
 	}
-	statuses := make([]int, 0, len(cfg.ModelRetry.RetryableHTTPStatuses))
+	if cfg.ModelRetry.Conditions.Backoff.Max <= 0 {
+		cfg.ModelRetry.Conditions.Backoff.Max = 10 * time.Second
+	}
+	cfg.ModelRetry.Conditions.RetryableHTTPStatuses = normalizeHTTPStatusCodes(resolveRetryableHTTPStatuses(cfg.ModelRetry.Conditions))
+}
+
+func resolveRetryableHTTPStatuses(cfg ModelRetryConditions) []int {
+	if strings.TrimSpace(cfg.RetryableHTTPStatusesRaw) == "" {
+		return cfg.RetryableHTTPStatuses
+	}
+	parts := strings.Split(cfg.RetryableHTTPStatusesRaw, ",")
+	statuses := make([]int, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		code, err := strconv.Atoi(part)
+		if err != nil {
+			continue
+		}
+		statuses = append(statuses, code)
+	}
+	return statuses
+}
+
+func normalizeHTTPStatusCodes(codes []int) []int {
+	if len(codes) == 0 {
+		return nil
+	}
+	statuses := make([]int, 0, len(codes))
 	seen := make(map[int]struct{})
-	for _, code := range cfg.ModelRetry.RetryableHTTPStatuses {
+	for _, code := range codes {
 		if code < 100 || code > 599 {
 			continue
 		}
@@ -105,5 +157,5 @@ func (cfg *Config) normalizeModelRetry() {
 		statuses = append(statuses, code)
 	}
 	sort.Ints(statuses)
-	cfg.ModelRetry.RetryableHTTPStatuses = statuses
+	return statuses
 }

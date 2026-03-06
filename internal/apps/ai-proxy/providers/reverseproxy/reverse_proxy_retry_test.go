@@ -29,8 +29,9 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	rproxy "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -61,8 +62,11 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
 	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, []byte("{}"))
+	ctxhelper.PutRequestID(ctx, "req-429")
+	ctxhelper.PutGeneratedCallID(ctx, "call-429")
 
 	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", strings.NewReader("{}"))
+	req.Header.Set(vars.XRequestId, "req-429")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
 	tw := rproxy.NewTrackedResponseWriter(rec)
@@ -76,10 +80,11 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 	var selectedInstances []string
 	var requestBodies []string
 	policy := transparentRetryPolicy{
-		Enabled:               true,
-		MaxAttempts:           3,
-		BackoffBase:           0,
-		RetryableHTTPStatuses: map[int]struct{}{},
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 3,
+		BackoffBase:               0,
+		RetryableHTTPStatuses:     map[int]struct{}{},
+		ExcludeFailedInstance:     true,
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -138,8 +143,11 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
 	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, []byte("{}"))
+	ctxhelper.PutRequestID(ctx, "req-400")
+	ctxhelper.PutGeneratedCallID(ctx, "call-400")
 
 	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", strings.NewReader("{}"))
+	req.Header.Set(vars.XRequestId, "req-400")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
 	tw := rproxy.NewTrackedResponseWriter(rec)
@@ -152,10 +160,11 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 	attempts := 0
 	ctxErrs := make([]error, 0, 2)
 	policy := transparentRetryPolicy{
-		Enabled:               true,
-		MaxAttempts:           2,
-		BackoffBase:           0,
-		RetryableHTTPStatuses: map[int]struct{}{},
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 2,
+		BackoffBase:               0,
+		RetryableHTTPStatuses:     map[int]struct{}{},
+		ExcludeFailedInstance:     true,
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -223,10 +232,11 @@ func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
 	var requestIDs []string
 	var callIDs []string
 	policy := transparentRetryPolicy{
-		Enabled:               true,
-		MaxAttempts:           2,
-		BackoffBase:           0,
-		RetryableHTTPStatuses: map[int]struct{}{},
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 2,
+		BackoffBase:               0,
+		RetryableHTTPStatuses:     map[int]struct{}{},
+		ExcludeFailedInstance:     true,
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -292,10 +302,11 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 
 	attempts := 0
 	policy := transparentRetryPolicy{
-		Enabled:               true,
-		MaxAttempts:           3,
-		BackoffBase:           time.Millisecond,
-		RetryableHTTPStatuses: map[int]struct{}{},
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 3,
+		BackoffBase:               time.Millisecond,
+		RetryableHTTPStatuses:     map[int]struct{}{},
+		ExcludeFailedInstance:     true,
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -325,5 +336,220 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 	}
 	if got := rec.Body.String(); got == "" {
 		t.Fatalf("expected streamed body bytes before failure")
+	}
+}
+
+func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
+	p := &provider{}
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutLogger(ctx, logrusx.New())
+	ctxhelper.PutLoggerBase(ctx, logrusx.New())
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, []byte("{}"))
+	ctxhelper.PutRequestID(ctx, "req-400")
+	ctxhelper.PutGeneratedCallID(ctx, "call-400")
+
+	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", strings.NewReader("{}"))
+	req.Header.Set(vars.XRequestId, "req-400")
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	tw := rproxy.NewTrackedResponseWriter(rec)
+
+	targetURL, err := url.Parse("http://upstream.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	attempts := 0
+	var selectedInstances []string
+	policy := transparentRetryPolicy{
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 2,
+		BackoffBase:               0,
+		RetryableHTTPStatuses:     map[int]struct{}{},
+		ExcludeFailedInstance:     false,
+	}
+	options := []OptionFunc{
+		func(_ context.Context, proxy *httputil.ReverseProxy) {
+			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
+				pr.SetURL(targetURL)
+				modelID := "m-a"
+				if excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(pr.In.Context()); ok {
+					if _, hit := excluded[modelID]; hit {
+						modelID = "m-b"
+					}
+				}
+				selectedInstances = append(selectedInstances, modelID)
+				ctxhelper.PutModel(pr.In.Context(), &modelpb.Model{Id: modelID})
+			}
+			proxy.ModifyResponse = nil
+			proxy.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				attempts++
+				if attempts == 1 {
+					return nil, errors.New("dial tcp 127.0.0.1:80: connect: connection refused")
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader("ok")),
+					Request:    req,
+				}, nil
+			})
+		},
+	}
+
+	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+
+	if attempts != 2 {
+		t.Fatalf("expected 2 attempts, got %d", attempts)
+	}
+	if len(selectedInstances) != 2 || selectedInstances[0] != "m-a" || selectedInstances[1] != "m-a" {
+		t.Fatalf("expected retry to allow the same instance when exclusion is disabled, got: %v", selectedInstances)
+	}
+}
+
+func TestNextRetryBackoff_RespectsMax(t *testing.T) {
+	policy := transparentRetryPolicy{
+		BackoffBase: time.Second,
+		BackoffMax:  4 * time.Second,
+	}
+
+	if got := nextRetryBackoff(policy, 3); got != 4*time.Second {
+		t.Fatalf("expected backoff capped at 4s, got %s", got)
+	}
+}
+
+func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
+	p := &provider{}
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutLogger(ctx, logrusx.New())
+	ctxhelper.PutLoggerBase(ctx, logrusx.New())
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, []byte("{}"))
+	ctxhelper.PutRequestID(ctx, "req-400")
+	ctxhelper.PutGeneratedCallID(ctx, "call-400")
+
+	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", strings.NewReader("{}"))
+	req.Header.Set(vars.XRequestId, "req-400")
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	tw := rproxy.NewTrackedResponseWriter(rec)
+
+	targetURL, err := url.Parse("http://upstream.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	attempts := 0
+	var selectedInstances []string
+	policy := transparentRetryPolicy{
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 2,
+		BackoffBase:               0,
+		RetryableHTTPStatuses: map[int]struct{}{
+			http.StatusTooManyRequests: {},
+		},
+		ExcludeFailedInstance: true,
+	}
+	options := []OptionFunc{
+		func(_ context.Context, proxy *httputil.ReverseProxy) {
+			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
+				pr.SetURL(targetURL)
+				modelID := "m-a"
+				if excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(pr.In.Context()); ok {
+					if _, hit := excluded[modelID]; hit {
+						modelID = "m-b"
+					}
+				}
+				selectedInstances = append(selectedInstances, modelID)
+				ctxhelper.PutModel(pr.In.Context(), &modelpb.Model{Id: modelID})
+			}
+			proxy.ModifyResponse = nil
+			proxy.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				attempts++
+				if attempts == 1 {
+					return nil, httperror.NewHTTPError(req.Context(), http.StatusTooManyRequests, "rate limited")
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader("ok")),
+					Request:    req,
+				}, nil
+			})
+		},
+	}
+
+	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+
+	if attempts != 2 {
+		t.Fatalf("expected 2 attempts for retryable 429, got %d", attempts)
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected final status 200, got %d", rec.Code)
+	}
+	if got := rec.Body.String(); got != "ok" {
+		t.Fatalf("expected successful retry body, got %q", got)
+	}
+	if len(selectedInstances) != 2 || selectedInstances[0] != "m-a" || selectedInstances[1] != "m-b" {
+		t.Fatalf("expected retry after 429 to avoid failed instance, got: %v", selectedInstances)
+	}
+}
+
+func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
+	p := &provider{}
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutLogger(ctx, logrusx.New())
+	ctxhelper.PutLoggerBase(ctx, logrusx.New())
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, []byte("{}"))
+	ctxhelper.PutRequestID(ctx, "req-400")
+	ctxhelper.PutGeneratedCallID(ctx, "call-400")
+
+	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", strings.NewReader("{}"))
+	req.Header.Set(vars.XRequestId, "req-400")
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	tw := rproxy.NewTrackedResponseWriter(rec)
+
+	targetURL, err := url.Parse("http://upstream.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	attempts := 0
+	policy := transparentRetryPolicy{
+		Enabled:                   true,
+		MaxLLMBackendRequestCount: 2,
+		BackoffBase:               0,
+		RetryableHTTPStatuses: map[int]struct{}{
+			http.StatusTooManyRequests: {},
+		},
+		ExcludeFailedInstance: true,
+	}
+	options := []OptionFunc{
+		func(_ context.Context, proxy *httputil.ReverseProxy) {
+			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
+				pr.SetURL(targetURL)
+				ctxhelper.PutModel(pr.In.Context(), &modelpb.Model{Id: "m-a"})
+			}
+			proxy.ModifyResponse = nil
+			proxy.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				attempts++
+				return nil, httperror.NewHTTPError(req.Context(), http.StatusBadRequest, "bad request")
+			})
+		},
+	}
+
+	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+
+	if attempts != 1 {
+		t.Fatalf("expected no retry for non-retryable 400, got %d attempts", attempts)
+	}
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected final status 400, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "bad request") {
+		t.Fatalf("expected error body to contain original message, got %q", rec.Body.String())
 	}
 }

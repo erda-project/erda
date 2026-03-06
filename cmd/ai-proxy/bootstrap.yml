@@ -8,11 +8,20 @@ erda.app.reverse-proxy:
   log_level: ${LOG_LEVEL:info}
   model_retry:
     enabled: ${AI_PROXY_MODEL_RETRY_ENABLED:true}
-    max_attempts: ${AI_PROXY_MODEL_RETRY_MAX_ATTEMPTS:3}
-    backoff:
-      base: ${AI_PROXY_MODEL_RETRY_BACKOFF_BASE:1s}
-    retryable_http_statuses: [] # e.g. [429, 502, 503, 504]
-    enable_response_body_network_issue_match: ${AI_PROXY_MODEL_RETRY_ENABLE_RESPONSE_BODY_NETWORK_ISSUE_MATCH:false}
+    conditions:
+      max_llm_backend_request_count: ${AI_PROXY_MODEL_RETRY_MAX_LLM_BACKEND_REQUEST_COUNT:3}
+      backoff:
+        base: ${AI_PROXY_MODEL_RETRY_BACKOFF_BASE:1s}
+        max: 10s
+      retryable_http_statuses: [429, 502, 503, 504] # env override: AI_PROXY_MODEL_RETRY_RETRYABLE_HTTP_STATUSES=429,502,503,504
+      match_network_issue_from_response_body: ${AI_PROXY_MODEL_RETRY_MATCH_NETWORK_ISSUE_FROM_RESPONSE_BODY:false}
+    actions:
+      # Retry layer only: when true, a failed instance is excluded from later attempts of the same request.
+      # This does not control model_health. If model_health is enabled, the failed instance may already be
+      # filtered out by health state before the next attempt, even when exclude_failed_instance=false.
+      exclude_failed_instance: ${AI_PROXY_MODEL_RETRY_EXCLUDE_FAILED_INSTANCE:true}
+    observability:
+      response_header_meta: true
 
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
