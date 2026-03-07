@@ -26,6 +26,7 @@ import (
 
 func newTestManager(store state_store.LBStateStore, baseURL string) *Manager {
 	return NewManager(store, Config{
+		Enabled: true,
 		Probe: ProbeConfig{
 			BaseURL:      baseURL,
 			UnhealthyTTL: time.Hour,

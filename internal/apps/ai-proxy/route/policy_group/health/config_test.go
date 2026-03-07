@@ -29,10 +29,19 @@ func TestNewManagerPanicWhenRescueBackoffUnset(t *testing.T) {
 		}
 	}()
 	_ = NewManager(store, Config{
+		Enabled: true,
 		Probe: ProbeConfig{
 			BaseURL:      "http://127.0.0.1:65530",
 			UnhealthyTTL: time.Hour,
 			Timeout:      20 * time.Millisecond,
 		},
 	})
+}
+
+func TestNewManagerDisabled(t *testing.T) {
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{Enabled: false})
+	if manager != nil {
+		t.Fatal("expected nil manager when model health is disabled")
+	}
 }

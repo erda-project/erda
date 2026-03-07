@@ -20,8 +20,9 @@ import (
 )
 
 type Config struct {
-	Probe  ProbeConfig  `file:"probe"`
-	Rescue RescueConfig `file:"rescue"`
+	Enabled bool         `file:"enabled" env:"MODEL_HEALTH_ENABLED" default:"true"`
+	Probe   ProbeConfig  `file:"probe"`
+	Rescue  RescueConfig `file:"rescue"`
 }
 
 type ProbeConfig struct {
@@ -36,6 +37,9 @@ type RescueConfig struct {
 }
 
 func (cfg *Config) normalize() {
+	if !cfg.Enabled {
+		return
+	}
 	if strings.TrimSpace(cfg.Probe.BaseURL) == "" {
 		panic("model health probe base_url must not be empty")
 	}

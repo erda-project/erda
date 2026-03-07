@@ -12,27 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package reverse_proxy
 
 import (
-	"embed"
+	"context"
+	"testing"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/mcp-proxy" // import service hub dependencies
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
-	"github.com/erda-project/erda/pkg/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
-//go:embed bootstrap.yml
-var bootstrap string
+func TestNoteAttemptCompleted(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	sink := types.New("audit-1", nil)
+	ctxhelper.PutAuditSink(ctx, sink)
 
-//go:embed conf/routes
-var routesFS embed.FS
+	NoteAttemptCompleted(ctx)
 
-func main() {
-	reverseproxy.InjectEmbedFS(&routesFS, nil)
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrap,
-	})
+	got := sink.Snapshot()
+	if got["response_at"] == nil {
+		t.Fatal("expected response_at to be recorded")
+	}
+	if got["response_chunk_done_at"] == nil {
+		t.Fatal("expected response_chunk_done_at to be recorded")
+	}
 }

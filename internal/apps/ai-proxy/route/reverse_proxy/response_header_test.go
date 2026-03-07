@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -200,7 +201,8 @@ func TestHandleModelHealthMetaHeader(t *testing.T) {
 
 	var payload map[string]any
 	assert.NoError(t, json.Unmarshal([]byte(raw), &payload))
-	assert.EqualValues(t, "v1", payload["version"])
+	_, hasVersion := payload["version"]
+	assert.False(t, hasVersion)
 	assert.EqualValues(t, 2, payload["released_unsupported_count"])
 	assert.EqualValues(t, "unsupported_probe_api_type", payload["reason"])
 
@@ -227,4 +229,51 @@ func TestHandleModelMarkUnhealthyHeader(t *testing.T) {
 	handleAIProxyResponseHeader(resp)
 
 	assert.Equal(t, "m-123", resp.Header.Get(vars.XAIProxyModelHealthMarkUnhealthy))
+}
+
+func TestHandleModelRetryMetaHeader(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutModelRetryRawLLMBackendRequestCount(ctx, 2)
+	ctxhelper.PutModel(ctx, &modelpb.Model{Id: "m-2"})
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	raw := resp.Header.Get(vars.XAIProxyModelRetryMeta)
+	assert.NotEmpty(t, raw)
+
+	var payload map[string]any
+	assert.NoError(t, json.Unmarshal([]byte(raw), &payload))
+	assert.EqualValues(t, 2, payload["raw_llm_backend_request_count"])
+	assert.EqualValues(t, 1, payload["raw_llm_backend_retry_count"])
+	assert.EqualValues(t, "m-2", payload["final_model_instance_id"])
+}
+
+func TestHandleModelRetryMetaHeaderDisabled(t *testing.T) {
+	req, err := http.NewRequest("POST", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
+	req = req.WithContext(ctx)
+	ctxhelper.PutRequestID(ctx, "client-1")
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutModelRetryRawLLMBackendRequestCount(ctx, 2)
+	ctxhelper.PutModelRetryResponseHeaderMetaEnabled(ctx, false)
+
+	resp := &http.Response{
+		Header:  make(http.Header),
+		Request: req,
+	}
+	handleAIProxyResponseHeader(resp)
+
+	assert.Empty(t, resp.Header.Get(vars.XAIProxyModelRetryMeta))
 }

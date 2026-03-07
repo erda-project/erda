@@ -79,6 +79,8 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 				panic(brokenInErr)
 			}
 			_ = pr.In.Body.Close()
+			// keep a full copy for transparent retries
+			ctxhelper.PutReverseProxyRequestBodyBytes(pr.In.Context(), bytes.Clone(save))
 			pr.In.Body = io.NopCloser(bytes.NewReader(save))
 			pr.Out.Body = io.NopCloser(bytes.NewReader(bytes.Clone(save)))
 		}
@@ -95,6 +97,7 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 		if err := auditskeleton.CreateSkeleton(pr.In); err != nil {
 			ctxhelper.MustGetLoggerBase(pr.In.Context()).Warnf("failed to create audit skeleton: %v", err)
 		}
+		noteRetryAuditMetadata(pr.In.Context())
 
 		// dump request in
 		dumplog.DumpRequestIn(pr.In)
@@ -137,12 +140,21 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	if isInternalTrustedHealthProbe(pr.In) {
 		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
+		audithelper.Note(pr.In.Context(), "model_health.trusted_probe", true)
 	}
+	setRequestTraceHeaders(pr)
 	applyForwardTLSHandshakeTimeoutOverride(pr)
 	applyForwardDialTimeoutOverride(pr)
 	applyForwardResponseTimeoutOverride(pr)
 
 	stripAIProxyHeaders(pr)
+}
+
+func setRequestTraceHeaders(pr *httputil.ProxyRequest) {
+	if pr == nil || pr.In == nil || pr.Out == nil {
+		return
+	}
+	pr.Out.Header.Set(vars.XRequestId, ctxhelper.MustGetRequestID(pr.In.Context()))
 }
 
 func applyForwardTLSHandshakeTimeoutOverride(pr *httputil.ProxyRequest) {

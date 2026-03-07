@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package reverseproxy
 
 import (
 	"embed"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 )
 
 type Config struct {
@@ -26,6 +28,8 @@ type Config struct {
 	LogLevel    logrus.Level `json:"-" yaml:"-"`
 
 	SelfURL string `file:"self_url" env:"SELF_URL" required:"true"`
+
+	ModelRetry modelretry.Config `file:"model_retry"`
 
 	EmbedRoutesFS    embed.FS
 	EmbedTemplatesFS embed.FS
@@ -36,12 +40,12 @@ var (
 	EmbedTemplatesFS embed.FS
 )
 
-func InjectEmbedFS(routesFS, TemplatesFS *embed.FS) {
+func InjectEmbedFS(routesFS, templatesFS *embed.FS) {
 	if routesFS != nil {
 		EmbedRoutesFS = *routesFS
 	}
-	if TemplatesFS != nil {
-		EmbedTemplatesFS = *TemplatesFS
+	if templatesFS != nil {
+		EmbedTemplatesFS = *templatesFS
 	}
 }
 
@@ -58,6 +62,9 @@ func (cfg *Config) DoPost() error {
 	}
 	logrus.SetLevel(level)
 	cfg.LogLevel = level
+
+	// model retry
+	cfg.ModelRetry.Normalize()
 
 	return nil
 }
