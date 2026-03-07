@@ -20,7 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 )
 
 type Config struct {

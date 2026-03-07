@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package reverse_proxy
 
 import (
 	"context"
@@ -30,9 +30,8 @@ import (
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	audittypes "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
-	rproxy "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -58,8 +57,6 @@ func (b *flakyStreamBody) Read(p []byte) (int, error) {
 func (b *flakyStreamBody) Close() error { return nil }
 
 func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -71,7 +68,7 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 	req.Header.Set(vars.XRequestId, "req-429")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -121,7 +118,7 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 2 {
 		t.Fatalf("expected 2 attempts, got %d", attempts)
@@ -141,8 +138,6 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 }
 
 func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -154,7 +149,7 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 	req.Header.Set(vars.XRequestId, "req-400")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -194,7 +189,7 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 2 {
 		t.Fatalf("expected 2 attempts, got %d", attempts)
@@ -214,8 +209,6 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 }
 
 func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -227,7 +220,7 @@ func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
 	req.Header.Set(vars.XRequestId, "req-1")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -269,7 +262,7 @@ func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 2 {
 		t.Fatalf("expected 2 attempts, got %d", attempts)
@@ -292,8 +285,6 @@ func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
 }
 
 func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -301,7 +292,7 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://ai-proxy.test/v1/chat/completions", nil)
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -336,7 +327,7 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 1 {
 		t.Fatalf("expected no retry once headers/body have started, got attempts=%d", attempts)
@@ -350,8 +341,6 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 }
 
 func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -363,7 +352,7 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 	req.Header.Set(vars.XRequestId, "req-400")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -410,7 +399,7 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 2 {
 		t.Fatalf("expected 2 attempts, got %d", attempts)
@@ -436,8 +425,6 @@ func TestNextRetryBackoff_RespectsMax(t *testing.T) {
 }
 
 func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -449,7 +436,7 @@ func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
 	req.Header.Set(vars.XRequestId, "req-400")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -496,7 +483,7 @@ func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 2 {
 		t.Fatalf("expected 2 attempts for retryable 429, got %d", attempts)
@@ -513,8 +500,6 @@ func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
 }
 
 func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
-	p := &provider{}
-
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
@@ -526,7 +511,7 @@ func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
 	req.Header.Set(vars.XRequestId, "req-400")
 	req = req.WithContext(ctx)
 	rec := httptest.NewRecorder()
-	tw := rproxy.NewTrackedResponseWriter(rec)
+	tw := NewTrackedResponseWriter(rec)
 
 	targetURL, err := url.Parse("http://upstream.test")
 	if err != nil {
@@ -557,7 +542,7 @@ func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
 		},
 	}
 
-	p.serveWithTransparentRetry(ctx, tw, req, nil, nil, options, policy)
+	ServeWithRetry(ctx, tw, req, nil, nil, options, policy)
 
 	if attempts != 1 {
 		t.Fatalf("expected no retry for non-retryable 400, got %d attempts", attempts)
