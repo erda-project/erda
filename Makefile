@@ -127,7 +127,7 @@ check-imports:
 
 # check gofmt formatting
 check-gofmt:
-	@files="$(FILES)"; \
+	@files='$(strip $(FILES))'; \
 	if [ -z "$$files" ]; then \
 		echo "No go files to check"; \
 		exit 0; \
