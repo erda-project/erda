@@ -15,36 +15,24 @@
 package reverseproxy
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
+	routeproxy "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 )
 
-type OptionFunc func(context.Context, *httputil.ReverseProxy)
+type OptionFunc = routeproxy.OptionFunc
 
-func WithTransport(transport http.RoundTripper) OptionFunc {
-	return func(_ context.Context, proxy *httputil.ReverseProxy) {
-		proxy.Transport = transport
-	}
-}
-
-func WithCtxHelperItems(putAnyFunctions ...func(context.Context)) OptionFunc {
-	return func(ctx context.Context, _ *httputil.ReverseProxy) {
-		for _, f := range putAnyFunctions {
-			f(ctx)
-		}
-	}
-}
+var (
+	WithTransport      = routeproxy.WithTransport
+	WithCtxHelperItems = routeproxy.WithCtxHelperItems
+)
 
 func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -112,22 +100,8 @@ func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc
 		ctxhelper.PutPathMatcher(ctx, matchedRoute.GetPathMatcher())
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
-		proxy := httputil.ReverseProxy{
-			Rewrite: reverse_proxy.MyRewrite(w, requestFilters),
-			Transport: transports.NewRequestFilterGeneratedResponseTransport(&transports.CurlPrinterTransport{
-				Inner: &transports.TimerTransport{},
-			}),
-			FlushInterval:  -1,
-			ErrorLog:       nil,
-			BufferPool:     nil,
-			ModifyResponse: reverse_proxy.MyResponseModify(w, responseFilters),
-			ErrorHandler:   reverse_proxy.MyErrorHandler(),
-		}
-
-		for _, option := range options {
-			option(ctx, &proxy)
-		}
-
-		proxy.ServeHTTP(w, r)
+		tw := routeproxy.NewTrackedResponseWriter(w)
+		policy := p.Config.ModelRetry.WithRequestOverrides(r)
+		routeproxy.ServeWithRetry(ctx, tw, r, requestFilters, responseFilters, options, policy)
 	}
 }

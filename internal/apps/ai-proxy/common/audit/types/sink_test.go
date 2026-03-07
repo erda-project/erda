@@ -17,6 +17,7 @@ package types
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
@@ -57,7 +58,7 @@ func TestNoteErrors(t *testing.T) {
 	// Note: errors are now logged as warnings instead of returned
 	// This test verifies the methods don't panic
 	s := New("aid", logrusx.New())
-	s.Note("", 1) // should log warning
+	s.Note("", 1)             // should log warning
 	s.NoteOnce("BadUpper", 1) // should log warning and return false
 }
 
@@ -110,7 +111,6 @@ func TestSnapshotIsolation(t *testing.T) {
 		t.Fatalf("snapshot should be a copy; got %v", got)
 	}
 }
-
 
 func TestNoteAppendBehavior(t *testing.T) {
 	s := New("aid", logrusx.New())
@@ -226,5 +226,35 @@ func TestNoteAppendBytes_Simple(t *testing.T) {
 	}
 	if string(bs) != "abcd" {
 		t.Fatalf("want abcd, got %q", string(bs))
+	}
+}
+
+func TestSinkConcurrentSnapshotAndWrite(t *testing.T) {
+	s := New("aid", logrusx.New())
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < 500; j++ {
+				s.Note("status", j)
+				s.NoteAppend("response_body", "x")
+				s.Inc("usage.prompt_tokens", 1)
+				_ = s.Snapshot()
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	snap := s.Snapshot()
+	if _, ok := snap["status"]; !ok {
+		t.Fatalf("expected status in snapshot, got %v", snap)
+	}
+	if _, ok := snap["response_body"]; !ok {
+		t.Fatalf("expected response_body in snapshot, got %v", snap)
+	}
+	if got, ok := snap["usage.prompt_tokens"].(int64); !ok || got <= 0 {
+		t.Fatalf("expected positive usage.prompt_tokens, got %v", snap["usage.prompt_tokens"])
 	}
 }

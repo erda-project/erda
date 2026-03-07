@@ -26,6 +26,7 @@ import (
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
 	groupresolver "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/resolver"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 )
 
 func findModel(req *http.Request, client *clientpb.Client) (*modelpb.Model, error) {
@@ -67,6 +68,7 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 	if err != nil {
 		return nil, nil, err
 	}
+	routingInstances = filterRetryExcludedInstances(ctx, routingInstances)
 
 	// route by engine
 	instance, trace, err := engine.GetEngine().Route(ctx, policygroup.RouteRequest{
@@ -80,4 +82,22 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 		return nil, nil, err
 	}
 	return trace, instance, nil
+}
+
+func filterRetryExcludedInstances(ctx context.Context, instances []*policygroup.RoutingModelInstance) []*policygroup.RoutingModelInstance {
+	excluded, ok := modelretry.GetExcludedModelIDs(ctx)
+	if !ok || len(excluded) == 0 {
+		return instances
+	}
+	filtered := make([]*policygroup.RoutingModelInstance, 0, len(instances))
+	for _, instance := range instances {
+		if instance == nil || instance.ModelWithProvider == nil {
+			continue
+		}
+		if _, hit := excluded[instance.ModelWithProvider.Id]; hit {
+			continue
+		}
+		filtered = append(filtered, instance)
+	}
+	return filtered
 }

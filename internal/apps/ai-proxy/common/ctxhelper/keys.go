@@ -71,6 +71,11 @@ type (
 	mapKeyReverseProxyResponseModifyError struct{ *ReverseProxyFilterError }
 	mapKeyReverseProxyRequestInSnapshot   struct{ *http.Request }
 	mapKeyReverseProxyRequestOutSnapshot  struct{ *http.Request }
+	mapKeyReverseProxyRequestBodyBytes    struct{ any }
+
+	mapKeyModelRetryRawLLMBackendRequestCount struct{ int }
+	mapKeyModelRetryExcludedModelIDs          struct{ any }
+	mapKeyModelRetryResponseHeaderMetaEnabled struct{ bool }
 
 	mapKeyReverseProxyWholeHandledResponseBodyStr struct{ string }
 

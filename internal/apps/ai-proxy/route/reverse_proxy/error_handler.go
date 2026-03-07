@@ -15,6 +15,7 @@
 package reverse_proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,11 +27,17 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 )
 
+func NoteAttemptCompleted(ctx context.Context) {
+	now := time.Now()
+	audithelper.NoteOnce(ctx, "response_at", now)
+	audithelper.NoteOnce(ctx, "response_chunk_done_at", now)
+}
+
 var MyErrorHandler = func() func(w http.ResponseWriter, r *http.Request, err error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		// sink audit when error
 		defer func() {
-			audithelper.NoteOnce(r.Context(), "response_chunk_done_at", time.Now())
+			NoteAttemptCompleted(r.Context())
 			audithelper.Flush(r.Context())
 		}()
 

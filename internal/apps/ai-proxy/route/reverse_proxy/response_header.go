@@ -31,6 +31,7 @@ func handleAIProxyResponseHeader(resp *http.Response) {
 	// call all header handling functions
 	_handleModelHeaders(resp)
 	_handleModelMarkUnhealthyHeader(resp)
+	_handleModelRetryMetaHeader(resp)
 	_handlePolicyTraceHeader(resp)
 	_handleModelHealthMetaHeader(resp)
 	_handleRequestIdHeaders(resp)
@@ -77,7 +78,6 @@ func _handlePolicyTraceHeader(resp *http.Response) {
 }
 
 type modelHealthMetaHeader struct {
-	Version                     string   `json:"version"`
 	ReleasedUnsupportedCount    int      `json:"released_unsupported_count"`
 	ReleasedUnsupportedAPITypes []string `json:"released_unsupported_api_types,omitempty"`
 	Reason                      string   `json:"reason,omitempty"`
@@ -93,7 +93,6 @@ func _handleModelHealthMetaHeader(resp *http.Response) {
 		return
 	}
 	headerValue := modelHealthMetaHeader{
-		Version:                     "v1",
 		ReleasedUnsupportedCount:    meta.ReleasedUnsupportedCount,
 		ReleasedUnsupportedAPITypes: meta.ReleasedUnsupportedAPITypes,
 		Reason:                      "unsupported_probe_api_type",

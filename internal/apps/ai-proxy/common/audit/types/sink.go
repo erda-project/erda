@@ -13,20 +13,18 @@
 // limitations under the License.
 
 // Package types provides a minimal audit Sink implementation.
-// This version uses a plain map and assumes per-request serial access
-// (filters in the same request run in a single goroutine chain).
 package types
 
 import (
 	"context"
 	"reflect"
 	"regexp"
+	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
 )
 
 // Sink is the minimal interface for recording audit notes.
-// All methods are intended to be called serially for a single request.
 type Sink interface {
 	// Note sets/overwrites a key with val.
 	// Prints warning if key is empty or invalid.
@@ -63,13 +61,14 @@ func New(auditID string, logger logs.Logger) Sink {
 	return &sink{auditID: auditID, notes: make(map[string]any), onceSet: make(map[string]struct{}), logger: logger}
 }
 
-// sink is a plain-map implementation intended for per-request serial use.
+// sink is a mutex-protected map implementation safe for concurrent use.
 type sink struct {
 	auditID string
 	notes   map[string]any      // k -> value
 	onceSet map[string]struct{} // tracks NoteOnce-written keys
 
 	logger logs.Logger
+	mu     sync.RWMutex
 }
 
 var (
@@ -80,6 +79,8 @@ func (s *sink) Note(k string, v any) {
 	if !s.validKey(k) {
 		return
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.notes[k] = v
 }
 
@@ -87,6 +88,8 @@ func (s *sink) NoteOnce(k string, v any) bool {
 	if !s.validKey(k) {
 		return false
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	// if already set (by Note or previous NoteOnce), do nothing.
 	if _, exists := s.notes[k]; exists {
 		return false
@@ -103,6 +106,8 @@ func (s *sink) NoteAppend(k string, v any) {
 	if !s.validKey(k) {
 		return
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	// get current value
 	cur, exists := s.notes[k]
 	if !exists {
@@ -127,6 +132,8 @@ func (s *sink) Inc(k string, d int64) int64 {
 	if !s.validKey(k) {
 		return 0
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var cur int64
 	switch v := s.notes[k].(type) {
 	case int, int8, int16, int32, int64:
@@ -144,6 +151,8 @@ func (s *sink) Inc(k string, d int64) int64 {
 }
 
 func (s *sink) Snapshot() map[string]any {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	out := make(map[string]any, len(s.notes))
 	for k, v := range s.notes {
 		out[k] = v

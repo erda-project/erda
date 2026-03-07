@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -60,7 +59,7 @@ var (
 		Services:    []string{"erda.app.reverse-proxy"},
 		Summary:     "reverse-proxy server",
 		Description: "Reverse proxy service framework",
-		ConfigFunc:  func() interface{} { return new(config.Config) },
+		ConfigFunc:  func() interface{} { return new(Config) },
 		Types:       []reflect.Type{interfaceType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
@@ -115,7 +114,7 @@ func init() {
 }
 
 type provider struct {
-	Config         *config.Config
+	Config         *Config
 	L              logs.Logger
 	HTTP           mux.Mux                              `autowired:"gorilla-mux@ai"`
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`

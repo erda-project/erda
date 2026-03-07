@@ -78,6 +78,7 @@ func TestIsNetworkFailureError(t *testing.T) {
 func TestReportModelNetworkFailure(t *testing.T) {
 	clientID := "client-a"
 	manager := NewManager(state_store.NewMemoryStateStore(), Config{
+		Enabled: true,
 		Probe: ProbeConfig{
 			BaseURL:      "http://127.0.0.1:65530",
 			UnhealthyTTL: time.Hour,
@@ -119,6 +120,7 @@ func TestReportModelNetworkFailure(t *testing.T) {
 
 func TestReportModelNetworkFailure_ProbeAndPathGuard(t *testing.T) {
 	manager := NewManager(state_store.NewMemoryStateStore(), Config{
+		Enabled: true,
 		Probe: ProbeConfig{
 			BaseURL:      "http://127.0.0.1:65530",
 			UnhealthyTTL: time.Hour,

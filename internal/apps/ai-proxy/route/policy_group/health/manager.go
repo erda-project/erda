@@ -42,6 +42,9 @@ func NewManager(store state_store.LBStateStore, cfg Config) *Manager {
 		return nil
 	}
 	cfg.normalize()
+	if !cfg.Enabled {
+		return nil
+	}
 	return &Manager{
 		store:  store,
 		cfg:    cfg,
@@ -127,6 +130,9 @@ func (m *Manager) MarkUnhealthy(ctx context.Context, clientID, instanceID string
 }
 
 func (m *Manager) GetState(ctx context.Context, clientID, instanceID string) (*ModelHealthState, bool, error) {
+	if m == nil {
+		return nil, false, nil
+	}
 	if instanceID == "" {
 		return nil, false, nil
 	}
