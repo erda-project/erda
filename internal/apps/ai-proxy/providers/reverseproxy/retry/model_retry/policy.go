@@ -33,12 +33,12 @@ func (cfg Config) WithRequestOverrides(r *http.Request) Config {
 		return cfg
 	}
 
-	logger, _ := ctxhelper.GetLoggerBase(r.Context())
+	logger := ctxhelper.MustGetLoggerBase(r.Context())
 
 	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetry)); raw != "" {
 		if v, ok := parseHeaderBool(raw); ok {
 			cfg.Enabled = v
-		} else if logger != nil {
+		} else {
 			logger.Warnf("invalid %s=%q", vars.XAIProxyRetry, raw)
 		}
 	}
@@ -47,14 +47,14 @@ func (cfg Config) WithRequestOverrides(r *http.Request) Config {
 			if v {
 				cfg.Enabled = false
 			}
-		} else if logger != nil {
+		} else {
 			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryDisabled, raw)
 		}
 	}
 	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryMax)); raw != "" {
 		if maxRequestCount, err := strconv.Atoi(raw); err == nil && maxRequestCount > 0 {
 			cfg.Conditions.MaxLLMBackendRequestCount = maxRequestCount
-		} else if logger != nil {
+		} else {
 			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryMax, raw)
 		}
 	}
