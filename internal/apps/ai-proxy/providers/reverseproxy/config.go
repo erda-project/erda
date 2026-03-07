@@ -51,9 +51,11 @@ func InjectEmbedFS(routesFS, templatesFS *embed.FS) {
 
 // DoPost do some post process after config loaded
 func (cfg *Config) DoPost() error {
+	// routes fs
 	cfg.EmbedRoutesFS = EmbedRoutesFS
 	cfg.EmbedTemplatesFS = EmbedTemplatesFS
 
+	// parse log level
 	level, err := logrus.ParseLevel(cfg.LogLevelStr)
 	if err != nil {
 		return fmt.Errorf("failed to parse log level, level: %s, err: %v", cfg.LogLevel, err)
