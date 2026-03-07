@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-func TestResolvePolicyHeaderOverrides(t *testing.T) {
+func TestWithRequestOverrides(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
 
@@ -34,7 +34,7 @@ func TestResolvePolicyHeaderOverrides(t *testing.T) {
 	req.Header.Set(vars.XAIProxyRetry, "false")
 	req.Header.Set(vars.XAIProxyRetryMax, "5")
 
-	policy := ResolvePolicy(req, Config{
+	policy := (Config{
 		Enabled: true,
 		Conditions: Conditions{
 			MaxLLMBackendRequestCount: 3,
@@ -50,27 +50,27 @@ func TestResolvePolicyHeaderOverrides(t *testing.T) {
 		Observability: Observability{
 			ResponseHeaderMeta: true,
 		},
-	})
+	}).WithRequestOverrides(req)
 
 	if policy.Enabled {
 		t.Fatal("expected retry disabled by request header")
 	}
-	if policy.MaxLLMBackendRequestCount != 5 {
-		t.Fatalf("expected max request count=5, got %d", policy.MaxLLMBackendRequestCount)
+	if policy.Conditions.MaxLLMBackendRequestCount != 5 {
+		t.Fatalf("expected max request count=5, got %d", policy.Conditions.MaxLLMBackendRequestCount)
 	}
 	if !policy.IsRetryableHTTPStatus(429) {
 		t.Fatal("expected 429 to be retryable")
 	}
 }
 
-func TestResolvePolicyDisablesRetryForHealthProbe(t *testing.T) {
+func TestWithRequestOverridesDisablesRetryForHealthProbe(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
 
 	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", nil).WithContext(ctx)
 	req.Header.Set(vars.XAIProxyModelHealthProbe, "true")
 
-	policy := ResolvePolicy(req, Config{Enabled: true, Conditions: Conditions{MaxLLMBackendRequestCount: 3}})
+	policy := (Config{Enabled: true, Conditions: Conditions{MaxLLMBackendRequestCount: 3}}).WithRequestOverrides(req)
 	if policy.Enabled {
 		t.Fatal("expected health probe request to disable retry")
 	}

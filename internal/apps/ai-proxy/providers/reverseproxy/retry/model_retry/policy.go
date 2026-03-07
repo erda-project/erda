@@ -27,40 +27,17 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-type Policy struct {
-	Enabled                           bool
-	MaxLLMBackendRequestCount         int
-	BackoffBase                       time.Duration
-	BackoffMax                        time.Duration
-	RetryableHTTPStatuses             map[int]struct{}
-	MatchNetworkIssueFromResponseBody bool
-	ExcludeFailedInstance             bool
-	ResponseHeaderMetaEnabled         bool
-}
-
-func ResolvePolicy(r *http.Request, cfg Config) Policy {
-	policy := Policy{
-		Enabled:                           cfg.Enabled,
-		MaxLLMBackendRequestCount:         cfg.Conditions.MaxLLMBackendRequestCount,
-		BackoffBase:                       cfg.Conditions.Backoff.Base,
-		BackoffMax:                        cfg.Conditions.Backoff.Max,
-		RetryableHTTPStatuses:             toStatusCodeSet(cfg.Conditions.RetryableHTTPStatuses),
-		MatchNetworkIssueFromResponseBody: cfg.Conditions.MatchNetworkIssueFromResponseBody,
-		ExcludeFailedInstance:             cfg.Actions.ExcludeFailedInstance,
-		ResponseHeaderMetaEnabled:         cfg.Observability.ResponseHeaderMeta,
-	}
-	if policy.MaxLLMBackendRequestCount <= 0 {
-		policy.MaxLLMBackendRequestCount = 1
-	}
+func (cfg Config) WithRequestOverrides(r *http.Request) Config {
+	cfg.Normalize()
 	if r == nil {
-		return policy
+		return cfg
 	}
 
 	logger, _ := ctxhelper.GetLoggerBase(r.Context())
 
 	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetry)); raw != "" {
 		if v, ok := parseHeaderBool(raw); ok {
-			policy.Enabled = v
+			cfg.Enabled = v
 		} else if logger != nil {
 			logger.Warnf("invalid %s=%q", vars.XAIProxyRetry, raw)
 		}
@@ -68,7 +45,7 @@ func ResolvePolicy(r *http.Request, cfg Config) Policy {
 	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryDisabled)); raw != "" {
 		if v, ok := parseHeaderBool(raw); ok {
 			if v {
-				policy.Enabled = false
+				cfg.Enabled = false
 			}
 		} else if logger != nil {
 			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryDisabled, raw)
@@ -76,34 +53,38 @@ func ResolvePolicy(r *http.Request, cfg Config) Policy {
 	}
 	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryMax)); raw != "" {
 		if maxRequestCount, err := strconv.Atoi(raw); err == nil && maxRequestCount > 0 {
-			policy.MaxLLMBackendRequestCount = maxRequestCount
+			cfg.Conditions.MaxLLMBackendRequestCount = maxRequestCount
 		} else if logger != nil {
 			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryMax, raw)
 		}
 	}
 	if health.IsHealthProbeRequest(r.Header) {
-		policy.Enabled = false
+		cfg.Enabled = false
 	}
 
-	return policy
+	return cfg
 }
 
-func (p Policy) IsRetryableHTTPStatus(statusCode int) bool {
-	_, ok := p.RetryableHTTPStatuses[statusCode]
-	return ok
+func (cfg Config) IsRetryableHTTPStatus(statusCode int) bool {
+	for _, code := range cfg.Conditions.RetryableHTTPStatuses {
+		if code == statusCode {
+			return true
+		}
+	}
+	return false
 }
 
-func (p Policy) NextBackoff(rawLLMBackendRequestCount int) time.Duration {
-	if rawLLMBackendRequestCount <= 0 || p.BackoffBase <= 0 {
+func (cfg Config) NextBackoff(rawLLMBackendRequestCount int) time.Duration {
+	if rawLLMBackendRequestCount <= 0 || cfg.Conditions.Backoff.Base <= 0 {
 		return 0
 	}
 	if rawLLMBackendRequestCount > 60 {
 		rawLLMBackendRequestCount = 60
 	}
 	multiplier := int64((1 << rawLLMBackendRequestCount) - 1)
-	delay := time.Duration(multiplier) * p.BackoffBase
-	if p.BackoffMax > 0 && delay > p.BackoffMax {
-		return p.BackoffMax
+	delay := time.Duration(multiplier) * cfg.Conditions.Backoff.Base
+	if cfg.Conditions.Backoff.Max > 0 && delay > cfg.Conditions.Backoff.Max {
+		return cfg.Conditions.Backoff.Max
 	}
 	return delay
 }
@@ -142,14 +123,9 @@ func SortedStatusCodes(codes map[int]struct{}) []int {
 	return ret
 }
 
-func toStatusCodeSet(codes []int) map[int]struct{} {
-	ret := make(map[int]struct{}, len(codes))
-	for _, code := range codes {
-		if code < 100 || code > 599 {
-			continue
-		}
-		ret[code] = struct{}{}
-	}
+func (cfg Config) SortedRetryableHTTPStatuses() []int {
+	ret := append([]int(nil), cfg.Conditions.RetryableHTTPStatuses...)
+	sort.Ints(ret)
 	return ret
 }
 

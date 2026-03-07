@@ -130,17 +130,17 @@ func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
 		tw := reverse_proxy.NewTrackedResponseWriter(w)
-		policy := modelretry.ResolvePolicy(r, p.Config.ModelRetry)
-		ctxhelper.PutModelRetryResponseHeaderMetaEnabled(ctx, policy.ResponseHeaderMetaEnabled)
+		policy := p.Config.ModelRetry.WithRequestOverrides(r)
+		ctxhelper.PutModelRetryResponseHeaderMetaEnabled(ctx, policy.Observability.ResponseHeaderMeta)
 		audithelper.Note(ctx, "reverse_proxy.retry.enabled", policy.Enabled)
-		audithelper.Note(ctx, "reverse_proxy.retry.max_llm_backend_request_count", policy.MaxLLMBackendRequestCount)
+		audithelper.Note(ctx, "reverse_proxy.retry.max_llm_backend_request_count", policy.Conditions.MaxLLMBackendRequestCount)
 		if policy.Enabled {
-			audithelper.Note(ctx, "reverse_proxy.retry.backoff_base", policy.BackoffBase.String())
-			audithelper.Note(ctx, "reverse_proxy.retry.backoff_max", policy.BackoffMax.String())
-			audithelper.Note(ctx, "reverse_proxy.retry.retryable_http_statuses", modelretry.SortedStatusCodes(policy.RetryableHTTPStatuses))
-			audithelper.Note(ctx, "reverse_proxy.retry.match_network_issue_from_response_body", policy.MatchNetworkIssueFromResponseBody)
-			audithelper.Note(ctx, "reverse_proxy.retry.exclude_failed_instance", policy.ExcludeFailedInstance)
-			audithelper.Note(ctx, "reverse_proxy.retry.response_header_meta", policy.ResponseHeaderMetaEnabled)
+			audithelper.Note(ctx, "reverse_proxy.retry.backoff_base", policy.Conditions.Backoff.Base.String())
+			audithelper.Note(ctx, "reverse_proxy.retry.backoff_max", policy.Conditions.Backoff.Max.String())
+			audithelper.Note(ctx, "reverse_proxy.retry.retryable_http_statuses", policy.SortedRetryableHTTPStatuses())
+			audithelper.Note(ctx, "reverse_proxy.retry.match_network_issue_from_response_body", policy.Conditions.MatchNetworkIssueFromResponseBody)
+			audithelper.Note(ctx, "reverse_proxy.retry.exclude_failed_instance", policy.Actions.ExcludeFailedInstance)
+			audithelper.Note(ctx, "reverse_proxy.retry.response_header_meta", policy.Observability.ResponseHeaderMeta)
 		}
 
 		p.serveWithTransparentRetry(ctx, tw, r, requestFilters, responseFilters, options, policy)
@@ -154,14 +154,14 @@ func (p *provider) serveWithTransparentRetry(
 	requestFilters []filter_define.FilterWithName[filter_define.ProxyRequestRewriter],
 	responseFilters []filter_define.FilterWithName[filter_define.ProxyResponseModifier],
 	options []OptionFunc,
-	policy modelretry.Policy,
+	policy modelretry.Config,
 ) {
 	logger := ctxhelper.MustGetLoggerBase(ctx)
 	defaultErrorHandler := reverse_proxy.MyErrorHandler()
 
 	totalAttempts := 1
-	if policy.Enabled && policy.MaxLLMBackendRequestCount > 1 {
-		totalAttempts = policy.MaxLLMBackendRequestCount
+	if policy.Enabled && policy.Conditions.MaxLLMBackendRequestCount > 1 {
+		totalAttempts = policy.Conditions.MaxLLMBackendRequestCount
 	}
 
 	for attempt := 1; attempt <= totalAttempts; attempt++ {
@@ -235,7 +235,7 @@ func (p *provider) serveWithTransparentRetry(
 		// Retry-layer exclusion is request-scoped and only supplements routing.
 		// It does not override model health filtering, which may already remove
 		// the failed instance before the next attempt.
-		if policy.ExcludeFailedInstance && result.InstanceID != "" {
+		if policy.Actions.ExcludeFailedInstance && result.InstanceID != "" {
 			modelretry.AddExcludedModelID(ctx, result.InstanceID)
 		}
 
@@ -284,7 +284,7 @@ func prepareRequestForAttempt(ctx context.Context, r *http.Request, attempt int)
 	return newReq
 }
 
-func isRetryableProxyError(err error, statusCode int, policy modelretry.Policy) bool {
+func isRetryableProxyError(err error, statusCode int, policy modelretry.Config) bool {
 	if err == nil {
 		return false
 	}
@@ -295,7 +295,7 @@ func isRetryableProxyError(err error, statusCode int, policy modelretry.Policy) 
 		if policy.IsRetryableHTTPStatus(statusCode) {
 			return true
 		}
-		return policy.MatchNetworkIssueFromResponseBody && hasRetryableNetworkIssueInHTTPErrorBody(err)
+		return policy.Conditions.MatchNetworkIssueFromResponseBody && hasRetryableNetworkIssueInHTTPErrorBody(err)
 	}
 	if health.IsNetworkFailureError(err) {
 		return true

@@ -80,12 +80,14 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 	attempts := 0
 	var selectedInstances []string
 	var requestBodies []string
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 3,
-		BackoffBase:               0,
-		RetryableHTTPStatuses:     map[int]struct{}{},
-		ExcludeFailedInstance:     true,
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 3,
+			Backoff:                   modelretry.Backoff{Base: 0},
+			RetryableHTTPStatuses:     nil,
+		},
+		Actions: modelretry.Actions{ExcludeFailedInstance: true},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -160,12 +162,14 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 
 	attempts := 0
 	ctxErrs := make([]error, 0, 2)
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 2,
-		BackoffBase:               0,
-		RetryableHTTPStatuses:     map[int]struct{}{},
-		ExcludeFailedInstance:     true,
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 2,
+			Backoff:                   modelretry.Backoff{Base: 0},
+			RetryableHTTPStatuses:     nil,
+		},
+		Actions: modelretry.Actions{ExcludeFailedInstance: true},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -232,12 +236,14 @@ func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
 	attempts := 0
 	var requestIDs []string
 	var callIDs []string
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 2,
-		BackoffBase:               0,
-		RetryableHTTPStatuses:     map[int]struct{}{},
-		ExcludeFailedInstance:     true,
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 2,
+			Backoff:                   modelretry.Backoff{Base: 0},
+			RetryableHTTPStatuses:     nil,
+		},
+		Actions: modelretry.Actions{ExcludeFailedInstance: true},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -302,12 +308,14 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 	}
 
 	attempts := 0
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 3,
-		BackoffBase:               time.Millisecond,
-		RetryableHTTPStatuses:     map[int]struct{}{},
-		ExcludeFailedInstance:     true,
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 3,
+			Backoff:                   modelretry.Backoff{Base: time.Millisecond},
+			RetryableHTTPStatuses:     nil,
+		},
+		Actions: modelretry.Actions{ExcludeFailedInstance: true},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -363,12 +371,14 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 
 	attempts := 0
 	var selectedInstances []string
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 2,
-		BackoffBase:               0,
-		RetryableHTTPStatuses:     map[int]struct{}{},
-		ExcludeFailedInstance:     false,
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 2,
+			Backoff:                   modelretry.Backoff{Base: 0},
+			RetryableHTTPStatuses:     nil,
+		},
+		Actions: modelretry.Actions{ExcludeFailedInstance: false},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -410,9 +420,13 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 }
 
 func TestNextRetryBackoff_RespectsMax(t *testing.T) {
-	policy := modelretry.Policy{
-		BackoffBase: time.Second,
-		BackoffMax:  4 * time.Second,
+	policy := modelretry.Config{
+		Conditions: modelretry.Conditions{
+			Backoff: modelretry.Backoff{
+				Base: time.Second,
+				Max:  4 * time.Second,
+			},
+		},
 	}
 
 	if got := policy.NextBackoff(3); got != 4*time.Second {
@@ -443,14 +457,14 @@ func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
 
 	attempts := 0
 	var selectedInstances []string
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 2,
-		BackoffBase:               0,
-		RetryableHTTPStatuses: map[int]struct{}{
-			http.StatusTooManyRequests: {},
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 2,
+			Backoff:                   modelretry.Backoff{Base: 0},
+			RetryableHTTPStatuses:     []int{http.StatusTooManyRequests},
 		},
-		ExcludeFailedInstance: true,
+		Actions: modelretry.Actions{ExcludeFailedInstance: true},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
@@ -519,14 +533,14 @@ func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
 	}
 
 	attempts := 0
-	policy := modelretry.Policy{
-		Enabled:                   true,
-		MaxLLMBackendRequestCount: 2,
-		BackoffBase:               0,
-		RetryableHTTPStatuses: map[int]struct{}{
-			http.StatusTooManyRequests: {},
+	policy := modelretry.Config{
+		Enabled: true,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 2,
+			Backoff:                   modelretry.Backoff{Base: 0},
+			RetryableHTTPStatuses:     []int{http.StatusTooManyRequests},
 		},
-		ExcludeFailedInstance: true,
+		Actions: modelretry.Actions{ExcludeFailedInstance: true},
 	}
 	options := []OptionFunc{
 		func(_ context.Context, proxy *httputil.ReverseProxy) {
