@@ -239,7 +239,7 @@ func TestHandleModelRetryMetaHeader(t *testing.T) {
 	req = req.WithContext(ctx)
 	ctxhelper.PutRequestID(ctx, "client-1")
 	ctxhelper.PutGeneratedCallID(ctx, "call-1")
-	ctxhelper.PutReverseProxyRetryAttempt(ctx, 2)
+	ctxhelper.PutModelRetryRawLLMBackendRequestCount(ctx, 2)
 	ctxhelper.PutModel(ctx, &modelpb.Model{Id: "m-2"})
 
 	resp := &http.Response{
@@ -266,7 +266,7 @@ func TestHandleModelRetryMetaHeaderDisabled(t *testing.T) {
 	req = req.WithContext(ctx)
 	ctxhelper.PutRequestID(ctx, "client-1")
 	ctxhelper.PutGeneratedCallID(ctx, "call-1")
-	ctxhelper.PutReverseProxyRetryAttempt(ctx, 2)
+	ctxhelper.PutModelRetryRawLLMBackendRequestCount(ctx, 2)
 	ctxhelper.PutModelRetryResponseHeaderMetaEnabled(ctx, false)
 
 	resp := &http.Response{

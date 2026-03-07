@@ -93,13 +93,13 @@ func _handleModelRetryMetaHeader(resp *http.Response) {
 	if enabled, ok := ctxhelper.GetModelRetryResponseHeaderMetaEnabled(resp.Request.Context()); ok && !enabled {
 		return
 	}
-	attempt, ok := ctxhelper.GetReverseProxyRetryAttempt(resp.Request.Context())
-	if !ok || attempt <= 1 {
+	rawLLMBackendRequestCount, ok := ctxhelper.GetModelRetryRawLLMBackendRequestCount(resp.Request.Context())
+	if !ok || rawLLMBackendRequestCount <= 1 {
 		return
 	}
 	payload := modelRetryMetaHeader{
-		RawLLMBackendRequestCount: attempt,
-		RawLLMBackendRetryCount:   attempt - 1,
+		RawLLMBackendRequestCount: rawLLMBackendRequestCount,
+		RawLLMBackendRetryCount:   rawLLMBackendRequestCount - 1,
 	}
 	if model, ok := ctxhelper.GetModel(resp.Request.Context()); ok && model != nil && model.Id != "" {
 		payload.FinalModelInstanceID = model.Id

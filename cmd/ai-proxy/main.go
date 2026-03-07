@@ -20,8 +20,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy" // import service hub dependencies
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
 	"github.com/erda-project/erda/pkg/common"
 )
 
@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	config.InjectEmbedFS(&routesFS, &templatesFS)
+	reverseproxy.InjectEmbedFS(&routesFS, &templatesFS)
 	common.Run(&servicehub.RunOptions{
 		Content: bootstrap,
 	})

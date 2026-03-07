@@ -23,36 +23,22 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type OptionFunc func(context.Context, *httputil.ReverseProxy)
-
-type transparentRetryPolicy struct {
-	Enabled                           bool
-	MaxLLMBackendRequestCount         int
-	BackoffBase                       time.Duration
-	BackoffMax                        time.Duration
-	RetryableHTTPStatuses             map[int]struct{}
-	MatchNetworkIssueFromResponseBody bool
-	ExcludeFailedInstance             bool
-	ResponseHeaderMetaEnabled         bool
-}
 
 type proxyAttemptResult struct {
 	Err         error
@@ -144,14 +130,14 @@ func (p *provider) HandleReverseProxyAPI(options ...OptionFunc) http.HandlerFunc
 		ctxhelper.PutCacheManager(ctx, p.cacheManager)
 
 		tw := reverse_proxy.NewTrackedResponseWriter(w)
-		policy := p.resolveTransparentRetryPolicy(r)
+		policy := modelretry.ResolvePolicy(r, p.Config.ModelRetry)
 		ctxhelper.PutModelRetryResponseHeaderMetaEnabled(ctx, policy.ResponseHeaderMetaEnabled)
 		audithelper.Note(ctx, "reverse_proxy.retry.enabled", policy.Enabled)
 		audithelper.Note(ctx, "reverse_proxy.retry.max_llm_backend_request_count", policy.MaxLLMBackendRequestCount)
 		if policy.Enabled {
 			audithelper.Note(ctx, "reverse_proxy.retry.backoff_base", policy.BackoffBase.String())
 			audithelper.Note(ctx, "reverse_proxy.retry.backoff_max", policy.BackoffMax.String())
-			audithelper.Note(ctx, "reverse_proxy.retry.retryable_http_statuses", sortedStatusCodes(policy.RetryableHTTPStatuses))
+			audithelper.Note(ctx, "reverse_proxy.retry.retryable_http_statuses", modelretry.SortedStatusCodes(policy.RetryableHTTPStatuses))
 			audithelper.Note(ctx, "reverse_proxy.retry.match_network_issue_from_response_body", policy.MatchNetworkIssueFromResponseBody)
 			audithelper.Note(ctx, "reverse_proxy.retry.exclude_failed_instance", policy.ExcludeFailedInstance)
 			audithelper.Note(ctx, "reverse_proxy.retry.response_header_meta", policy.ResponseHeaderMetaEnabled)
@@ -168,7 +154,7 @@ func (p *provider) serveWithTransparentRetry(
 	requestFilters []filter_define.FilterWithName[filter_define.ProxyRequestRewriter],
 	responseFilters []filter_define.FilterWithName[filter_define.ProxyResponseModifier],
 	options []OptionFunc,
-	policy transparentRetryPolicy,
+	policy modelretry.Policy,
 ) {
 	logger := ctxhelper.MustGetLoggerBase(ctx)
 	defaultErrorHandler := reverse_proxy.MyErrorHandler()
@@ -182,7 +168,7 @@ func (p *provider) serveWithTransparentRetry(
 		// isolate context per attempt to avoid audit/state contamination
 		r = prepareRequestForAttempt(r.Context(), r, attempt)
 		ctx = r.Context()
-		ctxhelper.PutReverseProxyRetryAttempt(ctx, attempt)
+		ctxhelper.PutModelRetryRawLLMBackendRequestCount(ctx, attempt)
 
 		// add cancel layer for this attempt to prevent leaked goroutines (e.g. asyncHandleRespBody)
 		retryCtx, attemptCancel := context.WithCancel(ctx)
@@ -205,7 +191,7 @@ func (p *provider) serveWithTransparentRetry(
 			result.Retryable = isRetryableProxyError(err, result.StatusCode, policy)
 			if policy.Enabled && attempt < totalAttempts && !tw.WroteHeader() && result.Retryable {
 				result.Suppressed = true
-				if result.StatusCode != 0 && isRetryableHTTPStatus(result.StatusCode, policy) {
+				if result.StatusCode != 0 && policy.IsRetryableHTTPStatus(result.StatusCode) {
 					reportRetryableStatusFailure(ctx, req, result.StatusCode)
 				}
 				if result.StatusCode == 0 {
@@ -250,10 +236,10 @@ func (p *provider) serveWithTransparentRetry(
 		// It does not override model health filtering, which may already remove
 		// the failed instance before the next attempt.
 		if policy.ExcludeFailedInstance && result.InstanceID != "" {
-			ctxhelper.AddReverseProxyRetryExcludedModelID(ctx, result.InstanceID)
+			modelretry.AddExcludedModelID(ctx, result.InstanceID)
 		}
 
-		delay := nextRetryBackoff(policy, attempt)
+		delay := policy.NextBackoff(attempt)
 		audithelper.NoteAppend(ctx, "reverse_proxy.retry.events", map[string]any{
 			"attempt":      attempt,
 			"next_attempt": attempt + 1,
@@ -265,53 +251,6 @@ func (p *provider) serveWithTransparentRetry(
 			time.Sleep(delay)
 		}
 	}
-}
-
-func (p *provider) resolveTransparentRetryPolicy(r *http.Request) transparentRetryPolicy {
-	policy := transparentRetryPolicy{
-		Enabled:                           p.Config.ModelRetry.Enabled,
-		MaxLLMBackendRequestCount:         p.Config.ModelRetry.Conditions.MaxLLMBackendRequestCount,
-		BackoffBase:                       p.Config.ModelRetry.Conditions.Backoff.Base,
-		BackoffMax:                        p.Config.ModelRetry.Conditions.Backoff.Max,
-		RetryableHTTPStatuses:             toStatusCodeSet(p.Config.ModelRetry.Conditions.RetryableHTTPStatuses),
-		MatchNetworkIssueFromResponseBody: p.Config.ModelRetry.Conditions.MatchNetworkIssueFromResponseBody,
-		ExcludeFailedInstance:             p.Config.ModelRetry.Actions.ExcludeFailedInstance,
-		ResponseHeaderMetaEnabled:         p.Config.ModelRetry.Observability.ResponseHeaderMeta,
-	}
-	if policy.MaxLLMBackendRequestCount <= 0 {
-		policy.MaxLLMBackendRequestCount = 1
-	}
-
-	logger, _ := ctxhelper.GetLoggerBase(r.Context())
-
-	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetry)); raw != "" {
-		if v, ok := parseHeaderBool(raw); ok {
-			policy.Enabled = v
-		} else if logger != nil {
-			logger.Warnf("invalid %s=%q", vars.XAIProxyRetry, raw)
-		}
-	}
-	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryDisabled)); raw != "" {
-		if v, ok := parseHeaderBool(raw); ok {
-			if v {
-				policy.Enabled = false
-			}
-		} else if logger != nil {
-			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryDisabled, raw)
-		}
-	}
-	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryMax)); raw != "" {
-		if maxRequestCount, err := strconv.Atoi(raw); err == nil && maxRequestCount > 0 {
-			policy.MaxLLMBackendRequestCount = maxRequestCount
-		} else if logger != nil {
-			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryMax, raw)
-		}
-	}
-	if health.IsHealthProbeRequest(r.Header) {
-		policy.Enabled = false
-	}
-
-	return policy
 }
 
 func prepareRequestForAttempt(ctx context.Context, r *http.Request, attempt int) *http.Request {
@@ -345,7 +284,7 @@ func prepareRequestForAttempt(ctx context.Context, r *http.Request, attempt int)
 	return newReq
 }
 
-func isRetryableProxyError(err error, statusCode int, policy transparentRetryPolicy) bool {
+func isRetryableProxyError(err error, statusCode int, policy modelretry.Policy) bool {
 	if err == nil {
 		return false
 	}
@@ -353,7 +292,7 @@ func isRetryableProxyError(err error, statusCode int, policy transparentRetryPol
 		statusCode = extractHTTPErrorStatus(err)
 	}
 	if statusCode != 0 {
-		if isRetryableHTTPStatus(statusCode, policy) {
+		if policy.IsRetryableHTTPStatus(statusCode) {
 			return true
 		}
 		return policy.MatchNetworkIssueFromResponseBody && hasRetryableNetworkIssueInHTTPErrorBody(err)
@@ -373,11 +312,6 @@ func extractHTTPErrorStatus(err error) int {
 		return httpErr.StatusCode
 	}
 	return 0
-}
-
-func isRetryableHTTPStatus(statusCode int, policy transparentRetryPolicy) bool {
-	_, ok := policy.RetryableHTTPStatuses[statusCode]
-	return ok
 }
 
 func reportRetryableStatusFailure(ctx context.Context, fallbackReq *http.Request, statusCode int) {
@@ -448,48 +382,4 @@ func retryReason(result proxyAttemptResult) string {
 		return result.Err.Error()
 	}
 	return "unknown"
-}
-
-func nextRetryBackoff(policy transparentRetryPolicy, attempt int) time.Duration {
-	if attempt <= 0 || policy.BackoffBase <= 0 {
-		return 0
-	}
-	if attempt > 60 {
-		attempt = 60
-	}
-	// retry #1 => 1*base, retry #2 => 3*base, retry #3 => 7*base
-	multiplier := int64((1 << attempt) - 1)
-	delay := time.Duration(multiplier) * policy.BackoffBase
-	if policy.BackoffMax > 0 && delay > policy.BackoffMax {
-		return policy.BackoffMax
-	}
-	return delay
-}
-
-func toStatusCodeSet(codes []int) map[int]struct{} {
-	ret := make(map[int]struct{}, len(codes))
-	for _, code := range codes {
-		if code < 100 || code > 599 {
-			continue
-		}
-		ret[code] = struct{}{}
-	}
-	return ret
-}
-
-func sortedStatusCodes(codes map[int]struct{}) []int {
-	ret := make([]int, 0, len(codes))
-	for code := range codes {
-		ret = append(ret, code)
-	}
-	sort.Ints(ret)
-	return ret
-}
-
-func parseHeaderBool(raw string) (bool, bool) {
-	v, err := strconv.ParseBool(strings.TrimSpace(raw))
-	if err != nil {
-		return false, false
-	}
-	return v, true
 }

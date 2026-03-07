@@ -23,6 +23,7 @@ import (
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
 	groupresolver "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/resolver"
@@ -84,7 +85,7 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 }
 
 func filterRetryExcludedInstances(ctx context.Context, instances []*policygroup.RoutingModelInstance) []*policygroup.RoutingModelInstance {
-	excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(ctx)
+	excluded, ok := modelretry.GetExcludedModelIDs(ctx)
 	if !ok || len(excluded) == 0 {
 		return instances
 	}

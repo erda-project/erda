@@ -18,8 +18,6 @@ import (
 	"context"
 )
 
-type mapKeyModelRetryResponseHeaderMetaEnabled struct{ bool }
-
 // MustGetIsStream retrieves IsStream from context
 func MustGetIsStream(ctx context.Context) bool {
 	value, ok := GetIsStream(ctx)
@@ -40,28 +38,4 @@ func GetPathParam(ctx context.Context, key string) (string, bool) {
 		return "", false
 	}
 	return pm.GetValue(key)
-}
-
-func GetReverseProxyRetryExcludedModelIDs(ctx context.Context) (map[string]struct{}, bool) {
-	return getFromMapKeyAs[map[string]struct{}](ctx, mapKeyReverseProxyRetryExcludedModels{})
-}
-
-func AddReverseProxyRetryExcludedModelID(ctx context.Context, modelID string) {
-	if modelID == "" {
-		return
-	}
-	excluded, ok := GetReverseProxyRetryExcludedModelIDs(ctx)
-	if !ok || excluded == nil {
-		excluded = map[string]struct{}{}
-	}
-	excluded[modelID] = struct{}{}
-	putToMapKey(ctx, mapKeyReverseProxyRetryExcludedModels{}, excluded)
-}
-
-func GetModelRetryResponseHeaderMetaEnabled(ctx context.Context) (bool, bool) {
-	return getFromMapKeyAs[bool](ctx, mapKeyModelRetryResponseHeaderMetaEnabled{})
-}
-
-func PutModelRetryResponseHeaderMetaEnabled(ctx context.Context, value bool) {
-	putToMapKey(ctx, mapKeyModelRetryResponseHeaderMetaEnabled{}, value)
 }

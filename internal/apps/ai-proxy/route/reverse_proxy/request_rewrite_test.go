@@ -108,7 +108,7 @@ func TestNoteRetryAuditMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 			ctxhelper.PutAuditSink(ctx, audittypes.New("aid-1", logrusx.New()))
-			ctxhelper.PutReverseProxyRetryAttempt(ctx, tt.attempt)
+			ctxhelper.PutModelRetryRawLLMBackendRequestCount(ctx, tt.attempt)
 
 			noteRetryAuditMetadata(ctx)
 

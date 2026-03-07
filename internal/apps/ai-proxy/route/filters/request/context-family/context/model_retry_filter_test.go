@@ -21,12 +21,13 @@ import (
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 )
 
 func TestFilterRetryExcludedInstances(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.AddReverseProxyRetryExcludedModelID(ctx, "m-1")
+	modelretry.AddExcludedModelID(ctx, "m-1")
 
 	in := []*policygroup.RoutingModelInstance{
 		{ModelWithProvider: &cachehelpers.ModelWithProvider{Model: &modelpb.Model{Id: "m-1"}}},

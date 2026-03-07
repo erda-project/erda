@@ -247,10 +247,10 @@ func isLoopbackRemoteAddr(remoteAddr string) bool {
 }
 
 func noteRetryAuditMetadata(ctx context.Context) {
-	attempt, ok := ctxhelper.GetReverseProxyRetryAttempt(ctx)
-	if !ok || attempt <= 1 {
+	rawLLMBackendRequestCount, ok := ctxhelper.GetModelRetryRawLLMBackendRequestCount(ctx)
+	if !ok || rawLLMBackendRequestCount <= 1 {
 		return
 	}
-	audithelper.Note(ctx, "model_retry.raw_llm_backend_request_count", attempt)
-	audithelper.Note(ctx, "model_retry.raw_llm_backend_retry_count", attempt-1)
+	audithelper.Note(ctx, "model_retry.raw_llm_backend_request_count", rawLLMBackendRequestCount)
+	audithelper.Note(ctx, "model_retry.raw_llm_backend_retry_count", rawLLMBackendRequestCount-1)
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	rproxy "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -79,7 +80,7 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 	attempts := 0
 	var selectedInstances []string
 	var requestBodies []string
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 3,
 		BackoffBase:               0,
@@ -91,7 +92,7 @@ func TestServeWithTransparentRetry_FirstNetworkFailureThenSuccess(t *testing.T) 
 			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
 				pr.SetURL(targetURL)
 				modelID := "m-a"
-				if excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(pr.In.Context()); ok {
+				if excluded, ok := modelretry.GetExcludedModelIDs(pr.In.Context()); ok {
 					if _, hit := excluded[modelID]; hit {
 						modelID = "m-b"
 					}
@@ -159,7 +160,7 @@ func TestTransparentRetry_ContextNotCanceledAcrossAttempts(t *testing.T) {
 
 	attempts := 0
 	ctxErrs := make([]error, 0, 2)
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 2,
 		BackoffBase:               0,
@@ -231,7 +232,7 @@ func TestTransparentRetry_ReusesRequestIDButRegeneratesCallID(t *testing.T) {
 	attempts := 0
 	var requestIDs []string
 	var callIDs []string
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 2,
 		BackoffBase:               0,
@@ -301,7 +302,7 @@ func TestServeWithTransparentRetry_NoRetryAfterHeadersWritten(t *testing.T) {
 	}
 
 	attempts := 0
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 3,
 		BackoffBase:               time.Millisecond,
@@ -362,7 +363,7 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 
 	attempts := 0
 	var selectedInstances []string
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 2,
 		BackoffBase:               0,
@@ -374,7 +375,7 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
 				pr.SetURL(targetURL)
 				modelID := "m-a"
-				if excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(pr.In.Context()); ok {
+				if excluded, ok := modelretry.GetExcludedModelIDs(pr.In.Context()); ok {
 					if _, hit := excluded[modelID]; hit {
 						modelID = "m-b"
 					}
@@ -409,12 +410,12 @@ func TestServeWithTransparentRetry_ExcludeFailedInstanceDisabled(t *testing.T) {
 }
 
 func TestNextRetryBackoff_RespectsMax(t *testing.T) {
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		BackoffBase: time.Second,
 		BackoffMax:  4 * time.Second,
 	}
 
-	if got := nextRetryBackoff(policy, 3); got != 4*time.Second {
+	if got := policy.NextBackoff(3); got != 4*time.Second {
 		t.Fatalf("expected backoff capped at 4s, got %s", got)
 	}
 }
@@ -442,7 +443,7 @@ func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
 
 	attempts := 0
 	var selectedInstances []string
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 2,
 		BackoffBase:               0,
@@ -456,7 +457,7 @@ func TestServeWithTransparentRetry_RetryOnHTTP429(t *testing.T) {
 			proxy.Rewrite = func(pr *httputil.ProxyRequest) {
 				pr.SetURL(targetURL)
 				modelID := "m-a"
-				if excluded, ok := ctxhelper.GetReverseProxyRetryExcludedModelIDs(pr.In.Context()); ok {
+				if excluded, ok := modelretry.GetExcludedModelIDs(pr.In.Context()); ok {
 					if _, hit := excluded[modelID]; hit {
 						modelID = "m-b"
 					}
@@ -518,7 +519,7 @@ func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
 	}
 
 	attempts := 0
-	policy := transparentRetryPolicy{
+	policy := modelretry.Policy{
 		Enabled:                   true,
 		MaxLLMBackendRequestCount: 2,
 		BackoffBase:               0,

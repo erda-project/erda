@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
@@ -79,7 +78,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// load templates
-	templatesByType, err := template.LoadTemplatesFromEmbeddedFS(p.L, config.EmbedTemplatesFS)
+	templatesByType, err := template.LoadTemplatesFromEmbeddedFS(p.L, reverseproxy.EmbedTemplatesFS)
 	if err != nil {
 		return err
 	}
