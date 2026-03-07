@@ -31,8 +31,8 @@ func TestWithRequestOverrides(t *testing.T) {
 	ctxhelper.PutLoggerBase(ctx, logrusx.New())
 
 	req := httptest.NewRequest(http.MethodPost, "http://ai-proxy.test/v1/chat/completions", nil).WithContext(ctx)
-	req.Header.Set(vars.XAIProxyRetry, "false")
-	req.Header.Set(vars.XAIProxyRetryMax, "5")
+	req.Header.Set(vars.XAIProxyModelRetry, "false")
+	req.Header.Set(vars.XAIProxyModelRetryMax, "5")
 
 	policy := (Config{
 		Enabled: true,

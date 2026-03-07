@@ -16,7 +16,6 @@ package reverse_proxy
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net"
@@ -244,13 +243,4 @@ func isLoopbackRemoteAddr(remoteAddr string) bool {
 	host = strings.Trim(host, "[]")
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
-}
-
-func noteRetryAuditMetadata(ctx context.Context) {
-	rawLLMBackendRequestCount, ok := ctxhelper.GetModelRetryRawLLMBackendRequestCount(ctx)
-	if !ok || rawLLMBackendRequestCount <= 1 {
-		return
-	}
-	audithelper.Note(ctx, "model_retry.raw_llm_backend_request_count", rawLLMBackendRequestCount)
-	audithelper.Note(ctx, "model_retry.raw_llm_backend_retry_count", rawLLMBackendRequestCount-1)
 }

@@ -83,34 +83,6 @@ type modelHealthMetaHeader struct {
 	Reason                      string   `json:"reason,omitempty"`
 }
 
-type modelRetryMetaHeader struct {
-	RawLLMBackendRequestCount int    `json:"raw_llm_backend_request_count"`
-	RawLLMBackendRetryCount   int    `json:"raw_llm_backend_retry_count"`
-	FinalModelInstanceID      string `json:"final_model_instance_id,omitempty"`
-}
-
-func _handleModelRetryMetaHeader(resp *http.Response) {
-	if enabled, ok := ctxhelper.GetModelRetryResponseHeaderMetaEnabled(resp.Request.Context()); ok && !enabled {
-		return
-	}
-	rawLLMBackendRequestCount, ok := ctxhelper.GetModelRetryRawLLMBackendRequestCount(resp.Request.Context())
-	if !ok || rawLLMBackendRequestCount <= 1 {
-		return
-	}
-	payload := modelRetryMetaHeader{
-		RawLLMBackendRequestCount: rawLLMBackendRequestCount,
-		RawLLMBackendRetryCount:   rawLLMBackendRequestCount - 1,
-	}
-	if model, ok := ctxhelper.GetModel(resp.Request.Context()); ok && model != nil && model.Id != "" {
-		payload.FinalModelInstanceID = model.Id
-	}
-	b, err := json.Marshal(payload)
-	if err != nil {
-		return
-	}
-	resp.Header.Set(vars.XAIProxyModelRetryMeta, string(b))
-}
-
 func _handleModelHealthMetaHeader(resp *http.Response) {
 	metaVal, ok := ctxhelper.GetPolicyGroupHealthMeta(resp.Request.Context())
 	if !ok || metaVal == nil {

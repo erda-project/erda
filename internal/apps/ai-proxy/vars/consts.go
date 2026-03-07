@@ -56,17 +56,17 @@ const (
 	XAIProxyForwardTLSHandshakeTimeout = "X-AI-Proxy-Forward-TLS-Handshake-Timeout"
 	XAIProxyForwardResponseTimeout     = "X-AI-Proxy-Forward-Response-Timeout"
 
-	// XAIProxyRetry controls server-side transparent retries.
+	// XAIProxyModelRetry controls server-side transparent retries.
 	//
 	// - Default: enabled.
 	// - Disable per request: set to "false".
-	XAIProxyRetry = "X-AI-Proxy-Retry"
-	// XAIProxyRetryDisabled explicitly disables server-side transparent retries
+	XAIProxyModelRetry = "X-AI-Proxy-Model-Retry"
+	// XAIProxyModelRetryDisabled explicitly disables server-side transparent retries
 	// when set to a truthy bool value (for example: "true").
-	XAIProxyRetryDisabled = "X-AI-Proxy-Retry-Disabled"
-	// XAIProxyRetryMax overrides max attempt count (including first attempt),
+	XAIProxyModelRetryDisabled = "X-AI-Proxy-Model-Retry-Disabled"
+	// XAIProxyModelRetryMax overrides max attempt count (including first attempt),
 	// e.g. "3" means first attempt + up to 2 retries.
-	XAIProxyRetryMax = "X-AI-Proxy-Retry-Max"
+	XAIProxyModelRetryMax = "X-AI-Proxy-Model-Retry-Max"
 
 	UIValueUndefined = "undefined"
 )

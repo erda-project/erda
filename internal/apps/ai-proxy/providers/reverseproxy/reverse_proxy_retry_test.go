@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	audittypes "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy/retry/model_retry"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
@@ -566,5 +567,58 @@ func TestServeWithTransparentRetry_DoNotRetryOnHTTP400(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "bad request") {
 		t.Fatalf("expected error body to contain original message, got %q", rec.Body.String())
+	}
+}
+
+func TestDisabledModelRetryDoesNotWriteRetryMetadata(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutLogger(ctx, logrusx.New())
+	ctxhelper.PutLoggerBase(ctx, logrusx.New())
+	ctxhelper.PutAuditSink(ctx, audittypes.New("aid-1", logrusx.New()))
+
+	policy := modelretry.Config{
+		Enabled: false,
+		Conditions: modelretry.Conditions{
+			MaxLLMBackendRequestCount: 3,
+			Backoff: modelretry.Backoff{
+				Base: time.Second,
+				Max:  10 * time.Second,
+			},
+			RetryableHTTPStatuses: []int{http.StatusTooManyRequests},
+		},
+		Actions: modelretry.Actions{
+			ExcludeFailedInstance: true,
+		},
+		Observability: modelretry.Observability{
+			ResponseHeaderMeta: true,
+		},
+	}
+
+	if policy.Enabled {
+		noteModelRetryPolicy(ctx, policy)
+	}
+
+	if _, ok := ctxhelper.GetModelRetryResponseHeaderMetaEnabled(ctx); ok {
+		t.Fatal("did not expect retry response header meta flag when retry is disabled")
+	}
+
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok || sink == nil {
+		t.Fatal("expected audit sink")
+	}
+	got := sink.Snapshot()
+	for _, key := range []string{
+		"reverse_proxy.retry.enabled",
+		"reverse_proxy.retry.max_llm_backend_request_count",
+		"reverse_proxy.retry.backoff_base",
+		"reverse_proxy.retry.backoff_max",
+		"reverse_proxy.retry.retryable_http_statuses",
+		"reverse_proxy.retry.match_network_issue_from_response_body",
+		"reverse_proxy.retry.exclude_failed_instance",
+		"reverse_proxy.retry.response_header_meta",
+	} {
+		if _, exists := got[key]; exists {
+			t.Fatalf("did not expect retry audit field %s when retry is disabled", key)
+		}
 	}
 }

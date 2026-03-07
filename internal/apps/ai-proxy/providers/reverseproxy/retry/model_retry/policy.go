@@ -35,27 +35,27 @@ func (cfg Config) WithRequestOverrides(r *http.Request) Config {
 
 	logger := ctxhelper.MustGetLoggerBase(r.Context())
 
-	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetry)); raw != "" {
+	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyModelRetry)); raw != "" {
 		if v, ok := parseHeaderBool(raw); ok {
 			cfg.Enabled = v
 		} else {
-			logger.Warnf("invalid %s=%q", vars.XAIProxyRetry, raw)
+			logger.Warnf("invalid %s=%q", vars.XAIProxyModelRetry, raw)
 		}
 	}
-	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryDisabled)); raw != "" {
+	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyModelRetryDisabled)); raw != "" {
 		if v, ok := parseHeaderBool(raw); ok {
 			if v {
 				cfg.Enabled = false
 			}
 		} else {
-			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryDisabled, raw)
+			logger.Warnf("invalid %s=%q", vars.XAIProxyModelRetryDisabled, raw)
 		}
 	}
-	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyRetryMax)); raw != "" {
+	if raw := strings.TrimSpace(r.Header.Get(vars.XAIProxyModelRetryMax)); raw != "" {
 		if maxRequestCount, err := strconv.Atoi(raw); err == nil && maxRequestCount > 0 {
 			cfg.Conditions.MaxLLMBackendRequestCount = maxRequestCount
 		} else {
-			logger.Warnf("invalid %s=%q", vars.XAIProxyRetryMax, raw)
+			logger.Warnf("invalid %s=%q", vars.XAIProxyModelRetryMax, raw)
 		}
 	}
 	if health.IsHealthProbeRequest(r.Header) {
