@@ -50,7 +50,6 @@ const (
 	XAIProxyModelHealthMeta          = "X-AI-Proxy-Model-Health-Meta"
 	XAIProxyModelHealthProbe         = "X-AI-Proxy-Model-Health-Probe"
 	XAIProxyModelHealthMarkUnhealthy = "X-AI-Proxy-Model-Health-Mark-Unhealthy"
-	XAIProxyModelRetryMeta           = "X-AI-Proxy-Model-Retry-Meta"
 
 	XAIProxyForwardDialTimeout         = "X-AI-Proxy-Forward-Dial-Timeout"
 	XAIProxyForwardTLSHandshakeTimeout = "X-AI-Proxy-Forward-TLS-Handshake-Timeout"
@@ -66,7 +65,8 @@ const (
 	XAIProxyModelRetryDisabled = "X-AI-Proxy-Model-Retry-Disabled"
 	// XAIProxyModelRetryMax overrides max attempt count (including first attempt),
 	// e.g. "3" means first attempt + up to 2 retries.
-	XAIProxyModelRetryMax = "X-AI-Proxy-Model-Retry-Max"
+	XAIProxyModelRetryMax  = "X-AI-Proxy-Model-Retry-Max"
+	XAIProxyModelRetryMeta = "X-AI-Proxy-Model-Retry-Meta"
 
 	UIValueUndefined = "undefined"
 )
