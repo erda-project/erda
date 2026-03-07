@@ -49,6 +49,7 @@ func InjectEmbedFS(routesFS, templatesFS *embed.FS) {
 	}
 }
 
+// DoPost do some post process after config loaded
 func (cfg *Config) DoPost() error {
 	cfg.EmbedRoutesFS = EmbedRoutesFS
 	cfg.EmbedTemplatesFS = EmbedTemplatesFS
