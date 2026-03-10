@@ -14,7 +14,7 @@
       ],
       "website": "https://developers.openai.com/api/docs/models/gpt-5.4-pro"
     },
-    "desc": "GPT-5.4-pro is our most capable reasoning model, designed to spend more time thinking before producing a response.",
+    "desc": "GPT-5.4 pro uses more compute to think harder and provide consistently better answers. Only available in the Responses API.",
     "config": {
       "desc": "${@template.desc}",
       "apiKey": "",
