@@ -1,0 +1,78 @@
+{
+  "gpt-5.4-pro": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "azure-ai-foundry"
+      ],
+      "website": "https://developers.openai.com/api/docs/models/gpt-5.4-pro"
+    },
+    "desc": "GPT-5.4 pro uses more compute to think harder and provide consistently better answers. Only available in the Responses API.",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "openai",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "image_recognition",
+              "responses_api",
+              "structured_output"
+            ],
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1050000,
+            "max_prompt_tokens": 922000,
+            "max_completion_tokens": 128000
+          },
+          "pricing": {
+            "prompt": "0.00003",
+            "completion": "0.00018",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "unit": "USD"
+          },
+          "deployment_id": "${@template.placeholders.target-model-name}",
+          "model_name": "${@template.placeholders.target-model-name}",
+          "api": {
+            "apiStyleConfigs": {
+              "POST:/v1/chat/completions": {
+                "body": {
+                  "force": {
+                    "temperature": 1
+                  },
+                  "rename": {
+                    "max_tokens": "max_completion_tokens"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}
