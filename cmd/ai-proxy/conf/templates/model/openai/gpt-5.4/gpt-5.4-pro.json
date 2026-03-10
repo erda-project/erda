@@ -44,13 +44,13 @@
             "max_completion_tokens": 128000
           },
           "pricing": {
-            "prompt": "0.000015",
-            "completion": "0.00012",
+            "prompt": "0.00003",
+            "completion": "0.00018",
             "request": "0",
             "image": "0",
             "web_search": "0",
             "internal_reasoning": "0",
-            "input_cache_read": "0.0000015",
+            "input_cache_read": "0",
             "input_cache_write": "0",
             "unit": "USD"
           },
