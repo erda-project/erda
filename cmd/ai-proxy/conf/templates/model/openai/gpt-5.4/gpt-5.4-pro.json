@@ -39,8 +39,8 @@
             ]
           },
           "context": {
-            "context_length": 400000,
-            "max_prompt_tokens": 272000,
+            "context_length": 1050000,
+            "max_prompt_tokens": 922000,
             "max_completion_tokens": 128000
           },
           "pricing": {
