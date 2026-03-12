@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	contextfilter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/context-family/context"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
@@ -158,13 +159,29 @@ func ServeWithRetry(
 		}
 
 		delay := policy.NextBackoff(attempt)
+		delayMode := string(contextfilter.RetryRouteModeNormal)
+		if clientID, ok := ctxhelper.GetClientId(ctx); ok && clientID != "" {
+			if retryMode, err := contextfilter.PredictRetryRouteMode(ctx, reqForAttempt, clientID, health.GetManager(), time.Now); err == nil {
+				switch retryMode {
+				case contextfilter.RetryRouteModeUnhealthy:
+					currentFallbackCount, _ := ctxhelper.GetModelRetryUnhealthyFallbackCount(ctx)
+					delay = contextfilter.NextRetryUnhealthyDelay(totalAttempts-attempt, currentFallbackCount+1)
+					delayMode = string(retryMode)
+				case contextfilter.RetryRouteModeNone:
+					delayMode = string(retryMode)
+				default:
+					delayMode = string(retryMode)
+				}
+			}
+		}
 		audithelper.NoteAppend(ctx, "reverse_proxy.retry.events", map[string]any{
 			"attempt":      attempt,
 			"next_attempt": attempt + 1,
 			"sleep":        delay.String(),
+			"mode":         delayMode,
 			"reason":       retryReason(result),
 		})
-		logger.Warnf("transparent retry trigger, attempt=%d, next_attempt=%d, sleep=%s, instance=%s, reason=%s", attempt, attempt+1, delay.String(), result.InstanceID, retryReason(result))
+		logger.Warnf("transparent retry trigger, attempt=%d, next_attempt=%d, sleep=%s, mode=%s, instance=%s, reason=%s", attempt, attempt+1, delay.String(), delayMode, result.InstanceID, retryReason(result))
 		if delay > 0 {
 			time.Sleep(delay)
 		}

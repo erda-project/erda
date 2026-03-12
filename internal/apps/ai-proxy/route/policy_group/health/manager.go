@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -108,6 +109,7 @@ func (m *Manager) MarkUnhealthy(ctx context.Context, clientID, instanceID string
 	if m == nil || instanceID == "" || apiType == "" {
 		return
 	}
+	now := time.Now()
 	if headers == nil {
 		headers = make(http.Header)
 	}
@@ -125,7 +127,8 @@ func (m *Manager) MarkUnhealthy(ctx context.Context, clientID, instanceID string
 		"call_id":     callID,
 	}).Warn("mark model instance unhealthy")
 	tryPutModelMarkUnhealthyInstanceID(ctx, instanceID)
-	m.writeUnhealthyState(ctx, clientID, instanceID, apiType, lastErr)
+	tryPutModelRetrySessionUnhealthyMark(ctx, instanceID, now)
+	m.writeUnhealthyStateAt(ctx, clientID, instanceID, apiType, lastErr, now)
 	m.startOrUpdateProbeWorker(clientID, instanceID, apiType, headers)
 }
 
@@ -152,4 +155,11 @@ func (m *Manager) String() string {
 		return "nil-health-manager"
 	}
 	return fmt.Sprintf("health-manager(base=%s)", m.cfg.Probe.BaseURL)
+}
+
+func (m *Manager) RetryUnhealthyFallbackWindow() time.Duration {
+	if m == nil {
+		return 0
+	}
+	return RetryUnhealthyFallbackWindow(m.cfg)
 }

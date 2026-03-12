@@ -117,3 +117,24 @@ func tryPutModelMarkUnhealthyInstanceID(ctx context.Context, instanceID string) 
 	}()
 	ctxhelper.PutModelMarkUnhealthyInstanceID(ctx, instanceID)
 }
+
+func tryPutModelRetrySessionUnhealthyMark(ctx context.Context, instanceID string, markedAt time.Time) {
+	if ctx == nil || instanceID == "" || markedAt.IsZero() {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.WithField("instance_id", instanceID).Debugf("skip retry unhealthy session mark: %v", r)
+		}
+	}()
+
+	existing, _ := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	cloned := make(map[string]time.Time, len(existing)+1)
+	for id, ts := range existing {
+		cloned[id] = ts
+	}
+	if prev, ok := cloned[instanceID]; !ok || markedAt.After(prev) {
+		cloned[instanceID] = markedAt
+	}
+	ctxhelper.PutModelRetrySessionUnhealthyMarks(ctx, ctxhelper.ModelRetrySessionUnhealthyMarks(cloned))
+}
