@@ -32,7 +32,7 @@ func TestOpenClawItem_MatchMessageGroup(t *testing.T) {
 		RequestedMessages: message.Messages{
 			openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: "You are a personal assistant running inside OpenClaw",
+				Content: openClawSystemPromptHint,
 			},
 		},
 	})
@@ -45,7 +45,7 @@ func TestOpenClawItem_MatchMessageGroup(t *testing.T) {
 
 func TestOpenClawItem_MatchAuditPrompt(t *testing.T) {
 	ctx := newDetectContextForTest()
-	ctxhelper.MustGetAuditSink(ctx).Note("prompt", "System: You are a personal assistant running inside OpenClaw")
+	ctxhelper.MustGetAuditSink(ctx).Note("prompt", "System: "+openClawSystemPromptHint)
 
 	matched, source := openClawItem{}.Match(ctx)
 	if !matched || source != "audit.prompt" {

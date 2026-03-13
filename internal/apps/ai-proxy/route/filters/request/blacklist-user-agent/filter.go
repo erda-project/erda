@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
-	"strings"
-	"sync"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
@@ -31,31 +29,16 @@ import (
 
 const Name = "blacklist-user-agent"
 
-type Config struct {
-	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT"`
-}
-
 type Filter struct{}
 
 var (
-	configMu      sync.RWMutex
-	currentConfig Config
-	Creator       filter_define.RequestRewriterCreator = func(_ string, _ json.RawMessage) filter_define.ProxyRequestRewriter {
+	Creator = filter_define.RequestRewriterCreator(func(_ string, _ json.RawMessage) filter_define.ProxyRequestRewriter {
 		return &Filter{}
-	}
+	})
 )
 
 func init() {
 	filter_define.RegisterFilterCreator(Name, Creator)
-}
-
-func SetConfig(cfg Config) {
-	configMu.Lock()
-	defer configMu.Unlock()
-
-	currentConfig = Config{
-		Blacklist: normalizeBlacklist(cfg.Blacklist),
-	}
 }
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
@@ -86,27 +69,4 @@ func detectBlacklistedUserAgent(ctx context.Context) (string, string) {
 		}
 	}
 	return "", ""
-}
-
-func getConfig() Config {
-	configMu.RLock()
-	defer configMu.RUnlock()
-
-	return Config{
-		Blacklist: append([]string(nil), currentConfig.Blacklist...),
-	}
-}
-
-func normalizeBlacklist(items []string) []string {
-	normalized := make([]string, 0, len(items))
-	for _, item := range items {
-		if value := normalize(item); value != "" {
-			normalized = append(normalized, value)
-		}
-	}
-	return normalized
-}
-
-func normalize(input string) string {
-	return strings.ToLower(strings.TrimSpace(input))
 }
