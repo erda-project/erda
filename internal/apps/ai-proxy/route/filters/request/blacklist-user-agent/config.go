@@ -20,11 +20,13 @@ import (
 )
 
 type ClientTokenConfig struct {
-	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN"`
+	BlacklistStr string   `json:"blacklist_str" yaml:"blacklist_str" file:"blacklist_str"`
+	Blacklist    []string `json:"-" yaml:"-" file:"-"`
 }
 
 type ClientConfig struct {
-	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT"`
+	BlacklistStr string   `json:"blacklist_str" yaml:"blacklist_str" file:"blacklist_str"`
+	Blacklist    []string `json:"-" yaml:"-" file:"-"`
 }
 
 type Config struct {
@@ -43,10 +45,10 @@ func SetConfig(cfg Config) {
 
 	currentConfig = Config{
 		ClientToken: ClientTokenConfig{
-			Blacklist: normalizeBlacklist(cfg.ClientToken.Blacklist),
+			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.ClientToken.Blacklist, cfg.ClientToken.BlacklistStr)),
 		},
 		Client: ClientConfig{
-			Blacklist: normalizeBlacklist(cfg.Client.Blacklist),
+			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.Client.Blacklist, cfg.Client.BlacklistStr)),
 		},
 	}
 }
@@ -73,6 +75,16 @@ func normalizeBlacklist(items []string) []string {
 		}
 	}
 	return normalized
+}
+
+func resolveBlacklist(items []string, raw string) []string {
+	if len(items) > 0 {
+		return items
+	}
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	return strings.Split(raw, ",")
 }
 
 func normalize(input string) string {

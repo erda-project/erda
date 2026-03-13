@@ -19,20 +19,41 @@ import (
 	"testing"
 )
 
-func TestConfigEnvTags(t *testing.T) {
-	clientTokenField, ok := reflect.TypeOf(ClientTokenConfig{}).FieldByName("Blacklist")
+func TestConfigFileTags(t *testing.T) {
+	clientTokenField, ok := reflect.TypeOf(ClientTokenConfig{}).FieldByName("BlacklistStr")
 	if !ok {
-		t.Fatal("Blacklist field not found in ClientTokenConfig")
+		t.Fatal("BlacklistStr field not found in ClientTokenConfig")
 	}
-	if got := clientTokenField.Tag.Get("env"); got != "AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN" {
-		t.Fatalf("unexpected client_token env tag: %q", got)
+	if got := clientTokenField.Tag.Get("file"); got != "blacklist_str" {
+		t.Fatalf("unexpected client_token file tag: %q", got)
 	}
 
-	clientField, ok := reflect.TypeOf(ClientConfig{}).FieldByName("Blacklist")
+	clientField, ok := reflect.TypeOf(ClientConfig{}).FieldByName("BlacklistStr")
 	if !ok {
-		t.Fatal("Blacklist field not found in ClientConfig")
+		t.Fatal("BlacklistStr field not found in ClientConfig")
 	}
-	if got := clientField.Tag.Get("env"); got != "AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT" {
-		t.Fatalf("unexpected client env tag: %q", got)
+	if got := clientField.Tag.Get("file"); got != "blacklist_str" {
+		t.Fatalf("unexpected client file tag: %q", got)
+	}
+}
+
+func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+
+	SetConfig(Config{
+		ClientToken: ClientTokenConfig{
+			BlacklistStr: " openclaw, cursor ,, ",
+		},
+		Client: ClientConfig{
+			BlacklistStr: "",
+		},
+	})
+
+	cfg := getConfig()
+	if len(cfg.ClientToken.Blacklist) != 2 || cfg.ClientToken.Blacklist[0] != "openclaw" || cfg.ClientToken.Blacklist[1] != "cursor" {
+		t.Fatalf("unexpected client_token blacklist: %#v", cfg.ClientToken.Blacklist)
+	}
+	if len(cfg.Client.Blacklist) != 0 {
+		t.Fatalf("expected empty client blacklist, got %#v", cfg.Client.Blacklist)
 	}
 }
