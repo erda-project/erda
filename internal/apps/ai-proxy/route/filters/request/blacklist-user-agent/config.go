@@ -20,11 +20,11 @@ import (
 )
 
 type ClientTokenConfig struct {
-	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_CLIENT_TOKEN"`
+	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN"`
 }
 
 type ClientConfig struct {
-	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_CLIENT"`
+	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT"`
 }
 
 type Config struct {
