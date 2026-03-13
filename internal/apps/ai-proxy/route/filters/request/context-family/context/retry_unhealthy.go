@@ -17,7 +17,6 @@ package context
 import (
 	"context"
 	"errors"
-	"net/http"
 	"sort"
 	"time"
 
@@ -55,29 +54,16 @@ type retryUnhealthyCandidate struct {
 
 func PredictRetryRouteMode(
 	ctx context.Context,
-	req *http.Request,
 	clientID string,
 	healthManager *health.Manager,
 	now func() time.Time,
 ) (RetryRouteMode, error) {
-	if req == nil {
-		if snapshot, ok := ctxhelper.GetReverseProxyRequestInSnapshot(ctx); ok && snapshot != nil {
-			req = snapshot
-		}
-	}
-	if req == nil {
-		return RetryRouteModeNone, nil
-	}
-
-	identifier, err := findModelIdentifier(req)
-	if err != nil || identifier == "" {
-		return RetryRouteModeNone, err
-	}
-
-	resolver := groupresolver.NewResolver()
-	group, err := resolver.Resolve(ctx, clientID, identifier)
+	group, err := resolveRetryRouteGroup(ctx, clientID)
 	if err != nil {
 		return RetryRouteModeNone, err
+	}
+	if group == nil {
+		return RetryRouteModeNone, nil
 	}
 	routingInstances, err := policygroup.BuildRoutingInstancesForClient(ctx, clientID)
 	if err != nil {
@@ -100,6 +86,47 @@ func PredictRetryRouteMode(
 		return RetryRouteModeUnhealthy, nil
 	}
 	return RetryRouteModeNone, nil
+}
+
+func resolveRetryRouteGroup(ctx context.Context, clientID string) (*policypb.PolicyGroup, error) {
+	if clientID == "" {
+		return nil, nil
+	}
+
+	var candidates []string
+	if trace := currentPolicyTrace(ctx); trace != nil && trace.Group.Name != "" {
+		candidates = append(candidates, trace.Group.Name)
+	}
+	if model, ok := ctxhelper.GetModel(ctx); ok && model != nil && model.Id != "" {
+		if len(candidates) == 0 || candidates[len(candidates)-1] != model.Id {
+			candidates = append(candidates, model.Id)
+		}
+	}
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	resolver := groupresolver.NewResolver()
+	var lastErr error
+	for _, identifier := range candidates {
+		group, err := resolver.Resolve(ctx, clientID, identifier)
+		if err == nil && group != nil {
+			return group, nil
+		}
+		if err != nil {
+			lastErr = err
+		}
+	}
+	return nil, lastErr
+}
+
+func currentPolicyTrace(ctx context.Context) *policygroup.RouteTrace {
+	traceVal, ok := ctxhelper.GetPolicyTrace(ctx)
+	if !ok || traceVal == nil {
+		return nil
+	}
+	trace, _ := traceVal.(*policygroup.RouteTrace)
+	return trace
 }
 
 func tryRouteRetryUnhealthy(
@@ -232,6 +259,9 @@ func allGroupInstancesForRetryUnhealthy(
 	if group == nil || len(group.Branches) == 0 || len(routingInstances) == 0 {
 		return nil
 	}
+	// unhealthy fallback is the terminal rescue path after normal routing is exhausted.
+	// It intentionally scans every instance that belongs to the resolved group, and does
+	// not re-apply request-level retry exclusion or normal branch RR/weight semantics.
 	seen := make(map[string]struct{})
 	ret := make([]*policygroup.RoutingModelInstance, 0, len(routingInstances))
 	for _, branch := range group.Branches {

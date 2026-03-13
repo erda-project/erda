@@ -276,19 +276,35 @@ func TestPredictRetryRouteMode(t *testing.T) {
 	ctxhelper.PutModelRetryRawLLMBackendRequestCount(env.ctx, 2)
 	env.writeHealthState("m-healthy", now)
 	env.writeHealthState("m-unhealthy", now)
+	ctxhelper.PutPolicyTrace(env.ctx, &policygroup.RouteTrace{
+		Group: policygroup.RouteTraceGroup{
+			Name: "gpt-4.1",
+		},
+	})
+	ctxhelper.PutModel(env.ctx, &modelpb.Model{Id: "m-healthy"})
 
-	req, _ := http.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-AI-Proxy-Model-Name", "gpt-4.1")
-	req = req.WithContext(env.ctx)
-	ctxhelper.PutReverseProxyRequestInSnapshot(env.ctx, req)
-
-	mode, err := PredictRetryRouteMode(env.ctx, req, env.clientID, env.healthManager, func() time.Time { return now })
+	mode, err := PredictRetryRouteMode(env.ctx, env.clientID, env.healthManager, func() time.Time { return now })
 	if err != nil {
 		t.Fatalf("PredictRetryRouteMode error: %v", err)
 	}
 	if mode != RetryRouteModeUnhealthy {
 		t.Fatalf("expected unhealthy retry mode, got %s", mode)
+	}
+}
+
+func TestPredictRetryRouteModeFallsBackToCurrentModelInstanceID(t *testing.T) {
+	env := newRetryUnhealthyEnv(t)
+	now := time.Now()
+	ctxhelper.PutModelRetryRawLLMBackendRequestCount(env.ctx, 2)
+	ctxhelper.PutModel(env.ctx, &modelpb.Model{Id: "m-unhealthy"})
+	env.writeHealthState("m-unhealthy", now)
+
+	mode, err := PredictRetryRouteMode(env.ctx, env.clientID, env.healthManager, func() time.Time { return now })
+	if err != nil {
+		t.Fatalf("PredictRetryRouteMode error: %v", err)
+	}
+	if mode != RetryRouteModeUnhealthy {
+		t.Fatalf("expected unhealthy retry mode from current model fallback, got %s", mode)
 	}
 }
 

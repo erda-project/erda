@@ -161,7 +161,7 @@ func ServeWithRetry(
 		delay := policy.NextBackoff(attempt)
 		delayMode := string(contextfilter.RetryRouteModeNormal)
 		if clientID, ok := ctxhelper.GetClientId(ctx); ok && clientID != "" {
-			if retryMode, err := contextfilter.PredictRetryRouteMode(ctx, reqForAttempt, clientID, health.GetManager(), time.Now); err == nil {
+			if retryMode, err := contextfilter.PredictRetryRouteMode(ctx, clientID, health.GetManager(), time.Now); err == nil {
 				switch retryMode {
 				case contextfilter.RetryRouteModeUnhealthy:
 					currentFallbackCount, _ := ctxhelper.GetModelRetryUnhealthyFallbackCount(ctx)
