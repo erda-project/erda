@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 )
 
+// Source: https://github.com/search?q=repo:openclaw/openclaw+%22You+are+a+personal+assistant+running+inside+OpenClaw.%22&type=code
 const openClawSystemPromptHint = "You are a personal assistant running inside OpenClaw"
 
 type openClawItem struct{}
