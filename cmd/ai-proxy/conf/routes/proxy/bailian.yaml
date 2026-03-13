@@ -6,4 +6,5 @@ routes:
       - name: check-pass-through
       - name: auth
       - name: context
+      - name: blacklist-user-agent
       - name: pass-through-bailian

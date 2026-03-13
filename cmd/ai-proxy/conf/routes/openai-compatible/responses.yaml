@@ -6,11 +6,7 @@ routes:
       - name: auth
       - name: context
       - name: context-responses
-      - name: forbidden-client-detector
-        config:
-          blacklist:
-            - openclaw
-            - cursor
+      - name: blacklist-user-agent
       - name: responses-api-compatible
       - name: thinking-handler
       - name: openai-compatible-director

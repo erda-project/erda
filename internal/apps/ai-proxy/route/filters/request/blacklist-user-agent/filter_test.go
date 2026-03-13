@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package forbidden_client_detector
+package blacklist_user_agent
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -34,10 +33,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 )
 
-func TestFilter_RejectsOpenClawClientTokenByMessageGroup(t *testing.T) {
-	filter := newFilterForTest(t, map[string]any{
-		"blacklist": []string{"openclaw"},
-	})
+func TestFilter_RejectsBlacklistedUserAgentForClientToken(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{Blacklist: []string{"openclaw"}})
+
+	filter := newFilterForTest(t)
 	pr, sink := newProxyRequestForTest()
 	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
 	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
@@ -51,20 +51,21 @@ func TestFilter_RejectsOpenClawClientTokenByMessageGroup(t *testing.T) {
 
 	err := filter.OnProxyRequest(pr)
 	if err == nil {
-		t.Fatal("expected request to be rejected for openclaw client token")
+		t.Fatal("expected request to be rejected for openclaw")
 	}
 	if !strings.Contains(strings.ToLower(err.Error()), "forbidden") {
 		t.Fatalf("expected forbidden error, got %v", err)
 	}
-	if got := sink.Snapshot()["forbidden_client"]; got != "openclaw" {
-		t.Fatalf("expected forbidden_client note openclaw, got %#v", got)
+	if got := sink.Snapshot()["blacklist_user_agent"]; got != "openclaw" {
+		t.Fatalf("expected blacklist_user_agent note openclaw, got %#v", got)
 	}
 }
 
-func TestFilter_AllowsAKClientEvenIfPromptMatches(t *testing.T) {
-	filter := newFilterForTest(t, map[string]any{
-		"blacklist": []string{"openclaw"},
-	})
+func TestFilter_AllowsAKClientEvenIfUserAgentMatches(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{Blacklist: []string{"openclaw"}})
+
+	filter := newFilterForTest(t)
 	pr, _ := newProxyRequestForTest()
 	ctxhelper.PutClient(pr.In.Context(), &clientpb.Client{Id: "c1"})
 	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
@@ -81,50 +82,59 @@ func TestFilter_AllowsAKClientEvenIfPromptMatches(t *testing.T) {
 	}
 }
 
-func TestFilter_UsesEnvBlacklistOverride(t *testing.T) {
-	t.Setenv(envKeyBlacklist, "openclaw")
+func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItem(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{Blacklist: []string{"first", "second"}})
 
-	filter := newFilterForTest(t, nil)
-	pr, _ := newProxyRequestForTest()
-	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	ctxhelper.MustGetAuditSink(pr.In.Context()).Note("prompt", "You are a personal assistant running inside OpenClaw")
-
-	if err := filter.OnProxyRequest(pr); err == nil {
-		t.Fatal("expected request to be rejected when env blacklist enables openclaw")
-	}
-}
-
-func TestFilter_IgnoresUnsupportedBlacklistBranch(t *testing.T) {
-	filter := newFilterForTest(t, map[string]any{
-		"blacklist": []string{"cursor"},
-	})
-	pr, _ := newProxyRequestForTest()
-	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
-		RequestedMessages: message.Messages{
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: "You are a personal assistant running inside OpenClaw",
+	restore := replaceItemsForTest(map[string]BlacklistItem{
+		"first": blacklistItemStub{
+			name: "first",
+			match: func(context.Context) (bool, string) {
+				return true, "first-source"
+			},
+		},
+		"second": blacklistItemStub{
+			name: "second",
+			match: func(context.Context) (bool, string) {
+				t.Fatal("expected second blacklist item to be skipped after first match")
+				return false, ""
 			},
 		},
 	})
+	t.Cleanup(restore)
 
-	if err := filter.OnProxyRequest(pr); err != nil {
-		t.Fatalf("expected unsupported blacklist branch to be ignored, got %v", err)
+	gotName, gotSource := detectBlacklistedUserAgent(context.Background())
+	if gotName != "first" || gotSource != "first-source" {
+		t.Fatalf("expected first match result, got name=%q source=%q", gotName, gotSource)
 	}
 }
 
-func newFilterForTest(t *testing.T, cfg map[string]any) filter_define.ProxyRequestRewriter {
-	t.Helper()
-	var raw json.RawMessage
-	if cfg != nil {
-		var err error
-		raw, err = json.Marshal(cfg)
-		if err != nil {
-			t.Fatalf("failed to marshal config: %v", err)
-		}
+func TestDetectBlacklistedUserAgent_IgnoresUnknownItems(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{Blacklist: []string{"cursor"}})
+
+	gotName, gotSource := detectBlacklistedUserAgent(context.Background())
+	if gotName != "" || gotSource != "" {
+		t.Fatalf("expected unknown blacklist item to be ignored, got name=%q source=%q", gotName, gotSource)
 	}
-	return Creator(Name, raw)
+}
+
+type blacklistItemStub struct {
+	name  string
+	match func(context.Context) (bool, string)
+}
+
+func (s blacklistItemStub) Name() string {
+	return s.name
+}
+
+func (s blacklistItemStub) Match(ctx context.Context) (bool, string) {
+	return s.match(ctx)
+}
+
+func newFilterForTest(t *testing.T) filter_define.ProxyRequestRewriter {
+	t.Helper()
+	return Creator(Name, nil)
 }
 
 func newProxyRequestForTest() (*httputil.ProxyRequest, types.Sink) {

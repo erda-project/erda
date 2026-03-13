@@ -6,11 +6,7 @@ routes:
       - name: auth
       - name: context
       - name: context-chat
-      - name: forbidden-client-detector
-        config:
-          blacklist:
-            - openclaw
-            - cursor
+      - name: blacklist-user-agent
       - name: extra-body
       - name: force-stream-usage
       - name: thinking-handler
