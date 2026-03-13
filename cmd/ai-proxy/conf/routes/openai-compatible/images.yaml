@@ -6,7 +6,6 @@ routes:
       - name: auth
       - name: context
       - name: context-image
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: google-vertex-ai-director
       - name: set-response-chunk-splitter
@@ -20,7 +19,6 @@ routes:
       - name: auth
       - name: context
       - name: context-image
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: google-vertex-ai-director
       - name: set-response-chunk-splitter

@@ -10,7 +10,6 @@ routes:
           maxAudioSize: 25MB
           supportedAudioFileTypes: [ "flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm" ]
           defaultOpenAIAudioModel: whisper-1
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
 
@@ -21,7 +20,6 @@ routes:
       - name: auth
       - name: context
       - name: context-audio-tts
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: aliyun-bailian-tts-converter
       - name: volcengine-ark-tts-converter

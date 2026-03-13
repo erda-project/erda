@@ -8,7 +8,6 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
 
@@ -20,7 +19,6 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
 
@@ -32,7 +30,6 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
 
@@ -44,7 +41,6 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
 
@@ -56,6 +52,5 @@ routes:
       - name: auth
       - name: context
       - name: context-file
-      - name: blacklist-user-agent
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
