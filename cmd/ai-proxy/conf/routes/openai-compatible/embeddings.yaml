@@ -6,5 +6,10 @@ routes:
       - name: auth
       - name: context
       - name: context-embedding
+      - name: forbidden-client-detector
+        config:
+          blacklist:
+            - openclaw
+            - cursor
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
