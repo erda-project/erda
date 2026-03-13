@@ -45,10 +45,11 @@ const Name = "erda.app.ai-proxy"
 type Config struct {
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
 
-	LBStateStoreType      string                      `file:"lb_state_store_type" env:"LB_STATE_STORE_TYPE" default:"memory"`
-	LBStateStoreStickyTTL time.Duration               `file:"lb_state_store_sticky_ttl" env:"LB_STATE_STORE_STICKY_TTL" default:"10m"`
-	BlacklistUserAgent    blacklist_user_agent.Config `file:"blacklist_user_agent"`
-	ModelHealth           health.Config               `file:"model_health"`
+	LBStateStoreType      string        `file:"lb_state_store_type" env:"LB_STATE_STORE_TYPE" default:"memory"`
+	LBStateStoreStickyTTL time.Duration `file:"lb_state_store_sticky_ttl" env:"LB_STATE_STORE_STICKY_TTL" default:"10m"`
+	ModelHealth           health.Config `file:"model_health"`
+
+	BlacklistUserAgent blacklist_user_agent.Config `file:"blacklist_user_agent"`
 
 	// Redis settings (standalone or sentinel via redis.UniversalOptions)
 	RedisAddr          string `file:"redis_addr" env:"REDIS_ADDR"`
