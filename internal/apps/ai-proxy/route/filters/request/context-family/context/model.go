@@ -16,15 +16,19 @@ package context
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	policypb "github.com/erda-project/erda-proto-go/apps/aiproxy/policy_group/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
+	pgengine "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
 	groupresolver "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/resolver"
 	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 )
@@ -56,6 +60,17 @@ func findModel(req *http.Request, client *clientpb.Client) (*modelpb.Model, erro
 }
 
 func routeToModelInstance(ctx context.Context, clientID, modelName string, headers http.Header) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
+	return routeToModelInstanceWithDeps(ctx, clientID, modelName, headers, pgengine.GetEngine(), health.GetManager(), time.Now)
+}
+
+func routeToModelInstanceWithDeps(
+	ctx context.Context,
+	clientID, modelName string,
+	headers http.Header,
+	routeEngine *pgengine.Engine,
+	healthManager *health.Manager,
+	now func() time.Time,
+) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
 	// resolve policy group
 	resolver := groupresolver.NewResolver()
 	group, err := resolver.Resolve(ctx, clientID, modelName)
@@ -68,10 +83,33 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 	if err != nil {
 		return nil, nil, err
 	}
-	routingInstances = filterRetryExcludedInstances(ctx, routingInstances)
+	trace, instance, err := routeWithEngine(ctx, clientID, headers, group, routingInstances, routeEngine)
+	if err != nil {
+		trace, instance, fallbackErr := tryRouteRetryUnhealthy(ctx, clientID, group, routingInstances, err, healthManager, coalesceNow(now))
+		if fallbackErr == nil && instance != nil {
+			return trace, instance, nil
+		}
+		if fallbackErr != nil && !errors.Is(fallbackErr, err) {
+			return nil, nil, fallbackErr
+		}
+		return nil, nil, err
+	}
+	return trace, instance, nil
+}
 
-	// route by engine
-	instance, trace, err := engine.GetEngine().Route(ctx, policygroup.RouteRequest{
+func routeWithEngine(
+	ctx context.Context,
+	clientID string,
+	headers http.Header,
+	group *policypb.PolicyGroup,
+	routingInstances []*policygroup.RoutingModelInstance,
+	routeEngine *pgengine.Engine,
+) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
+	if routeEngine == nil {
+		return nil, nil, fmt.Errorf("nil policy group engine")
+	}
+	routingInstances = filterRetryExcludedInstances(ctx, routingInstances)
+	instance, trace, err := routeEngine.Route(ctx, policygroup.RouteRequest{
 		ClientID:  clientID,
 		Group:     group,
 		Instances: routingInstances,
@@ -100,4 +138,11 @@ func filterRetryExcludedInstances(ctx context.Context, instances []*policygroup.
 		filtered = append(filtered, instance)
 	}
 	return filtered
+}
+
+func coalesceNow(now func() time.Time) func() time.Time {
+	if now != nil {
+		return now
+	}
+	return time.Now
 }

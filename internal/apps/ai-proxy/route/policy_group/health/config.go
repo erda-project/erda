@@ -19,6 +19,8 @@ import (
 	"time"
 )
 
+const retryUnhealthyFallbackWindowMultiplier = 5
+
 type Config struct {
 	Enabled bool         `file:"enabled" env:"MODEL_HEALTH_ENABLED" default:"true"`
 	Probe   ProbeConfig  `file:"probe"`
@@ -55,4 +57,12 @@ func (cfg *Config) normalize() {
 	if cfg.Rescue.MaxBackoff <= 0 {
 		panic("model health rescue max_backoff must be > 0")
 	}
+}
+
+func RetryUnhealthyFallbackWindow(cfg Config) time.Duration {
+	window := time.Duration(retryUnhealthyFallbackWindowMultiplier) * cfg.Rescue.MaxBackoff
+	if cfg.Probe.UnhealthyTTL > 0 && (window <= 0 || cfg.Probe.UnhealthyTTL < window) {
+		return cfg.Probe.UnhealthyTTL
+	}
+	return window
 }
