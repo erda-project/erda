@@ -16,7 +16,7 @@ package blacklist_user_agent
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
@@ -39,29 +39,32 @@ func (openClawItem) Name() string {
 
 func (openClawItem) Match(ctx context.Context) (bool, string) {
 	if msgGroup, ok := ctxhelper.GetMessageGroup(ctx); ok {
-		if containsOpenClawInMessages(msgGroup.RequestedMessages) || containsOpenClawInMessages(msgGroup.AllMessages) {
+		if containsOpenClawSystemMessage(msgGroup.RequestedMessages) || containsOpenClawSystemMessage(msgGroup.AllMessages) {
 			return true, "message_group"
 		}
 	}
-	if sink, ok := ctxhelper.GetAuditSink(ctx); ok && sink != nil {
-		if prompt, ok := sink.Snapshot()["prompt"]; ok && containsOpenClaw(asString(prompt)) {
-			return true, "audit.prompt"
+	if bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(ctx); ok {
+		if matched, source := matchOpenClawFromRequestBody(bodyValue); matched {
+			return true, source
 		}
 	}
 	return false, ""
 }
 
-func containsOpenClawInMessages(msgs message.Messages) bool {
+func containsOpenClawSystemMessage(msgs message.Messages) bool {
 	for _, msg := range msgs {
-		if containsOpenClaw(chatMessageText(msg)) {
+		if msg.Role != openai.ChatMessageRoleSystem {
+			continue
+		}
+		if isOpenClawSystemPrompt(chatMessageText(msg)) {
 			return true
 		}
 	}
 	return false
 }
 
-func containsOpenClaw(content string) bool {
-	return strings.Contains(strings.ToLower(content), strings.ToLower(openClawSystemPromptHint))
+func isOpenClawSystemPrompt(content string) bool {
+	return strings.TrimSpace(content) == openClawSystemPromptHint
 }
 
 func chatMessageText(msg openai.ChatCompletionMessage) string {
@@ -77,12 +80,24 @@ func chatMessageText(msg openai.ChatCompletionMessage) string {
 	return strings.Join(parts, "\n")
 }
 
-func asString(value any) string {
-	if value == nil {
-		return ""
+func matchOpenClawFromRequestBody(value any) (bool, string) {
+	bodyBytes, ok := value.([]byte)
+	if !ok || len(bodyBytes) == 0 {
+		return false, ""
 	}
-	if str, ok := value.(string); ok {
-		return str
+
+	var req struct {
+		Messages     []openai.ChatCompletionMessage `json:"messages"`
+		Instructions string                         `json:"instructions"`
 	}
-	return fmt.Sprintf("%v", value)
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		return false, ""
+	}
+	if containsOpenClawSystemMessage(req.Messages) {
+		return true, "request_body.messages"
+	}
+	if isOpenClawSystemPrompt(req.Instructions) {
+		return true, "request_body.instructions"
+	}
+	return false, ""
 }

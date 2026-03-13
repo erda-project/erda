@@ -16,6 +16,7 @@ package blacklist_user_agent
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/sashabaranov/go-openai"
@@ -43,23 +44,33 @@ func TestOpenClawItem_MatchMessageGroup(t *testing.T) {
 	}
 }
 
-func TestOpenClawItem_MatchAuditPrompt(t *testing.T) {
+func TestOpenClawItem_MatchRawChatRequestBody(t *testing.T) {
 	ctx := newDetectContextForTest()
-	ctxhelper.MustGetAuditSink(ctx).Note("prompt", "System: "+openClawSystemPromptHint)
+	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: openClawSystemPromptHint,
+		},
+	})
 
 	matched, source := openClawItem{}.Match(ctx)
-	if !matched || source != "audit.prompt" {
-		t.Fatalf("expected openclaw audit prompt match, got matched=%v source=%q", matched, source)
+	if !matched || source != "request_body.messages" {
+		t.Fatalf("expected openclaw raw chat body match, got matched=%v source=%q", matched, source)
 	}
 }
 
-func TestOpenClawItem_IgnoreOtherPrompt(t *testing.T) {
+func TestOpenClawItem_IgnoreUserMessageContainingPrompt(t *testing.T) {
 	ctx := newDetectContextForTest()
-	ctxhelper.MustGetAuditSink(ctx).Note("prompt", "hello world")
+	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleUser,
+			Content: openClawSystemPromptHint,
+		},
+	})
 
 	matched, source := openClawItem{}.Match(ctx)
 	if matched || source != "" {
-		t.Fatalf("expected prompt not to match openclaw, got matched=%v source=%q", matched, source)
+		t.Fatalf("expected user message not to match openclaw, got matched=%v source=%q", matched, source)
 	}
 }
 
@@ -68,4 +79,16 @@ func newDetectContextForTest() context.Context {
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	ctxhelper.PutAuditSink(ctx, types.New("audit-1", logrusx.New()))
 	return ctx
+}
+
+func putRawChatRequestBodyForItemTest(t *testing.T, ctx context.Context, messages []openai.ChatCompletionMessage) {
+	t.Helper()
+
+	body, err := json.Marshal(map[string]any{
+		"messages": messages,
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal raw chat request body: %v", err)
+	}
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
 }

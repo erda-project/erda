@@ -16,6 +16,7 @@ package blacklist_user_agent
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -35,17 +36,17 @@ import (
 
 func TestFilter_RejectsBlacklistedUserAgentForClientToken(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{Blacklist: []string{"openclaw"}})
+	SetConfig(Config{
+		ClientToken: ClientTokenConfig{Blacklist: []string{"openclaw"}},
+	})
 
 	filter := newFilterForTest(t)
 	pr, sink := newProxyRequestForTest()
 	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
-		RequestedMessages: message.Messages{
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: "You are a personal assistant running inside OpenClaw",
-			},
+	putRawChatRequestBody(t, pr.In.Context(), []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: openClawSystemPromptHint,
 		},
 	})
 
@@ -63,17 +64,17 @@ func TestFilter_RejectsBlacklistedUserAgentForClientToken(t *testing.T) {
 
 func TestFilter_AllowsAKClientEvenIfUserAgentMatches(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{Blacklist: []string{"openclaw"}})
+	SetConfig(Config{
+		ClientToken: ClientTokenConfig{Blacklist: []string{"openclaw"}},
+	})
 
 	filter := newFilterForTest(t)
 	pr, _ := newProxyRequestForTest()
 	ctxhelper.PutClient(pr.In.Context(), &clientpb.Client{Id: "c1"})
-	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
-		RequestedMessages: message.Messages{
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: "You are a personal assistant running inside OpenClaw",
-			},
+	putRawChatRequestBody(t, pr.In.Context(), []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: openClawSystemPromptHint,
 		},
 	})
 
@@ -82,10 +83,30 @@ func TestFilter_AllowsAKClientEvenIfUserAgentMatches(t *testing.T) {
 	}
 }
 
-func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItem(t *testing.T) {
+func TestFilter_RejectsAKClientWhenClientBlacklistConfigured(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{Blacklist: []string{"first", "second"}})
+	SetConfig(Config{
+		Client: ClientConfig{Blacklist: []string{"openclaw"}},
+	})
 
+	filter := newFilterForTest(t)
+	pr, _ := newProxyRequestForTest()
+	ctxhelper.PutClient(pr.In.Context(), &clientpb.Client{Id: "c1"})
+	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
+		RequestedMessages: message.Messages{
+			openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: openClawSystemPromptHint,
+			},
+		},
+	})
+
+	if err := filter.OnProxyRequest(pr); err == nil {
+		t.Fatal("expected ak client request to be rejected when client blacklist enables openclaw")
+	}
+}
+
+func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItem(t *testing.T) {
 	restore := replaceItemsForTest(map[string]BlacklistItem{
 		"first": blacklistItemStub{
 			name: "first",
@@ -103,17 +124,14 @@ func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItem(t *testing.T) {
 	})
 	t.Cleanup(restore)
 
-	gotName, gotSource := detectBlacklistedUserAgent(context.Background())
+	gotName, gotSource := detectBlacklistedUserAgent(context.Background(), []string{"first", "second"})
 	if gotName != "first" || gotSource != "first-source" {
 		t.Fatalf("expected first match result, got name=%q source=%q", gotName, gotSource)
 	}
 }
 
 func TestDetectBlacklistedUserAgent_IgnoresUnknownItems(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{Blacklist: []string{"cursor"}})
-
-	gotName, gotSource := detectBlacklistedUserAgent(context.Background())
+	gotName, gotSource := detectBlacklistedUserAgent(context.Background(), []string{"cursor"})
 	if gotName != "" || gotSource != "" {
 		t.Fatalf("expected unknown blacklist item to be ignored, got name=%q source=%q", gotName, gotSource)
 	}
@@ -146,4 +164,16 @@ func newProxyRequestForTest() (*httputil.ProxyRequest, types.Sink) {
 	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/chat/completions", nil).WithContext(ctx)
 	outReq := req.Clone(ctx)
 	return &httputil.ProxyRequest{In: req, Out: outReq}, sink
+}
+
+func putRawChatRequestBody(t *testing.T, ctx context.Context, messages []openai.ChatCompletionMessage) {
+	t.Helper()
+
+	body, err := json.Marshal(map[string]any{
+		"messages": messages,
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal raw chat request body: %v", err)
+	}
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
 }

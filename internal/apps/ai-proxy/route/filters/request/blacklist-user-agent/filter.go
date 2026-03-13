@@ -43,23 +43,23 @@ func init() {
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
-	if !auth.IsClientToken(ctx) {
+	blacklist := getBlacklistByCredential(ctx)
+	if len(blacklist) == 0 {
 		return nil
 	}
 
-	userAgentName, source := detectBlacklistedUserAgent(ctx)
+	userAgentName, source := detectBlacklistedUserAgent(ctx, blacklist)
 	if userAgentName == "" {
 		return nil
 	}
 
 	audithelper.Note(ctx, "blacklist_user_agent", userAgentName)
 	audithelper.Note(ctx, "blacklist_user_agent_match_source", source)
-	return http_error.NewHTTPError(ctx, http.StatusForbidden, fmt.Sprintf("client token is not allowed for blacklisted user-agent: %s", userAgentName))
+	return http_error.NewHTTPError(ctx, http.StatusForbidden, fmt.Sprintf("request is not allowed for blacklisted user-agent: %s", userAgentName))
 }
 
-func detectBlacklistedUserAgent(ctx context.Context) (string, string) {
-	cfg := getConfig()
-	for _, itemName := range cfg.Blacklist {
+func detectBlacklistedUserAgent(ctx context.Context, blacklist []string) (string, string) {
+	for _, itemName := range blacklist {
 		item, ok := getItem(itemName)
 		if !ok {
 			continue
@@ -69,4 +69,16 @@ func detectBlacklistedUserAgent(ctx context.Context) (string, string) {
 		}
 	}
 	return "", ""
+}
+
+func getBlacklistByCredential(ctx context.Context) []string {
+	cfg := getConfig()
+	switch {
+	case auth.IsClientToken(ctx):
+		return cfg.ClientToken.Blacklist
+	case auth.IsClient(ctx):
+		return cfg.Client.Blacklist
+	default:
+		return nil
+	}
 }

@@ -19,8 +19,17 @@ import (
 	"sync"
 )
 
+type ClientTokenConfig struct {
+	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_CLIENT_TOKEN"`
+}
+
+type ClientConfig struct {
+	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT_CLIENT"`
+}
+
 type Config struct {
-	Blacklist []string `json:"blacklist" yaml:"blacklist" file:"blacklist" env:"AI_PROXY_BLACKLIST_USER_AGENT"`
+	ClientToken ClientTokenConfig `json:"client_token" yaml:"client_token" file:"client_token"`
+	Client      ClientConfig      `json:"client" yaml:"client" file:"client"`
 }
 
 var (
@@ -33,7 +42,12 @@ func SetConfig(cfg Config) {
 	defer configMu.Unlock()
 
 	currentConfig = Config{
-		Blacklist: normalizeBlacklist(cfg.Blacklist),
+		ClientToken: ClientTokenConfig{
+			Blacklist: normalizeBlacklist(cfg.ClientToken.Blacklist),
+		},
+		Client: ClientConfig{
+			Blacklist: normalizeBlacklist(cfg.Client.Blacklist),
+		},
 	}
 }
 
@@ -42,7 +56,12 @@ func getConfig() Config {
 	defer configMu.RUnlock()
 
 	return Config{
-		Blacklist: append([]string(nil), currentConfig.Blacklist...),
+		ClientToken: ClientTokenConfig{
+			Blacklist: append([]string(nil), currentConfig.ClientToken.Blacklist...),
+		},
+		Client: ClientConfig{
+			Blacklist: append([]string(nil), currentConfig.Client.Blacklist...),
+		},
 	}
 }
 

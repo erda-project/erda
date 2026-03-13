@@ -29,7 +29,10 @@ erda.app.ai-proxy:
   lb_state_store_type: ${LB_STATE_STORE_TYPE:memory} # memory / redis / etcd
   lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
   blacklist_user_agent:
-    blacklist: [openclaw, cursor] # env override: AI_PROXY_BLACKLIST_USER_AGENT=openclaw,cursor
+    client_token:
+      blacklist: [openclaw] # env override: AI_PROXY_BLACKLIST_USER_AGENT_CLIENT_TOKEN=openclaw
+    client:
+      blacklist: [] # env override: AI_PROXY_BLACKLIST_USER_AGENT_CLIENT=
   model_health:
     enabled: ${MODEL_HEALTH_ENABLED:true}
     probe:
