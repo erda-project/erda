@@ -33,7 +33,7 @@ func TestOpenClawItem_MatchMessageGroup(t *testing.T) {
 		RequestedMessages: message.Messages{
 			openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: openClawSystemPromptHint,
+				Content: openClawSystemPromptHint + "\n## Tooling\nTool availability",
 			},
 		},
 	})
@@ -49,13 +49,29 @@ func TestOpenClawItem_MatchRawChatRequestBody(t *testing.T) {
 	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: openClawSystemPromptHint,
+			Content: openClawSystemPromptHint + "\n## Tooling\nTool availability",
 		},
 	})
 
 	matched, source := openClawItem{}.Match(ctx)
 	if !matched || source != "request_body.messages" {
 		t.Fatalf("expected openclaw raw chat body match, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestOpenClawItem_MatchRawInstructionsByPrefix(t *testing.T) {
+	ctx := newDetectContextForTest()
+	body, err := json.Marshal(map[string]any{
+		"instructions": openClawSystemPromptHint + "\n## Tooling\nTool availability",
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal raw instructions body: %v", err)
+	}
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
+
+	matched, source := openClawItem{}.Match(ctx)
+	if !matched || source != "request_body.instructions" {
+		t.Fatalf("expected openclaw raw instructions match, got matched=%v source=%q", matched, source)
 	}
 }
 

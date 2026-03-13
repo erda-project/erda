@@ -26,7 +26,7 @@ import (
 )
 
 // Source: https://github.com/search?q=repo:openclaw/openclaw+%22You+are+a+personal+assistant+running+inside+OpenClaw.%22&type=code
-const openClawSystemPromptHint = "You are a personal assistant running inside OpenClaw"
+const openClawSystemPromptHint = "You are a personal assistant running inside OpenClaw."
 
 type openClawItem struct{}
 
@@ -65,7 +65,7 @@ func containsOpenClawSystemMessage(msgs message.Messages) bool {
 }
 
 func isOpenClawSystemPrompt(content string) bool {
-	return strings.TrimSpace(content) == openClawSystemPromptHint
+	return strings.HasPrefix(strings.TrimSpace(content), openClawSystemPromptHint)
 }
 
 func chatMessageText(msg openai.ChatCompletionMessage) string {
