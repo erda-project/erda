@@ -32,10 +32,12 @@ import (
 )
 
 type tokenPricing struct {
-	Currency string
-	Input    float64
-	Output   float64
-	Request  float64
+	Currency          string
+	Input             float64
+	Output            float64
+	Request           float64
+	InputCacheRead    float64
+	HasInputCacheRead bool
 }
 
 func (h *TokenUsageHandler) aggregateTokenUsages(ctx context.Context, records []*usagepb.TokenUsage, locale string) (*usagepb.TokenUsageAggregateResponse, error) {
@@ -65,8 +67,9 @@ func (h *TokenUsageHandler) aggregateTokenUsages(ctx context.Context, records []
 			}
 		}
 
-		price := calculateUsagePrice(usage.InputTokens, usage.OutputTokens, pricing)
+		price, priceEstimated := calculateUsagePrice(usage, pricing)
 		priceDec := decimal.NewFromFloat(price)
+		isEstimated := usage.IsEstimated || priceEstimated
 
 		if pricing.Currency != "" {
 			if currency == "" {
@@ -80,6 +83,10 @@ func (h *TokenUsageHandler) aggregateTokenUsages(ctx context.Context, records []
 			totalCost = totalCost.Add(priceDec)
 		}
 
+		if isEstimated {
+			resp.IsEstimated = true
+		}
+
 		detailCost := priceDec.Round(4)
 		resp.Details = append(resp.Details, &usagepb.TokenUsageDetail{
 			Cost:         detailCost.InexactFloat64(),
@@ -90,7 +97,7 @@ func (h *TokenUsageHandler) aggregateTokenUsages(ctx context.Context, records []
 			TotalTokens:  usage.TotalTokens,
 			ModelId:      usage.ModelId,
 			CreatedAt:    usage.CreatedAt,
-			IsEstimated:  usage.IsEstimated,
+			IsEstimated:  isEstimated,
 		})
 	}
 
@@ -132,15 +139,44 @@ func (h *TokenUsageHandler) resolveModel(ctx context.Context, modelID, locale st
 	return model, nil
 }
 
-func calculateUsagePrice(inputTokens, outputTokens uint64, pricing tokenPricing) float64 {
+func calculateUsagePrice(usage *usagepb.TokenUsage, pricing tokenPricing) (float64, bool) {
 	price := pricing.Request
-	if pricing.Input != 0 && inputTokens > 0 {
-		price += float64(inputTokens) * pricing.Input
+	if usage == nil {
+		return price, false
 	}
+
+	inputTokens := usage.InputTokens
+	outputTokens := usage.OutputTokens
+	cachedInputTokens, hasCachedInput := extractCachedInputTokens(usage.UsageDetails)
+	if cachedInputTokens > inputTokens {
+		cachedInputTokens = inputTokens
+	}
+
+	regularInputTokens := inputTokens
+	if hasCachedInput && cachedInputTokens > 0 {
+		regularInputTokens -= cachedInputTokens
+	}
+
+	if pricing.Input != 0 && regularInputTokens > 0 {
+		price += float64(regularInputTokens) * pricing.Input
+	}
+
+	isEstimated := false
+	if hasCachedInput && cachedInputTokens > 0 {
+		cacheReadPrice := pricing.InputCacheRead
+		if !pricing.HasInputCacheRead {
+			cacheReadPrice = pricing.Input / 5
+			isEstimated = true
+		}
+		if cacheReadPrice != 0 {
+			price += float64(cachedInputTokens) * cacheReadPrice
+		}
+	}
+
 	if pricing.Output != 0 && outputTokens > 0 {
 		price += float64(outputTokens) * pricing.Output
 	}
-	return price
+	return price, isEstimated
 }
 
 func extractPricingFromModel(model *modelpb.Model) tokenPricing {
@@ -166,12 +202,110 @@ func extractPricingFromModel(model *modelpb.Model) tokenPricing {
 	promptPrice, _ := parsePriceValue(normalized["prompt"])
 	completionPrice, _ := parsePriceValue(normalized["completion"])
 	requestPrice, _ := parsePriceValue(normalized["request"])
+	cacheReadPrice, hasCacheReadPrice := parsePriceValue(normalized["input_cache_read"])
 
 	return tokenPricing{
-		Currency: currency,
-		Input:    promptPrice,
-		Output:   completionPrice,
-		Request:  requestPrice,
+		Currency:          currency,
+		Input:             promptPrice,
+		Output:            completionPrice,
+		Request:           requestPrice,
+		InputCacheRead:    cacheReadPrice,
+		HasInputCacheRead: hasCacheReadPrice,
+	}
+}
+
+func extractCachedInputTokens(usageDetails string) (uint64, bool) {
+	usageDetails = strings.TrimSpace(usageDetails)
+	if usageDetails == "" || usageDetails == "{}" {
+		return 0, false
+	}
+
+	var payload any
+	if err := json.Unmarshal([]byte(usageDetails), &payload); err != nil {
+		return 0, false
+	}
+	return findCachedInputTokens(payload)
+}
+
+func findCachedInputTokens(v any) (uint64, bool) {
+	switch val := v.(type) {
+	case map[string]any:
+		if cached, ok := getNestedUint(val, "input_tokens_details", "cached_tokens"); ok {
+			return cached, true
+		}
+		if cached, ok := getNestedUint(val, "prompt_tokens_details", "cached_tokens"); ok {
+			return cached, true
+		}
+		if cached, ok := parseUintValue(val["cache_read_input_tokens"]); ok {
+			return cached, true
+		}
+		for _, nested := range val {
+			if cached, ok := findCachedInputTokens(nested); ok {
+				return cached, true
+			}
+		}
+	case []any:
+		for _, item := range val {
+			if cached, ok := findCachedInputTokens(item); ok {
+				return cached, true
+			}
+		}
+	}
+	return 0, false
+}
+
+func getNestedUint(m map[string]any, key, nestedKey string) (uint64, bool) {
+	if m == nil {
+		return 0, false
+	}
+	nested, ok := m[key].(map[string]any)
+	if !ok {
+		return 0, false
+	}
+	return parseUintValue(nested[nestedKey])
+}
+
+func parseUintValue(v any) (uint64, bool) {
+	switch val := v.(type) {
+	case float64:
+		if val < 0 {
+			return 0, false
+		}
+		return uint64(val), true
+	case float32:
+		if val < 0 {
+			return 0, false
+		}
+		return uint64(val), true
+	case int:
+		if val < 0 {
+			return 0, false
+		}
+		return uint64(val), true
+	case int32:
+		if val < 0 {
+			return 0, false
+		}
+		return uint64(val), true
+	case int64:
+		if val < 0 {
+			return 0, false
+		}
+		return uint64(val), true
+	case uint:
+		return uint64(val), true
+	case uint32:
+		return uint64(val), true
+	case uint64:
+		return val, true
+	case json.Number:
+		i, err := val.Int64()
+		if err != nil || i < 0 {
+			return 0, false
+		}
+		return uint64(i), true
+	default:
+		return 0, false
 	}
 }
 

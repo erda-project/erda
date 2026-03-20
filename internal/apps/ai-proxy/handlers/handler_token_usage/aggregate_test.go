@@ -16,6 +16,7 @@ package handler_token_usage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"testing"
@@ -138,6 +139,124 @@ func TestAggregateTokenUsages_MixedCurrency(t *testing.T) {
 	}
 }
 
+func TestAggregateTokenUsages_UsesInputCacheReadPricing(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+
+	models := map[string]*modelpb.Model{
+		"m1": buildModelWithPricing(map[string]any{
+			"prompt":           "0.001",
+			"completion":       "0.002",
+			"input_cache_read": "0.0002",
+			"unit":             "USD",
+		}),
+	}
+	usages := []*usagepb.TokenUsage{
+		{
+			Id:           1,
+			ModelId:      "m1",
+			InputTokens:  100,
+			OutputTokens: 5,
+			UsageDetails: buildUsageDetailsWithCachedTokens(t, 80),
+		},
+	}
+
+	handler := &TokenUsageHandler{Cache: &mockCache{models: models}}
+	ctxhelper.PutCacheManager(ctx, handler.Cache)
+
+	resp, err := handler.aggregateTokenUsages(ctx, usages, "")
+	if err != nil {
+		t.Fatalf("aggregateTokenUsages unexpected error: %v", err)
+	}
+
+	expectApprox(t, 0.046, resp.GetTotalCost(), "cache-aware total cost")
+	if resp.GetIsEstimated() {
+		t.Fatalf("expected aggregate response to be non-estimated")
+	}
+	if got := resp.GetDetails()[0].GetCost(); math.Abs(got-0.046) > 1e-9 {
+		t.Fatalf("expected detail cost 0.046000, got %.6f", got)
+	}
+	if resp.GetDetails()[0].GetIsEstimated() {
+		t.Fatalf("expected detail to be non-estimated")
+	}
+}
+
+func TestAggregateTokenUsages_FallsBackToEstimatedCacheReadPricing(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+
+	models := map[string]*modelpb.Model{
+		"m1": buildModelWithPricing(map[string]any{
+			"prompt": "0.001",
+			"unit":   "USD",
+		}),
+	}
+	usages := []*usagepb.TokenUsage{
+		{
+			Id:          1,
+			ModelId:     "m1",
+			InputTokens: 100,
+			UsageDetails: buildUsageDetailsWithCachedTokens(
+				t,
+				80,
+			),
+		},
+	}
+
+	handler := &TokenUsageHandler{Cache: &mockCache{models: models}}
+	ctxhelper.PutCacheManager(ctx, handler.Cache)
+
+	resp, err := handler.aggregateTokenUsages(ctx, usages, "")
+	if err != nil {
+		t.Fatalf("aggregateTokenUsages unexpected error: %v", err)
+	}
+
+	expectApprox(t, 0.036, resp.GetTotalCost(), "fallback cache-aware total cost")
+	if !resp.GetIsEstimated() {
+		t.Fatalf("expected aggregate response to be estimated")
+	}
+	if !resp.GetDetails()[0].GetIsEstimated() {
+		t.Fatalf("expected detail to be estimated")
+	}
+}
+
+func TestAggregateTokenUsages_TreatsExplicitZeroCacheReadPricingAsConfigured(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+
+	models := map[string]*modelpb.Model{
+		"m1": buildModelWithPricing(map[string]any{
+			"prompt":           "0.001",
+			"input_cache_read": "0",
+			"unit":             "USD",
+		}),
+	}
+	usages := []*usagepb.TokenUsage{
+		{
+			Id:          1,
+			ModelId:     "m1",
+			InputTokens: 100,
+			UsageDetails: buildUsageDetailsWithCachedTokens(
+				t,
+				80,
+			),
+		},
+	}
+
+	handler := &TokenUsageHandler{Cache: &mockCache{models: models}}
+	ctxhelper.PutCacheManager(ctx, handler.Cache)
+
+	resp, err := handler.aggregateTokenUsages(ctx, usages, "")
+	if err != nil {
+		t.Fatalf("aggregateTokenUsages unexpected error: %v", err)
+	}
+
+	expectApprox(t, 0.02, resp.GetTotalCost(), "explicit zero cache pricing cost")
+	if resp.GetIsEstimated() {
+		t.Fatalf("expected aggregate response to be non-estimated")
+	}
+	if resp.GetDetails()[0].GetIsEstimated() {
+		t.Fatalf("expected detail to be non-estimated")
+	}
+}
+
 func buildModelWithPricing(pricing map[string]any) *modelpb.Model {
 	meta := metadata.Metadata{
 		Public: map[string]any{
@@ -154,6 +273,21 @@ func expectApprox(t *testing.T, expect, actual float64, label string) {
 	if math.Abs(expect-actual) > 1e-9 {
 		t.Fatalf("expected %s %.6f, got %.6f", label, expect, actual)
 	}
+}
+
+func buildUsageDetailsWithCachedTokens(t *testing.T, cachedTokens uint64) string {
+	t.Helper()
+	raw, err := json.Marshal(map[string]any{
+		"usage": map[string]any{
+			"input_tokens_details": map[string]any{
+				"cached_tokens": cachedTokens,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal usage details: %v", err)
+	}
+	return string(raw)
 }
 
 type mockCache struct {
