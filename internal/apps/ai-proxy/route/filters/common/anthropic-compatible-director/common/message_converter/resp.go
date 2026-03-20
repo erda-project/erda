@@ -34,8 +34,34 @@ type AnthropicResponse struct {
 }
 
 type AnthropicResponseUsage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	InputTokens              int `json:"input_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+}
+
+func (u AnthropicResponseUsage) TotalInputTokens() int {
+	return u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens
+}
+
+func (u AnthropicResponseUsage) ToOpenAIUsage() openai.Usage {
+	totalInputTokens := u.TotalInputTokens()
+	return openai.Usage{
+		PromptTokens:            totalInputTokens,
+		CompletionTokens:        u.OutputTokens,
+		TotalTokens:             totalInputTokens + u.OutputTokens,
+		PromptTokensDetails:     u.promptTokensDetails(),
+		CompletionTokensDetails: nil,
+	}
+}
+
+func (u AnthropicResponseUsage) promptTokensDetails() *openai.PromptTokensDetails {
+	if u.CacheReadInputTokens == 0 {
+		return nil
+	}
+	return &openai.PromptTokensDetails{
+		CachedTokens: u.CacheReadInputTokens,
+	}
 }
 
 func (r AnthropicResponse) ConvertToOpenAIFormat(modelID string) (openai.ChatCompletionResponse, error) {
@@ -60,13 +86,7 @@ func (r AnthropicResponse) ConvertToOpenAIFormat(modelID string) (openai.ChatCom
 		}
 	}
 	openaiResp.Choices = choices
-	openaiResp.Usage = openai.Usage{
-		PromptTokens:            r.Usage.InputTokens,
-		CompletionTokens:        r.Usage.OutputTokens,
-		TotalTokens:             r.Usage.InputTokens + r.Usage.OutputTokens,
-		PromptTokensDetails:     nil,
-		CompletionTokensDetails: nil,
-	}
+	openaiResp.Usage = r.Usage.ToOpenAIUsage()
 	return openaiResp, nil
 }
 
@@ -148,7 +168,7 @@ func ConvertStreamChunkDataToOpenAIChunk(anthropicDataRaw []byte, inputMsgInfo A
 		gotMsgInfo.ID = rawObj["message"].(map[string]any)["id"].(string)
 		gotMsgInfo.Model = rawObj["message"].(map[string]any)["model"].(string)
 		gotMsgInfo.Role = rawObj["message"].(map[string]any)["role"].(string)
-		gotMsgInfo.Usage.InputTokens = int(rawObj["message"].(map[string]any)["usage"].(map[string]any)["input_tokens"].(float64))
+		gotMsgInfo.Usage = parseAnthropicUsageMap(rawObj["message"].(map[string]any)["usage"].(map[string]any))
 		return &gotMsgInfo, nil, nil
 
 	case "content_block_start":
@@ -286,10 +306,10 @@ func ConvertStreamChunkDataToOpenAIChunk(anthropicDataRaw []byte, inputMsgInfo A
 			Model:   inputMsgInfo.Model,
 			Choices: []openai.ChatCompletionStreamChoice{},
 			Usage: &openai.Usage{
-				PromptTokens:            inputMsgInfo.Usage.InputTokens,
-				CompletionTokens:        inputMsgInfo.Usage.OutputTokens,
-				TotalTokens:             inputMsgInfo.Usage.InputTokens + inputMsgInfo.Usage.OutputTokens,
-				PromptTokensDetails:     nil,
+				PromptTokens:            inputMsgInfo.Usage.ToOpenAIUsage().PromptTokens,
+				CompletionTokens:        inputMsgInfo.Usage.ToOpenAIUsage().CompletionTokens,
+				TotalTokens:             inputMsgInfo.Usage.ToOpenAIUsage().TotalTokens,
+				PromptTokensDetails:     inputMsgInfo.Usage.ToOpenAIUsage().PromptTokensDetails,
 				CompletionTokensDetails: nil,
 			},
 		}
@@ -297,6 +317,35 @@ func ConvertStreamChunkDataToOpenAIChunk(anthropicDataRaw []byte, inputMsgInfo A
 
 	default:
 		return nil, nil, nil
+	}
+}
+
+func parseAnthropicUsageMap(raw map[string]any) AnthropicResponseUsage {
+	if raw == nil {
+		return AnthropicResponseUsage{}
+	}
+	return AnthropicResponseUsage{
+		InputTokens:              intValue(raw["input_tokens"]),
+		CacheCreationInputTokens: intValue(raw["cache_creation_input_tokens"]),
+		CacheReadInputTokens:     intValue(raw["cache_read_input_tokens"]),
+		OutputTokens:             intValue(raw["output_tokens"]),
+	}
+}
+
+func intValue(v any) int {
+	switch val := v.(type) {
+	case float64:
+		return int(val)
+	case float32:
+		return int(val)
+	case int:
+		return val
+	case int32:
+		return int(val)
+	case int64:
+		return int(val)
+	default:
+		return 0
 	}
 }
 

@@ -236,9 +236,6 @@ func findCachedInputTokens(v any) (uint64, bool) {
 		if cached, ok := getNestedUint(val, "prompt_tokens_details", "cached_tokens"); ok {
 			return cached, true
 		}
-		if cached, ok := parseUintValue(val["cache_read_input_tokens"]); ok {
-			return cached, true
-		}
 		for _, nested := range val {
 			if cached, ok := findCachedInputTokens(nested); ok {
 				return cached, true
