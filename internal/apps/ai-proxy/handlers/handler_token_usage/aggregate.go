@@ -27,6 +27,7 @@ import (
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachehelpers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/pkg/valueutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n/i18n_services"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
@@ -259,51 +260,7 @@ func getNestedUint(m map[string]any, key, nestedKey string) (uint64, bool) {
 	if !ok {
 		return 0, false
 	}
-	return parseUintValue(nested[nestedKey])
-}
-
-func parseUintValue(v any) (uint64, bool) {
-	switch val := v.(type) {
-	case float64:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case float32:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case int:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case int32:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case int64:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case uint:
-		return uint64(val), true
-	case uint32:
-		return uint64(val), true
-	case uint64:
-		return val, true
-	case json.Number:
-		i, err := val.Int64()
-		if err != nil || i < 0 {
-			return 0, false
-		}
-		return uint64(i), true
-	default:
-		return 0, false
-	}
+	return valueutil.GetUint64(nested[nestedKey])
 }
 
 func parsePriceValue(value any) (float64, bool) {
