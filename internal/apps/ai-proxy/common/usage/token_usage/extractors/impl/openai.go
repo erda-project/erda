@@ -22,6 +22,7 @@ import (
 
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/pkg/valueutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage/extractors/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -143,39 +144,9 @@ func getUintFromMaps(m map[string]any, keys ...string) (uint64, bool) {
 		return 0, false
 	}
 	for _, key := range keys {
-		if val, ok := getUintFromValue(m[key]); ok {
+		if val, ok := valueutil.GetUint64(m[key]); ok {
 			return val, true
 		}
 	}
 	return 0, false
-}
-
-func getUintFromValue(v any) (uint64, bool) {
-	switch val := v.(type) {
-	case float64:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case int:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case int64:
-		if val < 0 {
-			return 0, false
-		}
-		return uint64(val), true
-	case uint64:
-		return val, true
-	case json.Number:
-		i, err := val.Int64()
-		if err != nil || i < 0 {
-			return 0, false
-		}
-		return uint64(i), true
-	default:
-		return 0, false
-	}
 }
