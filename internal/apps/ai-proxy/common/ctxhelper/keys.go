@@ -34,8 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define/path_matcher"
 )
 
-type ModelRetrySessionUnhealthyMarks map[string]time.Time
-
 type (
 	// Keys migrated from vars package
 	mapKeyClient          struct{ *clientpb.Client }
@@ -78,10 +76,8 @@ type (
 	mapKeyModelRetryRawLLMBackendRequestCount struct{ int }
 	mapKeyModelRetryExcludedModelIDs          struct{ any }
 	mapKeyModelRetryResponseHeaderMetaEnabled struct{ bool }
-	mapKeyModelRetrySessionUnhealthyMarks     struct {
-		ModelRetrySessionUnhealthyMarks
-	}
-	mapKeyModelRetryUnhealthyFallbackCount struct{ int }
+	mapKeyModelRetrySessionUnhealthyMarks     struct{ any }
+	mapKeyModelRetryUnhealthyFallbackCount    struct{ int }
 
 	mapKeyReverseProxyWholeHandledResponseBodyStr struct{ string }
 

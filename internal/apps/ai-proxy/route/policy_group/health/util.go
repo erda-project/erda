@@ -128,7 +128,8 @@ func tryPutModelRetrySessionUnhealthyMark(ctx context.Context, instanceID string
 		}
 	}()
 
-	existing, _ := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	raw, _ := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	existing, _ := raw.(map[string]time.Time)
 	cloned := make(map[string]time.Time, len(existing)+1)
 	for id, ts := range existing {
 		cloned[id] = ts
@@ -136,5 +137,5 @@ func tryPutModelRetrySessionUnhealthyMark(ctx context.Context, instanceID string
 	if prev, ok := cloned[instanceID]; !ok || markedAt.After(prev) {
 		cloned[instanceID] = markedAt
 	}
-	ctxhelper.PutModelRetrySessionUnhealthyMarks(ctx, ctxhelper.ModelRetrySessionUnhealthyMarks(cloned))
+	ctxhelper.PutModelRetrySessionUnhealthyMarks(ctx, cloned)
 }

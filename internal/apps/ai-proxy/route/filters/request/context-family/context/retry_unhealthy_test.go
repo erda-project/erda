@@ -111,7 +111,7 @@ func TestRouteToModelInstanceWithDeps_FallbackPrefersCurrentSessionUnhealthy(t *
 	now := time.Now()
 	ctxhelper.PutModelRetryRawLLMBackendRequestCount(env.ctx, 2)
 	ctxhelper.PutModelRetryUnhealthyFallbackCount(env.ctx, 0)
-	ctxhelper.PutModelRetrySessionUnhealthyMarks(env.ctx, ctxhelper.ModelRetrySessionUnhealthyMarks{
+	ctxhelper.PutModelRetrySessionUnhealthyMarks(env.ctx, retrySessionUnhealthyMarks{
 		"m-healthy":   now.Add(-2 * time.Second),
 		"m-unhealthy": now.Add(-1 * time.Second),
 	})
@@ -189,14 +189,18 @@ func TestNextRetryUnhealthyDelay(t *testing.T) {
 func TestRetryUnhealthyMarksCarryAcrossResetForRetry(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	now := time.Now()
-	ctxhelper.PutModelRetrySessionUnhealthyMarks(ctx, ctxhelper.ModelRetrySessionUnhealthyMarks{"m-1": now})
+	ctxhelper.PutModelRetrySessionUnhealthyMarks(ctx, retrySessionUnhealthyMarks{"m-1": now})
 	ctxhelper.PutModelRetryUnhealthyFallbackCount(ctx, 2)
 
 	next := ctxhelper.ResetForRetry(ctx)
 
-	marks, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(next)
+	raw, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(next)
+	if !ok {
+		t.Fatal("expected retry unhealthy marks carried across reset")
+	}
+	marks, ok := raw.(retrySessionUnhealthyMarks)
 	if !ok || len(marks) != 1 || !marks["m-1"].Equal(now) {
-		t.Fatalf("expected retry unhealthy marks carried across reset, got %#v", marks)
+		t.Fatalf("expected retry unhealthy marks carried across reset, got %#v", raw)
 	}
 	count, ok := ctxhelper.GetModelRetryUnhealthyFallbackCount(next)
 	if !ok || count != 2 {

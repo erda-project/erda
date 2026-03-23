@@ -145,9 +145,13 @@ func TestMarkUnhealthyWritesRetrySessionMarks(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	manager.MarkUnhealthy(ctx, "client-a", "m-ctx", APITypeChatCompletions, "network timeout", nil)
 
-	marks, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	raw, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
 	if !ok {
 		t.Fatal("expected retry session unhealthy marks in ctx")
+	}
+	marks, ok := raw.(map[string]time.Time)
+	if !ok {
+		t.Fatalf("expected retry session unhealthy marks type map[string]time.Time, got %T", raw)
 	}
 	if _, ok := marks["m-ctx"]; !ok {
 		t.Fatalf("expected retry session unhealthy marks contain m-ctx, got %#v", marks)

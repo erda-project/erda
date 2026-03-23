@@ -45,6 +45,8 @@ const (
 	retryUnhealthyTraceStrategyName = "retry_unhealthy"
 )
 
+type retrySessionUnhealthyMarks map[string]time.Time
+
 type retryUnhealthyCandidate struct {
 	instance       *policygroup.RoutingModelInstance
 	source         string
@@ -204,7 +206,7 @@ func pickRetryUnhealthyCandidate(
 		return nil, 0, nil
 	}
 	cutoff := now.Add(-window)
-	sessionMarks, _ := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	sessionMarks := getRetrySessionUnhealthyMarks(ctx)
 
 	var candidates []retryUnhealthyCandidate
 	staleFilteredCount := 0
@@ -250,6 +252,21 @@ func pickRetryUnhealthyCandidate(
 		return nil, staleFilteredCount, nil
 	}
 	return &candidates[0], staleFilteredCount, nil
+}
+
+func getRetrySessionUnhealthyMarks(ctx context.Context) retrySessionUnhealthyMarks {
+	raw, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	if !ok || raw == nil {
+		return nil
+	}
+	switch v := raw.(type) {
+	case retrySessionUnhealthyMarks:
+		return v
+	case map[string]time.Time:
+		return retrySessionUnhealthyMarks(v)
+	default:
+		return nil
+	}
 }
 
 func allGroupInstancesForRetryUnhealthy(
