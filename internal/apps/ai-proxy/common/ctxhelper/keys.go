@@ -76,6 +76,7 @@ type (
 	mapKeyModelRetryRawLLMBackendRequestCount struct{ int }
 	mapKeyModelRetryExcludedModelIDs          struct{ any }
 	mapKeyModelRetryResponseHeaderMetaEnabled struct{ bool }
+	mapKeyModelRetrySessionUnhealthyMarks     struct{ any }
 
 	mapKeyReverseProxyWholeHandledResponseBodyStr struct{ string }
 

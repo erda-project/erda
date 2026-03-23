@@ -138,6 +138,26 @@ func TestMarkUnhealthyWritesModelMarkHeaderContext(t *testing.T) {
 	}
 }
 
+func TestMarkUnhealthyWritesRetrySessionMarks(t *testing.T) {
+	store := state_store.NewMemoryStateStore()
+	manager := newTestManager(store, "http://127.0.0.1:1")
+
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	manager.MarkUnhealthy(ctx, "client-a", "m-ctx", APITypeChatCompletions, "network timeout", nil)
+
+	raw, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	if !ok {
+		t.Fatal("expected retry session unhealthy marks in ctx")
+	}
+	marks, ok := raw.(map[string]time.Time)
+	if !ok {
+		t.Fatalf("expected retry session unhealthy marks type map[string]time.Time, got %T", raw)
+	}
+	if _, ok := marks["m-ctx"]; !ok {
+		t.Fatalf("expected retry session unhealthy marks contain m-ctx, got %#v", marks)
+	}
+}
+
 func TestFilterHealthyInstancesIsolatedByClient(t *testing.T) {
 	store := state_store.NewMemoryStateStore()
 	manager := newTestManager(store, "http://127.0.0.1:65530")

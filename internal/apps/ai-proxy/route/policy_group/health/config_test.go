@@ -45,3 +45,22 @@ func TestNewManagerDisabled(t *testing.T) {
 		t.Fatal("expected nil manager when model health is disabled")
 	}
 }
+
+func TestRetryUnhealthyFallbackWindow(t *testing.T) {
+	cfg := Config{
+		Enabled: true,
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:65530",
+			UnhealthyTTL: time.Hour,
+			Timeout:      20 * time.Millisecond,
+		},
+		Rescue: RescueConfig{
+			InitialBackoff: 3 * time.Second,
+			MaxBackoff:     2 * time.Minute,
+		},
+	}
+
+	if got := RetryUnhealthyFallbackWindow(cfg); got != 10*time.Minute {
+		t.Fatalf("expected retry unhealthy fallback window 10m, got %s", got)
+	}
+}

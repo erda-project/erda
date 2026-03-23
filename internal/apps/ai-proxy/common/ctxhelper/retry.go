@@ -51,6 +51,7 @@ func ResetForRetry(ctx context.Context) context.Context {
 		// retry needs body copy and excluded models across attempts
 		reflect.TypeOf(mapKeyReverseProxyRequestBodyBytes{}),
 		reflect.TypeOf(mapKeyModelRetryExcludedModelIDs{}),
+		reflect.TypeOf(mapKeyModelRetrySessionUnhealthyMarks{}),
 	}
 
 	for _, key := range retryCarryOverKeys {

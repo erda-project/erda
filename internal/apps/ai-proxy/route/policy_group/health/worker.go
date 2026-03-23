@@ -171,7 +171,10 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 }
 
 func (m *Manager) writeUnhealthyState(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string) {
-	now := time.Now()
+	m.writeUnhealthyStateAt(ctx, clientID, instanceID, apiType, lastErr, time.Now())
+}
+
+func (m *Manager) writeUnhealthyStateAt(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string, now time.Time) {
 	state := ModelHealthState{
 		State:     stateUnhealthy,
 		APIType:   apiType,
