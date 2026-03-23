@@ -183,9 +183,7 @@ func (e *retryUnhealthyEnv) routeAt(now time.Time) (*policygroup.RouteTrace, *po
 	return pickModelInstance(e.ctx, e.clientID, "gpt-4.1", http.Header{}, modelPickDeps{
 		routeEngine:   e.routeEngine,
 		healthManager: e.healthManager,
-		now: func() time.Time {
-			return now
-		},
+		pickedAt:      now,
 	})
 }
 

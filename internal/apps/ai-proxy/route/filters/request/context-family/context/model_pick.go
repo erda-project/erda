@@ -36,7 +36,6 @@ func routeToModelInstance(ctx context.Context, clientID, modelName string, heade
 	return pickModelInstance(ctx, clientID, modelName, headers, modelPickDeps{
 		routeEngine:   pgengine.GetEngine(),
 		healthManager: health.GetManager(),
-		now:           time.Now,
 	})
 }
 
@@ -48,13 +47,13 @@ type modelPickAttempt struct {
 	meta             policygroup.RequestMeta
 	routeEngine      *pgengine.Engine
 	healthManager    *health.Manager
-	now              func() time.Time
+	pickedAt         time.Time
 }
 
 type modelPickDeps struct {
 	routeEngine   *pgengine.Engine
 	healthManager *health.Manager
-	now           func() time.Time
+	pickedAt      time.Time
 }
 
 // pickModelInstance picks the final model instance for the current request.
@@ -77,6 +76,10 @@ func pickModelInstance(
 	if err != nil {
 		return nil, nil, err
 	}
+	pickedAt := deps.pickedAt
+	if pickedAt.IsZero() {
+		pickedAt = time.Now()
+	}
 
 	attempt := modelPickAttempt{
 		clientID:         clientID,
@@ -86,7 +89,7 @@ func pickModelInstance(
 		meta:             policygroup.BuildRequestMetaFromHeader(headers),
 		routeEngine:      deps.routeEngine,
 		healthManager:    deps.healthManager,
-		now:              coalesceNow(deps.now),
+		pickedAt:         pickedAt,
 	}
 
 	trace, instance, err := pickModelInstanceFromPolicyGroup(ctx, attempt)
@@ -142,11 +145,4 @@ func filterRetryExcludedInstances(ctx context.Context, instances []*policygroup.
 		filtered = append(filtered, instance)
 	}
 	return filtered
-}
-
-func coalesceNow(now func() time.Time) func() time.Time {
-	if now != nil {
-		return now
-	}
-	return time.Now
 }

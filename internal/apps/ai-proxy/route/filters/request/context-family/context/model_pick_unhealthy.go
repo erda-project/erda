@@ -93,7 +93,7 @@ func pickRetryUnhealthyCandidate(
 	if window <= 0 {
 		return nil, 0, nil
 	}
-	cutoff := attempt.now().Add(-window)
+	cutoff := attempt.pickedAt.Add(-window)
 	sessionMarks := getRetrySessionUnhealthyMarks(ctx)
 
 	var candidates []retryUnhealthyCandidate
