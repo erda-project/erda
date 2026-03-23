@@ -45,7 +45,7 @@ func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
 			BlacklistStr: " openclaw, CoDeX ,, ",
 		},
 		Client: ClientConfig{
-			BlacklistStr: "",
+			BlacklistStr: " codex, openclaw ",
 		},
 	})
 
@@ -53,7 +53,7 @@ func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
 	if len(cfg.ClientToken.Blacklist) != 2 || cfg.ClientToken.Blacklist[0] != "openclaw" || cfg.ClientToken.Blacklist[1] != "codex" {
 		t.Fatalf("unexpected client_token blacklist: %#v", cfg.ClientToken.Blacklist)
 	}
-	if len(cfg.Client.Blacklist) != 0 {
-		t.Fatalf("expected empty client blacklist, got %#v", cfg.Client.Blacklist)
+	if len(cfg.Client.Blacklist) != 2 || cfg.Client.Blacklist[0] != "codex" || cfg.Client.Blacklist[1] != "openclaw" {
+		t.Fatalf("unexpected client blacklist: %#v", cfg.Client.Blacklist)
 	}
 }

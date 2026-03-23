@@ -32,7 +32,7 @@ erda.app.ai-proxy:
     client_token:
       blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN:openclaw,codex} # comma-separated: openclaw, codex
     client:
-      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT:} # comma-separated
+      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT:openclaw,codex} # comma-separated: openclaw, codex
   model_health:
     enabled: ${MODEL_HEALTH_ENABLED:true}
     probe:
