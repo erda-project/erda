@@ -72,7 +72,13 @@ func PredictRetryRouteMode(
 		return RetryRouteModeNone, err
 	}
 
-	hasNormal, err := hasNormalRouteCandidate(ctx, clientID, group, routingInstances, healthManager)
+	routeCtx := &modelRouteContext{
+		clientID:         clientID,
+		group:            group,
+		routingInstances: routingInstances,
+	}
+
+	hasNormal, err := hasNormalRouteCandidate(ctx, routeCtx, healthManager)
 	if err != nil {
 		return RetryRouteModeNone, err
 	}
@@ -80,7 +86,7 @@ func PredictRetryRouteMode(
 		return RetryRouteModeNormal, nil
 	}
 
-	candidate, _, err := pickRetryUnhealthyCandidate(ctx, clientID, group, routingInstances, healthManager, coalesceNow(now)())
+	candidate, _, err := pickRetryUnhealthyCandidate(ctx, routeCtx, healthManager, coalesceNow(now))
 	if err != nil {
 		return RetryRouteModeNone, err
 	}
@@ -133,18 +139,18 @@ func currentPolicyTrace(ctx context.Context) *policygroup.RouteTrace {
 
 func tryRouteRetryUnhealthy(
 	ctx context.Context,
-	clientID string,
-	group *policypb.PolicyGroup,
-	routingInstances []*policygroup.RoutingModelInstance,
+	routeCtx *modelRouteContext,
 	routeErr error,
-	healthManager *health.Manager,
-	now func() time.Time,
+	deps modelRouteDeps,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
 	if !shouldRetryUnhealthy(ctx, routeErr) {
 		return nil, nil, routeErr
 	}
+	if routeCtx == nil {
+		return nil, nil, routeErr
+	}
 
-	candidate, staleFilteredCount, err := pickRetryUnhealthyCandidate(ctx, clientID, group, routingInstances, healthManager, coalesceNow(now)())
+	candidate, staleFilteredCount, err := pickRetryUnhealthyCandidate(ctx, routeCtx, deps.healthManager, coalesceNow(deps.now))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -160,7 +166,7 @@ func tryRouteRetryUnhealthy(
 	audithelper.Note(ctx, "model_retry.unhealthy_fallback_source", candidate.source)
 	audithelper.Note(ctx, "model_retry.unhealthy_fallback_filtered_stale_count", staleFilteredCount)
 
-	return buildRetryUnhealthyTrace(group), candidate.instance, nil
+	return buildRetryUnhealthyTrace(routeCtx.group), candidate.instance, nil
 }
 
 func shouldRetryUnhealthy(ctx context.Context, routeErr error) bool {
@@ -176,28 +182,27 @@ func shouldRetryUnhealthy(ctx context.Context, routeErr error) bool {
 
 func hasNormalRouteCandidate(
 	ctx context.Context,
-	clientID string,
-	group *policypb.PolicyGroup,
-	routingInstances []*policygroup.RoutingModelInstance,
+	routeCtx *modelRouteContext,
 	healthManager *health.Manager,
 ) (bool, error) {
-	filtered := filterRetryExcludedInstances(ctx, routingInstances)
-	filtered, err := filterHealthyInstancesReadOnly(ctx, clientID, filtered, healthManager)
+	if routeCtx == nil {
+		return false, nil
+	}
+	filtered := filterRetryExcludedInstances(ctx, routeCtx.routingInstances)
+	filtered, err := filterHealthyInstancesReadOnly(ctx, routeCtx.clientID, filtered, healthManager)
 	if err != nil {
 		return false, err
 	}
-	return len(allGroupInstancesForRetryUnhealthy(group, filtered)) > 0, nil
+	return len(allGroupInstancesForRetryUnhealthy(routeCtx.group, filtered)) > 0, nil
 }
 
 func pickRetryUnhealthyCandidate(
 	ctx context.Context,
-	clientID string,
-	group *policypb.PolicyGroup,
-	routingInstances []*policygroup.RoutingModelInstance,
+	routeCtx *modelRouteContext,
 	healthManager *health.Manager,
-	now time.Time,
+	now func() time.Time,
 ) (*retryUnhealthyCandidate, int, error) {
-	if healthManager == nil || group == nil {
+	if healthManager == nil || routeCtx == nil || routeCtx.group == nil {
 		return nil, 0, nil
 	}
 
@@ -205,16 +210,16 @@ func pickRetryUnhealthyCandidate(
 	if window <= 0 {
 		return nil, 0, nil
 	}
-	cutoff := now.Add(-window)
+	cutoff := coalesceNow(now)().Add(-window)
 	sessionMarks := getRetrySessionUnhealthyMarks(ctx)
 
 	var candidates []retryUnhealthyCandidate
 	staleFilteredCount := 0
-	for _, instance := range allGroupInstancesForRetryUnhealthy(group, routingInstances) {
+	for _, instance := range allGroupInstancesForRetryUnhealthy(routeCtx.group, routeCtx.routingInstances) {
 		if instance == nil || instance.ModelWithProvider == nil {
 			continue
 		}
-		state, ok, err := healthManager.GetState(ctx, clientID, instance.ModelWithProvider.Id)
+		state, ok, err := healthManager.GetState(ctx, routeCtx.clientID, instance.ModelWithProvider.Id)
 		if err != nil {
 			return nil, 0, err
 		}

@@ -78,9 +78,7 @@ func TestRouteToModelInstanceWithDeps_NormalRouteWins(t *testing.T) {
 	now := time.Now()
 	env.writeHealthState("m-unhealthy", now)
 
-	trace, instance, err := routeToModelInstanceWithDeps(env.ctx, env.clientID, "gpt-4.1", http.Header{}, env.routeEngine, env.healthManager, func() time.Time {
-		return now
-	})
+	trace, instance, err := env.routeAt(now)
 	if err != nil {
 		t.Fatalf("routeToModelInstanceWithDeps error: %v", err)
 	}
@@ -98,9 +96,7 @@ func TestRouteToModelInstanceWithDeps_NoFallbackOnFirstAttempt(t *testing.T) {
 	env.writeHealthState("m-healthy", now)
 	env.writeHealthState("m-unhealthy", now)
 
-	_, _, err := routeToModelInstanceWithDeps(env.ctx, env.clientID, "gpt-4.1", http.Header{}, env.routeEngine, env.healthManager, func() time.Time {
-		return now
-	})
+	_, _, err := env.routeAt(now)
 	if err == nil {
 		t.Fatal("expected no available route on first attempt")
 	}
@@ -118,9 +114,7 @@ func TestRouteToModelInstanceWithDeps_FallbackPrefersCurrentSessionUnhealthy(t *
 	env.writeHealthState("m-healthy", now.Add(-5*time.Second))
 	env.writeHealthState("m-unhealthy", now.Add(-30*time.Second))
 
-	trace, instance, err := routeToModelInstanceWithDeps(env.ctx, env.clientID, "gpt-4.1", http.Header{}, env.routeEngine, env.healthManager, func() time.Time {
-		return now
-	})
+	trace, instance, err := env.routeAt(now)
 	if err != nil {
 		t.Fatalf("routeToModelInstanceWithDeps error: %v", err)
 	}
@@ -139,9 +133,7 @@ func TestRouteToModelInstanceWithDeps_FallbackPrefersRecentOtherSessionUnhealthy
 	env.writeHealthState("m-healthy", now.Add(-8*time.Minute))
 	env.writeHealthState("m-unhealthy", now.Add(-30*time.Second))
 
-	_, instance, err := routeToModelInstanceWithDeps(env.ctx, env.clientID, "gpt-4.1", http.Header{}, env.routeEngine, env.healthManager, func() time.Time {
-		return now
-	})
+	_, instance, err := env.routeAt(now)
 	if err != nil {
 		t.Fatalf("routeToModelInstanceWithDeps error: %v", err)
 	}
@@ -157,9 +149,7 @@ func TestRouteToModelInstanceWithDeps_SkipsStaleUnhealthy(t *testing.T) {
 	env.writeHealthState("m-healthy", now.Add(-11*time.Minute))
 	env.writeHealthState("m-unhealthy", now.Add(-12*time.Minute))
 
-	_, _, err := routeToModelInstanceWithDeps(env.ctx, env.clientID, "gpt-4.1", http.Header{}, env.routeEngine, env.healthManager, func() time.Time {
-		return now
-	})
+	_, _, err := env.routeAt(now)
 	if err == nil {
 		t.Fatal("expected stale unhealthy instances skipped")
 	}
@@ -214,6 +204,20 @@ type retryUnhealthyEnv struct {
 	store         state_store.LBStateStore
 	healthManager *health.Manager
 	routeEngine   *engine.Engine
+}
+
+func (e *retryUnhealthyEnv) routeAt(now time.Time) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
+	return routeToModelInstanceWithDeps(e.ctx, modelRouteInput{
+		clientID:  e.clientID,
+		modelName: "gpt-4.1",
+		headers:   http.Header{},
+	}, modelRouteDeps{
+		routeEngine:   e.routeEngine,
+		healthManager: e.healthManager,
+		now: func() time.Time {
+			return now
+		},
+	})
 }
 
 func newRetryUnhealthyEnv(t *testing.T) *retryUnhealthyEnv {
