@@ -52,7 +52,6 @@ func ResetForRetry(ctx context.Context) context.Context {
 		reflect.TypeOf(mapKeyReverseProxyRequestBodyBytes{}),
 		reflect.TypeOf(mapKeyModelRetryExcludedModelIDs{}),
 		reflect.TypeOf(mapKeyModelRetrySessionUnhealthyMarks{}),
-		reflect.TypeOf(mapKeyModelRetryUnhealthyFallbackCount{}),
 	}
 
 	for _, key := range retryCarryOverKeys {

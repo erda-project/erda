@@ -60,28 +60,22 @@ func findModel(req *http.Request, client *clientpb.Client) (*modelpb.Model, erro
 }
 
 func routeToModelInstance(ctx context.Context, clientID, modelName string, headers http.Header) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
-	return routeToModelInstanceWithDeps(ctx, modelRouteInput{
-		clientID:  clientID,
-		modelName: modelName,
-		headers:   headers,
-	}, modelRouteDeps{
+	return routeToModelInstanceWithDeps(ctx, clientID, modelName, headers, modelRouteDeps{
 		routeEngine:   pgengine.GetEngine(),
 		healthManager: health.GetManager(),
 		now:           time.Now,
 	})
 }
 
-type modelRouteInput struct {
-	clientID  string
-	modelName string
-	headers   http.Header
-}
-
-type modelRouteContext struct {
+type modelRouteAttempt struct {
 	clientID         string
+	headers          http.Header
 	group            *policypb.PolicyGroup
 	routingInstances []*policygroup.RoutingModelInstance
 	meta             policygroup.RequestMeta
+	routeEngine      *pgengine.Engine
+	healthManager    *health.Manager
+	now              func() time.Time
 }
 
 type modelRouteDeps struct {
@@ -92,17 +86,35 @@ type modelRouteDeps struct {
 
 func routeToModelInstanceWithDeps(
 	ctx context.Context,
-	input modelRouteInput,
+	clientID, modelName string,
+	headers http.Header,
 	deps modelRouteDeps,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
-	routeCtx, err := resolveModelRouteContext(ctx, input)
+	resolver := groupresolver.NewResolver()
+	group, err := resolver.Resolve(ctx, clientID, modelName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	trace, instance, err := routeWithEngine(ctx, routeCtx, deps.routeEngine)
+	routingInstances, err := policygroup.BuildRoutingInstancesForClient(ctx, clientID)
 	if err != nil {
-		trace, instance, fallbackErr := tryRouteRetryUnhealthy(ctx, routeCtx, err, deps)
+		return nil, nil, err
+	}
+
+	attempt := modelRouteAttempt{
+		clientID:         clientID,
+		headers:          headers,
+		group:            group,
+		routingInstances: routingInstances,
+		meta:             policygroup.BuildRequestMetaFromHeader(headers),
+		routeEngine:      deps.routeEngine,
+		healthManager:    deps.healthManager,
+		now:              coalesceNow(deps.now),
+	}
+
+	trace, instance, err := routeWithEngine(ctx, attempt)
+	if err != nil {
+		trace, instance, fallbackErr := tryRouteRetryUnhealthy(ctx, attempt, err)
 		if fallbackErr == nil && instance != nil {
 			return trace, instance, nil
 		}
@@ -114,43 +126,19 @@ func routeToModelInstanceWithDeps(
 	return trace, instance, nil
 }
 
-func resolveModelRouteContext(ctx context.Context, input modelRouteInput) (*modelRouteContext, error) {
-	resolver := groupresolver.NewResolver()
-	group, err := resolver.Resolve(ctx, input.clientID, input.modelName)
-	if err != nil {
-		return nil, err
-	}
-
-	routingInstances, err := policygroup.BuildRoutingInstancesForClient(ctx, input.clientID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelRouteContext{
-		clientID:         input.clientID,
-		group:            group,
-		routingInstances: routingInstances,
-		meta:             policygroup.BuildRequestMetaFromHeader(input.headers),
-	}, nil
-}
-
 func routeWithEngine(
 	ctx context.Context,
-	routeCtx *modelRouteContext,
-	routeEngine *pgengine.Engine,
+	attempt modelRouteAttempt,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
-	if routeEngine == nil {
+	if attempt.routeEngine == nil {
 		return nil, nil, fmt.Errorf("nil policy group engine")
 	}
-	if routeCtx == nil {
-		return nil, nil, fmt.Errorf("nil model route context")
-	}
-	routingInstances := filterRetryExcludedInstances(ctx, routeCtx.routingInstances)
-	instance, trace, err := routeEngine.Route(ctx, policygroup.RouteRequest{
-		ClientID:  routeCtx.clientID,
-		Group:     routeCtx.group,
+	routingInstances := filterRetryExcludedInstances(ctx, attempt.routingInstances)
+	instance, trace, err := attempt.routeEngine.Route(ctx, policygroup.RouteRequest{
+		ClientID:  attempt.clientID,
+		Group:     attempt.group,
 		Instances: routingInstances,
-		Meta:      routeCtx.meta,
+		Meta:      attempt.meta,
 		Ctx:       ctx,
 	})
 	if err != nil {

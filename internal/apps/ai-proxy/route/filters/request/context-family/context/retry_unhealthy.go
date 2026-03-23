@@ -17,6 +17,7 @@ package context
 import (
 	"context"
 	"errors"
+	"sort"
 	"time"
 
 	policypb "github.com/erda-project/erda-proto-go/apps/aiproxy/policy_group/pb"
@@ -24,50 +25,33 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	policygroup "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group"
 	pgengine "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
-	retryunhealthy "github.com/erda-project/erda/internal/apps/ai-proxy/route/retry_unhealthy"
-)
-
-type RetryRouteMode = retryunhealthy.RouteMode
-
-const (
-	RetryRouteModeNone      = retryunhealthy.RouteModeNone
-	RetryRouteModeNormal    = retryunhealthy.RouteModeNormal
-	RetryRouteModeUnhealthy = retryunhealthy.RouteModeUnhealthy
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/selector"
 )
 
 const (
 	retryUnhealthyTraceBranchName   = "retry_unhealthy"
 	retryUnhealthyTraceStrategyName = "retry_unhealthy"
+	retryUnhealthySourceCurrent     = "current-session-unhealthy"
+	retryUnhealthySourceOther       = "other-session-unhealthy"
 )
 
-func PredictRetryRouteMode(
-	ctx context.Context,
-	clientID string,
-	healthManager *health.Manager,
-	now func() time.Time,
-) (RetryRouteMode, error) {
-	return retryunhealthy.PredictRouteMode(ctx, clientID, healthManager, now)
+type retryUnhealthyCandidate struct {
+	instance       *policygroup.RoutingModelInstance
+	source         string
+	markedAt       time.Time
+	currentSession bool
 }
 
 func tryRouteRetryUnhealthy(
 	ctx context.Context,
-	routeCtx *modelRouteContext,
+	attempt modelRouteAttempt,
 	routeErr error,
-	deps modelRouteDeps,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
 	if !shouldRetryUnhealthy(ctx, routeErr) {
 		return nil, nil, routeErr
 	}
-	if routeCtx == nil {
-		return nil, nil, routeErr
-	}
 
-	candidate, staleFilteredCount, err := retryunhealthy.PickCandidate(ctx, retryunhealthy.RouteContext{
-		ClientID:         routeCtx.clientID,
-		Group:            routeCtx.group,
-		RoutingInstances: routeCtx.routingInstances,
-	}, deps.healthManager, deps.now)
+	candidate, staleFilteredCount, err := pickRetryUnhealthyCandidate(ctx, attempt)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -75,15 +59,12 @@ func tryRouteRetryUnhealthy(
 		return nil, nil, routeErr
 	}
 
-	count, _ := ctxhelper.GetModelRetryUnhealthyFallbackCount(ctx)
-	ctxhelper.PutModelRetryUnhealthyFallbackCount(ctx, count+1)
-
 	audithelper.Note(ctx, "model_retry.unhealthy_fallback", true)
-	audithelper.Note(ctx, "model_retry.unhealthy_fallback_instance_id", candidate.Instance.ModelWithProvider.Id)
-	audithelper.Note(ctx, "model_retry.unhealthy_fallback_source", candidate.Source)
+	audithelper.Note(ctx, "model_retry.unhealthy_fallback_instance_id", candidate.instance.ModelWithProvider.Id)
+	audithelper.Note(ctx, "model_retry.unhealthy_fallback_source", candidate.source)
 	audithelper.Note(ctx, "model_retry.unhealthy_fallback_filtered_stale_count", staleFilteredCount)
 
-	return buildRetryUnhealthyTrace(routeCtx.group), candidate.Instance, nil
+	return buildRetryUnhealthyTrace(attempt.group), candidate.instance, nil
 }
 
 func shouldRetryUnhealthy(ctx context.Context, routeErr error) bool {
@@ -97,14 +78,102 @@ func shouldRetryUnhealthy(ctx context.Context, routeErr error) bool {
 	return errors.Is(routeErr, pgengine.ErrNoAvailableBranch) || errors.Is(routeErr, pgengine.ErrNoAvailableInstance)
 }
 
+func pickRetryUnhealthyCandidate(
+	ctx context.Context,
+	attempt modelRouteAttempt,
+) (*retryUnhealthyCandidate, int, error) {
+	if attempt.healthManager == nil || attempt.group == nil {
+		return nil, 0, nil
+	}
+
+	window := attempt.healthManager.RetryUnhealthyFallbackWindow()
+	if window <= 0 {
+		return nil, 0, nil
+	}
+	cutoff := attempt.now().Add(-window)
+	sessionMarks := getRetrySessionUnhealthyMarks(ctx)
+
+	var candidates []retryUnhealthyCandidate
+	staleFilteredCount := 0
+	for _, instance := range allGroupInstancesForRetryUnhealthy(attempt.group, attempt.routingInstances) {
+		if instance == nil || instance.ModelWithProvider == nil {
+			continue
+		}
+		state, ok, err := attempt.healthManager.GetState(ctx, attempt.clientID, instance.ModelWithProvider.Id)
+		if err != nil {
+			return nil, 0, err
+		}
+		if !ok || state == nil || state.State != "unhealthy" {
+			continue
+		}
+		if state.UpdatedAt.Before(cutoff) {
+			staleFilteredCount++
+			continue
+		}
+		candidate := retryUnhealthyCandidate{
+			instance: instance,
+			source:   retryUnhealthySourceOther,
+			markedAt: state.UpdatedAt,
+		}
+		if markedAt, ok := sessionMarks[instance.ModelWithProvider.Id]; ok && !markedAt.IsZero() {
+			candidate.currentSession = true
+			candidate.source = retryUnhealthySourceCurrent
+			candidate.markedAt = markedAt
+		}
+		candidates = append(candidates, candidate)
+	}
+
+	sort.SliceStable(candidates, func(i, j int) bool {
+		if candidates[i].currentSession != candidates[j].currentSession {
+			return candidates[i].currentSession
+		}
+		if !candidates[i].markedAt.Equal(candidates[j].markedAt) {
+			return candidates[i].markedAt.After(candidates[j].markedAt)
+		}
+		return candidates[i].instance.ModelWithProvider.Id < candidates[j].instance.ModelWithProvider.Id
+	})
+
+	if len(candidates) == 0 {
+		return nil, staleFilteredCount, nil
+	}
+	return &candidates[0], staleFilteredCount, nil
+}
+
+func getRetrySessionUnhealthyMarks(ctx context.Context) map[string]time.Time {
+	raw, ok := ctxhelper.GetModelRetrySessionUnhealthyMarks(ctx)
+	if !ok || raw == nil {
+		return nil
+	}
+	marks, _ := raw.(map[string]time.Time)
+	return marks
+}
+
 func allGroupInstancesForRetryUnhealthy(
 	group *policypb.PolicyGroup,
 	routingInstances []*policygroup.RoutingModelInstance,
 ) []*policygroup.RoutingModelInstance {
+	if group == nil || len(group.Branches) == 0 || len(routingInstances) == 0 {
+		return nil
+	}
 	// unhealthy fallback is the terminal rescue path after normal routing is exhausted.
 	// It intentionally scans every instance that belongs to the resolved group, and does
 	// not re-apply request-level retry exclusion or normal branch RR/weight semantics.
-	return retryunhealthy.AllGroupInstances(group, routingInstances)
+	seen := make(map[string]struct{})
+	ret := make([]*policygroup.RoutingModelInstance, 0, len(routingInstances))
+	for _, branch := range group.Branches {
+		for _, instance := range selector.MatchSelector(routingInstances, branch.Selector) {
+			if instance == nil || instance.ModelWithProvider == nil {
+				continue
+			}
+			id := instance.ModelWithProvider.Id
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			ret = append(ret, instance)
+		}
+	}
+	return ret
 }
 
 func buildRetryUnhealthyTrace(group *policypb.PolicyGroup) *policygroup.RouteTrace {
@@ -123,12 +192,4 @@ func buildRetryUnhealthyTrace(group *policypb.PolicyGroup) *policygroup.RouteTra
 			Strategy: retryUnhealthyTraceStrategyName,
 		},
 	}
-}
-
-func NextRetryUnhealthyDelay(remainingAttempts, fallbackIndex int) time.Duration {
-	return retryunhealthy.NextDelay(remainingAttempts, fallbackIndex)
-}
-
-func nextRetryUnhealthyDelay(remainingAttempts, fallbackIndex int) time.Duration {
-	return NextRetryUnhealthyDelay(remainingAttempts, fallbackIndex)
 }

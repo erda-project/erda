@@ -106,7 +106,6 @@ func TestRouteToModelInstanceWithDeps_FallbackPrefersCurrentSessionUnhealthy(t *
 	env := newRetryUnhealthyEnv(t)
 	now := time.Now()
 	ctxhelper.PutModelRetryRawLLMBackendRequestCount(env.ctx, 2)
-	ctxhelper.PutModelRetryUnhealthyFallbackCount(env.ctx, 0)
 	ctxhelper.PutModelRetrySessionUnhealthyMarks(env.ctx, map[string]time.Time{
 		"m-healthy":   now.Add(-2 * time.Second),
 		"m-unhealthy": now.Add(-1 * time.Second),
@@ -155,32 +154,10 @@ func TestRouteToModelInstanceWithDeps_SkipsStaleUnhealthy(t *testing.T) {
 	}
 }
 
-func TestNextRetryUnhealthyDelay(t *testing.T) {
-	cases := []struct {
-		name              string
-		remainingAttempts int
-		fallbackIndex     int
-		want              time.Duration
-	}{
-		{name: "first fallback immediate when more chances remain", remainingAttempts: 2, fallbackIndex: 1, want: 0},
-		{name: "second fallback waits one second", remainingAttempts: 3, fallbackIndex: 2, want: time.Second},
-		{name: "third fallback waits two seconds", remainingAttempts: 4, fallbackIndex: 3, want: 2 * time.Second},
-		{name: "last chance waits one second", remainingAttempts: 1, fallbackIndex: 1, want: time.Second},
-	}
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := nextRetryUnhealthyDelay(tt.remainingAttempts, tt.fallbackIndex); got != tt.want {
-				t.Fatalf("nextRetryUnhealthyDelay(%d, %d)=%s, want=%s", tt.remainingAttempts, tt.fallbackIndex, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestRetryUnhealthyMarksCarryAcrossResetForRetry(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	now := time.Now()
 	ctxhelper.PutModelRetrySessionUnhealthyMarks(ctx, map[string]time.Time{"m-1": now})
-	ctxhelper.PutModelRetryUnhealthyFallbackCount(ctx, 2)
 
 	next := ctxhelper.ResetForRetry(ctx)
 
@@ -191,10 +168,6 @@ func TestRetryUnhealthyMarksCarryAcrossResetForRetry(t *testing.T) {
 	marks, ok := raw.(map[string]time.Time)
 	if !ok || len(marks) != 1 || !marks["m-1"].Equal(now) {
 		t.Fatalf("expected retry unhealthy marks carried across reset, got %#v", raw)
-	}
-	count, ok := ctxhelper.GetModelRetryUnhealthyFallbackCount(next)
-	if !ok || count != 2 {
-		t.Fatalf("expected fallback count carried across reset, got %d", count)
 	}
 }
 
@@ -207,11 +180,7 @@ type retryUnhealthyEnv struct {
 }
 
 func (e *retryUnhealthyEnv) routeAt(now time.Time) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
-	return routeToModelInstanceWithDeps(e.ctx, modelRouteInput{
-		clientID:  e.clientID,
-		modelName: "gpt-4.1",
-		headers:   http.Header{},
-	}, modelRouteDeps{
+	return routeToModelInstanceWithDeps(e.ctx, e.clientID, "gpt-4.1", http.Header{}, modelRouteDeps{
 		routeEngine:   e.routeEngine,
 		healthManager: e.healthManager,
 		now: func() time.Time {
@@ -276,44 +245,6 @@ func (e *retryUnhealthyEnv) writeHealthState(instanceID string, updatedAt time.T
 
 func boolPtr(v bool) *bool {
 	return &v
-}
-
-func TestPredictRetryRouteMode(t *testing.T) {
-	env := newRetryUnhealthyEnv(t)
-	now := time.Now()
-	ctxhelper.PutModelRetryRawLLMBackendRequestCount(env.ctx, 2)
-	env.writeHealthState("m-healthy", now)
-	env.writeHealthState("m-unhealthy", now)
-	ctxhelper.PutPolicyTrace(env.ctx, &policygroup.RouteTrace{
-		Group: policygroup.RouteTraceGroup{
-			Name: "gpt-4.1",
-		},
-	})
-	ctxhelper.PutModel(env.ctx, &modelpb.Model{Id: "m-healthy"})
-
-	mode, err := PredictRetryRouteMode(env.ctx, env.clientID, env.healthManager, func() time.Time { return now })
-	if err != nil {
-		t.Fatalf("PredictRetryRouteMode error: %v", err)
-	}
-	if mode != RetryRouteModeUnhealthy {
-		t.Fatalf("expected unhealthy retry mode, got %s", mode)
-	}
-}
-
-func TestPredictRetryRouteModeFallsBackToCurrentModelInstanceID(t *testing.T) {
-	env := newRetryUnhealthyEnv(t)
-	now := time.Now()
-	ctxhelper.PutModelRetryRawLLMBackendRequestCount(env.ctx, 2)
-	ctxhelper.PutModel(env.ctx, &modelpb.Model{Id: "m-unhealthy"})
-	env.writeHealthState("m-unhealthy", now)
-
-	mode, err := PredictRetryRouteMode(env.ctx, env.clientID, env.healthManager, func() time.Time { return now })
-	if err != nil {
-		t.Fatalf("PredictRetryRouteMode error: %v", err)
-	}
-	if mode != RetryRouteModeUnhealthy {
-		t.Fatalf("expected unhealthy retry mode from current model fallback, got %s", mode)
-	}
 }
 
 func TestAllGroupInstancesForRetryUnhealthyIgnoresBranchRules(t *testing.T) {
