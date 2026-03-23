@@ -28,6 +28,11 @@ erda.app.ai-proxy:
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
   lb_state_store_type: ${LB_STATE_STORE_TYPE:memory} # memory / redis / etcd
   lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
+  blacklist_user_agent:
+    client_token:
+      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN:openclaw} # comma-separated: openclaw, cursor
+    client:
+      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT:} # comma-separated
   model_health:
     enabled: ${MODEL_HEALTH_ENABLED:true}
     probe:

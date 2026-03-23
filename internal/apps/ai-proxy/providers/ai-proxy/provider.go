@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
+	blacklist_user_agent "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/blacklist-user-agent"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/lb/state_store"
 	pgengine "github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/engine"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
@@ -47,6 +48,8 @@ type Config struct {
 	LBStateStoreType      string        `file:"lb_state_store_type" env:"LB_STATE_STORE_TYPE" default:"memory"`
 	LBStateStoreStickyTTL time.Duration `file:"lb_state_store_sticky_ttl" env:"LB_STATE_STORE_STICKY_TTL" default:"10m"`
 	ModelHealth           health.Config `file:"model_health"`
+
+	BlacklistUserAgent blacklist_user_agent.Config `file:"blacklist_user_agent"`
 
 	// Redis settings (standalone or sentinel via redis.UniversalOptions)
 	RedisAddr          string `file:"redis_addr" env:"REDIS_ADDR"`
@@ -77,6 +80,8 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	blacklist_user_agent.SetConfig(p.Config.BlacklistUserAgent)
+
 	// load templates
 	templatesByType, err := template.LoadTemplatesFromEmbeddedFS(p.L, reverseproxy.EmbedTemplatesFS)
 	if err != nil {
