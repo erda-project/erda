@@ -26,6 +26,7 @@ var GITTAR_TREE_SEARCH = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.GittarTreeSearchRequest{},
 	ResponseType: apistructs.GittarTreeSearchResponse{},

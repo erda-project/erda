@@ -28,6 +28,7 @@ var GLOBAL_CONFIG_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AutoTestGlobalConfigUpdateRequest{},
 	ResponseType: apistructs.AutoTestGlobalConfigUpdateResponse{},
 	Doc:          "更新自动化测试全局配置",

@@ -27,6 +27,7 @@ var CMP_CLUSTER_OFFLINE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OfflineEdgeClusterRequest{},
 	ResponseType: apistructs.OfflineEdgeClusterResponse{},
 	Doc:          "集群下线",

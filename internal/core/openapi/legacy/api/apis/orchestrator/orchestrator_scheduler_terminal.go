@@ -23,5 +23,6 @@ var ORCHESTRATOR_TERMINAL = apis.ApiSpec{
 	Scheme:      "ws",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         `控制台 websocket api`,
 }

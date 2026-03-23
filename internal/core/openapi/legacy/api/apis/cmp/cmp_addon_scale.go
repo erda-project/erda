@@ -26,6 +26,7 @@ var CMP_ADDON_SCALE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AddonScaleRequest{},
 	ResponseType: apistructs.AddonScaleResponse{},
 	Doc:          "Addon 扩缩容",

@@ -28,6 +28,7 @@ var PagingAPIAssets = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.PagingAPIAssetsReq{},
 	ResponseType: apistructs.APIAssetPagingResponse{},
 	Doc:          "分页查询 API 资料",

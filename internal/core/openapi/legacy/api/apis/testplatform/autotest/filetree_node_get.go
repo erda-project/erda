@@ -28,6 +28,7 @@ var FILETREE_NODE_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeGetRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeGetResponse{},
 	Doc:          "查询自动化测试目录树节点详情",

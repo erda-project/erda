@@ -24,6 +24,7 @@ var API_GATEWAY_DOMAIN_CREATE_OR_UPDATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 更新绑定域名信息
 `,

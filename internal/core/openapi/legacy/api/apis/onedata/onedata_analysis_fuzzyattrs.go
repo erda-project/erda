@@ -26,6 +26,7 @@ var ONEDATA_ANALYSIS_FUZZYATTRS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OneDataAnalysisFuzzyAttrsRequest{},
 	ResponseType: apistructs.OneDataAnalysisFuzzyAttrsResponse{},
 	Doc:          `模糊查询维度属性`,

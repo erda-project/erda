@@ -24,6 +24,7 @@ var API_GATEWAY_CATEGORY_CREATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 创建限制api调用策略
 `,

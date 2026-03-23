@@ -26,6 +26,7 @@ var GITTAR_TAG = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarTagsResponse{},
 	Doc:          `summary: 获取git仓库tag列表`,

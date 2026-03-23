@@ -29,6 +29,7 @@ var CMP_NODES = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AddNodesRequest{},
 	ResponseType: apistructs.AddNodesResponse{},
 	Doc:          "增加节点",

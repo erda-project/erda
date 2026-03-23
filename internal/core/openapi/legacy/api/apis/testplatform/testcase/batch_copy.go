@@ -28,6 +28,7 @@ var BATCH_COPY = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCaseBatchCopyRequest{},
 	ResponseType: apistructs.TestCaseBatchCopyResponse{},
 	Doc:          "summary: 批量复制测试用例到指定测试集",

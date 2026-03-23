@@ -28,6 +28,7 @@ var CMP_K8S_CLUSTERS = apis.ApiSpec{
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "list ready and unready k8s clusters",
 	ResponseType: apistructs.K8SClusters{},
 	IsOpenAPI:    true,

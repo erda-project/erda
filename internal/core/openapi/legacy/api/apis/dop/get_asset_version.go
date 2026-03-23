@@ -28,6 +28,7 @@ var GetAPIAssetVersion = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.GetAPIAssetVersionReq{},
 	ResponseType: apistructs.GetAssetVersionRsp{},
 	Doc:          "查询 API 资料版本详情",

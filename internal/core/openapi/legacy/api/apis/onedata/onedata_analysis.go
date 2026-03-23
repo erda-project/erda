@@ -26,6 +26,7 @@ var ONEDATA_ANALYSIS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OneDataAnalysisRequest{},
 	ResponseType: apistructs.OneDataAnalysisResponse{},
 	Doc:          `解析初始化`,

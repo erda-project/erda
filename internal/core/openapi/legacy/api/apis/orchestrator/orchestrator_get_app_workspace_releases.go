@@ -26,6 +26,7 @@ var ORCHESTRATOR_GET_APP_WORKSPACE_RELEASES = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AppWorkspaceReleasesGetRequest{},
 	ResponseType: apistructs.AppWorkspaceReleasesGetResponse{},
 }

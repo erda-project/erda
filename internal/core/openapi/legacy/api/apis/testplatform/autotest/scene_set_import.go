@@ -31,4 +31,5 @@ var SCENE_SET_IMPORT = apis.ApiSpec{
 	ResponseType: apistructs.AutoTestSceneSetImportResponse{},
 	Doc:          "summary: 导入自动化测试场景集",
 	CheckLogin:   true,
+	CheckToken:   true,
 }

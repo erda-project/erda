@@ -23,5 +23,6 @@ var GITTAR_ARCHIVE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         `summary: 获取压缩包`,
 }

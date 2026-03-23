@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_Redis_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceRedisRequest{},
 	ResponseType: apistructs.ListCloudResourceRedisResponse{},
 	Doc:          "获取 redis 信息列表",

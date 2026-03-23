@@ -26,6 +26,7 @@ var GITTAR_CHECK_RUN_QUERY = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.CheckRun{},
 	ResponseType: apistructs.CreateCheckRunResponse{},

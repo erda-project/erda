@@ -27,6 +27,7 @@ var CMP_CLUSTER_UPGRADE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UpgradeEdgeClusterRequest{},
 	ResponseType: apistructs.UpgradeEdgeClusterResponse{},
 	Doc:          "边缘集群升级",

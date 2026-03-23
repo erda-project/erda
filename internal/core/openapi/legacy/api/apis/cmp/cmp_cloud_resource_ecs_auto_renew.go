@@ -30,6 +30,7 @@ var CMP_CLOUD_RESOURCE_ECS_AUTO_RENEW = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AutoRenewCloudResourceEcsRequest{},
 	ResponseType: apistructs.HandleCloudResourceECSResponse{},
 	Doc:          "配置ECS实例的自动续费",

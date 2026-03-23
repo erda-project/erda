@@ -29,6 +29,7 @@ var CMP_CLOUD_RESOURCE_ONS_TOPIC_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudResourceOnsTopicRequest{},
 	ResponseType: apistructs.CreateCloudResourceOnsTopicResponse{},
 	Doc:          "创建 ons topic",

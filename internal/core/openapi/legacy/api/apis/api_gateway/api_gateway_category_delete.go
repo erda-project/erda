@@ -24,6 +24,7 @@ var API_GATEWAY_CATEGORY_DELETE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 删除api调用限制策略
 `,

@@ -28,6 +28,7 @@ var BATCH_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCaseBatchUpdateRequest{},
 	ResponseType: apistructs.TestCaseBatchUpdateResponse{},
 	Doc:          "summary: 批量更新测试用例",

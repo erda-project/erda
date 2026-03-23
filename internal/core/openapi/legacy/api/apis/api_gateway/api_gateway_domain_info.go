@@ -24,6 +24,7 @@ var API_GATEWAY_DOMAIN_INFO = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取绑定域名信息
 `,

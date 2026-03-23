@@ -28,6 +28,7 @@ var LIST_TESTSETS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestPlanTestSetsListRequest{},
 	ResponseType: apistructs.TestPlanTestSetListResponse{},
 	Doc:          "summary: 获取测试计划下的测试集列表",

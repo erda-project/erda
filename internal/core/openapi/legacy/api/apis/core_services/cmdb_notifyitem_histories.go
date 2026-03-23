@@ -26,6 +26,7 @@ var CMDB_NOTIFY_HISTORIES = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.QueryNotifyHistoryRequest{},
 	ResponseType: apistructs.QueryNotifyHistoryResponse{},
 	Doc:          "summary: 查询通知项",

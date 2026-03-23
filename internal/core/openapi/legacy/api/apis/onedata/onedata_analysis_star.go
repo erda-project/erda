@@ -26,6 +26,7 @@ var ONEDATA_ANALYSIS_STAR = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OneDataAnalysisStarRequest{},
 	ResponseType: apistructs.OneDataAnalysisStarResponse{},
 	Doc:          `解析星型图`,

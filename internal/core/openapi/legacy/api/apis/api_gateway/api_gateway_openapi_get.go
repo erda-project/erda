@@ -24,6 +24,7 @@ var API_GATEWAY_OPENAPI_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取openapi
 `,

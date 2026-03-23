@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ONS_TOPIC_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceOnsTopicInfoRequest{},
 	ResponseType: apistructs.CloudResourceOnsTopicInfoResponse{},
 	Doc:          "query参数传入topicName时，返回相应topic信息；未传入则返回所有topic信息",

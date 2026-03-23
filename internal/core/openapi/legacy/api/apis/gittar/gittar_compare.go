@@ -26,6 +26,7 @@ var GITTAR_COMPARE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarCompareResponse{},
 	Doc:          `summary: 比较两个git分支差异`,

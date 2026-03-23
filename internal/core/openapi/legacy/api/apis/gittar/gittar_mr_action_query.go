@@ -23,5 +23,6 @@ var GITTAR_MERGE_ACTION_QUERY = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         `summary: MR变更操作查询`,
 }

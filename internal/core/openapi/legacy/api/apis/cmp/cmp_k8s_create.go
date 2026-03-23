@@ -29,6 +29,7 @@ var CMP_STEVE_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "create a k8s resource",
 	ResponseType: types.RawResource{},
 	IsOpenAPI:    true,

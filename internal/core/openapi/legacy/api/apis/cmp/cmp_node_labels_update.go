@@ -29,6 +29,7 @@ var CMP_NODE_LABELS_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UpdateLabelsRequest{},
 	ResponseType: apistructs.UpdateLabelsResponse{},
 	Doc:          "更新 node label",

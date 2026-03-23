@@ -28,6 +28,7 @@ var FILETREE_NODE_SAVE_PIPELINE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AutoTestCaseSavePipelineRequest{},
 	ResponseType: apistructs.AutoTestCaseSavePipelineResponse{},
 	Doc:          "保存自动化测试用例流水线",

@@ -26,6 +26,7 @@ var CMP_RUNNING_TASKS_LIST = apis.ApiSpec{
 	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:       "http",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OrgRunningTasksListRequest{},
 	ResponseType: apistructs.OrgRunningTasksListResponse{},
 	Doc:          "summary: 获取指定企业的任务 (job/deployment) 列表",

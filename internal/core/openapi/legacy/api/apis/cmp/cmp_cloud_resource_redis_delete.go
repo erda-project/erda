@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_REDIS_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DeleteCloudResourceRedisRequest{},
 	ResponseType: apistructs.CloudAddonResourceDeleteRespnse{},
 	Doc:          "删除 redis",

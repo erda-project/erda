@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceMysqlRequest{},
 	ResponseType: apistructs.ListCloudResourceMysqlResponse{},
 	Doc:          "获取 mysql 信息列表",

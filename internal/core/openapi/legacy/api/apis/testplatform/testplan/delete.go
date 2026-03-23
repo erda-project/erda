@@ -23,5 +23,6 @@ var DELETE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 删除测试计划",
 }

@@ -28,6 +28,7 @@ var FILETREE_NODE_MOVE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeMoveRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeMoveResponse{},
 	Doc:          "移动自动化测试目录树节点失败",

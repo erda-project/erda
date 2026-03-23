@@ -27,6 +27,7 @@ var ProxyMetrics = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  nil,
 	ResponseType: nil,
 	Doc:          "转发 metrics 请求",

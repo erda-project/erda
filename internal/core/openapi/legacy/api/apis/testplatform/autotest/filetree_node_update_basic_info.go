@@ -28,6 +28,7 @@ var FILETREE_NODE_UPDATE_BASIC_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeUpdateBasicInfoRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeUpdateBasicInfoResponse{},
 	Doc:          "更新自动化测试目录树节点基础信息",

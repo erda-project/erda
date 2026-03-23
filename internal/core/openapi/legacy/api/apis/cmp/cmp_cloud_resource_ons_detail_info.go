@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ONS_DETAIL_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceOnsDetailInfoRequest{},
 	ResponseType: apistructs.CloudResourceOnsDetailInfoResponse{},
 	Doc:          "获取 ons instance 详细信息",

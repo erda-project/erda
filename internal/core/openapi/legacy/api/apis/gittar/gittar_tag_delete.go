@@ -27,6 +27,7 @@ var GITTAR_TAG_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarDeleteResponse{},
 	Doc:          `summary: 删除 tag`,

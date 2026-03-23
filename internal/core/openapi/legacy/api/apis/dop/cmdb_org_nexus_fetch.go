@@ -28,6 +28,7 @@ var CMDB_ORG_NEXUS_FETCH = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.OrgNexusGetRequest{},
 	ResponseType: apistructs.OrgNexusGetResponse{},

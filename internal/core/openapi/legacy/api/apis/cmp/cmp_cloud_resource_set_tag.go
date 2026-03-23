@@ -29,6 +29,7 @@ var CMP_CLOUD_RESOURCE_SET_TAG = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceSetTagRequest{},
 	ResponseType: apistructs.CloudResourceSetTagResponse{},
 	Doc:          "tag cluster on vpc",

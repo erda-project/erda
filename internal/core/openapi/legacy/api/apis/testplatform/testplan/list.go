@@ -26,6 +26,7 @@ var LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestPlanPagingRequest{},
 	ResponseType: apistructs.TestPlanPagingResponse{},
 	Doc:          "summary: 测试计划列表",

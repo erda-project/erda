@@ -23,5 +23,6 @@ var CONFIG_MANAGE_NAMESPACE_DEL = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 删除一个配置的命名空间",
 }

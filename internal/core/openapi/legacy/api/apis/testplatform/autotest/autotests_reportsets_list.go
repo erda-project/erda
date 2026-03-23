@@ -27,5 +27,6 @@ var QA_REPORTSETS_LIST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "QA的上报数据查询",
 }

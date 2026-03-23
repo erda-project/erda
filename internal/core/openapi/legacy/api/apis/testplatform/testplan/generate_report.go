@@ -28,6 +28,7 @@ var GENERATE_REPORT = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.TestPlanReportGenerateResponse{},
 	Doc:          "summary: 生成测试计划测试报告",
 }

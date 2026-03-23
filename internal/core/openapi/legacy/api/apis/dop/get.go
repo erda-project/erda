@@ -28,6 +28,7 @@ var GetAPIAssets = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.GetAPIAssetReq{},
 	ResponseType: apistructs.APIAssetGetResponse{},
 	Doc:          "查询 API 资料",
