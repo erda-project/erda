@@ -29,9 +29,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/requestid"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
-	contextfilter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/context-family/context"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
+	retryunhealthy "github.com/erda-project/erda/internal/apps/ai-proxy/route/retry_unhealthy"
 	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -159,15 +159,15 @@ func ServeWithRetry(
 		}
 
 		delay := policy.NextBackoff(attempt)
-		delayMode := string(contextfilter.RetryRouteModeNormal)
+		delayMode := string(retryunhealthy.RouteModeNormal)
 		if clientID, ok := ctxhelper.GetClientId(ctx); ok && clientID != "" {
-			if retryMode, err := contextfilter.PredictRetryRouteMode(ctx, clientID, health.GetManager(), time.Now); err == nil {
+			if retryMode, err := retryunhealthy.PredictRouteMode(ctx, clientID, health.GetManager(), time.Now); err == nil {
 				switch retryMode {
-				case contextfilter.RetryRouteModeUnhealthy:
+				case retryunhealthy.RouteModeUnhealthy:
 					currentFallbackCount, _ := ctxhelper.GetModelRetryUnhealthyFallbackCount(ctx)
-					delay = contextfilter.NextRetryUnhealthyDelay(totalAttempts-attempt, currentFallbackCount+1)
+					delay = retryunhealthy.NextDelay(totalAttempts-attempt, currentFallbackCount+1)
 					delayMode = string(retryMode)
-				case contextfilter.RetryRouteModeNone:
+				case retryunhealthy.RouteModeNone:
 					delayMode = string(retryMode)
 				default:
 					delayMode = string(retryMode)
