@@ -20,37 +20,37 @@ import (
 )
 
 func TestConfigFileTags(t *testing.T) {
-	clientTokenField, ok := reflect.TypeOf(ClientTokenConfig{}).FieldByName("BlacklistStr")
+	clientTokenField, ok := reflect.TypeOf(ClientTokenConfig{}).FieldByName("Blacklist")
 	if !ok {
-		t.Fatal("BlacklistStr field not found in ClientTokenConfig")
+		t.Fatal("Blacklist field not found in ClientTokenConfig")
 	}
-	if got := clientTokenField.Tag.Get("file"); got != "blacklist_str" {
+	if got := clientTokenField.Tag.Get("file"); got != "blacklist" {
 		t.Fatalf("unexpected client_token file tag: %q", got)
 	}
 
-	clientField, ok := reflect.TypeOf(ClientConfig{}).FieldByName("BlacklistStr")
+	clientField, ok := reflect.TypeOf(ClientConfig{}).FieldByName("Blacklist")
 	if !ok {
-		t.Fatal("BlacklistStr field not found in ClientConfig")
+		t.Fatal("Blacklist field not found in ClientConfig")
 	}
-	if got := clientField.Tag.Get("file"); got != "blacklist_str" {
+	if got := clientField.Tag.Get("file"); got != "blacklist" {
 		t.Fatalf("unexpected client file tag: %q", got)
 	}
 }
 
-func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
+func TestSetConfig_NormalizesBlacklist(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 
 	SetConfig(Config{
 		ClientToken: ClientTokenConfig{
-			BlacklistStr: " openclaw, cursor ,, ",
+			Blacklist: []string{" openclaw ", "", " CoDeX "},
 		},
 		Client: ClientConfig{
-			BlacklistStr: "",
+			Blacklist: nil,
 		},
 	})
 
 	cfg := getConfig()
-	if len(cfg.ClientToken.Blacklist) != 2 || cfg.ClientToken.Blacklist[0] != "openclaw" || cfg.ClientToken.Blacklist[1] != "cursor" {
+	if len(cfg.ClientToken.Blacklist) != 2 || cfg.ClientToken.Blacklist[0] != "openclaw" || cfg.ClientToken.Blacklist[1] != "codex" {
 		t.Fatalf("unexpected client_token blacklist: %#v", cfg.ClientToken.Blacklist)
 	}
 	if len(cfg.Client.Blacklist) != 0 {
