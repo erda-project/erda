@@ -42,9 +42,12 @@ type retryUnhealthyCandidate struct {
 	currentSession bool
 }
 
-func tryRouteRetryUnhealthy(
+// pickModelInstanceFromUnhealthy is the narrow retry-only rescue path.
+// It is still part of "pick model instance", but only runs after the normal
+// policy-group pick returned no available branch/instance for this attempt.
+func pickModelInstanceFromUnhealthy(
 	ctx context.Context,
-	attempt modelRouteAttempt,
+	attempt modelPickAttempt,
 	routeErr error,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
 	if !shouldRetryUnhealthy(ctx, routeErr) {
@@ -80,7 +83,7 @@ func shouldRetryUnhealthy(ctx context.Context, routeErr error) bool {
 
 func pickRetryUnhealthyCandidate(
 	ctx context.Context,
-	attempt modelRouteAttempt,
+	attempt modelPickAttempt,
 ) (*retryUnhealthyCandidate, int, error) {
 	if attempt.healthManager == nil || attempt.group == nil {
 		return nil, 0, nil

@@ -80,7 +80,7 @@ func TestRouteToModelInstanceWithDeps_NormalRouteWins(t *testing.T) {
 
 	trace, instance, err := env.routeAt(now)
 	if err != nil {
-		t.Fatalf("routeToModelInstanceWithDeps error: %v", err)
+		t.Fatalf("pickModelInstance error: %v", err)
 	}
 	if instance.ModelWithProvider.Id != "m-healthy" {
 		t.Fatalf("expected healthy instance selected, got %s", instance.ModelWithProvider.Id)
@@ -115,7 +115,7 @@ func TestRouteToModelInstanceWithDeps_FallbackPrefersCurrentSessionUnhealthy(t *
 
 	trace, instance, err := env.routeAt(now)
 	if err != nil {
-		t.Fatalf("routeToModelInstanceWithDeps error: %v", err)
+		t.Fatalf("pickModelInstance error: %v", err)
 	}
 	if instance.ModelWithProvider.Id != "m-unhealthy" {
 		t.Fatalf("expected current-session unhealthy instance selected, got %s", instance.ModelWithProvider.Id)
@@ -134,7 +134,7 @@ func TestRouteToModelInstanceWithDeps_FallbackPrefersRecentOtherSessionUnhealthy
 
 	_, instance, err := env.routeAt(now)
 	if err != nil {
-		t.Fatalf("routeToModelInstanceWithDeps error: %v", err)
+		t.Fatalf("pickModelInstance error: %v", err)
 	}
 	if instance.ModelWithProvider.Id != "m-unhealthy" {
 		t.Fatalf("expected recent unhealthy instance selected, got %s", instance.ModelWithProvider.Id)
@@ -180,7 +180,7 @@ type retryUnhealthyEnv struct {
 }
 
 func (e *retryUnhealthyEnv) routeAt(now time.Time) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
-	return routeToModelInstanceWithDeps(e.ctx, e.clientID, "gpt-4.1", http.Header{}, modelRouteDeps{
+	return pickModelInstance(e.ctx, e.clientID, "gpt-4.1", http.Header{}, modelPickDeps{
 		routeEngine:   e.routeEngine,
 		healthManager: e.healthManager,
 		now: func() time.Time {

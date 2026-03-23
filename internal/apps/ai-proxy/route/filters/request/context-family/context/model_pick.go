@@ -29,15 +29,18 @@ import (
 	modelretry "github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/model_retry"
 )
 
+// routeToModelInstance is the thin entry used by the request context filter.
+// The actual model-instance picking flow lives in this file and the unhealthy
+// fallback special case lives in the sibling model_pick_unhealthy.go.
 func routeToModelInstance(ctx context.Context, clientID, modelName string, headers http.Header) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
-	return routeToModelInstanceWithDeps(ctx, clientID, modelName, headers, modelRouteDeps{
+	return pickModelInstance(ctx, clientID, modelName, headers, modelPickDeps{
 		routeEngine:   pgengine.GetEngine(),
 		healthManager: health.GetManager(),
 		now:           time.Now,
 	})
 }
 
-type modelRouteAttempt struct {
+type modelPickAttempt struct {
 	clientID         string
 	headers          http.Header
 	group            *policypb.PolicyGroup
@@ -48,17 +51,21 @@ type modelRouteAttempt struct {
 	now              func() time.Time
 }
 
-type modelRouteDeps struct {
+type modelPickDeps struct {
 	routeEngine   *pgengine.Engine
 	healthManager *health.Manager
 	now           func() time.Time
 }
 
-func routeToModelInstanceWithDeps(
+// pickModelInstance picks the final model instance for the current request.
+// It first applies the policy-group routing rules. Only when that normal pick
+// has no available branch/instance during a retry attempt do we fall back to
+// the unhealthy-specific rescue path in the sibling file.
+func pickModelInstance(
 	ctx context.Context,
 	clientID, modelName string,
 	headers http.Header,
-	deps modelRouteDeps,
+	deps modelPickDeps,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
 	resolver := groupresolver.NewResolver()
 	group, err := resolver.Resolve(ctx, clientID, modelName)
@@ -71,7 +78,7 @@ func routeToModelInstanceWithDeps(
 		return nil, nil, err
 	}
 
-	attempt := modelRouteAttempt{
+	attempt := modelPickAttempt{
 		clientID:         clientID,
 		headers:          headers,
 		group:            group,
@@ -82,9 +89,9 @@ func routeToModelInstanceWithDeps(
 		now:              coalesceNow(deps.now),
 	}
 
-	trace, instance, err := routeWithEngine(ctx, attempt)
+	trace, instance, err := pickModelInstanceFromPolicyGroup(ctx, attempt)
 	if err != nil {
-		trace, instance, fallbackErr := tryRouteRetryUnhealthy(ctx, attempt, err)
+		trace, instance, fallbackErr := pickModelInstanceFromUnhealthy(ctx, attempt, err)
 		if fallbackErr == nil && instance != nil {
 			return trace, instance, nil
 		}
@@ -96,9 +103,11 @@ func routeToModelInstanceWithDeps(
 	return trace, instance, nil
 }
 
-func routeWithEngine(
+// pickModelInstanceFromPolicyGroup performs the normal policy-group-based pick.
+// This path respects the regular routing rules and request-level retry exclusion.
+func pickModelInstanceFromPolicyGroup(
 	ctx context.Context,
-	attempt modelRouteAttempt,
+	attempt modelPickAttempt,
 ) (*policygroup.RouteTrace, *policygroup.RoutingModelInstance, error) {
 	if attempt.routeEngine == nil {
 		return nil, nil, fmt.Errorf("nil policy group engine")
