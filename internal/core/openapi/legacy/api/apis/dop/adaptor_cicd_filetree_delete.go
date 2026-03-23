@@ -29,6 +29,7 @@ var ADAPTOR_CICD_FILETREE_DELETE = apis.ApiSpec{
 	Method:      http.MethodDelete,
 	IsOpenAPI:   true,
 	CheckLogin:  true,
+	CheckToken:  true,
 	RequestType: apistructs.UnifiedFileTreeNodeDeleteRequest{},
 	Doc:         "summary: 删除节点",
 }

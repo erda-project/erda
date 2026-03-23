@@ -24,6 +24,7 @@ var API_GATEWAY_CONSUMER_CREATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 创建授权调用者
 `,

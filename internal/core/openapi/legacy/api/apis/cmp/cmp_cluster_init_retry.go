@@ -25,6 +25,7 @@ var CMP_CLUSTER_INIT_RETRY = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	IsOpenAPI:   true,
 	Doc:         "summary: 集群初始化重试",
 }

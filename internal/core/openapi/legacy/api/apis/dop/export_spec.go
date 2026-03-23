@@ -28,6 +28,7 @@ var ExportSpec = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DownloadSpecTextReq{},
 	ResponseType: nil,
 	Doc:          "导出 swagger 文本",

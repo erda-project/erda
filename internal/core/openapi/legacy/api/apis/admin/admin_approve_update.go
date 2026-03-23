@@ -26,6 +26,7 @@ var ADMIN_APPROVE_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ApproveUpdateRequest{},
 	ResponseType: apistructs.ApproveUpdateResponse{},
 	Doc:          "summary: 更新审批",

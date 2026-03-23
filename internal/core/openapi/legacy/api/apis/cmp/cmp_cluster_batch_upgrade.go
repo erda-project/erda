@@ -26,6 +26,7 @@ var CMP_CLUSTER_BATCH_UPGRADE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.BatchUpgradeEdgeClusterRequest{},
 	ResponseType: apistructs.BatchUpgradeEdgeClusterResponse{},
 	Doc:          "边缘集群批量升级",

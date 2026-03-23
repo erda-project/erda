@@ -26,6 +26,7 @@ var GITTAR_MERGE_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarQueryMrDetailResponse{},
 	Doc:          `summary: MR 详情查看`,

@@ -26,6 +26,7 @@ var GITTAR_BRANCH = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarBranchesResponse{},
 	Doc:          `summary: 获取git仓库分支`,

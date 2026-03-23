@@ -23,5 +23,6 @@ var CONFIG_MANAGE_CONFIG_DEL = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 删除指定命名空间下的某个配置",
 }

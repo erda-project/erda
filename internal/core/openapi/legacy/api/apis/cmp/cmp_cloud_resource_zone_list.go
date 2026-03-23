@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ZONE_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceZoneRequest{},
 	ResponseType: apistructs.ListCloudResourceZoneResponse{},
 	Doc:          "获取 zone 列表",

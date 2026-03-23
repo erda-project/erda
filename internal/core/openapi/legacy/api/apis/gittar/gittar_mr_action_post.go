@@ -23,5 +23,6 @@ var GITTAR_MERGE_ACTION_POST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         `summary: MR变更操作`,
 }

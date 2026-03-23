@@ -28,6 +28,7 @@ var CMDB_NOTIFY_ENABLE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 启用通知",
 	Audit: func(ctx *spec.AuditContext) error {
 		var resBody apistructs.EnableNotifyResponse

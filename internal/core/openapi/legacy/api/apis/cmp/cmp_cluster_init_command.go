@@ -25,5 +25,6 @@ var CMP_CLUSTER_INIT_COMMAND = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 获取集群初始化命令",
 }

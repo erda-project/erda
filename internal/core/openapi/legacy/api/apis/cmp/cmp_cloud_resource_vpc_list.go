@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_VPC_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceVPCRequest{},
 	ResponseType: apistructs.ListCloudResourceVPCResponse{},
 	Doc:          "获取 vpc 信息列表",

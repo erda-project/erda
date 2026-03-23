@@ -26,6 +26,7 @@ var ORCHESTRATOR_NODELABEL_SET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ScheduleLabelSetRequest{},
 	ResponseType: apistructs.ScheduleLabelSetResponse{},
 	IsOpenAPI:    true,

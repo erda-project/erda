@@ -23,5 +23,6 @@ var CMDB_PROJECT_FILETREE_DELETE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 删除节点",
 }

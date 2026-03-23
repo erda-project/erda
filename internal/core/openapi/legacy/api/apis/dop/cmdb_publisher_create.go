@@ -26,6 +26,7 @@ var CMDB_PUBLISHER_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.PublisherCreateRequest{},
 	ResponseType: apistructs.PublisherCreateResponse{},
 	Doc:          "summary: 创建 Publisher",

@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_ACCOUNT_PRIVILEGE_GRANT = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.GrantMysqlAccountPrivilegeRequest{},
 	ResponseType: apistructs.GrantMysqlAccountPrivilegeResponse{},
 	Doc:          "grant account privilege",

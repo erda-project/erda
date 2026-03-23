@@ -29,6 +29,7 @@ var CMP_NODES_REMOVE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.RmNodesRequest{},
 	ResponseType: apistructs.RmNodesResponse{},
 	Doc:          "下线节点",

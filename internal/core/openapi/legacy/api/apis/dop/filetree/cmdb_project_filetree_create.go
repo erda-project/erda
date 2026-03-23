@@ -23,5 +23,6 @@ var CMDB_PROJECT_FILETREE_CREATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 创建节点",
 }

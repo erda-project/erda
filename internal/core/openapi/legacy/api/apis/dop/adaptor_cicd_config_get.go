@@ -25,5 +25,6 @@ var ADAPTOR_CICD_CONFIG_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 获取Pipeline指定命名空间的所有配置",
 }

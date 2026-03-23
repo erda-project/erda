@@ -28,6 +28,7 @@ var CMDB_ORG_NEXUS_SHOW_PASSWORD = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.OrgNexusShowPasswordRequest{},
 	ResponseType: apistructs.OrgNexusShowPasswordResponse{},

@@ -23,5 +23,6 @@ var CMP_NODE_LABELS_LIST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "获取 node label 列表",
 }

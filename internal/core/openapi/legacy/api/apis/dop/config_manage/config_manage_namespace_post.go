@@ -23,5 +23,6 @@ var CONFIG_MANAGE_NAMESPACE_POST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 新增一个配置的命名空间",
 }

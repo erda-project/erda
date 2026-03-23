@@ -26,6 +26,7 @@ var ADMIN_APPROVE_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.ApproveDetailResponse{},
 	Doc:          "summary: 获取审批详情",
 }

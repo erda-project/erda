@@ -26,6 +26,7 @@ var GITTAR_MR_TEMPLATES = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarMergeTemplatesResponse{},
 	Doc:          `summary: 获取mr模板信息`,

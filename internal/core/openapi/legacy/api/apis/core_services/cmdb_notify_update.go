@@ -27,6 +27,7 @@ var CMDB_NOTIFY_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UpdateNotifyRequest{},
 	ResponseType: apistructs.UpdateNotifyResponse{},
 	Doc:          "summary: 更新通知",

@@ -23,5 +23,6 @@ var CMDB_NOTIFY_FUZZY_QUERY = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 模糊查询通知",
 }

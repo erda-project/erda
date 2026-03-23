@@ -24,6 +24,7 @@ var API_GATEWAY_REGISTER_APPS_INFO = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 查看已注册的应用服务信息
 `,

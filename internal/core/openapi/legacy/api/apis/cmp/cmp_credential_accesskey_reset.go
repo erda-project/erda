@@ -25,6 +25,7 @@ var CMP_CREDENTIAL_ACCESSKEY_RESET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	IsOpenAPI:   true,
 	Doc:         "summary: 重置集群认证TOKEN",
 }

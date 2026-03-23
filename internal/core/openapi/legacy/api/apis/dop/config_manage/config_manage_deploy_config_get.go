@@ -23,5 +23,6 @@ var CONFIG_MANAGE_DEPLOY_CONFIG_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 获取指定命名空间的所有部署配置",
 }

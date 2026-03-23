@@ -24,6 +24,7 @@ var API_GATEWAY_API_LIST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取api列表
 `,

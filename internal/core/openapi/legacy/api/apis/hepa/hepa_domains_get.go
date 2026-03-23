@@ -26,5 +26,6 @@ var HEPA_DOMAINS_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         `获取域名列表`,
 }

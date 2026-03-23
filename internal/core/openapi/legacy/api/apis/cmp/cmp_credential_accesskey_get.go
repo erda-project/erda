@@ -25,6 +25,7 @@ var CMP_CREDENTIAL_ACCESSKEY_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	IsOpenAPI:   true,
 	Doc:         "summary: 获取集群认证TOKEN",
 }

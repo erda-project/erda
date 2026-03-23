@@ -23,5 +23,6 @@ var CMDB_PROJECT_FILETREE_FUZZY_SEARCH = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 模糊搜索节点",
 }

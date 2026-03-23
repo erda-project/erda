@@ -23,5 +23,6 @@ var CMP_CLUSTER_INFO = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "获取集群详情",
 }

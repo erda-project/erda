@@ -23,5 +23,6 @@ var CONFIG_MANAGE_CONFIG_PUT = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 修改指定命名空间下的一个或多个配置",
 }

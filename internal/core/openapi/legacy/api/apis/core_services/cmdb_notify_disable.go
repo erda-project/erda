@@ -28,6 +28,7 @@ var CMDB_NOTIFY_DISABLE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 禁用通知",
 	Audit: func(ctx *spec.AuditContext) error {
 		var resBody apistructs.DisableNotifyResponse

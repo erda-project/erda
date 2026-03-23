@@ -26,6 +26,7 @@ var GITTAR_TAG_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.GittarCreateTagRequest{},
 	ResponseType: apistructs.GittarCreateTagResponse{},

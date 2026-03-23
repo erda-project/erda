@@ -23,6 +23,7 @@ var GITTAR_TREE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	IsOpenAPI:   true,
 	// ResponseType: apistructs.GittarTreeResponse{},// 加上这个 swagger 会解析不了,还不清楚这个结构生成的json有什么问题
 	Doc: `summary: 获取git仓库目录信息`,

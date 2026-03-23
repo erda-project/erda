@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ECS_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceECSRequest{},
 	ResponseType: apistructs.ListCloudResourceECSResponse{},
 	Doc:          "获取 ecs 信息列表",

@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_DETAIL_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceMysqlDetailInfoRequest{},
 	ResponseType: apistructs.CloudResourceMysqlDetailInfoResponse{},
 	Doc:          "获取 mysql instance 详细信息",

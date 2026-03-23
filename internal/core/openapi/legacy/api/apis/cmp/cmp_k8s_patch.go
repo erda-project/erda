@@ -29,6 +29,7 @@ var CMP_STEVE_PATCH = apis.ApiSpec{
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "update a k8s resource",
 	ResponseType: types.RawResource{},
 	IsOpenAPI:    true,

@@ -26,6 +26,7 @@ var GITTAR_BRANCH_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarDeleteBranchResponse{},
 	Doc:          `summary: 删除分支`,

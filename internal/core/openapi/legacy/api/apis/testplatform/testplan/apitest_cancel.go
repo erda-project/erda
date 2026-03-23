@@ -27,5 +27,6 @@ var CANCEL_APITEST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 取消执行接口测试",
 }

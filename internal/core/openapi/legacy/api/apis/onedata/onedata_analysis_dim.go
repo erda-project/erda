@@ -26,6 +26,7 @@ var ONEDATA_ANALYSIS_DIM = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OneDataAnalysisDimRequest{},
 	ResponseType: apistructs.OneDataAnalysisDimRequest{},
 	Doc:          `解析维度`,

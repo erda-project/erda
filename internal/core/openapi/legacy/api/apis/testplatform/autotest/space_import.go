@@ -31,4 +31,5 @@ var SPACE_IMPORT = apis.ApiSpec{
 	ResponseType: apistructs.AutoTestSpaceImportResponse{},
 	Doc:          "summary: 导入自动化测试空间",
 	CheckLogin:   true,
+	CheckToken:   true,
 }

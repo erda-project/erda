@@ -23,5 +23,6 @@ var CONFIG_MANAGE_CONFIG_EXPORT = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "导出配置",
 }

@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_ACCOUNT_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudAccountRequest{},
 	ResponseType: apistructs.CreateCloudAccountResponse{},
 	Doc:          "导入 云账号",

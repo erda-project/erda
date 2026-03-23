@@ -24,6 +24,7 @@ var API_GATEWAY_CONSUMER_API_EDIT = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PATCH",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 修改调度者各个api的限制策略
 `,

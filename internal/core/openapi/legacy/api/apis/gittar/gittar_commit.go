@@ -26,6 +26,7 @@ var GITTAR_COMMIT = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarCommitResponse{},
 	Doc:          `summary: 获取git commit详情`,

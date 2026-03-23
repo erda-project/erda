@@ -26,6 +26,7 @@ var CMP_ADDON_CONFIG = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AddonConfigRequest{},
 	ResponseType: apistructs.AddonConfigResponse{},
 	Doc:          "Addon 运行配置参数获取",

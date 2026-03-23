@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_ONS_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DeleteCloudResourceOnsRequest{},
 	ResponseType: apistructs.CloudAddonResourceDeleteRespnse{},
 	Doc:          "删除 ons",

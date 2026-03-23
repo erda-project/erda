@@ -29,6 +29,7 @@ var CMP_CLOUD_RESOURCE_ONS_GROUP_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudResourceOnsGroupRequest{},
 	ResponseType: apistructs.CreateCloudResourceOnsGroupResponse{},
 	Doc:          "创建 ons group",

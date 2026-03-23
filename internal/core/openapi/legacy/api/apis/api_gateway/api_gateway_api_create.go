@@ -24,6 +24,7 @@ var API_GATEWAY_API_CREATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 创建api
 `,

@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_REDIS_DETAIL_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceRedisDetailInfoRequest{},
 	ResponseType: apistructs.CloudResourceRedisDetailInfoResponse{},
 	Doc:          "获取 redis instance 详细信息",

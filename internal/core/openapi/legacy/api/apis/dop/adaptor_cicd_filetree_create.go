@@ -29,6 +29,7 @@ var ADAPTOR_CICD_FILETREE_CREATE = apis.ApiSpec{
 	Method:      http.MethodPost,
 	IsOpenAPI:   true,
 	CheckLogin:  true,
+	CheckToken:  true,
 	RequestType: apistructs.UnifiedFileTreeNodeCreateRequest{},
 	Doc:         "summary: 创建节点",
 }

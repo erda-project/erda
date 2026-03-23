@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_OSS_DETAIL_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceOssDetailInfoRequest{},
 	ResponseType: apistructs.CloudResourceOssDetailInfoResponse{},
 	Doc:          "获取 oss bucket 详细信息",

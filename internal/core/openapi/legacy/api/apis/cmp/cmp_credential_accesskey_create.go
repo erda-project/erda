@@ -25,6 +25,7 @@ var CMP_CREDENTIAL_ACCESSKEY_CREATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	IsOpenAPI:   true,
 	Doc:         "summary: 集群认证TOKEN创建",
 }

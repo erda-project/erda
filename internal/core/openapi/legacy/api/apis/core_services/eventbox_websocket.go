@@ -23,6 +23,7 @@ var EVENTBOX_WEBSOCKET = apis.ApiSpec{
 	Scheme:      "ws",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: dice's websocket proxy
 `,

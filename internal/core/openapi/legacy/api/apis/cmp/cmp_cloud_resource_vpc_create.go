@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_VPC_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudResourceVPCRequest{},
 	ResponseType: apistructs.CreateCloudResourceVPCResponse{},
 	Doc:          "创建 vpc",
