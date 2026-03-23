@@ -57,6 +57,22 @@ func TestCodexItem_MatchRawInstructionsByPrefix(t *testing.T) {
 	}
 }
 
+func TestCodexItem_MatchAfterLeadingWhitespace(t *testing.T) {
+	ctx := newDetectContextForTest()
+	body, err := json.Marshal(map[string]any{
+		"instructions": "\n \t" + codexSystemPromptHint + "\nYou are running in a coding environment.",
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal raw instructions body: %v", err)
+	}
+	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
+
+	matched, source := codexItem{}.Match(ctx)
+	if !matched || source != "request_body.instructions" {
+		t.Fatalf("expected codex raw instructions match after trimming leading whitespace, got matched=%v source=%q", matched, source)
+	}
+}
+
 func TestCodexItem_IgnoreUserMessageContainingPrompt(t *testing.T) {
 	ctx := newDetectContextForTest()
 	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
@@ -69,5 +85,20 @@ func TestCodexItem_IgnoreUserMessageContainingPrompt(t *testing.T) {
 	matched, source := codexItem{}.Match(ctx)
 	if matched || source != "" {
 		t.Fatalf("expected user message not to match codex, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestCodexItem_IgnoreSystemMessageContainingPromptButNotPrefixed(t *testing.T) {
+	ctx := newDetectContextForTest()
+	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: "Tooling follows below.\n" + codexSystemPromptHint,
+		},
+	})
+
+	matched, source := codexItem{}.Match(ctx)
+	if matched || source != "" {
+		t.Fatalf("expected non-prefixed system message not to match codex, got matched=%v source=%q", matched, source)
 	}
 }
