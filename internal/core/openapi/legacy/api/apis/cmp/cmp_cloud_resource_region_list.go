@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_REGION_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceRegionRequest{},
 	ResponseType: apistructs.ListCloudResourceRegionResponse{},
 	Doc:          "获取 region 列表",

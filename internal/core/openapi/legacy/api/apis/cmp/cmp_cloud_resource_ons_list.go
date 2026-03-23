@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ONS_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceOnsRequest{},
 	ResponseType: apistructs.ListCloudResourceOnsResponse{},
 	Doc:          "获取 ons 信息列表",

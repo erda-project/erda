@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ECS_TREND = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.GetCloudResourceECSTrendResponse{},
 	Doc:          "获取 ecs 增量趋势",
 }

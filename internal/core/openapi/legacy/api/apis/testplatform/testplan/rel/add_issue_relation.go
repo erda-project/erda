@@ -28,6 +28,7 @@ var ADD_ISSUE_RELATION = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestPlanCaseRelIssueRelationAddRequest{},
 	ResponseType: apistructs.TestPlanCaseRelIssueRelationAddResponse{},
 	Doc:          "summary: 新增测试计划用例里的缺陷关联关系",

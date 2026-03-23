@@ -24,6 +24,7 @@ var API_GATEWAY_CONSUMER_EDIT = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PATCH",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 修改调用者可调用的api授权
 `,

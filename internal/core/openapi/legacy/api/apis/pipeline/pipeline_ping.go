@@ -25,5 +25,6 @@ var CI_PING = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  false,
+	CheckToken:  true,
 	Doc:         "summary: ping 健康检查接口",
 }

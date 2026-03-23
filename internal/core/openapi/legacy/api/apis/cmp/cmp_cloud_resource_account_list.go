@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_ACCOUNT_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.ListCloudAccountResponse{},
 	Doc:          "获取 云账号 列表",
 }

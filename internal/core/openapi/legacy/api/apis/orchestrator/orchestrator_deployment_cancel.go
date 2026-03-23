@@ -26,6 +26,7 @@ var ORCHESTRATOR_DEPLOYMENT_CANCEL = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   false, // TODO: 现在是因为 pipeline action 是从集群内走公网掉，只能放开登录认证，后面需要重构成内网调用
+	CheckToken:   true,
 	RequestType:  apistructs.DeploymentCancelRequest{},
 	ResponseType: apistructs.DeploymentCancelResponse{},
 	Doc:          `取消部署`,

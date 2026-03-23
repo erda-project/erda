@@ -26,6 +26,7 @@ var ONEDATA_ANALYSIS_OUTPUTTABLES = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OneDataAnalysisOutputTablesRequest{},
 	ResponseType: apistructs.OneDataAnalysisOutputTablesResponse{},
 	Doc:          `解析数据集市`,

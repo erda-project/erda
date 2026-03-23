@@ -27,6 +27,7 @@ var DeleteAPIAssetVersion = apis.ApiSpec{
 	Host:         APIMAddr,
 	Scheme:       "http",
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "删除指定版本的 API 资料",
 	RequestType:  nil,
 	ResponseType: nil,

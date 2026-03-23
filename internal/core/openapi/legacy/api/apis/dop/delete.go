@@ -27,6 +27,7 @@ var DeleteAPIAssets = apis.ApiSpec{
 	Host:         APIMAddr,
 	Scheme:       "http",
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "删除 API 资料",
 	RequestType:  nil,
 	ResponseType: nil,

@@ -24,6 +24,7 @@ var API_GATEWAY_API_UPDATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PATCH",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 修改api配置
 `,

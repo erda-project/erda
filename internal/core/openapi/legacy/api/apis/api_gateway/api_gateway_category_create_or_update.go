@@ -24,6 +24,7 @@ var API_GATEWAY_CATEGORY_CREATE_OR_UPDATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 创建或更新策略
 `,

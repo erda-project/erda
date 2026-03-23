@@ -28,6 +28,7 @@ var FILETREE_NODE_COPY = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeCopyRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeCopyResponse{},
 	Doc:          "复制自动化测试目录树节点",

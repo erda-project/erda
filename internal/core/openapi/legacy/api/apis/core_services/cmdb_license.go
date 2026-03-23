@@ -28,5 +28,6 @@ var CMDB_LICENSE = apis.ApiSpec{
 	Doc:          "summary: 查询license信息",
 	IsOpenAPI:    true,
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.LicenseResponse{},
 }

@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_ACCOUNT_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DeleteCloudAccountRequest{},
 	ResponseType: apistructs.DeleteCloudAccountResponse{},
 	Doc:          "删除 云账号",

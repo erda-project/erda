@@ -23,5 +23,6 @@ var CMDB_PROJECT_FILETREE_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 查询节点详情",
 }

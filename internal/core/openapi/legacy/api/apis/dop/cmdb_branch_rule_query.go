@@ -26,6 +26,7 @@ var CMDB_BRANCH_RULE_QUERY = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.QueryBranchRuleRequest{},
 	ResponseType: apistructs.QueryBranchRuleResponse{},
 	Doc:          "summary: 查询分支规则",

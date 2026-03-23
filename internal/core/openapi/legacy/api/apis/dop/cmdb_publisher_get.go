@@ -26,6 +26,7 @@ var CMDB_PUBLISHER_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.PublisherDetailResponse{},
 	Doc:          "summary: 获取Publisher详情",
 }

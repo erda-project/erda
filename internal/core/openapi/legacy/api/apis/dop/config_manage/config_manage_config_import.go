@@ -23,5 +23,6 @@ var CONFIG_MANAGE_CONFIG_IMPORT = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "导入配置",
 }

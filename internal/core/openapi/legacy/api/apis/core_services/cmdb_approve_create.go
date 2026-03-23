@@ -26,6 +26,7 @@ var CMDB_APPROVE_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ApproveCreateRequest{},
 	ResponseType: apistructs.ApproveCreateResponse{},
 	Doc:          "summary: 创建审批",

@@ -23,5 +23,6 @@ var CMP_CLOUD_RESOURCE_LIST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "云资源类型列表",
 }

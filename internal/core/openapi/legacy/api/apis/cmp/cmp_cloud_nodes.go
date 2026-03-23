@@ -29,6 +29,7 @@ var CMP_CLOUD_NODES = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudNodesRequest{},
 	ResponseType: apistructs.CloudNodesResponse{},
 	Doc:          "创建并添加云机器",

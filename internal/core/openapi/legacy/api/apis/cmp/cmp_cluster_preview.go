@@ -23,5 +23,6 @@ var CMP_CLUSTER_PREVIEW = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "创建集群预览",
 }

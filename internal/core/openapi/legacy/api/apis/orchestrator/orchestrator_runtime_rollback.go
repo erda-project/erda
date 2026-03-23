@@ -27,6 +27,7 @@ var ORCHESTRATOR_RUNTIME_ROLLBACK = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 回滚 Runtime (只能回滚到成功的部署单)
 consumes:

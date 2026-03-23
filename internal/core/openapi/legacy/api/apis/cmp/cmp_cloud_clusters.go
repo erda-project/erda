@@ -27,6 +27,7 @@ var CMP_CLOUD_CLUSTERS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudClusterRequest{},
 	ResponseType: apistructs.CloudClusterResponse{},
 	Doc:          "创建并添加云集群",

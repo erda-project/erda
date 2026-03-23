@@ -28,6 +28,7 @@ var GLOBAL_CONFIG_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodDelete,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AutoTestGlobalConfigDeleteRequest{},
 	ResponseType: apistructs.AutoTestGlobalConfigDeleteResponse{},
 	Doc:          "删除自动化测试全局配置",

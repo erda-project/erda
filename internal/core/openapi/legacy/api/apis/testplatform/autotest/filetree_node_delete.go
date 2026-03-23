@@ -28,6 +28,7 @@ var FILETREE_NODE_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodDelete,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeDeleteRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeDeleteResponse{},
 	Doc:          "删除自动化测试目录树节点",

@@ -27,5 +27,6 @@ var AUTOTESTS_SCENES_CANCEL = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "自动化测试场景取消执行",
 }

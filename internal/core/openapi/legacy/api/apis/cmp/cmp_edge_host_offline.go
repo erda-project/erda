@@ -30,5 +30,6 @@ var CMP_EDGE_HOST_OFFLINE = apis.ApiSpec{
 	Method:      "DELETE",
 	RequestType: EdgeHostOffline{},
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "下线边缘计算站点机器",
 }

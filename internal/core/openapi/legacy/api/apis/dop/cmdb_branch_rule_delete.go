@@ -29,6 +29,7 @@ var CMDB_BRANCH_RULE_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.DeleteBranchRuleResponse{},
 	Doc:          "summary: 删除分支规则",
 	Audit: func(ctx *spec.AuditContext) error {

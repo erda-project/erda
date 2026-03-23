@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_DATABASE_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceMysqlDBRequest{},
 	ResponseType: apistructs.CloudResourceMysqlDBResponse{},
 	Doc:          "query参数传入dbName, 返回相应db info; 未传入，则返回所有db info",

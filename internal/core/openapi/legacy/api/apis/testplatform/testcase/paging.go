@@ -26,6 +26,7 @@ var PAGING = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCasePagingRequest{},
 	ResponseType: apistructs.TestCasePagingResponse{},
 	Doc:          "summary: 测试用例分页",

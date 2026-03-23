@@ -23,5 +23,6 @@ var CMDB_CERTIFICATE_APP_CANCEL = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 应用取消引用证书",
 }

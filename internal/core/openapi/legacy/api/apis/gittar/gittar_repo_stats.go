@@ -26,6 +26,7 @@ var GITTAR_REPO_STATS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarStatsResponse{},
 	Doc:          `summary: 获取git仓库指定分支信息`,

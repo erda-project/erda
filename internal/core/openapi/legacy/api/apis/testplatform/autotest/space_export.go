@@ -30,5 +30,6 @@ var SPACE_EXPORT = apis.ApiSpec{
 	RequestType:  apistructs.AutoTestSpaceExportRequest{},
 	ResponseType: apistructs.AutoTestSpaceExportResponse{},
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "summary: 导出自动化测试空间",
 }

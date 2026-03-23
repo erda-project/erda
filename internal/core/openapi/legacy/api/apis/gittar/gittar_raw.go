@@ -23,6 +23,7 @@ var GITTAR_RAW = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	IsOpenAPI:   true,
 	Doc:         `summary: 获取git仓库指定路基原始文件`,
 }

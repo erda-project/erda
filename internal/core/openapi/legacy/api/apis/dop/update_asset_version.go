@@ -28,6 +28,7 @@ var UpdateAssetVersion = apis.ApiSpec{
 	Host:         APIMAddr,
 	Scheme:       "http",
 	CheckLogin:   true,
+	CheckToken:   true,
 	Doc:          "修改指定版本的 API 资料",
 	RequestType:  apistructs.UpdateAssetVersionReq{},
 	ResponseType: apistructs.Header{},

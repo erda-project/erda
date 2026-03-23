@@ -28,6 +28,7 @@ var PAGING = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestPlanCaseRelPagingRequest{},
 	ResponseType: apistructs.TestPlanCaseRelPagingResponse{},
 	Doc:          "summary: 获取测试计划用例关系列表",

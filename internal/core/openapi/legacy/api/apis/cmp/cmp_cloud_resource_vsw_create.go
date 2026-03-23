@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_VSW_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudResourceVSWRequest{},
 	ResponseType: apistructs.CreateCloudResourceVSWResponse{},
 	Doc:          "创建 vswitch",

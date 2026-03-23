@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_ACCOUNT_PASSWORD_RESET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudResourceMysqlAccountRequest{},
 	ResponseType: apistructs.CreateCloudResourceMysqlAccountResponse{},
 	Doc:          "reset account password",

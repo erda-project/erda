@@ -26,6 +26,7 @@ var CMDB_CERTIFICATE_APP_QUOTE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	RequestType: apistructs.CertificateQuoteRequest{},
 	Doc:         "summary: 应用引用证书",
 }

@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_VSW_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceVSWRequest{},
 	ResponseType: apistructs.ListCloudResourceVSWResponse{},
 	Doc:          "获取 vswitch 信息列表",

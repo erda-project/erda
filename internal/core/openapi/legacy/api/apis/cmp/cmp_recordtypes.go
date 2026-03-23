@@ -23,5 +23,6 @@ var CMP_RECORDTYPES = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "获取 recordtype 列表",
 }

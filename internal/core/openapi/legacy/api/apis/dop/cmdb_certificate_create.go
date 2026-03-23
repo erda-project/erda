@@ -27,6 +27,7 @@ var CMDB_CERTIFICATE_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CertificateCreateRequest{},
 	ResponseType: apistructs.CertificateCreateResponse{},
 	Doc:          "summary: 创建证书",

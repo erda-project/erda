@@ -26,6 +26,7 @@ var CMP_ORG_CLUSTER_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OrgClusterInfoRequest{},
 	ResponseType: apistructs.OrgClusterInfoResponse{},
 	Doc:          "获取企业集群相关信息",

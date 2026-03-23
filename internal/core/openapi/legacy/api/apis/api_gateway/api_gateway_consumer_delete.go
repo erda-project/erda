@@ -24,6 +24,7 @@ var API_GATEWAY_CONSUMER_DELETE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 删除授权调用者
 `,

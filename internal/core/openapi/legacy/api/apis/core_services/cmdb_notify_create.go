@@ -29,6 +29,7 @@ var CMDB_NOTIFY_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateNotifyRequest{},
 	ResponseType: apistructs.CreateNotifyResponse{},
 	Doc:          "summary: 创建通知",

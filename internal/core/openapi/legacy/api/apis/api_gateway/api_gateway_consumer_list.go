@@ -24,6 +24,7 @@ var API_GATEWAY_CONSUMER_LIST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取调用者对api的授权信息列表
 `,

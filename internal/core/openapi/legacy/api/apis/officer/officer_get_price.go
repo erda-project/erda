@@ -23,5 +23,6 @@ var OFFICER_GET_PRICE = apis.ApiSpec{
 	Host:        "officer.marathon.l4lb.thisdcos.directory:9029",
 	Scheme:      "http",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 获取阿里云指定资源价格",
 }

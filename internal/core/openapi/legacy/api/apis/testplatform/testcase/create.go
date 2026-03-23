@@ -26,6 +26,7 @@ var CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCaseCreateRequest{},
 	ResponseType: apistructs.TestCaseCreateResponse{},
 	Doc:          "summary: 创建测试用例",

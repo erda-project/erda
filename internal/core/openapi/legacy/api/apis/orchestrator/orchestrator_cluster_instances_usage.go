@@ -23,6 +23,7 @@ var ORCHESTRATOR_CLUSTER_INSTANCES_USAGE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取某类实例集合的资源使用情况
 parameters:

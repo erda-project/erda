@@ -27,6 +27,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_DB_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DeleteCloudResourceMysqlDBRequest{},
 	ResponseType: apistructs.CloudAddonResourceDeleteRespnse{},
 	Doc:          "删除 mysql database",

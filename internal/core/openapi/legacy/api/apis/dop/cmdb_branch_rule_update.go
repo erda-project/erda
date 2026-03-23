@@ -29,6 +29,7 @@ var CMDB_BRANCH_RULE_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UpdateBranchRuleRequest{},
 	ResponseType: apistructs.UpdateBranchRuleResponse{},
 	Doc:          "summary: 更新分支规则",

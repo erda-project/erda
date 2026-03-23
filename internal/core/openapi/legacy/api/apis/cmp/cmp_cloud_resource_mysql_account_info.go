@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_ACCOUNT_INFO = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceMysqlListAccountRequest{},
 	ResponseType: apistructs.CloudResourceMysqlListAccountResponse{},
 	Doc:          "list mysql accounts",

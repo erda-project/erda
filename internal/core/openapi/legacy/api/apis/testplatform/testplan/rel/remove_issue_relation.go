@@ -28,6 +28,7 @@ var REMOVE_ISSUE_RELATION = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestPlanCaseRelIssueRelationRemoveRequest{},
 	ResponseType: apistructs.TestPlanCaseRelIssueRelationRemoveResponse{},
 	Doc:          "summary: 解除测试计划用例里的缺陷关联关系",

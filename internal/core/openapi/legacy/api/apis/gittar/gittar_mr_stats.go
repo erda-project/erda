@@ -27,6 +27,7 @@ var GITTAR_MERGE_STATS = apis.ApiSpec{
 	Method:       "GET",
 	IsOpenAPI:    true,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.GittarMergeStatusRequest{},
 	ResponseType: apistructs.GittarMergeStatusResponse{},
 	Doc:          `summary: mr状态检测`,

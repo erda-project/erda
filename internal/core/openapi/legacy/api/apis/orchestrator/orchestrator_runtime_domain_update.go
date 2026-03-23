@@ -26,6 +26,7 @@ var ORCHESTRATOR_RUNTIME_DOMAIN_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.DomainUpdateRequest{},
 	ResponseType: apistructs.DomainUpdateResponse{},
 	Doc:          `更新 Runtime 域名`,

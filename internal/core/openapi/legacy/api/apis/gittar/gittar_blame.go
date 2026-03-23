@@ -26,6 +26,7 @@ var GITTAR_BLAME = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	ResponseType: apistructs.GittarBlameResponse{},
 	Doc:          `summary: 获取文件blame信息`,

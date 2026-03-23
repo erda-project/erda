@@ -27,6 +27,7 @@ var AUTOTESTS_TESTPLAN_PAGING = apis.ApiSpec{
 	Scheme:         "http",
 	Method:         http.MethodPost,
 	CheckLogin:     true,
+	CheckToken:     true,
 	CheckBasicAuth: true,
 	Doc:            "自动化测试计划列表",
 }

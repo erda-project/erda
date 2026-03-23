@@ -28,6 +28,7 @@ var QUERY_PIPELINE_SNIPPET_YAML = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
+	CheckToken:  true,
 	RequestType: apistructs.AutoTestCaseSavePipelineRequest{},
 	Doc:         "查询自动化测试用例流水线文件",
 }

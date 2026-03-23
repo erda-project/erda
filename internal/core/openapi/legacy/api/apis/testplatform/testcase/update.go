@@ -28,6 +28,7 @@ var UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCaseUpdateRequest{},
 	ResponseType: apistructs.TestCaseUpdateResponse{},
 	Doc:          "summary: 更新测试用例",

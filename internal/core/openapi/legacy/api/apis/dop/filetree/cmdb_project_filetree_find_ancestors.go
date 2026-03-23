@@ -23,5 +23,6 @@ var CMDB_PROJECT_FILETREE_FIND_ANCESTORS = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 寻祖节点",
 }

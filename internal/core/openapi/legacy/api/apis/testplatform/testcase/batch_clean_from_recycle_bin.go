@@ -28,6 +28,7 @@ var BATCH_CLEAN_FROM_RECYCLE_BIN = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodDelete,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCaseBatchCleanFromRecycleBinRequest{},
 	ResponseType: apistructs.TestCaseBatchCleanFromRecycleBinResponse{},
 	Doc:          "summary: 从回收站彻底删除测试用例",

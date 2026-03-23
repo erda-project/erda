@@ -26,6 +26,7 @@ var CMDB_NOTIFY_QUERY = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.QueryNotifyRequest{},
 	ResponseType: apistructs.QueryNotifyResponse{},
 	Doc:          "summary: 查询通知",

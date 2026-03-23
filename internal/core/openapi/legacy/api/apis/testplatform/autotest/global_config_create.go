@@ -28,6 +28,7 @@ var GLOBAL_CONFIG_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AutoTestGlobalConfigCreateRequest{},
 	ResponseType: apistructs.AutoTestGlobalConfigCreateResponse{},
 	Doc:          "创建自动化测试全局配置",

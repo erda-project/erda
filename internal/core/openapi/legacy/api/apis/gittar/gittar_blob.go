@@ -26,6 +26,7 @@ var GITTAR_BLOB = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.GittarBlobResponse{},
 	IsOpenAPI:    true,
 	Doc:          `summary: 获取git仓库文件`,

@@ -27,6 +27,7 @@ var CMDB_CERTIFICATE_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CertificateUpdateRequest{},
 	ResponseType: apistructs.CertificateUpdateResponse{},
 	Doc:          "summary: 更新证书",

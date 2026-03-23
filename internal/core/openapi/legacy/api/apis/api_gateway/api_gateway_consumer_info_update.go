@@ -24,6 +24,7 @@ var API_GATEWAY_CONSUMER_INFO_UPDATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PATCH",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 更新授权调用者详情
 `,

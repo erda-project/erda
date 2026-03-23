@@ -26,6 +26,7 @@ var MONITOR_HOST_STATUS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.HostStatusListRequest{},
 	ResponseType: apistructs.HostStatusListResponse{},
 	Doc:          "集群主机状态",

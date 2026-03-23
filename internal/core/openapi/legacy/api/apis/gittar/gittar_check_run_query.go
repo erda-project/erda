@@ -26,6 +26,7 @@ var GITTAR_CHECK_RUN_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.CheckRun{},
 	ResponseType: apistructs.CreateCheckRunResponse{},

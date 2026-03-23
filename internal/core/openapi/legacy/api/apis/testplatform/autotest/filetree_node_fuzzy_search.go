@@ -28,6 +28,7 @@ var FILETREE_NODE_FUZZY_SEARCH = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeFuzzySearchRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeFuzzySearchResponse{},
 	Doc:          "自动化测试目录树节点模糊搜索",

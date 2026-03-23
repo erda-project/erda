@@ -26,6 +26,7 @@ var GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.TestPlanGetResponse{},
 	Doc:          "summary: 测试计划详情",
 }

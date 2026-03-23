@@ -26,6 +26,7 @@ var CMP_ADDON_STATUS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OpsAddonStatusQueryRequest{},
 	ResponseType: apistructs.OpsAddonStatusResponse{},
 	Doc:          "调用scheduler api 获取 addon status",

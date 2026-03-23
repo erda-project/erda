@@ -28,6 +28,7 @@ var Import = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestCaseImportRequest{},
 	ResponseType: apistructs.TestCaseImportResponse{},
 	Doc:          "summary: 导入测试用例",

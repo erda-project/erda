@@ -27,6 +27,7 @@ var CMP_CLUSTER_UPDATE = apis.ApiSpec{
 	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:       "http",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ClusterUpdateRequest{},
 	ResponseType: apistructs.ClusterUpdateResponse{},
 	Doc:          "summary: 更新集群",

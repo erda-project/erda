@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_GATEWAY_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.ListCloudResourceGatewayRequest{},
 	ResponseType: apistructs.ListCloudResourceGatewayResponse{},
 	Doc:          "获取 gateway 信息列表",

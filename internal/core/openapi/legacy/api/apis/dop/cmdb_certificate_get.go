@@ -26,6 +26,7 @@ var CMDB_CERTIFICATE_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.CertificateDetailResponse{},
 	Doc:          "summary: 获取证书详情",
 }

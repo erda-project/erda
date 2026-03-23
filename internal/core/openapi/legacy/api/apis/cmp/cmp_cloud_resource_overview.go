@@ -26,6 +26,7 @@ var CMP_CLOUD_RESOURCE_OVERVIEW = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CloudResourceOverviewRequest{},
 	ResponseType: apistructs.CloudResourceOverviewResponse{},
 	Doc:          "获取云资源信息总览",

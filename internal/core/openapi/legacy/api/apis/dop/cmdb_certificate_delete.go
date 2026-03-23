@@ -27,6 +27,7 @@ var CMDB_CERTIFICATE_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.CertificateDeleteResponse{},
 	Doc:          "summary: 删除证书",
 	Audit: func(ctx *spec.AuditContext) error {

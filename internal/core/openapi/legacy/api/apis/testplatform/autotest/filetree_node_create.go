@@ -28,6 +28,7 @@ var FILETREE_NODE_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeCreateRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeCreateResponse{},
 	Doc:          "创建自动化测试目录树节点",

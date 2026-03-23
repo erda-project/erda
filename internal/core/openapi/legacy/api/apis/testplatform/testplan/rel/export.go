@@ -28,6 +28,7 @@ var EXPORT = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.TestPlanCaseRelExportRequest{},
 	ResponseType: apistructs.TestPlanCaseRelExportResponse{},
 	Doc:          "summary: 导出测试计划下的测试用例",

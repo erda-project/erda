@@ -26,6 +26,7 @@ var CMP_ADDON_CONFIG_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AddonConfigUpdateRequest{},
 	ResponseType: apistructs.AddonConfigUpdateResponse{},
 	Doc:          "Addon 运行配置参数更新",

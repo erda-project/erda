@@ -27,6 +27,7 @@ var ORCHESTRATOR_RUNTIME_REDEPLOY = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 重新部署 Runtime (必须要已经部署过一次)
 consumes:

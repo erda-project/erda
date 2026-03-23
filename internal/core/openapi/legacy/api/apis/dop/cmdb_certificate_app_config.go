@@ -26,6 +26,7 @@ var CMDB_CERTIFICATE_APP_CONFIG = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	RequestType: apistructs.PushCertificateConfigsRequest{},
 	Doc:         "summary: 推送应用证书到配置管理",
 }

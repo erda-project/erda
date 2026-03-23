@@ -26,6 +26,7 @@ var CMDB_PUBLISHER_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.PublisherDeleteResponse{},
 	Doc:          "summary: 删除 Publisher",
 }

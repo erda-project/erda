@@ -26,6 +26,7 @@ var ONEDATA_ANALYSIS_BUSSPROC = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.OneDataAnalysisBussProcRequest{},
 	ResponseType: apistructs.OneDataAnalysisBussProcResponse{},
 	Doc:          `解析单个业务过程`,

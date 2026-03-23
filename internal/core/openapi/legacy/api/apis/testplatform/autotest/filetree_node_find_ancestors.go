@@ -28,6 +28,7 @@ var FILETREE_NODE_FIND_ANCESTORS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.UnifiedFileTreeNodeFindAncestorsRequest{},
 	ResponseType: apistructs.UnifiedFileTreeNodeFindAncestorsResponse{},
 	Doc:          "自动化测试目录树节点寻祖",

@@ -24,6 +24,7 @@ var API_GATEWAY_CATEGORY_UPDATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "PATCH",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 修改api调用限制策略详情
 `,

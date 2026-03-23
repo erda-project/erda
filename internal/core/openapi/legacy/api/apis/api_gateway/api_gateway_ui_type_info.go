@@ -24,6 +24,7 @@ var API_GATEWAY_UI_TYPE_INFO = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取当前的UI类型
 `,

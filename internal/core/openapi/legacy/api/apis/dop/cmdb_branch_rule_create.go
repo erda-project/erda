@@ -29,6 +29,7 @@ var CMDB_BRANCH_RULE_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateBranchRuleRequest{},
 	ResponseType: apistructs.CreateBranchRuleResponse{},
 	Doc:          "summary: 创建分支规则",

@@ -29,6 +29,7 @@ var CMP_CLOUD_RESOURCE_ECS_STOP = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.HandleCloudResourceEcsRequest{},
 	ResponseType: apistructs.HandleCloudResourceECSResponse{},
 	Doc:          "停止ECS实例",

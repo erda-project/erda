@@ -26,6 +26,7 @@ var GITTAR_COMMITS = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
+	CheckToken:   true,
 	IsOpenAPI:    true,
 	RequestType:  apistructs.GittarCommitsRequest{},
 	ResponseType: apistructs.GittarCommitsResponse{},

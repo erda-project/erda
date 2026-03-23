@@ -26,6 +26,7 @@ var CMDB_PUBLISHER_UPDATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.PublisherUpdateRequest{},
 	ResponseType: apistructs.PublisherUpdateResponse{},
 	Doc:          "summary: 更新 Publisher",

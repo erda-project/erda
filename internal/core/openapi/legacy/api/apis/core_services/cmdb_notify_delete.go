@@ -27,6 +27,7 @@ var CMDB_NOTIFY_DELETE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,
+	CheckToken:   true,
 	ResponseType: apistructs.DeleteNotifyResponse{},
 	Doc:          "summary: 删除通知",
 	Audit: func(ctx *spec.AuditContext) error {

@@ -24,6 +24,7 @@ var API_GATEWAY_CATEGORY_INFO = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc: `
 summary: 获取api调用限制策略详情
 `,

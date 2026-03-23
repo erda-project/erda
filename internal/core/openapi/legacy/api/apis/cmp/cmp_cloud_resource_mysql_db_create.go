@@ -29,6 +29,7 @@ var CMP_CLOUD_RESOURCE_MYSQL_DB_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.CreateCloudResourceMysqlDBRequest{},
 	ResponseType: apistructs.CreateCloudResourceMysqlDBResponse{},
 	Doc:          "创建 mysql databases",

@@ -28,6 +28,7 @@ var GLOBAL_CONFIG_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
+	CheckToken:   true,
 	RequestType:  apistructs.AutoTestGlobalConfigListRequest{},
 	ResponseType: apistructs.AutoTestGlobalConfigListResponse{},
 	Doc:          "查询自动化测试全局配置列表",

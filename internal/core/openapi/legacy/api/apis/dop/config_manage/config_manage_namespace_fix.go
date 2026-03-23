@@ -23,5 +23,6 @@ var CONFIG_MANAGE_NAMESPACE_FIX = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 修复namespace数据缺少",
 }

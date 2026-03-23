@@ -23,5 +23,6 @@ var CMDB_NOTIFY_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 获取通知详情",
 }

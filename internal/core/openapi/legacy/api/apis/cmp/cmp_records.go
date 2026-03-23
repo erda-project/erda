@@ -23,5 +23,6 @@ var CMP_RECORDS = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "查询 cmp 操作记录",
 }
