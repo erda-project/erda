@@ -43,6 +43,11 @@ func (codexItem) Match(ctx context.Context) (bool, string) {
 			return true, "message_group"
 		}
 	}
+	if req, ok := ctxhelper.GetReverseProxyRequestInSnapshot(ctx); ok {
+		if containsCodexHeader(req.Header) {
+			return true, "request_header"
+		}
+	}
 	if bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(ctx); ok {
 		if matched, source := matchCodexFromRequestBody(bodyValue); matched {
 			return true, source
@@ -65,6 +70,20 @@ func containsCodexSystemMessage(msgs message.Messages) bool {
 
 func isCodexSystemPrompt(content string) bool {
 	return strings.HasPrefix(strings.TrimSpace(content), codexSystemPromptHint)
+}
+
+func containsCodexHeader(headers map[string][]string) bool {
+	for key, values := range headers {
+		if strings.Contains(strings.ToLower(key), "codex") {
+			return true
+		}
+		for _, value := range values {
+			if strings.Contains(strings.ToLower(value), "codex") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func matchCodexFromRequestBody(value any) (bool, string) {
