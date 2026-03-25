@@ -16,6 +16,7 @@ package blacklist_user_agent
 
 import (
 	"encoding/json"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/sashabaranov/go-openai"
@@ -100,5 +101,30 @@ func TestCodexItem_IgnoreSystemMessageContainingPromptButNotPrefixed(t *testing.
 	matched, source := codexItem{}.Match(ctx)
 	if matched || source != "" {
 		t.Fatalf("expected non-prefixed system message not to match codex, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestCodexItem_MatchRequestHeaderContainingCodex(t *testing.T) {
+	ctx := newDetectContextForTest()
+	req := httptest.NewRequest("POST", "http://example.com/v1/chat/completions", nil)
+	req.Header.Set("Originator", "codex_cli_rs")
+	req.Header.Set("User-Agent", "codex_cli_rs/0.116.0 (Mac OS 26.4.0; arm64) iTerm.app/3.6.9beta1")
+	ctxhelper.PutReverseProxyRequestInSnapshot(ctx, req)
+
+	matched, source := codexItem{}.Match(ctx)
+	if !matched || source != "request_header" {
+		t.Fatalf("expected codex request-header match, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestCodexItem_IgnoreRequestHeaderWithoutCodex(t *testing.T) {
+	ctx := newDetectContextForTest()
+	req := httptest.NewRequest("POST", "http://example.com/v1/chat/completions", nil)
+	req.Header.Set("User-Agent", "openai-cli/1.2.3")
+	ctxhelper.PutReverseProxyRequestInSnapshot(ctx, req)
+
+	matched, source := codexItem{}.Match(ctx)
+	if matched || source != "" {
+		t.Fatalf("expected request header without codex not to match, got matched=%v source=%q", matched, source)
 	}
 }
