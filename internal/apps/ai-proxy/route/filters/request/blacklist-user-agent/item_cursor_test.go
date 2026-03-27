@@ -20,6 +20,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 )
@@ -70,6 +71,16 @@ func TestCursorItem_MatchAfterLeadingWhitespace(t *testing.T) {
 	matched, source := cursorItem{}.Match(ctx)
 	if !matched || source != "request_body.instructions" {
 		t.Fatalf("expected cursor raw instructions match after trimming leading whitespace, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestCursorItem_MatchAuditPromptByPrefix(t *testing.T) {
+	ctx := newDetectContextForTest()
+	audithelper.Note(ctx, "prompt", cursorSystemPromptHint+"\nYou can help with editing and running commands.")
+
+	matched, source := cursorItem{}.Match(ctx)
+	if !matched || source != "audit.prompt" {
+		t.Fatalf("expected cursor audit prompt match, got matched=%v source=%q", matched, source)
 	}
 }
 
