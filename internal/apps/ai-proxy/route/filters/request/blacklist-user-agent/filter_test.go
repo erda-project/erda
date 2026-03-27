@@ -83,7 +83,7 @@ func TestFilter_RejectsGeneralItemWhenConfiguredFromAuditPrompt(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 	SetConfig(Config{
 		ClientToken: ClientTokenConfig{Blacklist: []string{"general"}},
-		General:     GeneralConfig{ItemTypes: []string{"claude code"}},
+		General:     GeneralConfig{Rules: []string{"you are claude code"}},
 	})
 
 	filter := newFilterForTest(t)
@@ -100,7 +100,7 @@ func TestFilter_RejectsGeneralItemWhenConfiguredFromAuditPrompt(t *testing.T) {
 	}
 }
 
-func TestFilter_AllowsGeneralItemWhenNoConfiguredItemTypes(t *testing.T) {
+func TestFilter_AllowsGeneralItemWhenNoConfiguredRules(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 	SetConfig(Config{
 		ClientToken: ClientTokenConfig{Blacklist: []string{"general"}},

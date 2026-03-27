@@ -27,28 +27,38 @@ func (generalItem) Name() string {
 }
 
 func (generalItem) Enabled() bool {
-	return len(getConfig().General.ItemTypes) > 0
+	return len(getConfig().General.Rules) > 0
 }
 
 func (generalItem) MatchHeader(key, value string) bool {
-	return containsConfiguredGeneralItemType(key) || containsConfiguredGeneralItemType(value)
+	return containsConfiguredGeneralRule(key) || containsConfiguredGeneralRule(value)
 }
 
 func (generalItem) MatchPrompt(prompt string) bool {
-	return containsConfiguredGeneralItemType(prompt)
+	return hasConfiguredGeneralRulePrefix(prompt)
 }
 
 func (generalItem) MatchMessageGroupText(text string) bool {
-	return containsConfiguredGeneralItemType(text)
+	return hasConfiguredGeneralRulePrefix(text)
 }
 
-func containsConfiguredGeneralItemType(input string) bool {
+func containsConfiguredGeneralRule(input string) bool {
 	if input == "" {
 		return false
 	}
 	normalizedInput := normalize(input)
-	for _, itemType := range getConfig().General.ItemTypes {
-		if itemType != "" && strings.Contains(normalizedInput, itemType) {
+	for _, rule := range getConfig().General.Rules {
+		if rule != "" && strings.Contains(normalizedInput, rule) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasConfiguredGeneralRulePrefix(input string) bool {
+	normalizedInput := normalize(input)
+	for _, rule := range getConfig().General.Rules {
+		if rule != "" && strings.HasPrefix(normalizedInput, rule) {
 			return true
 		}
 	}

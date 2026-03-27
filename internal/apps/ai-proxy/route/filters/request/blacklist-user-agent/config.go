@@ -30,8 +30,8 @@ type ClientConfig struct {
 }
 
 type GeneralConfig struct {
-	ItemTypesStr string   `json:"item_types_str" yaml:"item_types_str" file:"item_types_str"`
-	ItemTypes    []string `json:"-" yaml:"-" file:"-"`
+	RulesStr string   `json:"rules_str" yaml:"rules_str" file:"rules_str"`
+	Rules    []string `json:"-" yaml:"-" file:"-"`
 }
 
 type Config struct {
@@ -57,7 +57,7 @@ func SetConfig(cfg Config) {
 			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.Client.Blacklist, cfg.Client.BlacklistStr)),
 		},
 		General: GeneralConfig{
-			ItemTypes: normalizeGeneralItemTypes(resolveGeneralItemTypes(cfg.General.ItemTypes, cfg.General.ItemTypesStr)),
+			Rules: normalizeGeneralRules(resolveGeneralRules(cfg.General.Rules, cfg.General.RulesStr)),
 		},
 	}
 }
@@ -74,7 +74,7 @@ func getConfig() Config {
 			Blacklist: append([]string(nil), currentConfig.Client.Blacklist...),
 		},
 		General: GeneralConfig{
-			ItemTypes: append([]string(nil), currentConfig.General.ItemTypes...),
+			Rules: append([]string(nil), currentConfig.General.Rules...),
 		},
 	}
 }
@@ -99,7 +99,7 @@ func resolveBlacklist(items []string, raw string) []string {
 	return strings.Split(raw, ",")
 }
 
-func normalizeGeneralItemTypes(items []string) []string {
+func normalizeGeneralRules(items []string) []string {
 	normalized := make([]string, 0, len(items))
 	for _, item := range items {
 		cleaned := strings.TrimSpace(strings.Trim(strings.TrimSpace(item), ";"))
@@ -110,7 +110,7 @@ func normalizeGeneralItemTypes(items []string) []string {
 	return normalized
 }
 
-func resolveGeneralItemTypes(items []string, raw string) []string {
+func resolveGeneralRules(items []string, raw string) []string {
 	if len(items) > 0 {
 		return items
 	}

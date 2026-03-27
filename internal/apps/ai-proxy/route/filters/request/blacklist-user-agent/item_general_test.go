@@ -16,10 +16,10 @@ package blacklist_user_agent
 
 import "testing"
 
-func TestGeneralItem_MatchHeaderByConfiguredItemTypes(t *testing.T) {
+func TestGeneralItem_MatchHeaderByConfiguredRules(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 	SetConfig(Config{
-		General: GeneralConfig{ItemTypes: []string{"opencode", "claude code"}},
+		General: GeneralConfig{Rules: []string{"claude code", "opencode"}},
 	})
 
 	matcher, ok := any(generalItem{}).(HeaderMatcher)
@@ -31,10 +31,10 @@ func TestGeneralItem_MatchHeaderByConfiguredItemTypes(t *testing.T) {
 	}
 }
 
-func TestGeneralItem_MatchPromptByConfiguredItemTypes(t *testing.T) {
+func TestGeneralItem_MatchPromptByConfiguredPrefix(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 	SetConfig(Config{
-		General: GeneralConfig{ItemTypes: []string{"opencode", "claude code"}},
+		General: GeneralConfig{Rules: []string{"you are claude code", "you are opencode"}},
 	})
 
 	matcher, ok := any(generalItem{}).(PromptMatcher)
@@ -42,26 +42,38 @@ func TestGeneralItem_MatchPromptByConfiguredItemTypes(t *testing.T) {
 		t.Fatal("expected general item to implement PromptMatcher")
 	}
 	if !matcher.MatchPrompt("You are Claude Code, Anthropic's official CLI for Claude.") {
-		t.Fatal("expected general item to match configured prompt text")
+		t.Fatal("expected general item to match configured prompt prefix")
 	}
 }
 
-func TestGeneralItem_MatchMessageGroupTextByConfiguredItemTypes(t *testing.T) {
+func TestGeneralItem_IgnorePromptWithoutConfiguredPrefix(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 	SetConfig(Config{
-		General: GeneralConfig{ItemTypes: []string{"opencode", "claude code"}},
+		General: GeneralConfig{Rules: []string{"you are claude code"}},
+	})
+
+	matcher := any(generalItem{}).(PromptMatcher)
+	if matcher.MatchPrompt("Tooling follows below.\nYou are Claude Code.") {
+		t.Fatal("expected general item not to match non-prefixed prompt")
+	}
+}
+
+func TestGeneralItem_MatchMessageGroupTextByConfiguredPrefix(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{
+		General: GeneralConfig{Rules: []string{"you are opencode"}},
 	})
 
 	matcher, ok := any(generalItem{}).(MessageGroupMatcher)
 	if !ok {
 		t.Fatal("expected general item to implement MessageGroupMatcher")
 	}
-	if !matcher.MatchMessageGroupText("OpenCode is running in this environment.") {
-		t.Fatal("expected general item to match configured message-group text")
+	if !matcher.MatchMessageGroupText("You are OpenCode, running in this environment.") {
+		t.Fatal("expected general item to match configured message-group prefix")
 	}
 }
 
-func TestGeneralItem_IgnoreSignalsWhenNoConfiguredItemTypes(t *testing.T) {
+func TestGeneralItem_IgnoreSignalsWhenNoConfiguredRules(t *testing.T) {
 	t.Cleanup(func() { SetConfig(Config{}) })
 	SetConfig(Config{})
 
@@ -74,7 +86,7 @@ func TestGeneralItem_IgnoreSignalsWhenNoConfiguredItemTypes(t *testing.T) {
 		t.Fatal("expected general item not to match prompt when config is empty")
 	}
 	messageMatcher := any(generalItem{}).(MessageGroupMatcher)
-	if messageMatcher.MatchMessageGroupText("OpenCode is running in this environment.") {
+	if messageMatcher.MatchMessageGroupText("You are OpenCode, running in this environment.") {
 		t.Fatal("expected general item not to match message-group text when config is empty")
 	}
 }

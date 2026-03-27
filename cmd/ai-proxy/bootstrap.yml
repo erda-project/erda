@@ -34,7 +34,7 @@ erda.app.ai-proxy:
     client:
       blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT:openclaw,codex,cursor,general} # comma-separated: openclaw, codex, cursor, general
     general:
-      item_types_str: ${AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_ITEM_TYPES:} # delimiter: ;;;, e.g. opencode;;;claude code
+      rules_str: ${AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_RULES:} # delimiter: ;;;, e.g. You are OpenCode;;;You are Claude Code
   model_health:
     enabled: ${MODEL_HEALTH_ENABLED:true}
     probe:
