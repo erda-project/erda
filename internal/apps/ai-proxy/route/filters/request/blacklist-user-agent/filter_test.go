@@ -79,12 +79,13 @@ func TestFilter_RejectsAKClientWhenClientBlacklistConfiguredFromMessageGroup(t *
 	}
 }
 
-func TestFilter_RejectsGeneralItemWhenConfiguredFromAuditPrompt(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		ClientToken: ClientTokenConfig{Blacklist: []string{"general"}},
-		General:     GeneralConfig{Rules: []string{"you are claude code"}},
+func TestFilter_RejectsGeneralFallbackWhenConfiguredFromAuditPrompt(t *testing.T) {
+	t.Cleanup(func() {
+		SetConfig(Config{})
+		SetGeneralRules("", "")
 	})
+	SetConfig(Config{})
+	SetGeneralRules("", "you are claude code")
 
 	filter := newFilterForTest(t)
 	pr, sink := newProxyRequestForTest()
@@ -100,11 +101,13 @@ func TestFilter_RejectsGeneralItemWhenConfiguredFromAuditPrompt(t *testing.T) {
 	}
 }
 
-func TestFilter_AllowsGeneralItemWhenNoConfiguredRules(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		ClientToken: ClientTokenConfig{Blacklist: []string{"general"}},
+func TestFilter_AllowsGeneralFallbackWhenNoConfiguredRules(t *testing.T) {
+	t.Cleanup(func() {
+		SetConfig(Config{})
+		SetGeneralRules("", "")
 	})
+	SetConfig(Config{})
+	SetGeneralRules("", "")
 
 	filter := newFilterForTest(t)
 	pr, _ := newProxyRequestForTest()
@@ -112,7 +115,7 @@ func TestFilter_AllowsGeneralItemWhenNoConfiguredRules(t *testing.T) {
 	audithelper.Note(pr.In.Context(), "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
 
 	if err := filter.OnProxyRequest(pr); err != nil {
-		t.Fatalf("expected request to pass when general item has no configured item types, got %v", err)
+		t.Fatalf("expected request to pass when general fallback has no configured rules, got %v", err)
 	}
 }
 
@@ -132,16 +135,17 @@ func TestResolveEnabledItems_IgnoresUnknownItemsAndPreservesOrder(t *testing.T) 
 	}
 }
 
-func TestResolveEnabledItems_SkipsDisabledItems(t *testing.T) {
+func TestResolveActiveItems_AppendsGeneralFallbackLast(t *testing.T) {
 	restore := replaceItemsForTest(map[string]BlacklistItem{
-		"enabled":  namedStubItem{name: "enabled"},
-		"disabled": disabledStubItem{name: "disabled"},
+		"cursor": namedStubItem{name: "cursor"},
 	})
 	t.Cleanup(restore)
+	t.Cleanup(func() { SetGeneralRules("", "") })
+	SetGeneralRules("claude code", "")
 
-	items := resolveEnabledItems([]string{"enabled", "disabled"})
-	if len(items) != 1 || items[0].Name() != "enabled" {
-		t.Fatalf("expected disabled items to be skipped, got %#v", items)
+	items := resolveActiveItems([]string{"cursor"})
+	if len(items) != 2 || items[0].Name() != "cursor" || items[1].Name() != "general" {
+		t.Fatalf("expected general fallback to be appended last, got %#v", items)
 	}
 }
 
@@ -215,14 +219,6 @@ type namedStubItem struct {
 }
 
 func (s namedStubItem) Name() string { return s.name }
-
-type disabledStubItem struct {
-	name string
-}
-
-func (s disabledStubItem) Name() string { return s.name }
-
-func (s disabledStubItem) Enabled() bool { return false }
 
 type testHeaderItem struct {
 	name  string

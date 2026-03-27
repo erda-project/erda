@@ -49,13 +49,13 @@ func init() {
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
-	enabledItems := resolveEnabledItems(getBlacklistByCredential(ctx))
-	if len(enabledItems) == 0 {
+	activeItems := resolveActiveItems(getBlacklistByCredential(ctx))
+	if len(activeItems) == 0 {
 		return nil
 	}
 	signals := prepareSignals(ctx)
 
-	userAgentName, source := detectBlacklistedUserAgent(enabledItems, signals)
+	userAgentName, source := detectBlacklistedUserAgent(activeItems, signals)
 	if userAgentName == "" {
 		return nil
 	}

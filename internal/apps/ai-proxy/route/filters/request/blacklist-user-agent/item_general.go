@@ -18,36 +18,28 @@ import "strings"
 
 type generalItem struct{}
 
-func init() {
-	registerItem(generalItem{})
-}
-
 func (generalItem) Name() string {
 	return "general"
 }
 
-func (generalItem) Enabled() bool {
-	return len(getConfig().General.Rules) > 0
-}
-
 func (generalItem) MatchHeader(key, value string) bool {
-	return containsConfiguredGeneralRule(key) || containsConfiguredGeneralRule(value)
+	return containsConfiguredGeneralHeaderRule(key) || containsConfiguredGeneralHeaderRule(value)
 }
 
 func (generalItem) MatchPrompt(prompt string) bool {
-	return hasConfiguredGeneralRulePrefix(prompt)
+	return hasConfiguredGeneralPromptPrefix(prompt)
 }
 
 func (generalItem) MatchMessageGroupText(text string) bool {
-	return hasConfiguredGeneralRulePrefix(text)
+	return hasConfiguredGeneralPromptPrefix(text)
 }
 
-func containsConfiguredGeneralRule(input string) bool {
+func containsConfiguredGeneralHeaderRule(input string) bool {
 	if input == "" {
 		return false
 	}
 	normalizedInput := normalize(input)
-	for _, rule := range getConfig().General.Rules {
+	for _, rule := range getGeneralRules().Headers {
 		if rule != "" && strings.Contains(normalizedInput, rule) {
 			return true
 		}
@@ -55,9 +47,9 @@ func containsConfiguredGeneralRule(input string) bool {
 	return false
 }
 
-func hasConfiguredGeneralRulePrefix(input string) bool {
+func hasConfiguredGeneralPromptPrefix(input string) bool {
 	normalizedInput := normalize(input)
-	for _, rule := range getConfig().General.Rules {
+	for _, rule := range getGeneralRules().Prompts {
 		if rule != "" && strings.HasPrefix(normalizedInput, rule) {
 			return true
 		}

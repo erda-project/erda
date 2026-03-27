@@ -17,10 +17,8 @@ package blacklist_user_agent
 import "testing"
 
 func TestGeneralItem_MatchHeaderByConfiguredRules(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		General: GeneralConfig{Rules: []string{"claude code", "opencode"}},
-	})
+	t.Cleanup(func() { SetGeneralRules("", "") })
+	SetGeneralRules("claude code ;;; opencode", "")
 
 	matcher, ok := any(generalItem{}).(HeaderMatcher)
 	if !ok {
@@ -32,10 +30,8 @@ func TestGeneralItem_MatchHeaderByConfiguredRules(t *testing.T) {
 }
 
 func TestGeneralItem_MatchPromptByConfiguredPrefix(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		General: GeneralConfig{Rules: []string{"you are claude code", "you are opencode"}},
-	})
+	t.Cleanup(func() { SetGeneralRules("", "") })
+	SetGeneralRules("", "you are claude code ;;; you are opencode")
 
 	matcher, ok := any(generalItem{}).(PromptMatcher)
 	if !ok {
@@ -47,10 +43,8 @@ func TestGeneralItem_MatchPromptByConfiguredPrefix(t *testing.T) {
 }
 
 func TestGeneralItem_IgnorePromptWithoutConfiguredPrefix(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		General: GeneralConfig{Rules: []string{"you are claude code"}},
-	})
+	t.Cleanup(func() { SetGeneralRules("", "") })
+	SetGeneralRules("", "you are claude code")
 
 	matcher := any(generalItem{}).(PromptMatcher)
 	if matcher.MatchPrompt("Tooling follows below.\nYou are Claude Code.") {
@@ -59,10 +53,8 @@ func TestGeneralItem_IgnorePromptWithoutConfiguredPrefix(t *testing.T) {
 }
 
 func TestGeneralItem_MatchMessageGroupTextByConfiguredPrefix(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		General: GeneralConfig{Rules: []string{"you are opencode"}},
-	})
+	t.Cleanup(func() { SetGeneralRules("", "") })
+	SetGeneralRules("", "you are opencode")
 
 	matcher, ok := any(generalItem{}).(MessageGroupMatcher)
 	if !ok {
@@ -74,8 +66,8 @@ func TestGeneralItem_MatchMessageGroupTextByConfiguredPrefix(t *testing.T) {
 }
 
 func TestGeneralItem_IgnoreSignalsWhenNoConfiguredRules(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{})
+	t.Cleanup(func() { SetGeneralRules("", "") })
+	SetGeneralRules("", "")
 
 	headerMatcher := any(generalItem{}).(HeaderMatcher)
 	if headerMatcher.MatchHeader("User-Agent", "claude code/1.0") {

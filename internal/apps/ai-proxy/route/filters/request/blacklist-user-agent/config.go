@@ -29,20 +29,20 @@ type ClientConfig struct {
 	Blacklist    []string `json:"-" yaml:"-" file:"-"`
 }
 
-type GeneralConfig struct {
-	RulesStr string   `json:"rules_str" yaml:"rules_str" file:"rules_str"`
-	Rules    []string `json:"-" yaml:"-" file:"-"`
-}
-
 type Config struct {
 	ClientToken ClientTokenConfig `json:"client_token" yaml:"client_token" file:"client_token"`
 	Client      ClientConfig      `json:"client" yaml:"client" file:"client"`
-	General     GeneralConfig     `json:"general" yaml:"general" file:"general"`
+}
+
+type GeneralRules struct {
+	Headers []string
+	Prompts []string
 }
 
 var (
-	configMu      sync.RWMutex
-	currentConfig Config
+	configMu            sync.RWMutex
+	currentConfig       Config
+	currentGeneralRules GeneralRules
 )
 
 func SetConfig(cfg Config) {
@@ -56,9 +56,16 @@ func SetConfig(cfg Config) {
 		Client: ClientConfig{
 			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.Client.Blacklist, cfg.Client.BlacklistStr)),
 		},
-		General: GeneralConfig{
-			Rules: normalizeGeneralRules(resolveGeneralRules(cfg.General.Rules, cfg.General.RulesStr)),
-		},
+	}
+}
+
+func SetGeneralRules(headersRaw, promptsRaw string) {
+	configMu.Lock()
+	defer configMu.Unlock()
+
+	currentGeneralRules = GeneralRules{
+		Headers: normalizeGeneralRules(splitGeneralRules(headersRaw)),
+		Prompts: normalizeGeneralRules(splitGeneralRules(promptsRaw)),
 	}
 }
 
@@ -73,9 +80,16 @@ func getConfig() Config {
 		Client: ClientConfig{
 			Blacklist: append([]string(nil), currentConfig.Client.Blacklist...),
 		},
-		General: GeneralConfig{
-			Rules: append([]string(nil), currentConfig.General.Rules...),
-		},
+	}
+}
+
+func getGeneralRules() GeneralRules {
+	configMu.RLock()
+	defer configMu.RUnlock()
+
+	return GeneralRules{
+		Headers: append([]string(nil), currentGeneralRules.Headers...),
+		Prompts: append([]string(nil), currentGeneralRules.Prompts...),
 	}
 }
 
@@ -110,10 +124,7 @@ func normalizeGeneralRules(items []string) []string {
 	return normalized
 }
 
-func resolveGeneralRules(items []string, raw string) []string {
-	if len(items) > 0 {
-		return items
-	}
+func splitGeneralRules(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return nil
 	}
