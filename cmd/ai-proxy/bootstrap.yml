@@ -30,9 +30,9 @@ erda.app.ai-proxy:
   lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
   blacklist_user_agent:
     client_token:
-      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN:openclaw,codex,cursor} # comma-separated: openclaw, codex, cursor
+      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT_TOKEN:openclaw,coding-agent} # comma-separated: openclaw, coding-agent
     client:
-      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT:openclaw,codex,cursor} # comma-separated: openclaw, codex, cursor
+      blacklist_str: ${AI_PROXY_BLACKLIST_USER_AGENT_FOR_CLIENT:openclaw,coding-agent} # comma-separated: openclaw, coding-agent
   model_health:
     enabled: ${MODEL_HEALTH_ENABLED:true}
     probe:
