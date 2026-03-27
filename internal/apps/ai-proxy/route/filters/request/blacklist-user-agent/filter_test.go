@@ -131,7 +131,7 @@ func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItem(t *testing.T) {
 }
 
 func TestDetectBlacklistedUserAgent_IgnoresUnknownItems(t *testing.T) {
-	gotName, gotSource := detectBlacklistedUserAgent(context.Background(), []string{"cursor"})
+	gotName, gotSource := detectBlacklistedUserAgent(context.Background(), []string{"unknown"})
 	if gotName != "" || gotSource != "" {
 		t.Fatalf("expected unknown blacklist item to be ignored, got name=%q source=%q", gotName, gotSource)
 	}
