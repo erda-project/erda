@@ -22,6 +22,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
@@ -72,6 +73,16 @@ func TestOpenClawItem_MatchRawInstructionsByPrefix(t *testing.T) {
 	matched, source := openClawItem{}.Match(ctx)
 	if !matched || source != "request_body.instructions" {
 		t.Fatalf("expected openclaw raw instructions match, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestOpenClawItem_MatchAuditPromptByPrefix(t *testing.T) {
+	ctx := newDetectContextForTest()
+	audithelper.Note(ctx, "prompt", openClawSystemPromptHint+"\n## Tooling\nTool availability")
+
+	matched, source := openClawItem{}.Match(ctx)
+	if !matched || source != "audit.prompt" {
+		t.Fatalf("expected openclaw audit prompt match, got matched=%v source=%q", matched, source)
 	}
 }
 

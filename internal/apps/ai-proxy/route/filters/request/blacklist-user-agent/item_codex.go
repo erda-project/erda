@@ -53,6 +53,9 @@ func (codexItem) Match(ctx context.Context) (bool, string) {
 			return true, source
 		}
 	}
+	if matched, source := matchFromAuditPrompt(ctx, isCodexSystemPrompt); matched {
+		return true, source
+	}
 	return false, ""
 }
 

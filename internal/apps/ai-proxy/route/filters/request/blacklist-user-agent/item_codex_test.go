@@ -21,6 +21,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 )
@@ -71,6 +72,16 @@ func TestCodexItem_MatchAfterLeadingWhitespace(t *testing.T) {
 	matched, source := codexItem{}.Match(ctx)
 	if !matched || source != "request_body.instructions" {
 		t.Fatalf("expected codex raw instructions match after trimming leading whitespace, got matched=%v source=%q", matched, source)
+	}
+}
+
+func TestCodexItem_MatchAuditPromptByPrefix(t *testing.T) {
+	ctx := newDetectContextForTest()
+	audithelper.Note(ctx, "prompt", codexSystemPromptHint+"\nYou are running in a coding environment.")
+
+	matched, source := codexItem{}.Match(ctx)
+	if !matched || source != "audit.prompt" {
+		t.Fatalf("expected codex audit prompt match, got matched=%v source=%q", matched, source)
 	}
 }
 

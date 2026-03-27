@@ -48,7 +48,7 @@ func (cursorItem) Match(ctx context.Context) (bool, string) {
 			return true, source
 		}
 	}
-	if matched, source := matchCursorFromAuditPrompt(ctx); matched {
+	if matched, source := matchFromAuditPrompt(ctx, isCursorSystemPrompt); matched {
 		return true, source
 	}
 	return false, ""
@@ -90,16 +90,4 @@ func matchCursorFromRequestBody(value any) (bool, string) {
 		return true, "request_body.instructions"
 	}
 	return false, ""
-}
-
-func matchCursorFromAuditPrompt(ctx context.Context) (bool, string) {
-	sink, ok := ctxhelper.GetAuditSink(ctx)
-	if !ok || sink == nil {
-		return false, ""
-	}
-	prompt, _ := sink.Snapshot()["prompt"].(string)
-	if !isCursorSystemPrompt(prompt) {
-		return false, ""
-	}
-	return true, "audit.prompt"
 }

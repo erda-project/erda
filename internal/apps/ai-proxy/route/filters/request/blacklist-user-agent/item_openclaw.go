@@ -49,6 +49,9 @@ func (openClawItem) Match(ctx context.Context) (bool, string) {
 			return true, source
 		}
 	}
+	if matched, source := matchFromAuditPrompt(ctx, isOpenClawSystemPrompt); matched {
+		return true, source
+	}
 	return false, ""
 }
 
