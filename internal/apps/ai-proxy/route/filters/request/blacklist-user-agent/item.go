@@ -15,14 +15,24 @@
 package blacklist_user_agent
 
 import (
-	"context"
 	"fmt"
 	"sync"
 )
 
 type BlacklistItem interface {
 	Name() string
-	Match(ctx context.Context) (bool, string)
+}
+
+type HeaderMatcher interface {
+	MatchHeader(key, value string) bool
+}
+
+type PromptMatcher interface {
+	MatchPrompt(prompt string) bool
+}
+
+type MessageGroupMatcher interface {
+	MatchMessageGroupText(text string) bool
 }
 
 var (
@@ -47,4 +57,29 @@ func getItem(name string) (BlacklistItem, bool) {
 
 	item, ok := registeredItems[normalize(name)]
 	return item, ok
+}
+
+func resolveEnabledItems(blacklist []string) []BlacklistItem {
+	items := make([]BlacklistItem, 0, len(blacklist))
+	for _, itemName := range blacklist {
+		item, ok := getItem(itemName)
+		if !ok {
+			continue
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
+func resolveActiveItems(blacklist []string) []BlacklistItem {
+	items := resolveEnabledItems(blacklist)
+	if hasGeneralFallbackRules() {
+		items = append(items, generalItem{})
+	}
+	return items
+}
+
+func hasGeneralFallbackRules() bool {
+	cfg := getGeneralRules()
+	return len(cfg.Headers) > 0 || len(cfg.Prompts) > 0
 }

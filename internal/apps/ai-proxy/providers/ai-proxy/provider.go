@@ -50,6 +50,10 @@ type Config struct {
 	ModelHealth           health.Config `file:"model_health"`
 
 	BlacklistUserAgent blacklist_user_agent.Config `file:"blacklist_user_agent"`
+	// Delimiter: ";;;" so a single rule can still contain ";" safely.
+	BlacklistUserAgentGeneralHeaders string `env:"AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_HEADERS"`
+	// Delimiter: ";;;" so a single prompt prefix can still contain ";" safely.
+	BlacklistUserAgentGeneralPrompts string `env:"AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_PROMPTS"`
 
 	// Redis settings (standalone or sentinel via redis.UniversalOptions)
 	RedisAddr          string `file:"redis_addr" env:"REDIS_ADDR"`
@@ -81,6 +85,10 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	blacklist_user_agent.SetConfig(p.Config.BlacklistUserAgent)
+	blacklist_user_agent.SetGeneralRules(
+		p.Config.BlacklistUserAgentGeneralHeaders,
+		p.Config.BlacklistUserAgentGeneralPrompts,
+	)
 
 	// load templates
 	templatesByType, err := template.LoadTemplatesFromEmbeddedFS(p.L, reverseproxy.EmbedTemplatesFS)

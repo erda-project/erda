@@ -14,97 +14,38 @@
 
 package blacklist_user_agent
 
-import (
-	"context"
-	"encoding/json"
-	"testing"
+import "testing"
 
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
-)
-
-func TestOpenClawItem_MatchMessageGroup(t *testing.T) {
-	ctx := newDetectContextForTest()
-	ctxhelper.PutMessageGroup(ctx, message.Group{
-		RequestedMessages: message.Messages{
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: openClawSystemPromptHint + "\n## Tooling\nTool availability",
-			},
-		},
-	})
-
-	matched, source := openClawItem{}.Match(ctx)
-	if !matched || source != "message_group" {
-		t.Fatalf("expected openclaw message-group match, got matched=%v source=%q", matched, source)
+func TestOpenClawItem_MatchPrompt(t *testing.T) {
+	matcher, ok := any(openClawItem{}).(PromptMatcher)
+	if !ok {
+		t.Fatal("expected openclaw item to implement PromptMatcher")
+	}
+	if !matcher.MatchPrompt(openClawSystemPromptHint + "\n## Tooling\nTool availability") {
+		t.Fatal("expected openclaw prompt prefix to match")
 	}
 }
 
-func TestOpenClawItem_MatchRawChatRequestBody(t *testing.T) {
-	ctx := newDetectContextForTest()
-	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: openClawSystemPromptHint + "\n## Tooling\nTool availability",
-		},
-	})
-
-	matched, source := openClawItem{}.Match(ctx)
-	if !matched || source != "request_body.messages" {
-		t.Fatalf("expected openclaw raw chat body match, got matched=%v source=%q", matched, source)
+func TestOpenClawItem_IgnorePromptWithoutPrefix(t *testing.T) {
+	matcher := any(openClawItem{}).(PromptMatcher)
+	if matcher.MatchPrompt("Tooling follows below.\n" + openClawSystemPromptHint) {
+		t.Fatal("expected non-prefixed openclaw prompt not to match")
 	}
 }
 
-func TestOpenClawItem_MatchRawInstructionsByPrefix(t *testing.T) {
-	ctx := newDetectContextForTest()
-	body, err := json.Marshal(map[string]any{
-		"instructions": openClawSystemPromptHint + "\n## Tooling\nTool availability",
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal raw instructions body: %v", err)
+func TestOpenClawItem_MatchMessageGroupText(t *testing.T) {
+	matcher, ok := any(openClawItem{}).(MessageGroupMatcher)
+	if !ok {
+		t.Fatal("expected openclaw item to implement MessageGroupMatcher")
 	}
-	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
-
-	matched, source := openClawItem{}.Match(ctx)
-	if !matched || source != "request_body.instructions" {
-		t.Fatalf("expected openclaw raw instructions match, got matched=%v source=%q", matched, source)
+	if !matcher.MatchMessageGroupText(openClawSystemPromptHint + "\n## Tooling\nTool availability") {
+		t.Fatal("expected openclaw message-group text prefix to match")
 	}
 }
 
-func TestOpenClawItem_IgnoreUserMessageContainingPrompt(t *testing.T) {
-	ctx := newDetectContextForTest()
-	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleUser,
-			Content: openClawSystemPromptHint,
-		},
-	})
-
-	matched, source := openClawItem{}.Match(ctx)
-	if matched || source != "" {
-		t.Fatalf("expected user message not to match openclaw, got matched=%v source=%q", matched, source)
+func TestOpenClawItem_IgnoreMessageGroupTextWithoutPrefix(t *testing.T) {
+	matcher := any(openClawItem{}).(MessageGroupMatcher)
+	if matcher.MatchMessageGroupText("Tooling follows below.\n" + openClawSystemPromptHint) {
+		t.Fatal("expected non-prefixed openclaw message-group text not to match")
 	}
-}
-
-func newDetectContextForTest() context.Context {
-	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
-	ctxhelper.PutLogger(ctx, logrusx.New())
-	ctxhelper.PutAuditSink(ctx, types.New("audit-1", logrusx.New()))
-	return ctx
-}
-
-func putRawChatRequestBodyForItemTest(t *testing.T, ctx context.Context, messages []openai.ChatCompletionMessage) {
-	t.Helper()
-
-	body, err := json.Marshal(map[string]any{
-		"messages": messages,
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal raw chat request body: %v", err)
-	}
-	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
 }
