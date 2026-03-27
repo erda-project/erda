@@ -66,13 +66,13 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 }
 
 func detectBlacklistedUserAgent(items []BlacklistItem, signals PreparedSignals) (string, string) {
-	if itemName := detectBlacklistedUserAgentFromHeaders(items, signals.HeaderPairs); itemName != "" {
+	if itemName := detectBlacklistedUserAgentFromHeaders(items, signals.GetHeaderPairs()); itemName != "" {
 		return itemName, sourceRequestHeader
 	}
-	if itemName := detectBlacklistedUserAgentFromPrompt(items, signals.AuditPrompt); itemName != "" {
+	if itemName := detectBlacklistedUserAgentFromPrompt(items, signals.GetAuditPrompt()); itemName != "" {
 		return itemName, sourceAuditPrompt
 	}
-	if itemName := detectBlacklistedUserAgentFromMessageGroup(items, signals.MessageGroupTexts); itemName != "" {
+	if itemName := detectBlacklistedUserAgentFromMessageGroup(items, signals.GetMessageGroupTexts()); itemName != "" {
 		return itemName, sourceMessageGroup
 	}
 	return "", ""

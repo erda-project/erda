@@ -34,14 +34,82 @@ type PreparedSignals struct {
 	HeaderPairs       []HeaderPair
 	AuditPrompt       string
 	MessageGroupTexts []string
+
+	ctx context.Context
+
+	headerPairsLoaded       bool
+	auditPromptLoaded       bool
+	messageGroupTextsLoaded bool
+
+	loadHeaderPairs       func(context.Context) []HeaderPair
+	loadAuditPrompt       func(context.Context) string
+	loadMessageGroupTexts func(context.Context) []string
 }
 
 func prepareSignals(ctx context.Context) PreparedSignals {
 	return PreparedSignals{
-		HeaderPairs:       collectHeaderPairs(ctx),
-		AuditPrompt:       collectAuditPrompt(ctx),
-		MessageGroupTexts: collectMessageGroupTexts(ctx),
+		ctx:                   ctx,
+		loadHeaderPairs:       collectHeaderPairs,
+		loadAuditPrompt:       collectAuditPrompt,
+		loadMessageGroupTexts: collectMessageGroupTexts,
 	}
+}
+
+func (s *PreparedSignals) GetHeaderPairs() []HeaderPair {
+	if s.headerPairsLoaded {
+		return s.HeaderPairs
+	}
+	s.HeaderPairs = s.resolveHeaderPairs()
+	s.headerPairsLoaded = true
+	return s.HeaderPairs
+}
+
+func (s *PreparedSignals) GetAuditPrompt() string {
+	if s.auditPromptLoaded {
+		return s.AuditPrompt
+	}
+	s.AuditPrompt = s.resolveAuditPrompt()
+	s.auditPromptLoaded = true
+	return s.AuditPrompt
+}
+
+func (s *PreparedSignals) GetMessageGroupTexts() []string {
+	if s.messageGroupTextsLoaded {
+		return s.MessageGroupTexts
+	}
+	s.MessageGroupTexts = s.resolveMessageGroupTexts()
+	s.messageGroupTextsLoaded = true
+	return s.MessageGroupTexts
+}
+
+func (s *PreparedSignals) resolveHeaderPairs() []HeaderPair {
+	if s.loadHeaderPairs == nil {
+		if s.ctx == nil {
+			return s.HeaderPairs
+		}
+		s.loadHeaderPairs = collectHeaderPairs
+	}
+	return s.loadHeaderPairs(s.ctx)
+}
+
+func (s *PreparedSignals) resolveAuditPrompt() string {
+	if s.loadAuditPrompt == nil {
+		if s.ctx == nil {
+			return s.AuditPrompt
+		}
+		s.loadAuditPrompt = collectAuditPrompt
+	}
+	return s.loadAuditPrompt(s.ctx)
+}
+
+func (s *PreparedSignals) resolveMessageGroupTexts() []string {
+	if s.loadMessageGroupTexts == nil {
+		if s.ctx == nil {
+			return s.MessageGroupTexts
+		}
+		s.loadMessageGroupTexts = collectMessageGroupTexts
+	}
+	return s.loadMessageGroupTexts(s.ctx)
 }
 
 func collectHeaderPairs(ctx context.Context) []HeaderPair {

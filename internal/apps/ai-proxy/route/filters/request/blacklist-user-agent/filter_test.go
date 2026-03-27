@@ -168,6 +168,73 @@ func TestDetectBlacklistedUserAgent_PrefersHeaderBeforePrompt(t *testing.T) {
 	}
 }
 
+func TestDetectBlacklistedUserAgent_StopsLoadingAfterHeaderMatch(t *testing.T) {
+	restore := replaceItemsForTest(map[string]BlacklistItem{
+		"header": testHeaderItem{name: "header", match: true},
+		"prompt": testPromptItem{name: "prompt", match: true},
+	})
+	t.Cleanup(restore)
+
+	var headerLoads, promptLoads, messageGroupLoads int
+	signals := PreparedSignals{
+		loadHeaderPairs: func(context.Context) []HeaderPair {
+			headerLoads++
+			return []HeaderPair{{Key: "User-Agent", Value: "codex"}}
+		},
+		loadAuditPrompt: func(context.Context) string {
+			promptLoads++
+			return "You are Codex"
+		},
+		loadMessageGroupTexts: func(context.Context) []string {
+			messageGroupLoads++
+			return []string{"You are Codex"}
+		},
+	}
+
+	items := resolveEnabledItems([]string{"header", "prompt"})
+	gotName, gotSource := detectBlacklistedUserAgent(items, signals)
+	if gotName != "header" || gotSource != sourceRequestHeader {
+		t.Fatalf("expected header stage to match first, got name=%q source=%q", gotName, gotSource)
+	}
+	if headerLoads != 1 || promptLoads != 0 || messageGroupLoads != 0 {
+		t.Fatalf("expected only headers to be loaded, got header=%d prompt=%d message_group=%d", headerLoads, promptLoads, messageGroupLoads)
+	}
+}
+
+func TestDetectBlacklistedUserAgent_LoadsPromptBeforeMessageGroup(t *testing.T) {
+	restore := replaceItemsForTest(map[string]BlacklistItem{
+		"header":  testHeaderItem{name: "header", match: false},
+		"prompt":  testPromptItem{name: "prompt", match: true},
+		"message": testMessageGroupItem{name: "message", match: true},
+	})
+	t.Cleanup(restore)
+
+	var headerLoads, promptLoads, messageGroupLoads int
+	signals := PreparedSignals{
+		loadHeaderPairs: func(context.Context) []HeaderPair {
+			headerLoads++
+			return []HeaderPair{{Key: "User-Agent", Value: "plain-client"}}
+		},
+		loadAuditPrompt: func(context.Context) string {
+			promptLoads++
+			return "You are Codex"
+		},
+		loadMessageGroupTexts: func(context.Context) []string {
+			messageGroupLoads++
+			return []string{"You are Codex"}
+		},
+	}
+
+	items := resolveEnabledItems([]string{"header", "prompt", "message"})
+	gotName, gotSource := detectBlacklistedUserAgent(items, signals)
+	if gotName != "prompt" || gotSource != sourceAuditPrompt {
+		t.Fatalf("expected prompt stage to match before message-group stage, got name=%q source=%q", gotName, gotSource)
+	}
+	if headerLoads != 1 || promptLoads != 1 || messageGroupLoads != 0 {
+		t.Fatalf("expected message-group not to load after prompt match, got header=%d prompt=%d message_group=%d", headerLoads, promptLoads, messageGroupLoads)
+	}
+}
+
 func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItemInSameStage(t *testing.T) {
 	restore := replaceItemsForTest(map[string]BlacklistItem{
 		"first":  testPromptItem{name: "first", match: true},
@@ -182,7 +249,7 @@ func TestDetectBlacklistedUserAgent_StopsAtFirstMatchedItemInSameStage(t *testin
 	}
 }
 
-func TestPrepareSignals_CollectsHeadersAuditPromptAndSystemMessageTexts(t *testing.T) {
+func TestPrepareSignals_CollectsHeadersAuditPromptAndSystemMessageTextsOnDemand(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
 	sink := types.New("audit-1", logrusx.New())
@@ -203,14 +270,16 @@ func TestPrepareSignals_CollectsHeadersAuditPromptAndSystemMessageTexts(t *testi
 	})
 
 	signals := prepareSignals(ctx)
-	if len(signals.HeaderPairs) != 1 || signals.HeaderPairs[0].Key != "User-Agent" || signals.HeaderPairs[0].Value != "codex_cli_rs/0.116.0" {
-		t.Fatalf("unexpected header pairs: %#v", signals.HeaderPairs)
+	headerPairs := signals.GetHeaderPairs()
+	if len(headerPairs) != 1 || headerPairs[0].Key != "User-Agent" || headerPairs[0].Value != "codex_cli_rs/0.116.0" {
+		t.Fatalf("unexpected header pairs: %#v", headerPairs)
 	}
-	if signals.AuditPrompt != "system prompt" {
-		t.Fatalf("expected audit prompt to be collected, got %q", signals.AuditPrompt)
+	if prompt := signals.GetAuditPrompt(); prompt != "system prompt" {
+		t.Fatalf("expected audit prompt to be collected, got %q", prompt)
 	}
-	if len(signals.MessageGroupTexts) != 2 || signals.MessageGroupTexts[0] != "system 1" || signals.MessageGroupTexts[1] != "system 2" {
-		t.Fatalf("unexpected message-group texts: %#v", signals.MessageGroupTexts)
+	messageGroupTexts := signals.GetMessageGroupTexts()
+	if len(messageGroupTexts) != 2 || messageGroupTexts[0] != "system 1" || messageGroupTexts[1] != "system 2" {
+		t.Fatalf("unexpected message-group texts: %#v", messageGroupTexts)
 	}
 }
 
@@ -237,6 +306,15 @@ type testPromptItem struct {
 func (s testPromptItem) Name() string { return s.name }
 
 func (s testPromptItem) MatchPrompt(string) bool { return s.match }
+
+type testMessageGroupItem struct {
+	name  string
+	match bool
+}
+
+func (s testMessageGroupItem) Name() string { return s.name }
+
+func (s testMessageGroupItem) MatchMessageGroupText(string) bool { return s.match }
 
 func newFilterForTest(t *testing.T) filter_define.ProxyRequestRewriter {
 	t.Helper()
