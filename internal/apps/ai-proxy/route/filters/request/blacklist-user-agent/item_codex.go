@@ -14,16 +14,7 @@
 
 package blacklist_user_agent
 
-import (
-	"context"
-	"encoding/json"
-	"strings"
-
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
-)
+import "strings"
 
 const codexSystemPromptHint = "You are Codex"
 
@@ -37,76 +28,18 @@ func (codexItem) Name() string {
 	return "codex"
 }
 
-func (codexItem) Match(ctx context.Context) (bool, string) {
-	if msgGroup, ok := ctxhelper.GetMessageGroup(ctx); ok {
-		if containsCodexSystemMessage(msgGroup.RequestedMessages) || containsCodexSystemMessage(msgGroup.AllMessages) {
-			return true, "message_group"
-		}
-	}
-	if req, ok := ctxhelper.GetReverseProxyRequestInSnapshot(ctx); ok {
-		if containsCodexHeader(req.Header) {
-			return true, "request_header"
-		}
-	}
-	if bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(ctx); ok {
-		if matched, source := matchCodexFromRequestBody(bodyValue); matched {
-			return true, source
-		}
-	}
-	if matched, source := matchFromAuditPrompt(ctx, isCodexSystemPrompt); matched {
-		return true, source
-	}
-	return false, ""
+func (codexItem) MatchHeader(key, value string) bool {
+	return containsCodex(key) || containsCodex(value)
 }
 
-func containsCodexSystemMessage(msgs message.Messages) bool {
-	for _, msg := range msgs {
-		if msg.Role != openai.ChatMessageRoleSystem {
-			continue
-		}
-		if isCodexSystemPrompt(chatMessageText(msg)) {
-			return true
-		}
-	}
-	return false
+func (codexItem) MatchPrompt(prompt string) bool {
+	return isCodexSystemPrompt(prompt)
 }
 
 func isCodexSystemPrompt(content string) bool {
-	return strings.HasPrefix(strings.TrimSpace(content), codexSystemPromptHint)
+	return matchPromptPrefix(content, codexSystemPromptHint)
 }
 
-func containsCodexHeader(headers map[string][]string) bool {
-	for key, values := range headers {
-		if strings.Contains(strings.ToLower(key), "codex") {
-			return true
-		}
-		for _, value := range values {
-			if strings.Contains(strings.ToLower(value), "codex") {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func matchCodexFromRequestBody(value any) (bool, string) {
-	bodyBytes, ok := value.([]byte)
-	if !ok || len(bodyBytes) == 0 {
-		return false, ""
-	}
-
-	var req struct {
-		Messages     []openai.ChatCompletionMessage `json:"messages"`
-		Instructions string                         `json:"instructions"`
-	}
-	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		return false, ""
-	}
-	if containsCodexSystemMessage(req.Messages) {
-		return true, "request_body.messages"
-	}
-	if isCodexSystemPrompt(req.Instructions) {
-		return true, "request_body.instructions"
-	}
-	return false, ""
+func containsCodex(input string) bool {
+	return strings.Contains(strings.ToLower(input), "codex")
 }

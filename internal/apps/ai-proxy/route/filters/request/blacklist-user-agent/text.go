@@ -15,19 +15,24 @@
 package blacklist_user_agent
 
 import (
-	"context"
+	"strings"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/sashabaranov/go-openai"
 )
 
-func matchFromAuditPrompt(ctx context.Context, matcher func(string) bool) (bool, string) {
-	sink, ok := ctxhelper.GetAuditSink(ctx)
-	if !ok || sink == nil {
-		return false, ""
+func matchPromptPrefix(content, prefix string) bool {
+	return strings.HasPrefix(strings.TrimSpace(content), prefix)
+}
+
+func chatMessageText(msg openai.ChatCompletionMessage) string {
+	if len(msg.MultiContent) == 0 {
+		return msg.Content
 	}
-	prompt, _ := sink.Snapshot()["prompt"].(string)
-	if !matcher(prompt) {
-		return false, ""
+	parts := make([]string, 0, len(msg.MultiContent))
+	for _, part := range msg.MultiContent {
+		if part.Text != "" {
+			parts = append(parts, part.Text)
+		}
 	}
-	return true, "audit.prompt"
+	return strings.Join(parts, "\n")
 }

@@ -14,17 +14,6 @@
 
 package blacklist_user_agent
 
-import (
-	"context"
-	"encoding/json"
-	"strings"
-
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
-)
-
 const cursorSystemPromptHint = "You are Assistant, a coding agent based on"
 
 type cursorItem struct{}
@@ -37,57 +26,14 @@ func (cursorItem) Name() string {
 	return "cursor"
 }
 
-func (cursorItem) Match(ctx context.Context) (bool, string) {
-	if msgGroup, ok := ctxhelper.GetMessageGroup(ctx); ok {
-		if containsCursorSystemMessage(msgGroup.RequestedMessages) || containsCursorSystemMessage(msgGroup.AllMessages) {
-			return true, "message_group"
-		}
-	}
-	if bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(ctx); ok {
-		if matched, source := matchCursorFromRequestBody(bodyValue); matched {
-			return true, source
-		}
-	}
-	if matched, source := matchFromAuditPrompt(ctx, isCursorSystemPrompt); matched {
-		return true, source
-	}
-	return false, ""
+func (cursorItem) MatchPrompt(prompt string) bool {
+	return isCursorSystemPrompt(prompt)
 }
 
-func containsCursorSystemMessage(msgs message.Messages) bool {
-	for _, msg := range msgs {
-		if msg.Role != openai.ChatMessageRoleSystem {
-			continue
-		}
-		if isCursorSystemPrompt(chatMessageText(msg)) {
-			return true
-		}
-	}
-	return false
+func (cursorItem) MatchMessageGroupText(text string) bool {
+	return isCursorSystemPrompt(text)
 }
 
 func isCursorSystemPrompt(content string) bool {
-	return strings.HasPrefix(strings.TrimSpace(content), cursorSystemPromptHint)
-}
-
-func matchCursorFromRequestBody(value any) (bool, string) {
-	bodyBytes, ok := value.([]byte)
-	if !ok || len(bodyBytes) == 0 {
-		return false, ""
-	}
-
-	var req struct {
-		Messages     []openai.ChatCompletionMessage `json:"messages"`
-		Instructions string                         `json:"instructions"`
-	}
-	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		return false, ""
-	}
-	if containsCursorSystemMessage(req.Messages) {
-		return true, "request_body.messages"
-	}
-	if isCursorSystemPrompt(req.Instructions) {
-		return true, "request_body.instructions"
-	}
-	return false, ""
+	return matchPromptPrefix(content, cursorSystemPromptHint)
 }

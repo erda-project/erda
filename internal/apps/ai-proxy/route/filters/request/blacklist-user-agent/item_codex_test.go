@@ -14,128 +14,52 @@
 
 package blacklist_user_agent
 
-import (
-	"encoding/json"
-	"net/http/httptest"
-	"testing"
+import "testing"
 
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
-)
-
-func TestCodexItem_MatchMessageGroup(t *testing.T) {
-	ctx := newDetectContextForTest()
-	ctxhelper.PutMessageGroup(ctx, message.Group{
-		RequestedMessages: message.Messages{
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: codexSystemPromptHint + "\nYou are running in a coding environment.",
-			},
-		},
-	})
-
-	matched, source := codexItem{}.Match(ctx)
-	if !matched || source != "message_group" {
-		t.Fatalf("expected codex message-group match, got matched=%v source=%q", matched, source)
+func TestCodexItem_MatchPrompt(t *testing.T) {
+	matcher, ok := any(codexItem{}).(PromptMatcher)
+	if !ok {
+		t.Fatal("expected codex item to implement PromptMatcher")
+	}
+	if !matcher.MatchPrompt(codexSystemPromptHint + "\nYou are running in a coding environment.") {
+		t.Fatal("expected codex prompt prefix to match")
 	}
 }
 
-func TestCodexItem_MatchRawInstructionsByPrefix(t *testing.T) {
-	ctx := newDetectContextForTest()
-	body, err := json.Marshal(map[string]any{
-		"instructions": codexSystemPromptHint + "\nYou are running in a coding environment.",
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal raw instructions body: %v", err)
-	}
-	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
-
-	matched, source := codexItem{}.Match(ctx)
-	if !matched || source != "request_body.instructions" {
-		t.Fatalf("expected codex raw instructions match, got matched=%v source=%q", matched, source)
+func TestCodexItem_MatchPromptAfterLeadingWhitespace(t *testing.T) {
+	matcher := any(codexItem{}).(PromptMatcher)
+	if !matcher.MatchPrompt("\n \t" + codexSystemPromptHint + "\nYou are running in a coding environment.") {
+		t.Fatal("expected codex prompt prefix to match after trimming leading whitespace")
 	}
 }
 
-func TestCodexItem_MatchAfterLeadingWhitespace(t *testing.T) {
-	ctx := newDetectContextForTest()
-	body, err := json.Marshal(map[string]any{
-		"instructions": "\n \t" + codexSystemPromptHint + "\nYou are running in a coding environment.",
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal raw instructions body: %v", err)
-	}
-	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
-
-	matched, source := codexItem{}.Match(ctx)
-	if !matched || source != "request_body.instructions" {
-		t.Fatalf("expected codex raw instructions match after trimming leading whitespace, got matched=%v source=%q", matched, source)
+func TestCodexItem_IgnorePromptWithoutPrefix(t *testing.T) {
+	matcher := any(codexItem{}).(PromptMatcher)
+	if matcher.MatchPrompt("Tooling follows below.\n" + codexSystemPromptHint) {
+		t.Fatal("expected non-prefixed codex prompt not to match")
 	}
 }
 
-func TestCodexItem_MatchAuditPromptByPrefix(t *testing.T) {
-	ctx := newDetectContextForTest()
-	audithelper.Note(ctx, "prompt", codexSystemPromptHint+"\nYou are running in a coding environment.")
-
-	matched, source := codexItem{}.Match(ctx)
-	if !matched || source != "audit.prompt" {
-		t.Fatalf("expected codex audit prompt match, got matched=%v source=%q", matched, source)
+func TestCodexItem_MatchHeaderContainingCodexInKey(t *testing.T) {
+	matcher, ok := any(codexItem{}).(HeaderMatcher)
+	if !ok {
+		t.Fatal("expected codex item to implement HeaderMatcher")
+	}
+	if !matcher.MatchHeader("X-Codex-Originator", "cli") {
+		t.Fatal("expected codex header key to match")
 	}
 }
 
-func TestCodexItem_IgnoreUserMessageContainingPrompt(t *testing.T) {
-	ctx := newDetectContextForTest()
-	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleUser,
-			Content: codexSystemPromptHint,
-		},
-	})
-
-	matched, source := codexItem{}.Match(ctx)
-	if matched || source != "" {
-		t.Fatalf("expected user message not to match codex, got matched=%v source=%q", matched, source)
+func TestCodexItem_MatchHeaderContainingCodexInValue(t *testing.T) {
+	matcher := any(codexItem{}).(HeaderMatcher)
+	if !matcher.MatchHeader("User-Agent", "codex_cli_rs/0.116.0") {
+		t.Fatal("expected codex header value to match")
 	}
 }
 
-func TestCodexItem_IgnoreSystemMessageContainingPromptButNotPrefixed(t *testing.T) {
-	ctx := newDetectContextForTest()
-	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: "Tooling follows below.\n" + codexSystemPromptHint,
-		},
-	})
-
-	matched, source := codexItem{}.Match(ctx)
-	if matched || source != "" {
-		t.Fatalf("expected non-prefixed system message not to match codex, got matched=%v source=%q", matched, source)
-	}
-}
-
-func TestCodexItem_MatchRequestHeaderContainingCodex(t *testing.T) {
-	ctx := newDetectContextForTest()
-	req := httptest.NewRequest("POST", "http://example.com/v1/chat/completions", nil)
-	req.Header.Set("Originator", "codex_cli_rs")
-	req.Header.Set("User-Agent", "codex_cli_rs/0.116.0 (Mac OS 26.4.0; arm64) iTerm.app/3.6.9beta1")
-	ctxhelper.PutReverseProxyRequestInSnapshot(ctx, req)
-
-	matched, source := codexItem{}.Match(ctx)
-	if !matched || source != "request_header" {
-		t.Fatalf("expected codex request-header match, got matched=%v source=%q", matched, source)
-	}
-}
-
-func TestCodexItem_IgnoreRequestHeaderWithoutCodex(t *testing.T) {
-	ctx := newDetectContextForTest()
-	req := httptest.NewRequest("POST", "http://example.com/v1/chat/completions", nil)
-	req.Header.Set("User-Agent", "openai-cli/1.2.3")
-	ctxhelper.PutReverseProxyRequestInSnapshot(ctx, req)
-
-	matched, source := codexItem{}.Match(ctx)
-	if matched || source != "" {
-		t.Fatalf("expected request header without codex not to match, got matched=%v source=%q", matched, source)
+func TestCodexItem_IgnoreHeaderWithoutCodex(t *testing.T) {
+	matcher := any(codexItem{}).(HeaderMatcher)
+	if matcher.MatchHeader("User-Agent", "openai-cli/1.2.3") {
+		t.Fatal("expected header without codex not to match")
 	}
 }

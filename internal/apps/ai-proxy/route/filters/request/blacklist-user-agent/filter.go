@@ -29,6 +29,12 @@ import (
 
 const Name = "blacklist-user-agent"
 
+const (
+	sourceRequestHeader = "request_header"
+	sourceAuditPrompt   = "audit.prompt"
+	sourceMessageGroup  = "message_group"
+)
+
 type Filter struct{}
 
 var (
@@ -43,12 +49,13 @@ func init() {
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
-	blacklist := getBlacklistByCredential(ctx)
-	if len(blacklist) == 0 {
+	enabledItems := resolveEnabledItems(getBlacklistByCredential(ctx))
+	if len(enabledItems) == 0 {
 		return nil
 	}
+	signals := prepareSignals(ctx)
 
-	userAgentName, source := detectBlacklistedUserAgent(ctx, blacklist)
+	userAgentName, source := detectBlacklistedUserAgent(enabledItems, signals)
 	if userAgentName == "" {
 		return nil
 	}
@@ -58,17 +65,66 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	return http_error.NewHTTPError(ctx, http.StatusForbidden, fmt.Sprintf("request is not allowed for blacklisted user-agent: %s", userAgentName))
 }
 
-func detectBlacklistedUserAgent(ctx context.Context, blacklist []string) (string, string) {
-	for _, itemName := range blacklist {
-		item, ok := getItem(itemName)
+func detectBlacklistedUserAgent(items []BlacklistItem, signals PreparedSignals) (string, string) {
+	if itemName := detectBlacklistedUserAgentFromHeaders(items, signals.HeaderPairs); itemName != "" {
+		return itemName, sourceRequestHeader
+	}
+	if itemName := detectBlacklistedUserAgentFromPrompt(items, signals.AuditPrompt); itemName != "" {
+		return itemName, sourceAuditPrompt
+	}
+	if itemName := detectBlacklistedUserAgentFromMessageGroup(items, signals.MessageGroupTexts); itemName != "" {
+		return itemName, sourceMessageGroup
+	}
+	return "", ""
+}
+
+func detectBlacklistedUserAgentFromHeaders(items []BlacklistItem, headerPairs []HeaderPair) string {
+	if len(headerPairs) == 0 {
+		return ""
+	}
+	for _, item := range items {
+		matcher, ok := item.(HeaderMatcher)
 		if !ok {
 			continue
 		}
-		if matched, source := item.Match(ctx); matched {
-			return item.Name(), source
+		for _, pair := range headerPairs {
+			if matcher.MatchHeader(pair.Key, pair.Value) {
+				return item.Name()
+			}
 		}
 	}
-	return "", ""
+	return ""
+}
+
+func detectBlacklistedUserAgentFromPrompt(items []BlacklistItem, prompt string) string {
+	if prompt == "" {
+		return ""
+	}
+	for _, item := range items {
+		matcher, ok := item.(PromptMatcher)
+		if ok && matcher.MatchPrompt(prompt) {
+			return item.Name()
+		}
+	}
+	return ""
+}
+
+func detectBlacklistedUserAgentFromMessageGroup(items []BlacklistItem, texts []string) string {
+	if len(texts) == 0 {
+		return ""
+	}
+	for _, item := range items {
+		matcher, ok := item.(MessageGroupMatcher)
+		if !ok {
+			continue
+		}
+		for _, text := range texts {
+			if matcher.MatchMessageGroupText(text) {
+				return item.Name()
+			}
+		}
+	}
+	return ""
 }
 
 func getBlacklistByCredential(ctx context.Context) []string {

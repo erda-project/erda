@@ -14,17 +14,6 @@
 
 package blacklist_user_agent
 
-import (
-	"context"
-	"encoding/json"
-	"strings"
-
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
-)
-
 // Source: https://github.com/search?q=repo:openclaw/openclaw+%22You+are+a+personal+assistant+running+inside+OpenClaw.%22&type=code
 const openClawSystemPromptHint = "You are a personal assistant running inside OpenClaw."
 
@@ -38,70 +27,14 @@ func (openClawItem) Name() string {
 	return "openclaw"
 }
 
-func (openClawItem) Match(ctx context.Context) (bool, string) {
-	if msgGroup, ok := ctxhelper.GetMessageGroup(ctx); ok {
-		if containsOpenClawSystemMessage(msgGroup.RequestedMessages) || containsOpenClawSystemMessage(msgGroup.AllMessages) {
-			return true, "message_group"
-		}
-	}
-	if bodyValue, ok := ctxhelper.GetReverseProxyRequestBodyBytes(ctx); ok {
-		if matched, source := matchOpenClawFromRequestBody(bodyValue); matched {
-			return true, source
-		}
-	}
-	if matched, source := matchFromAuditPrompt(ctx, isOpenClawSystemPrompt); matched {
-		return true, source
-	}
-	return false, ""
+func (openClawItem) MatchPrompt(prompt string) bool {
+	return isOpenClawSystemPrompt(prompt)
 }
 
-func containsOpenClawSystemMessage(msgs message.Messages) bool {
-	for _, msg := range msgs {
-		if msg.Role != openai.ChatMessageRoleSystem {
-			continue
-		}
-		if isOpenClawSystemPrompt(chatMessageText(msg)) {
-			return true
-		}
-	}
-	return false
+func (openClawItem) MatchMessageGroupText(text string) bool {
+	return isOpenClawSystemPrompt(text)
 }
 
 func isOpenClawSystemPrompt(content string) bool {
-	return strings.HasPrefix(strings.TrimSpace(content), openClawSystemPromptHint)
-}
-
-func chatMessageText(msg openai.ChatCompletionMessage) string {
-	if len(msg.MultiContent) == 0 {
-		return msg.Content
-	}
-	parts := make([]string, 0, len(msg.MultiContent))
-	for _, part := range msg.MultiContent {
-		if part.Text != "" {
-			parts = append(parts, part.Text)
-		}
-	}
-	return strings.Join(parts, "\n")
-}
-
-func matchOpenClawFromRequestBody(value any) (bool, string) {
-	bodyBytes, ok := value.([]byte)
-	if !ok || len(bodyBytes) == 0 {
-		return false, ""
-	}
-
-	var req struct {
-		Messages     []openai.ChatCompletionMessage `json:"messages"`
-		Instructions string                         `json:"instructions"`
-	}
-	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		return false, ""
-	}
-	if containsOpenClawSystemMessage(req.Messages) {
-		return true, "request_body.messages"
-	}
-	if isOpenClawSystemPrompt(req.Instructions) {
-		return true, "request_body.instructions"
-	}
-	return false, ""
+	return matchPromptPrefix(content, openClawSystemPromptHint)
 }

@@ -14,102 +14,45 @@
 
 package blacklist_user_agent
 
-import (
-	"encoding/json"
-	"testing"
+import "testing"
 
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
-)
-
-func TestCursorItem_MatchMessageGroup(t *testing.T) {
-	ctx := newDetectContextForTest()
-	ctxhelper.PutMessageGroup(ctx, message.Group{
-		RequestedMessages: message.Messages{
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: cursorSystemPromptHint + "\nYou can help with editing and running commands.",
-			},
-		},
-	})
-
-	matched, source := cursorItem{}.Match(ctx)
-	if !matched || source != "message_group" {
-		t.Fatalf("expected cursor message-group match, got matched=%v source=%q", matched, source)
+func TestCursorItem_MatchPrompt(t *testing.T) {
+	matcher, ok := any(cursorItem{}).(PromptMatcher)
+	if !ok {
+		t.Fatal("expected cursor item to implement PromptMatcher")
+	}
+	if !matcher.MatchPrompt(cursorSystemPromptHint + "\nYou can help with editing and running commands.") {
+		t.Fatal("expected cursor prompt prefix to match")
 	}
 }
 
-func TestCursorItem_MatchRawInstructionsByPrefix(t *testing.T) {
-	ctx := newDetectContextForTest()
-	body, err := json.Marshal(map[string]any{
-		"instructions": cursorSystemPromptHint + "\nYou can help with editing and running commands.",
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal raw instructions body: %v", err)
-	}
-	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
-
-	matched, source := cursorItem{}.Match(ctx)
-	if !matched || source != "request_body.instructions" {
-		t.Fatalf("expected cursor raw instructions match, got matched=%v source=%q", matched, source)
+func TestCursorItem_MatchPromptAfterLeadingWhitespace(t *testing.T) {
+	matcher := any(cursorItem{}).(PromptMatcher)
+	if !matcher.MatchPrompt("\n \t" + cursorSystemPromptHint + "\nYou can help with editing and running commands.") {
+		t.Fatal("expected cursor prompt prefix to match after trimming leading whitespace")
 	}
 }
 
-func TestCursorItem_MatchAfterLeadingWhitespace(t *testing.T) {
-	ctx := newDetectContextForTest()
-	body, err := json.Marshal(map[string]any{
-		"instructions": "\n \t" + cursorSystemPromptHint + "\nYou can help with editing and running commands.",
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal raw instructions body: %v", err)
-	}
-	ctxhelper.PutReverseProxyRequestBodyBytes(ctx, body)
-
-	matched, source := cursorItem{}.Match(ctx)
-	if !matched || source != "request_body.instructions" {
-		t.Fatalf("expected cursor raw instructions match after trimming leading whitespace, got matched=%v source=%q", matched, source)
+func TestCursorItem_IgnorePromptWithoutPrefix(t *testing.T) {
+	matcher := any(cursorItem{}).(PromptMatcher)
+	if matcher.MatchPrompt("Tooling follows below.\n" + cursorSystemPromptHint) {
+		t.Fatal("expected non-prefixed cursor prompt not to match")
 	}
 }
 
-func TestCursorItem_MatchAuditPromptByPrefix(t *testing.T) {
-	ctx := newDetectContextForTest()
-	audithelper.Note(ctx, "prompt", cursorSystemPromptHint+"\nYou can help with editing and running commands.")
-
-	matched, source := cursorItem{}.Match(ctx)
-	if !matched || source != "audit.prompt" {
-		t.Fatalf("expected cursor audit prompt match, got matched=%v source=%q", matched, source)
+func TestCursorItem_MatchMessageGroupText(t *testing.T) {
+	matcher, ok := any(cursorItem{}).(MessageGroupMatcher)
+	if !ok {
+		t.Fatal("expected cursor item to implement MessageGroupMatcher")
+	}
+	if !matcher.MatchMessageGroupText(cursorSystemPromptHint + "\nYou can help with editing and running commands.") {
+		t.Fatal("expected cursor message-group text prefix to match")
 	}
 }
 
-func TestCursorItem_IgnoreUserMessageContainingPrompt(t *testing.T) {
-	ctx := newDetectContextForTest()
-	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleUser,
-			Content: cursorSystemPromptHint,
-		},
-	})
-
-	matched, source := cursorItem{}.Match(ctx)
-	if matched || source != "" {
-		t.Fatalf("expected user message not to match cursor, got matched=%v source=%q", matched, source)
-	}
-}
-
-func TestCursorItem_IgnoreSystemMessageContainingPromptButNotPrefixed(t *testing.T) {
-	ctx := newDetectContextForTest()
-	putRawChatRequestBodyForItemTest(t, ctx, []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: "Tooling follows below.\n" + cursorSystemPromptHint,
-		},
-	})
-
-	matched, source := cursorItem{}.Match(ctx)
-	if matched || source != "" {
-		t.Fatalf("expected non-prefixed system message not to match cursor, got matched=%v source=%q", matched, source)
+func TestCursorItem_IgnoreMessageGroupTextWithoutPrefix(t *testing.T) {
+	matcher := any(cursorItem{}).(MessageGroupMatcher)
+	if matcher.MatchMessageGroupText("Tooling follows below.\n" + cursorSystemPromptHint) {
+		t.Fatal("expected non-prefixed cursor message-group text not to match")
 	}
 }
