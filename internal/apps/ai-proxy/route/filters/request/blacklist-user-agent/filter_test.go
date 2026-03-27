@@ -121,31 +121,54 @@ func TestFilter_AllowsGeneralFallbackWhenNoConfiguredRules(t *testing.T) {
 
 func TestResolveEnabledItems_IgnoresUnknownItemsAndPreservesOrder(t *testing.T) {
 	restore := replaceItemsForTest(map[string]BlacklistItem{
-		"cursor":   namedStubItem{name: "cursor"},
-		"openclaw": namedStubItem{name: "openclaw"},
+		"coding-agent": namedStubItem{name: "coding-agent"},
+		"openclaw":     namedStubItem{name: "openclaw"},
 	})
 	t.Cleanup(restore)
 
-	items := resolveEnabledItems([]string{"cursor", "unknown", "openclaw"})
+	items := resolveEnabledItems([]string{"coding-agent", "unknown", "openclaw"})
 	if len(items) != 2 {
 		t.Fatalf("expected 2 enabled items, got %d", len(items))
 	}
-	if items[0].Name() != "cursor" || items[1].Name() != "openclaw" {
+	if items[0].Name() != "coding-agent" || items[1].Name() != "openclaw" {
 		t.Fatalf("expected enabled items to preserve blacklist order, got %q then %q", items[0].Name(), items[1].Name())
 	}
 }
 
 func TestResolveActiveItems_AppendsGeneralFallbackLast(t *testing.T) {
 	restore := replaceItemsForTest(map[string]BlacklistItem{
-		"cursor": namedStubItem{name: "cursor"},
+		"coding-agent": namedStubItem{name: "coding-agent"},
 	})
 	t.Cleanup(restore)
 	t.Cleanup(func() { SetGeneralRules("", "") })
 	SetGeneralRules("claude code", "")
 
-	items := resolveActiveItems([]string{"cursor"})
-	if len(items) != 2 || items[0].Name() != "cursor" || items[1].Name() != "general" {
+	items := resolveActiveItems([]string{"coding-agent"})
+	if len(items) != 2 || items[0].Name() != "coding-agent" || items[1].Name() != "general" {
 		t.Fatalf("expected general fallback to be appended last, got %#v", items)
+	}
+}
+
+func TestFilter_RejectsBlacklistedCodingAgentForClientTokenFromAuditPrompt(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{
+		ClientToken: ClientTokenConfig{Blacklist: []string{"coding-agent"}},
+	})
+
+	filter := newFilterForTest(t)
+	pr, sink := newProxyRequestForTest()
+	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(pr.In.Context(), "prompt", cursorSystemPromptHint+"\nYou can help with editing and running commands.")
+
+	err := filter.OnProxyRequest(pr)
+	if err == nil {
+		t.Fatal("expected request to be rejected for coding-agent")
+	}
+	if got := sink.Snapshot()["blacklist_user_agent"]; got != "coding-agent" {
+		t.Fatalf("expected blacklist_user_agent note coding-agent, got %#v", got)
+	}
+	if got := sink.Snapshot()["blacklist_user_agent_match_source"]; got != sourceAuditPrompt {
+		t.Fatalf("expected blacklist_user_agent_match_source %q, got %#v", sourceAuditPrompt, got)
 	}
 }
 
