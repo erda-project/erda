@@ -14,27 +14,26 @@
 
 package blacklist_user_agent
 
-// Source: https://github.com/search?q=repo:openclaw/openclaw+%22You+are+a+personal+assistant+running+inside+OpenClaw.%22&type=code
-const openClawSystemPromptHint = "You are a personal assistant running inside OpenClaw."
+const cursorSystemPromptHint = "You are Assistant, a coding agent based on"
 
-type openClawItem struct{}
+type cursorItem struct{}
 
 func init() {
-	registerItem(openClawItem{})
+	registerItem(cursorItem{})
 }
 
-func (openClawItem) Name() string {
-	return "openclaw"
+func (cursorItem) Name() string {
+	return "cursor"
 }
 
-func (openClawItem) MatchPrompt(prompt string) bool {
-	return isOpenClawSystemPrompt(prompt)
+func (cursorItem) MatchPrompt(prompt string) bool {
+	return isCursorSystemPrompt(prompt)
 }
 
-func (openClawItem) MatchMessageGroupText(text string) bool {
-	return isOpenClawSystemPrompt(text)
+func (cursorItem) MatchMessageGroupText(text string) bool {
+	return isCursorSystemPrompt(text)
 }
 
-func isOpenClawSystemPrompt(content string) bool {
-	return matchPromptPrefix(content, openClawSystemPromptHint)
+func isCursorSystemPrompt(content string) bool {
+	return matchPromptPrefix(content, cursorSystemPromptHint)
 }

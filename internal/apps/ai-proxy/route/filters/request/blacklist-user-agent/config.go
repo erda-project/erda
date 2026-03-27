@@ -34,9 +34,15 @@ type Config struct {
 	Client      ClientConfig      `json:"client" yaml:"client" file:"client"`
 }
 
+type GeneralRules struct {
+	Headers []string
+	Prompts []string
+}
+
 var (
-	configMu      sync.RWMutex
-	currentConfig Config
+	configMu            sync.RWMutex
+	currentConfig       Config
+	currentGeneralRules GeneralRules
 )
 
 func SetConfig(cfg Config) {
@@ -53,6 +59,16 @@ func SetConfig(cfg Config) {
 	}
 }
 
+func SetGeneralRules(headersRaw, promptsRaw string) {
+	configMu.Lock()
+	defer configMu.Unlock()
+
+	currentGeneralRules = GeneralRules{
+		Headers: normalizeGeneralRules(splitGeneralRules(headersRaw)),
+		Prompts: normalizeGeneralRules(splitGeneralRules(promptsRaw)),
+	}
+}
+
 func getConfig() Config {
 	configMu.RLock()
 	defer configMu.RUnlock()
@@ -64,6 +80,16 @@ func getConfig() Config {
 		Client: ClientConfig{
 			Blacklist: append([]string(nil), currentConfig.Client.Blacklist...),
 		},
+	}
+}
+
+func getGeneralRules() GeneralRules {
+	configMu.RLock()
+	defer configMu.RUnlock()
+
+	return GeneralRules{
+		Headers: append([]string(nil), currentGeneralRules.Headers...),
+		Prompts: append([]string(nil), currentGeneralRules.Prompts...),
 	}
 }
 
@@ -85,6 +111,24 @@ func resolveBlacklist(items []string, raw string) []string {
 		return nil
 	}
 	return strings.Split(raw, ",")
+}
+
+func normalizeGeneralRules(items []string) []string {
+	normalized := make([]string, 0, len(items))
+	for _, item := range items {
+		cleaned := strings.TrimSpace(strings.Trim(strings.TrimSpace(item), ";"))
+		if value := normalize(cleaned); value != "" {
+			normalized = append(normalized, value)
+		}
+	}
+	return normalized
+}
+
+func splitGeneralRules(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	return strings.Split(raw, ";;;")
 }
 
 func normalize(input string) string {

@@ -14,32 +14,25 @@
 
 package blacklist_user_agent
 
-import "strings"
+import (
+	"strings"
 
-const codexSystemPromptHint = "You are Codex"
+	"github.com/sashabaranov/go-openai"
+)
 
-type codexItem struct{}
-
-func init() {
-	registerItem(codexItem{})
+func matchPromptPrefix(content, prefix string) bool {
+	return strings.HasPrefix(strings.TrimSpace(content), prefix)
 }
 
-func (codexItem) Name() string {
-	return "codex"
-}
-
-func (codexItem) MatchHeader(key, value string) bool {
-	return containsCodex(key) || containsCodex(value)
-}
-
-func (codexItem) MatchPrompt(prompt string) bool {
-	return isCodexSystemPrompt(prompt)
-}
-
-func isCodexSystemPrompt(content string) bool {
-	return matchPromptPrefix(content, codexSystemPromptHint)
-}
-
-func containsCodex(input string) bool {
-	return strings.Contains(strings.ToLower(input), "codex")
+func chatMessageText(msg openai.ChatCompletionMessage) string {
+	if len(msg.MultiContent) == 0 {
+		return msg.Content
+	}
+	parts := make([]string, 0, len(msg.MultiContent))
+	for _, part := range msg.MultiContent {
+		if part.Text != "" {
+			parts = append(parts, part.Text)
+		}
+	}
+	return strings.Join(parts, "\n")
 }
