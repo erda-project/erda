@@ -49,11 +49,11 @@ type Config struct {
 	LBStateStoreStickyTTL time.Duration `file:"lb_state_store_sticky_ttl" env:"LB_STATE_STORE_STICKY_TTL" default:"10m"`
 	ModelHealth           health.Config `file:"model_health"`
 
-	BlacklistUserAgent               blacklist_user_agent.Config `file:"blacklist_user_agent"`
+	BlacklistUserAgent blacklist_user_agent.Config `file:"blacklist_user_agent"`
 	// Delimiter: ";;;" so a single rule can still contain ";" safely.
-	BlacklistUserAgentGeneralHeaders string                      `env:"AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_HEADERS"`
+	BlacklistUserAgentGeneralHeaders string `env:"AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_HEADERS"`
 	// Delimiter: ";;;" so a single prompt prefix can still contain ";" safely.
-	BlacklistUserAgentGeneralPrompts string                      `env:"AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_PROMPTS"`
+	BlacklistUserAgentGeneralPrompts string `env:"AI_PROXY_BLACKLIST_USER_AGENT_GENERAL_PROMPTS"`
 
 	// Redis settings (standalone or sentinel via redis.UniversalOptions)
 	RedisAddr          string `file:"redis_addr" env:"REDIS_ADDR"`
