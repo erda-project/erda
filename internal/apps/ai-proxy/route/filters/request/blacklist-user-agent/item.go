@@ -35,6 +35,10 @@ type MessageGroupMatcher interface {
 	MatchMessageGroupText(text string) bool
 }
 
+type EnabledItem interface {
+	Enabled() bool
+}
+
 var (
 	itemsMu         sync.RWMutex
 	registeredItems = make(map[string]BlacklistItem)
@@ -64,6 +68,9 @@ func resolveEnabledItems(blacklist []string) []BlacklistItem {
 	for _, itemName := range blacklist {
 		item, ok := getItem(itemName)
 		if !ok {
+			continue
+		}
+		if enabledItem, ok := item.(EnabledItem); ok && !enabledItem.Enabled() {
 			continue
 		}
 		items = append(items, item)

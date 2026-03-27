@@ -29,9 +29,15 @@ type ClientConfig struct {
 	Blacklist    []string `json:"-" yaml:"-" file:"-"`
 }
 
+type GeneralConfig struct {
+	ItemTypesStr string   `json:"item_types_str" yaml:"item_types_str" file:"item_types_str"`
+	ItemTypes    []string `json:"-" yaml:"-" file:"-"`
+}
+
 type Config struct {
 	ClientToken ClientTokenConfig `json:"client_token" yaml:"client_token" file:"client_token"`
 	Client      ClientConfig      `json:"client" yaml:"client" file:"client"`
+	General     GeneralConfig     `json:"general" yaml:"general" file:"general"`
 }
 
 var (
@@ -50,6 +56,9 @@ func SetConfig(cfg Config) {
 		Client: ClientConfig{
 			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.Client.Blacklist, cfg.Client.BlacklistStr)),
 		},
+		General: GeneralConfig{
+			ItemTypes: normalizeGeneralItemTypes(resolveGeneralItemTypes(cfg.General.ItemTypes, cfg.General.ItemTypesStr)),
+		},
 	}
 }
 
@@ -63,6 +72,9 @@ func getConfig() Config {
 		},
 		Client: ClientConfig{
 			Blacklist: append([]string(nil), currentConfig.Client.Blacklist...),
+		},
+		General: GeneralConfig{
+			ItemTypes: append([]string(nil), currentConfig.General.ItemTypes...),
 		},
 	}
 }
@@ -85,6 +97,27 @@ func resolveBlacklist(items []string, raw string) []string {
 		return nil
 	}
 	return strings.Split(raw, ",")
+}
+
+func normalizeGeneralItemTypes(items []string) []string {
+	normalized := make([]string, 0, len(items))
+	for _, item := range items {
+		cleaned := strings.TrimSpace(strings.Trim(strings.TrimSpace(item), ";"))
+		if value := normalize(cleaned); value != "" {
+			normalized = append(normalized, value)
+		}
+	}
+	return normalized
+}
+
+func resolveGeneralItemTypes(items []string, raw string) []string {
+	if len(items) > 0 {
+		return items
+	}
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	return strings.Split(raw, ";;;")
 }
 
 func normalize(input string) string {

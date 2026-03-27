@@ -35,6 +35,14 @@ func TestConfigFileTags(t *testing.T) {
 	if got := clientField.Tag.Get("file"); got != "blacklist_str" {
 		t.Fatalf("unexpected client file tag: %q", got)
 	}
+
+	generalField, ok := reflect.TypeOf(GeneralConfig{}).FieldByName("ItemTypesStr")
+	if !ok {
+		t.Fatal("ItemTypesStr field not found in GeneralConfig")
+	}
+	if got := generalField.Tag.Get("file"); got != "item_types_str" {
+		t.Fatalf("unexpected general file tag: %q", got)
+	}
 }
 
 func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
@@ -47,6 +55,9 @@ func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
 		Client: ClientConfig{
 			BlacklistStr: " codex, openclaw, cursor ",
 		},
+		General: GeneralConfig{
+			ItemTypesStr: " opencode ;;; Claude Code ;;;  ;; ",
+		},
 	})
 
 	cfg := getConfig()
@@ -55,5 +66,8 @@ func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
 	}
 	if len(cfg.Client.Blacklist) != 3 || cfg.Client.Blacklist[0] != "codex" || cfg.Client.Blacklist[1] != "openclaw" || cfg.Client.Blacklist[2] != "cursor" {
 		t.Fatalf("unexpected client blacklist: %#v", cfg.Client.Blacklist)
+	}
+	if len(cfg.General.ItemTypes) != 2 || cfg.General.ItemTypes[0] != "opencode" || cfg.General.ItemTypes[1] != "claude code" {
+		t.Fatalf("unexpected general item types: %#v", cfg.General.ItemTypes)
 	}
 }

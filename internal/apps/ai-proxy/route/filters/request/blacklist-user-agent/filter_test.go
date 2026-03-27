@@ -79,6 +79,43 @@ func TestFilter_RejectsAKClientWhenClientBlacklistConfiguredFromMessageGroup(t *
 	}
 }
 
+func TestFilter_RejectsGeneralItemWhenConfiguredFromAuditPrompt(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{
+		ClientToken: ClientTokenConfig{Blacklist: []string{"general"}},
+		General:     GeneralConfig{ItemTypes: []string{"claude code"}},
+	})
+
+	filter := newFilterForTest(t)
+	pr, sink := newProxyRequestForTest()
+	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(pr.In.Context(), "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
+
+	err := filter.OnProxyRequest(pr)
+	if err == nil {
+		t.Fatal("expected request to be rejected for configured general item")
+	}
+	if got := sink.Snapshot()["blacklist_user_agent"]; got != "general" {
+		t.Fatalf("expected blacklist_user_agent note general, got %#v", got)
+	}
+}
+
+func TestFilter_AllowsGeneralItemWhenNoConfiguredItemTypes(t *testing.T) {
+	t.Cleanup(func() { SetConfig(Config{}) })
+	SetConfig(Config{
+		ClientToken: ClientTokenConfig{Blacklist: []string{"general"}},
+	})
+
+	filter := newFilterForTest(t)
+	pr, _ := newProxyRequestForTest()
+	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(pr.In.Context(), "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
+
+	if err := filter.OnProxyRequest(pr); err != nil {
+		t.Fatalf("expected request to pass when general item has no configured item types, got %v", err)
+	}
+}
+
 func TestResolveEnabledItems_IgnoresUnknownItemsAndPreservesOrder(t *testing.T) {
 	restore := replaceItemsForTest(map[string]BlacklistItem{
 		"cursor":   namedStubItem{name: "cursor"},
@@ -92,6 +129,19 @@ func TestResolveEnabledItems_IgnoresUnknownItemsAndPreservesOrder(t *testing.T) 
 	}
 	if items[0].Name() != "cursor" || items[1].Name() != "openclaw" {
 		t.Fatalf("expected enabled items to preserve blacklist order, got %q then %q", items[0].Name(), items[1].Name())
+	}
+}
+
+func TestResolveEnabledItems_SkipsDisabledItems(t *testing.T) {
+	restore := replaceItemsForTest(map[string]BlacklistItem{
+		"enabled":  namedStubItem{name: "enabled"},
+		"disabled": disabledStubItem{name: "disabled"},
+	})
+	t.Cleanup(restore)
+
+	items := resolveEnabledItems([]string{"enabled", "disabled"})
+	if len(items) != 1 || items[0].Name() != "enabled" {
+		t.Fatalf("expected disabled items to be skipped, got %#v", items)
 	}
 }
 
@@ -165,6 +215,14 @@ type namedStubItem struct {
 }
 
 func (s namedStubItem) Name() string { return s.name }
+
+type disabledStubItem struct {
+	name string
+}
+
+func (s disabledStubItem) Name() string { return s.name }
+
+func (s disabledStubItem) Enabled() bool { return false }
 
 type testHeaderItem struct {
 	name  string
