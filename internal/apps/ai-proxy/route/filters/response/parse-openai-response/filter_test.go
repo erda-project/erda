@@ -62,6 +62,20 @@ data: {"type":"response.done","response":{"id":"resp_1","status":"completed","ou
 	}
 }
 
+func TestExtractEventStreamCompletionAndFcName_ResponsesAPIContentPartDelta(t *testing.T) {
+	// response.content_part.delta has delta as an object, not a plain string
+	body := `event: response.content_part.delta
+data: {"type":"response.content_part.delta","delta":{"type":"text","text":"Hello"}}
+
+event: response.content_part.delta
+data: {"type":"response.content_part.delta","delta":{"type":"text","text":", world!"}}
+`
+	completion, _ := ExtractEventStreamCompletionAndFcName(body)
+	if completion != "Hello, world!" {
+		t.Errorf("expected 'Hello, world!' got %q", completion)
+	}
+}
+
 func TestExtractEventStreamCompletionAndFcName_ResponsesAPIFunctionCall(t *testing.T) {
 	body := `event: response.function_call_arguments.delta
 data: {"type":"response.function_call_arguments.delta","name":"my_func","delta":"{\"key\":"}

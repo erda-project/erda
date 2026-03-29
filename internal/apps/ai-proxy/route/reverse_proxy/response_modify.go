@@ -551,7 +551,10 @@ func compressResponseCreatedEvent(raw, dataLine string) string {
 			modified = true
 		}
 		// also drop strict/other schema fields
-		delete(tool, "strict")
+		if _, ok := tool["strict"]; ok {
+			delete(tool, "strict")
+			modified = true
+		}
 		tools[i] = tool
 	}
 

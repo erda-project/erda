@@ -142,12 +142,23 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		}
 
 		switch eventType {
-		case "response.text.delta", "response.content_part.delta":
-			// incremental text delta
+		case "response.text.delta":
+			// incremental text delta (delta is a plain string)
 			if deltaRaw, ok := m["delta"]; ok {
 				var delta string
 				if err := json.Unmarshal(deltaRaw, &delta); err == nil {
 					completion += delta
+				}
+			}
+		case "response.content_part.delta":
+			// delta is an object: {"type":"text","text":"..."}
+			if deltaRaw, ok := m["delta"]; ok {
+				var deltaObj struct {
+					Type string `json:"type"`
+					Text string `json:"text"`
+				}
+				if err := json.Unmarshal(deltaRaw, &deltaObj); err == nil {
+					completion += deltaObj.Text
 				}
 			}
 		case "response.function_call_arguments.delta":
