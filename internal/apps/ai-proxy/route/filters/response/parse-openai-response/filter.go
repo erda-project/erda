@@ -56,18 +56,16 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	f.allChunks = append(f.allChunks, chunk...)
-
-	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		completion, _ := ExtractEventStreamCompletionAndFcName(string(chunk))
-		f.completion += completion
-	}
-
 	return chunk, nil
 }
 
 func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
-	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		var completion string
+	var completion string
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
+		// extract from the full accumulated stream so the response.done fallback
+		// only fires when no delta events were present (avoiding double-counting)
+		completion, _ = ExtractEventStreamCompletionAndFcName(string(f.allChunks))
+	} else {
 		// routing by model type
 		model := ctxhelper.MustGetModel(resp.Request.Context())
 		switch model.Type {
@@ -93,8 +91,8 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 				}
 			}
 		}
-		f.completion = completion
 	}
+	f.completion = completion
 
 	audithelper.Note(resp.Request.Context(), "completion", f.completion)
 
@@ -103,7 +101,7 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 
 func ExtractEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
 	scanner := bufio.NewScanner(strings.NewReader(responseBody))
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1MB per line to handle large SSE events
+	scanner.Buffer(make([]byte, 4096), 1024*1024) // grow up to 1MB for large SSE events
 	for scanner.Scan() {
 		var line = scanner.Text()
 		left := strings.Index(line, "{")
