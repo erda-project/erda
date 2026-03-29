@@ -18,19 +18,24 @@ import (
 	"testing"
 )
 
-func TestExtractEventStreamCompletionAndFcName_ChatCompletions(t *testing.T) {
-	body := `data: {"id":"chatcmpl-1","choices":[{"delta":{"role":"assistant","content":"Hello"},"index":0}]}
+func TestExtractEventStreamCompletionAndFcName(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		wantCompletion string
+		wantFcName     string
+	}{
+		{
+			name: "chat completions streaming",
+			body: `data: {"id":"chatcmpl-1","choices":[{"delta":{"role":"assistant","content":"Hello"},"index":0}]}
 data: {"id":"chatcmpl-1","choices":[{"delta":{"content":", world!"},"index":0}]}
 data: [DONE]
-`
-	completion, _ := ExtractEventStreamCompletionAndFcName(body)
-	if completion != "Hello, world!" {
-		t.Errorf("expected 'Hello, world!' got %q", completion)
-	}
-}
-
-func TestExtractEventStreamCompletionAndFcName_ResponsesAPIDeltas(t *testing.T) {
-	body := `event: response.created
+`,
+			wantCompletion: "Hello, world!",
+		},
+		{
+			name: "responses api text.delta",
+			body: `event: response.created
 data: {"type":"response.created","response":{"id":"resp_1","status":"in_progress","output":[]}}
 
 event: response.text.delta
@@ -41,78 +46,106 @@ data: {"type":"response.text.delta","delta":", world!"}
 
 event: response.done
 data: {"type":"response.done","response":{"id":"resp_1","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Hello, world!"}]}]}}
-`
-	completion, _ := ExtractEventStreamCompletionAndFcName(body)
-	if completion != "Hello, world!" {
-		t.Errorf("expected 'Hello, world!' got %q", completion)
-	}
-}
-
-func TestExtractEventStreamCompletionAndFcName_ResponsesAPIDoneOnly(t *testing.T) {
-	// simulate case where only response.created and response.done are stored (no deltas)
-	body := `event: response.created
+`,
+			wantCompletion: "Hello, world!",
+		},
+		{
+			name: "responses api done only (no deltas stored)",
+			body: `event: response.created
 data: {"type":"response.created","response":{"id":"resp_1","status":"in_progress","output":[]}}
 
 event: response.done
 data: {"type":"response.done","response":{"id":"resp_1","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Final answer here."}]}]}}
-`
-	completion, _ := ExtractEventStreamCompletionAndFcName(body)
-	if completion != "Final answer here." {
-		t.Errorf("expected 'Final answer here.' got %q", completion)
-	}
-}
-
-func TestExtractEventStreamCompletionAndFcName_ResponsesAPIOutputTextDelta(t *testing.T) {
-	// response.output_text.delta (used by Doubao/other providers)
-	body := `event: response.output_text.delta
+`,
+			wantCompletion: "Final answer here.",
+		},
+		{
+			name: "responses api output_text.delta (doubao/other providers)",
+			body: `event: response.output_text.delta
 data: {"type":"response.output_text.delta","delta":"Hello"}
 
 event: response.output_text.delta
 data: {"type":"response.output_text.delta","delta":", world!"}
-`
-	completion, _ := ExtractEventStreamCompletionAndFcName(body)
-	if completion != "Hello, world!" {
-		t.Errorf("expected 'Hello, world!' got %q", completion)
-	}
-}
-
-func TestExtractEventStreamCompletionAndFcName_ResponsesAPICompleted(t *testing.T) {
-	// response.completed is an alias for response.done used by some providers
-	body := `event: response.completed
+`,
+			wantCompletion: "Hello, world!",
+		},
+		{
+			name: "responses api response.completed alias",
+			body: `event: response.completed
 data: {"type":"response.completed","response":{"id":"resp_1","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Final answer."}]}]}}
-`
-	completion, _ := ExtractEventStreamCompletionAndFcName(body)
-	if completion != "Final answer." {
-		t.Errorf("expected 'Final answer.' got %q", completion)
-	}
-}
-
-func TestExtractEventStreamCompletionAndFcName_ResponsesAPIContentPartDelta(t *testing.T) {
-	// response.content_part.delta has delta as an object, not a plain string
-	body := `event: response.content_part.delta
+`,
+			wantCompletion: "Final answer.",
+		},
+		{
+			name: "responses api content_part.delta (delta is object)",
+			body: `event: response.content_part.delta
 data: {"type":"response.content_part.delta","delta":{"type":"text","text":"Hello"}}
 
 event: response.content_part.delta
 data: {"type":"response.content_part.delta","delta":{"type":"text","text":", world!"}}
-`
-	completion, _ := ExtractEventStreamCompletionAndFcName(body)
-	if completion != "Hello, world!" {
-		t.Errorf("expected 'Hello, world!' got %q", completion)
-	}
-}
-
-func TestExtractEventStreamCompletionAndFcName_ResponsesAPIFunctionCall(t *testing.T) {
-	body := `event: response.function_call_arguments.delta
+`,
+			wantCompletion: "Hello, world!",
+		},
+		{
+			name: "responses api function call arguments",
+			body: `event: response.function_call_arguments.delta
 data: {"type":"response.function_call_arguments.delta","name":"my_func","delta":"{\"key\":"}
 
 event: response.function_call_arguments.delta
 data: {"type":"response.function_call_arguments.delta","delta":"\"value\"}"}
-`
-	completion, fcName := ExtractEventStreamCompletionAndFcName(body)
-	if fcName != "my_func" {
-		t.Errorf("expected fcName 'my_func' got %q", fcName)
+`,
+			wantCompletion: `{"key":"value"}`,
+			wantFcName:     "my_func",
+		},
 	}
-	if completion != `{"key":"value"}` {
-		t.Errorf("expected completion %q got %q", `{"key":"value"}`, completion)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			completion, fcName := ExtractEventStreamCompletionAndFcName(tt.body)
+			if completion != tt.wantCompletion {
+				t.Errorf("completion: got %q, want %q", completion, tt.wantCompletion)
+			}
+			if fcName != tt.wantFcName {
+				t.Errorf("fcName: got %q, want %q", fcName, tt.wantFcName)
+			}
+		})
+	}
+}
+
+func TestExtractResponsesAPIJsonCompletion(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		wantCompletion string
+		wantFcName     string
+	}{
+		{
+			name:           "text output",
+			body:           `{"id":"resp_1","object":"response","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Hello, world!"}]}]}`,
+			wantCompletion: "Hello, world!",
+		},
+		{
+			name:           "function call output",
+			body:           `{"id":"resp_1","object":"response","output":[{"type":"function_call","name":"my_func","arguments":"{\"key\":\"value\"}"}]}`,
+			wantCompletion: `{"key":"value"}`,
+			wantFcName:     "my_func",
+		},
+		{
+			name:           "no output field (chat completions json)",
+			body:           `{"choices":[{"message":{"content":"hello"}}]}`,
+			wantCompletion: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			completion, fcName := ExtractResponsesAPIJsonCompletion(tt.body)
+			if completion != tt.wantCompletion {
+				t.Errorf("completion: got %q, want %q", completion, tt.wantCompletion)
+			}
+			if fcName != tt.wantFcName {
+				t.Errorf("fcName: got %q, want %q", fcName, tt.wantFcName)
+			}
+		})
 	}
 }
