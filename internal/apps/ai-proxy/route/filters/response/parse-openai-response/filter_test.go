@@ -62,6 +62,31 @@ data: {"type":"response.done","response":{"id":"resp_1","status":"completed","ou
 	}
 }
 
+func TestExtractEventStreamCompletionAndFcName_ResponsesAPIOutputTextDelta(t *testing.T) {
+	// response.output_text.delta (used by Doubao/other providers)
+	body := `event: response.output_text.delta
+data: {"type":"response.output_text.delta","delta":"Hello"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","delta":", world!"}
+`
+	completion, _ := ExtractEventStreamCompletionAndFcName(body)
+	if completion != "Hello, world!" {
+		t.Errorf("expected 'Hello, world!' got %q", completion)
+	}
+}
+
+func TestExtractEventStreamCompletionAndFcName_ResponsesAPICompleted(t *testing.T) {
+	// response.completed is an alias for response.done used by some providers
+	body := `event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_1","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Final answer."}]}]}}
+`
+	completion, _ := ExtractEventStreamCompletionAndFcName(body)
+	if completion != "Final answer." {
+		t.Errorf("expected 'Final answer.' got %q", completion)
+	}
+}
+
 func TestExtractEventStreamCompletionAndFcName_ResponsesAPIContentPartDelta(t *testing.T) {
 	// response.content_part.delta has delta as an object, not a plain string
 	body := `event: response.content_part.delta

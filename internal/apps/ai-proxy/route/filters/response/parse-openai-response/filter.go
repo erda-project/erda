@@ -142,7 +142,7 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		}
 
 		switch eventType {
-		case "response.text.delta":
+		case "response.text.delta", "response.output_text.delta":
 			// incremental text delta (delta is a plain string)
 			if deltaRaw, ok := m["delta"]; ok {
 				var delta string
@@ -175,7 +175,7 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 					fcName = name
 				}
 			}
-		case "response.done":
+		case "response.done", "response.completed":
 			// final snapshot — if we got content from deltas use that; otherwise extract from output
 			if completion != "" {
 				continue

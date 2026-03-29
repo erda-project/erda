@@ -485,6 +485,7 @@ func optimizeSSEEvent(raw string) (string, bool) {
 	switch jsonType {
 	// --- drop: ephemeral incremental events; content is captured in completion field ---
 	case "response.text.delta",
+		"response.output_text.delta",
 		"response.content_part.delta",
 		"response.function_call_arguments.delta",
 		"response.audio.delta",
