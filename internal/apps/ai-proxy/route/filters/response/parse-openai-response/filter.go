@@ -99,6 +99,7 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 
 func ExtractEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
 	scanner := bufio.NewScanner(strings.NewReader(responseBody))
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1MB per line to handle large SSE events
 	for scanner.Scan() {
 		var line = scanner.Text()
 		left := strings.Index(line, "{")
@@ -112,24 +113,94 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		if err := json.Unmarshal([]byte(line), &m); err != nil {
 			continue
 		}
-		choices, ok := m["choices"]
+
+		// OpenAI Chat Completions streaming: choices[].delta
+		if choices, ok := m["choices"]; ok {
+			var items []openai.ChatCompletionStreamChoice
+			if err := json.Unmarshal(choices, &items); err != nil || len(items) == 0 {
+				continue
+			}
+			delta := items[len(items)-1].Delta
+			completion += delta.Content
+			if delta.FunctionCall != nil {
+				if delta.FunctionCall.Name != "" {
+					fcName = delta.FunctionCall.Name
+				}
+				completion += delta.FunctionCall.Arguments
+			}
+			continue
+		}
+
+		// OpenAI Responses API streaming: type-based events
+		eventTypeRaw, ok := m["type"]
 		if !ok {
 			continue
 		}
-		var items []openai.ChatCompletionStreamChoice
-		if err := json.Unmarshal(choices, &items); err != nil {
+		var eventType string
+		if err := json.Unmarshal(eventTypeRaw, &eventType); err != nil {
 			continue
 		}
-		if len(items) == 0 {
-			continue
-		}
-		delta := items[len(items)-1].Delta
-		completion += delta.Content
-		if delta.FunctionCall != nil {
-			if delta.FunctionCall.Name != "" {
-				fcName = delta.FunctionCall.Name
+
+		switch eventType {
+		case "response.text.delta", "response.content_part.delta":
+			// incremental text delta
+			if deltaRaw, ok := m["delta"]; ok {
+				var delta string
+				if err := json.Unmarshal(deltaRaw, &delta); err == nil {
+					completion += delta
+				}
 			}
-			completion += delta.FunctionCall.Arguments
+		case "response.function_call_arguments.delta":
+			// incremental function call arguments
+			if deltaRaw, ok := m["delta"]; ok {
+				var delta string
+				if err := json.Unmarshal(deltaRaw, &delta); err == nil {
+					completion += delta
+				}
+			}
+			if nameRaw, ok := m["name"]; ok {
+				var name string
+				if err := json.Unmarshal(nameRaw, &name); err == nil && name != "" {
+					fcName = name
+				}
+			}
+		case "response.done":
+			// final snapshot — if we got content from deltas use that; otherwise extract from output
+			if completion != "" {
+				continue
+			}
+			responseRaw, ok := m["response"]
+			if !ok {
+				continue
+			}
+			var respObj struct {
+				Output []struct {
+					Type    string `json:"type"`
+					Role    string `json:"role"`
+					Content []struct {
+						Type string `json:"type"`
+						Text string `json:"text"`
+					} `json:"content"`
+					Name      string `json:"name"`
+					Arguments string `json:"arguments"`
+				} `json:"output"`
+			}
+			if err := json.Unmarshal(responseRaw, &respObj); err != nil {
+				continue
+			}
+			for _, item := range respObj.Output {
+				switch item.Type {
+				case "message":
+					for _, c := range item.Content {
+						if c.Type == "text" || c.Type == "output_text" {
+							completion += c.Text
+						}
+					}
+				case "function_call":
+					fcName = item.Name
+					completion += item.Arguments
+				}
+			}
 		}
 	}
 
