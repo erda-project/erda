@@ -73,6 +73,10 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 		switch model.Type {
 		case modelpb.ModelType_text_generation, modelpb.ModelType_multimodal:
 			completion, _ = ExtractApplicationJsonCompletionAndFcName(string(f.allChunks))
+			if completion == "" {
+				// Responses API non-streaming: output[] instead of choices[]
+				completion, _ = ExtractResponsesAPIJsonCompletion(string(f.allChunks))
+			}
 		case modelpb.ModelType_audio:
 			var openaiAudioResp openai.AudioResponse
 			if err := json.Unmarshal(f.allChunks, &openaiAudioResp); err == nil {
@@ -239,6 +243,45 @@ func ExtractApplicationJsonCompletionAndFcName(responseBody string) (completion 
 	if msg.FunctionCall != nil {
 		fcName = msg.FunctionCall.Name
 		completion = msg.FunctionCall.Arguments
+	}
+	return
+}
+
+// ExtractResponsesAPIJsonCompletion extracts completion from a non-streaming Responses API response.
+// The Responses API returns {"output":[{"type":"message","content":[{"type":"output_text","text":"..."}]}]}
+func ExtractResponsesAPIJsonCompletion(responseBody string) (completion string, fcName string) {
+	var m map[string]json.RawMessage
+	if err := json.NewDecoder(strings.NewReader(responseBody)).Decode(&m); err != nil {
+		return
+	}
+	outputRaw, ok := m["output"]
+	if !ok {
+		return
+	}
+	var output []struct {
+		Type    string `json:"type"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	}
+	if err := json.Unmarshal(outputRaw, &output); err != nil {
+		return
+	}
+	for _, item := range output {
+		switch item.Type {
+		case "message":
+			for _, c := range item.Content {
+				if c.Type == "text" || c.Type == "output_text" {
+					completion += c.Text
+				}
+			}
+		case "function_call":
+			fcName = item.Name
+			completion += item.Arguments
+		}
 	}
 	return
 }

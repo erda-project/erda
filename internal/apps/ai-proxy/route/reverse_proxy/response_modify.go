@@ -412,6 +412,7 @@ const (
 // For SSE streams it processes events one by one, dropping ephemeral delta events
 // and compressing large tool schemas so the stored body remains meaningful.
 // For non-SSE bodies it falls back to the original head+tail byte truncation.
+// The body passed in is the raw chunk stream — it does NOT contain HTTP headers.
 func optimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 	if len(body) == 0 {
 		return body
@@ -419,21 +420,13 @@ func optimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 
 	txt := string(body)
 
-	// split HTTP headers from body (HTTP dump format: headers + \n\n + body)
-	headerEnd := strings.Index(txt, "\n\n")
-	if headerEnd < 0 {
-		return truncateBodyForAudit(body, headLimit, tailLimit)
-	}
-	headers := txt[:headerEnd+2]
-	sseBody := txt[headerEnd+2:]
-
 	// only apply SSE optimization when there are SSE events
-	if !strings.Contains(sseBody, "data:") {
+	if !strings.Contains(txt, "data:") {
 		return truncateBodyForAudit(body, headLimit, tailLimit)
 	}
 
 	// split into individual SSE events (delimited by \n\n)
-	rawEvents := strings.Split(sseBody, "\n\n")
+	rawEvents := strings.Split(txt, "\n\n")
 	var kept []string
 	for _, raw := range rawEvents {
 		raw = strings.TrimRight(raw, "\r\n")
@@ -451,8 +444,9 @@ func optimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 		return truncateBodyForAudit(body, headLimit, tailLimit)
 	}
 
-	result := headers + strings.Join(kept, "\n\n") + "\n\n"
-	return []byte(result)
+	result := strings.Join(kept, "\n\n") + "\n\n"
+	// apply size cap after SSE optimization to guard against large response.done snapshots
+	return truncateBodyForAudit([]byte(result), headLimit, tailLimit)
 }
 
 // optimizeSSEEvent decides how to store a single SSE event in the audit body.
