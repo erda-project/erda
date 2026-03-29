@@ -16,7 +16,9 @@ package reverse_proxy
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
+	"strings"
 	"testing"
 
 	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
@@ -116,5 +118,79 @@ func TestPeekedChunkProcessedFirst(t *testing.T) {
 	combined := append(peekedChunk, remaining...)
 	if string(combined) != allData {
 		t.Fatalf("data order incorrect: %q", string(combined))
+	}
+}
+
+func makeSSEBody(events []string) string {
+	headers := "HTTP/2.0 200 OK\r\nContent-Type: text/event-stream\r\n\n"
+	return headers + strings.Join(events, "\n\n") + "\n\n"
+}
+
+func TestOptimizeBodyForAudit_NonSSE(t *testing.T) {
+	// non-SSE JSON body: falls back to truncation
+	body := []byte("HTTP/2.0 200 OK\r\nContent-Type: application/json\r\n\n" + `{"choices":[{"message":{"content":"hello"}}]}`)
+	result := optimizeBodyForAudit(body, 5, 3)
+	// should be truncated (head 5 bytes of body part, tail 3)
+	if !strings.Contains(string(result), "omitted") {
+		t.Fatalf("expected truncation for non-SSE, got: %q", string(result))
+	}
+}
+
+func TestOptimizeBodyForAudit_DropsDeltaEvents(t *testing.T) {
+	body := []byte(makeSSEBody([]string{
+		`event: response.created` + "\ndata: " + `{"type":"response.created","response":{"id":"r1","output":[],"tools":[]}}`,
+		`event: response.text.delta` + "\ndata: " + `{"type":"response.text.delta","delta":"Hello"}`,
+		`event: response.text.delta` + "\ndata: " + `{"type":"response.text.delta","delta":" world"}`,
+		`event: response.done` + "\ndata: " + `{"type":"response.done","response":{"id":"r1","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Hello world"}]}]}}`,
+	}))
+
+	result := string(optimizeBodyForAudit(body, 1024*30, 1024*2))
+	if strings.Contains(result, "response.text.delta") {
+		t.Fatalf("delta events should be dropped, got: %s", result)
+	}
+	if !strings.Contains(result, "response.created") {
+		t.Fatalf("response.created should be kept, got: %s", result)
+	}
+	if !strings.Contains(result, "response.done") {
+		t.Fatalf("response.done should be kept, got: %s", result)
+	}
+}
+
+func TestOptimizeBodyForAudit_CompressesToolSchemas(t *testing.T) {
+	longDesc := strings.Repeat("x", 1000)
+	tool := map[string]interface{}{
+		"type":        "function",
+		"name":        "my_tool",
+		"description": longDesc,
+		"parameters":  map[string]interface{}{"type": "object", "properties": map[string]interface{}{"a": map[string]interface{}{"type": "string"}}},
+	}
+	response := map[string]interface{}{
+		"id":     "r1",
+		"output": []interface{}{},
+		"tools":  []interface{}{tool},
+	}
+	event := map[string]interface{}{
+		"type":     "response.created",
+		"response": response,
+	}
+	eventJSON, _ := json.Marshal(event)
+
+	body := []byte(makeSSEBody([]string{
+		"event: response.created\ndata: " + string(eventJSON),
+	}))
+
+	result := string(optimizeBodyForAudit(body, 1024*30, 1024*2))
+
+	// description should be truncated
+	if strings.Contains(result, longDesc) {
+		t.Fatalf("long description should be truncated")
+	}
+	// parameters should be removed
+	if strings.Contains(result, `"parameters"`) {
+		t.Fatalf("parameters should be stripped from tools")
+	}
+	// tool name should still be present
+	if !strings.Contains(result, "my_tool") {
+		t.Fatalf("tool name should be preserved")
 	}
 }
