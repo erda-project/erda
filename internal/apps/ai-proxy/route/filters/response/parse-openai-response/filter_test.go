@@ -77,6 +77,13 @@ data: {"type":"response.completed","response":{"id":"resp_1","output":[{"type":"
 			wantCompletion: "Final answer.",
 		},
 		{
+			name: "responses api done fallback includes refusal content",
+			body: `event: response.done
+data: {"type":"response.done","response":{"id":"resp_1","output":[{"type":"message","role":"assistant","content":[{"type":"refusal","refusal":"Cannot comply."}]}]}}
+`,
+			wantCompletion: "Cannot comply.",
+		},
+		{
 			name: "responses api content_part.delta (delta is object)",
 			body: `event: response.content_part.delta
 data: {"type":"response.content_part.delta","delta":{"type":"text","text":"Hello"}}
@@ -133,6 +140,11 @@ func TestExtractResponsesAPIJsonCompletion(t *testing.T) {
 			name:           "text output",
 			body:           `{"id":"resp_1","object":"response","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Hello, world!"}]}]}`,
 			wantCompletion: "Hello, world!",
+		},
+		{
+			name:           "refusal output",
+			body:           `{"id":"resp_1","object":"response","output":[{"type":"message","role":"assistant","content":[{"type":"refusal","refusal":"Cannot comply."}]}]}`,
+			wantCompletion: "Cannot comply.",
 		},
 		{
 			name:           "function call output",

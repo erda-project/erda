@@ -67,15 +67,16 @@ func OptimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 	}
 
 	txt := string(body)
+	normalized := strings.ReplaceAll(txt, "\r\n", "\n")
 
 	// only apply SSE optimization when there are actual SSE data lines.
 	// match either a later line ("\ndata: ") or a stream that starts with "data: ".
-	if !strings.Contains(txt, "\ndata: ") && !strings.HasPrefix(txt, "data: ") {
+	if !strings.Contains(normalized, "\ndata: ") && !strings.HasPrefix(normalized, "data: ") {
 		return TruncateBodyForAudit(body, headLimit, tailLimit)
 	}
 
 	// split into individual SSE events (delimited by \n\n)
-	rawEvents := strings.Split(txt, "\n\n")
+	rawEvents := strings.Split(normalized, "\n\n")
 	var kept []string
 	for _, raw := range rawEvents {
 		raw = strings.TrimRight(raw, "\r\n")

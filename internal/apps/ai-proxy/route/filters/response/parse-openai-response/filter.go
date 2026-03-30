@@ -192,8 +192,9 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 					Type    string `json:"type"`
 					Role    string `json:"role"`
 					Content []struct {
-						Type string `json:"type"`
-						Text string `json:"text"`
+						Type    string `json:"type"`
+						Text    string `json:"text"`
+						Refusal string `json:"refusal"`
 					} `json:"content"`
 					Name      string `json:"name"`
 					Arguments string `json:"arguments"`
@@ -206,9 +207,7 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 				switch item.Type {
 				case "message":
 					for _, c := range item.Content {
-						if c.Type == "text" || c.Type == "output_text" {
-							completion += c.Text
-						}
+						completion += responseContentText(c.Type, c.Text, c.Refusal)
 					}
 				case "function_call":
 					fcName = item.Name
@@ -260,8 +259,9 @@ func ExtractResponsesAPIJsonCompletion(responseBody string) (completion string, 
 	var output []struct {
 		Type    string `json:"type"`
 		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
+			Type    string `json:"type"`
+			Text    string `json:"text"`
+			Refusal string `json:"refusal"`
 		} `json:"content"`
 		Name      string `json:"name"`
 		Arguments string `json:"arguments"`
@@ -273,9 +273,7 @@ func ExtractResponsesAPIJsonCompletion(responseBody string) (completion string, 
 		switch item.Type {
 		case "message":
 			for _, c := range item.Content {
-				if c.Type == "text" || c.Type == "output_text" {
-					completion += c.Text
-				}
+				completion += responseContentText(c.Type, c.Text, c.Refusal)
 			}
 		case "function_call":
 			fcName = item.Name
@@ -283,4 +281,15 @@ func ExtractResponsesAPIJsonCompletion(responseBody string) (completion string, 
 		}
 	}
 	return
+}
+
+func responseContentText(contentType, text, refusal string) string {
+	switch contentType {
+	case "text", "output_text":
+		return text
+	case "refusal":
+		return refusal
+	default:
+		return ""
+	}
 }

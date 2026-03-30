@@ -34,6 +34,10 @@ func makeSSEBody(events []string) string {
 	return strings.Join(events, "\n\n") + "\n\n"
 }
 
+func makeCRLFSSEBody(events []string) string {
+	return strings.Join(events, "\r\n\r\n") + "\r\n\r\n"
+}
+
 func TestOptimizeBodyForAudit(t *testing.T) {
 	longDesc := strings.Repeat("x", 1000)
 	tool := map[string]interface{}{
@@ -97,6 +101,18 @@ func TestOptimizeBodyForAudit(t *testing.T) {
 			headLimit: 10,
 			tailLimit: 5,
 			contains:  []string{"omitted"},
+		},
+		{
+			name: "CRLF-delimited SSE events are optimized",
+			body: makeCRLFSSEBody([]string{
+				"event: response.created\r\ndata: " + `{"type":"response.created","response":{"id":"r1","output":[],"tools":[]}}`,
+				"event: response.output_text.delta\r\ndata: " + `{"type":"response.output_text.delta","delta":"Hello"}`,
+				"event: response.done\r\ndata: " + `{"type":"response.done","response":{"id":"r1","output":[{"type":"message","content":[{"type":"output_text","text":"Hello"}]}]}}`,
+			}),
+			headLimit:   1024 * 30,
+			tailLimit:   1024 * 2,
+			contains:    []string{"response.created", "response.done"},
+			notContains: []string{"response.output_text.delta"},
 		},
 	}
 
