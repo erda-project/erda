@@ -70,8 +70,8 @@ func OptimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 	normalized := strings.ReplaceAll(txt, "\r\n", "\n")
 
 	// only apply SSE optimization when there are actual SSE data lines.
-	// match either a later line ("\ndata: ") or a stream that starts with "data: ".
-	if !strings.Contains(normalized, "\ndata: ") && !strings.HasPrefix(normalized, "data: ") {
+	// match either a later line ("\ndata:") or a stream that starts with "data:".
+	if !strings.Contains(normalized, "\ndata:") && !strings.HasPrefix(normalized, "data:") {
 		return TruncateBodyForAudit(body, headLimit, tailLimit)
 	}
 
@@ -110,8 +110,9 @@ func optimizeSSEEvent(raw string) (string, bool) {
 		line = strings.TrimRight(line, "\r")
 		if strings.HasPrefix(line, "event: ") {
 			eventType = strings.TrimPrefix(line, "event: ")
-		} else if strings.HasPrefix(line, "data: ") {
-			dataLine = strings.TrimPrefix(line, "data: ")
+		} else if strings.HasPrefix(line, "data:") {
+			dataLine = strings.TrimPrefix(line, "data:")
+			dataLine = strings.TrimPrefix(dataLine, " ")
 		}
 	}
 
@@ -218,7 +219,7 @@ func compressResponseCreatedEvent(raw, dataLine string) string {
 	var lines []string
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimRight(line, "\r")
-		if strings.HasPrefix(line, "data: ") {
+		if strings.HasPrefix(line, "data:") {
 			lines = append(lines, "data: "+string(newDataLine))
 		} else {
 			lines = append(lines, line)
