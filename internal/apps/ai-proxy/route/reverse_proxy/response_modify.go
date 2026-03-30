@@ -372,4 +372,3 @@ func writeAndCloseWithErr(resp *http.Response, pw *io.PipeWriter, err error) {
 	_ = pw.CloseWithError(err)
 	audithelper.Note(resp.Request.Context(), "myResponseModify.error", err)
 }
-
