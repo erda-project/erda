@@ -15,7 +15,6 @@
 package audit
 
 import (
-	"bufio"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -100,10 +99,10 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 }
 
 func ExtractEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
-	scanner := bufio.NewScanner(strings.NewReader(responseBody))
-	scanner.Buffer(make([]byte, 4096), 1024*1024) // grow up to 1MB for large SSE events
-	for scanner.Scan() {
-		var line = scanner.Text()
+	// use strings.Split instead of bufio.Scanner to avoid ErrTooLong on large lines
+	// (e.g. response.created data: line with many tool schemas can exceed scanner limits)
+	for _, line := range strings.Split(responseBody, "\n") {
+		line = strings.TrimRight(line, "\r")
 		left := strings.Index(line, "{")
 		right := strings.LastIndex(line, "}")
 		if left < 0 || right < 1 {
@@ -160,7 +159,9 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 					Text string `json:"text"`
 				}
 				if err := json.Unmarshal(deltaRaw, &deltaObj); err == nil {
-					completion += deltaObj.Text
+					if deltaObj.Type == "text" || deltaObj.Type == "output_text" {
+						completion += deltaObj.Text
+					}
 				}
 			}
 		case "response.function_call_arguments.delta":

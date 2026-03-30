@@ -420,8 +420,9 @@ func optimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 
 	txt := string(body)
 
-	// only apply SSE optimization when there are SSE events
-	if !strings.Contains(txt, "data:") {
+	// only apply SSE optimization when there are actual SSE data lines.
+	// Match either a later line ("\ndata: ") or a stream that starts with "data: ".
+	if !strings.Contains(txt, "\ndata: ") && !strings.HasPrefix(txt, "data: ") {
 		return truncateBodyForAudit(body, headLimit, tailLimit)
 	}
 

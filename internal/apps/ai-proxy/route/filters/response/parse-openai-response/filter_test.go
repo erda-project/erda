@@ -87,6 +87,16 @@ data: {"type":"response.content_part.delta","delta":{"type":"text","text":", wor
 			wantCompletion: "Hello, world!",
 		},
 		{
+			name: "responses api content_part.delta ignores non text delta",
+			body: `event: response.content_part.delta
+data: {"type":"response.content_part.delta","delta":{"type":"input_text","text":"ignore"}}
+
+event: response.content_part.delta
+data: {"type":"response.content_part.delta","delta":{"type":"output_text","text":"keep"}}
+`,
+			wantCompletion: "keep",
+		},
+		{
 			name: "responses api function call arguments",
 			body: `event: response.function_call_arguments.delta
 data: {"type":"response.function_call_arguments.delta","name":"my_func","delta":"{\"key\":"}

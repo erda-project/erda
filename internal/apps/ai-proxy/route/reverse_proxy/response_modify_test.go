@@ -104,19 +104,26 @@ func TestOptimizeBodyForAudit(t *testing.T) {
 	createdEvent, _ := json.Marshal(map[string]interface{}{"type": "response.created", "response": response})
 
 	tests := []struct {
-		name      string
-		body      string
-		headLimit int
-		tailLimit int
-		contains  []string
+		name        string
+		body        string
+		headLimit   int
+		tailLimit   int
+		contains    []string
 		notContains []string
 	}{
 		{
-			name:        "non-SSE falls back to truncation",
-			body:        `{"choices":[{"message":{"content":"hello"}}]}`,
-			headLimit:   5,
-			tailLimit:   3,
-			contains:    []string{"omitted"},
+			name:      "non-SSE falls back to truncation",
+			body:      `{"choices":[{"message":{"content":"hello"}}]}`,
+			headLimit: 5,
+			tailLimit: 3,
+			contains:  []string{"omitted"},
+		},
+		{
+			name:      "json body containing data colon is not treated as SSE",
+			body:      `{"data":"value","message":"` + strings.Repeat("x", 64) + `"}`,
+			headLimit: 12,
+			tailLimit: 8,
+			contains:  []string{"omitted"},
 		},
 		{
 			name: "delta events are dropped",
@@ -144,15 +151,21 @@ func TestOptimizeBodyForAudit(t *testing.T) {
 			body: makeSSEBody([]string{
 				"event: response.done\ndata: " + `{"type":"response.done","response":{"id":"r1","output":[{"type":"message","content":[{"type":"output_text","text":"` + strings.Repeat("a", 40000) + `"}]}]}}`,
 			}),
-			headLimit:   10,
-			tailLimit:   5,
-			contains:    []string{"omitted"},
+			headLimit: 10,
+			tailLimit: 5,
+			contains:  []string{"omitted"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := string(optimizeBodyForAudit([]byte(tt.body), tt.headLimit, tt.tailLimit))
+			if tt.name == "json body containing data colon is not treated as SSE" {
+				want := string(truncateBodyForAudit([]byte(tt.body), tt.headLimit, tt.tailLimit))
+				if result != want {
+					t.Fatalf("expected JSON body to fall back to truncation, got %q want %q", result, want)
+				}
+			}
 			for _, s := range tt.contains {
 				if !strings.Contains(result, s) {
 					t.Errorf("expected result to contain %q, got: %s", s, result)
