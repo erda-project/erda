@@ -26,6 +26,19 @@ erda.app.reverse-proxy:
 erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
+  audit:
+    archive:
+      enable: ${AI_PROXY_AUDIT_ARCHIVE_ENABLE:false}
+      auto_start: ${AI_PROXY_AUDIT_ARCHIVE_AUTO_START:false}
+      retention_days: ${AI_PROXY_AUDIT_ARCHIVE_RETENTION_DAYS:180}
+      loop_interval: ${AI_PROXY_AUDIT_ARCHIVE_LOOP_INTERVAL:1m}
+      batch_size: ${AI_PROXY_AUDIT_ARCHIVE_BATCH_SIZE:1000}
+      name: ${AI_PROXY_AUDIT_ARCHIVE_NAME}
+      oss:
+        endpoint: ${AI_PROXY_AUDIT_ARCHIVE_OSS_ENDPOINT}
+        access_key_id: ${AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_ID}
+        access_key_secret: ${AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_SECRET}
+        bucket: ${AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET:backup-ai}
   lb_state_store_type: ${LB_STATE_STORE_TYPE:memory} # memory / redis / etcd
   lb_state_store_sticky_ttl: ${LB_STATE_STORE_STICKY_TTL:10m}
   blacklist_user_agent:

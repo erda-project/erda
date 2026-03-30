@@ -18,14 +18,20 @@ import (
 	"context"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	eventmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/event"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/pkg/desensitize"
 )
 
 type AuditHandler struct {
-	DAO dao.DAO
+	DAO            dao.DAO
+	ArchiveService *archivepkg.Service
 }
 
 func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (*pb.AuditPagingResponse, error) {
@@ -93,4 +99,56 @@ func requireXRequestIdOrCallIdForNonAdmin(ctx context.Context, req *pb.AuditPagi
 		}
 	}
 	return nil
+}
+
+func (a *AuditHandler) SetArchiveStart(ctx context.Context, req *pb.AuditArchiveStartRequest) (*commonpb.VoidResponse, error) {
+	if err := a.ArchiveService.SetStart(ctx, req.Value); err != nil {
+		return nil, err
+	}
+	return &commonpb.VoidResponse{}, nil
+}
+
+func (a *AuditHandler) GetArchiveStatus(ctx context.Context, _ *pb.AuditArchiveStatusRequest) (*pb.AuditArchiveStatusResponse, error) {
+	status, err := a.ArchiveService.GetStatus(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.AuditArchiveStatusResponse{
+		Enabled:    status.Enabled,
+		AutoStart:  status.AutoStart,
+		Started:    status.Started,
+		Running:    status.Running,
+		CurrentDay: status.CurrentDay,
+		LastDay:    status.LastDay,
+		LastResult: status.LastResult,
+	}, nil
+}
+
+func (a *AuditHandler) ListArchiveEvents(ctx context.Context, req *pb.AuditArchiveEventListRequest) (*pb.AuditArchiveEventListResponse, error) {
+	total, list, err := a.ArchiveService.ListEvents(ctx, archivepkg.ListRequest{
+		PageNum:  req.PageNum,
+		PageSize: req.PageSize,
+		Day:      req.Day,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &pb.AuditArchiveEventListResponse{
+		Total: total,
+		List:  toArchiveEventProtobuf(list),
+	}, nil
+}
+
+func toArchiveEventProtobuf(list eventmodel.Events) []*pb.AuditArchiveEvent {
+	resp := make([]*pb.AuditArchiveEvent, 0, len(list))
+	for _, item := range list {
+		resp = append(resp, &pb.AuditArchiveEvent{
+			Id:        int64(item.ID),
+			CreatedAt: timestamppb.New(item.CreatedAt),
+			UpdatedAt: timestamppb.New(item.UpdatedAt),
+			Event:     item.Event,
+			Detail:    item.Detail,
+		})
+	}
+	return resp
 }
