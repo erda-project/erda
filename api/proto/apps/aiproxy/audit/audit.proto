@@ -15,6 +15,25 @@ service AuditService {
             get: "/api/ai-proxy/audits"
         };
     }
+
+    rpc SetArchiveStart(AuditArchiveStartRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/audits/actions/archive-start"
+            body: "*"
+        };
+    }
+
+    rpc GetArchiveStatus(AuditArchiveStatusRequest) returns (AuditArchiveStatusResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/audits/actions/archive-status"
+        };
+    }
+
+    rpc ListArchiveEvents(AuditArchiveEventListRequest) returns (AuditArchiveEventListResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/audits/actions/archive-events"
+        };
+    }
 }
 
 message Audit {
@@ -103,4 +122,39 @@ message AuditPagingRequest {
 message AuditPagingResponse {
     int64 total = 1;
     repeated Audit list = 2;
+}
+
+message AuditArchiveStartRequest {
+    bool value = 1;
+}
+
+message AuditArchiveStatusRequest {}
+
+message AuditArchiveStatusResponse {
+    bool enabled = 1;
+    bool autoStart = 2;
+    bool started = 3;
+    bool running = 4;
+    string currentDay = 5;
+    string lastDay = 6;
+    string lastResult = 7;
+}
+
+message AuditArchiveEvent {
+    int64 id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    string event = 4;
+    string detail = 5;
+}
+
+message AuditArchiveEventListRequest {
+    uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+    uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 100}];
+    string day = 3 [(validate.rules).string = {ignore_empty: true, len: 10}];
+}
+
+message AuditArchiveEventListResponse {
+    int64 total = 1;
+    repeated AuditArchiveEvent list = 2;
 }

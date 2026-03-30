@@ -135,6 +135,9 @@ var CheckI18nPerm = CheckPermissions(
 
 var CheckAuditPerm = CheckPermissions(
 	&MethodPermission{Method: auditpb.AuditServiceServer.Paging, LoggedIn: true},
+	&MethodPermission{Method: auditpb.AuditServiceServer.SetArchiveStart, OnlyAdmin: true},
+	&MethodPermission{Method: auditpb.AuditServiceServer.GetArchiveStatus, OnlyAdmin: true},
+	&MethodPermission{Method: auditpb.AuditServiceServer.ListArchiveEvents, OnlyAdmin: true},
 )
 
 var CheckTokenUsagePerm = CheckPermissions(
