@@ -8,6 +8,7 @@
 # Files for vscode
 .vscode/*
 .vendor/*
+.worktrees/
 
 # build output
 /bin

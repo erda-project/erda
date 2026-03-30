@@ -34,6 +34,7 @@ import (
 	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/policy_group/health"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/reverse_proxy/resp_body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -191,8 +192,8 @@ func asyncHandleRespBody(upstream io.ReadCloser, splitter filter_define.RespBody
 	defer func() {
 		// put before cut off
 		ctxhelper.PutReverseProxyWholeHandledResponseBodyStr(resp.Request.Context(), string(wholeHandledBody))
-		wholeReceivedBody = truncateBodyForAudit(wholeReceivedBody, bodyHeadPersistBytes, bodyTailPersistBytes)
-		wholeHandledBody = truncateBodyForAudit(wholeHandledBody, bodyHeadPersistBytes, bodyTailPersistBytes)
+		wholeReceivedBody = resp_body_util.OptimizeBodyForAudit(wholeReceivedBody, bodyHeadPersistBytes, bodyTailPersistBytes)
+		wholeHandledBody = resp_body_util.OptimizeBodyForAudit(wholeHandledBody, bodyHeadPersistBytes, bodyTailPersistBytes)
 		audithelper.NoteAppend(resp.Request.Context(), "actual_response_body", string(wholeReceivedBody))
 		audithelper.NoteAppend(resp.Request.Context(), "response_body", string(wholeHandledBody))
 	}()
@@ -372,32 +373,3 @@ func writeAndCloseWithErr(resp *http.Response, pw *io.PipeWriter, err error) {
 	audithelper.Note(resp.Request.Context(), "myResponseModify.error", err)
 }
 
-func truncateBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
-	if len(body) == 0 {
-		return body
-	}
-	if headLimit < 0 {
-		headLimit = 0
-	}
-	if tailLimit < 0 {
-		tailLimit = 0
-	}
-	if headLimit+tailLimit >= len(body) {
-		return body
-	}
-	if tailLimit > len(body) {
-		tailLimit = len(body)
-	}
-	if headLimit > len(body)-tailLimit {
-		headLimit = len(body) - tailLimit
-	}
-	omittedBytes := len(body) - headLimit - tailLimit
-	placeholder := []byte(fmt.Sprintf("...[omitted %d bytes]...", omittedBytes))
-	truncated := make([]byte, 0, headLimit+len(placeholder)+tailLimit)
-	truncated = append(truncated, body[:headLimit]...)
-	truncated = append(truncated, placeholder...)
-	if tailLimit > 0 {
-		truncated = append(truncated, body[len(body)-tailLimit:]...)
-	}
-	return truncated
-}
