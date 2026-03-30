@@ -143,7 +143,7 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		}
 
 		switch eventType {
-		case "response.text.delta", "response.output_text.delta":
+		case "response.text.delta", "response.output_text.delta", "response.audio_transcript.delta":
 			// incremental text delta (delta is a plain string)
 			if deltaRaw, ok := m["delta"]; ok {
 				var delta string
