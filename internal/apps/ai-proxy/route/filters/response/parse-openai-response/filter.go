@@ -15,6 +15,7 @@
 package audit
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -31,7 +32,10 @@ type Filter struct {
 	allChunks                 []byte
 	completion                string
 	lastRecordedCompletionLen int
+	lastIncrementalCheckLen   int
 }
+
+const streamIncrementalCheckThreshold = 4 * 1024
 
 func init() {
 	filter_define.RegisterFilterCreator("parse-openai-response", ResponseModifierCreator)
@@ -57,12 +61,7 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	f.allChunks = append(f.allChunks, chunk...)
 	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		completion, _ := ExtractEventStreamCompletionAndFcName(string(f.allChunks))
-		if len(completion) > f.lastRecordedCompletionLen {
-			f.completion = completion
-			audithelper.Note(resp.Request.Context(), "completion", f.completion)
-		}
-		f.lastRecordedCompletionLen = len(completion)
+		f.noteIncrementalStreamingCompletion(resp)
 	}
 	return chunk, nil
 }
@@ -107,7 +106,48 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 	return nil, nil
 }
 
+func (f *Filter) noteIncrementalStreamingCompletion(resp *http.Response) {
+	if len(f.allChunks)-f.lastIncrementalCheckLen <= streamIncrementalCheckThreshold {
+		return
+	}
+
+	consumableLen := lastConsumableEventStreamOffset(f.allChunks)
+	if consumableLen <= f.lastIncrementalCheckLen {
+		return
+	}
+
+	completion, _ := extractIncrementalEventStreamCompletionAndFcName(string(f.allChunks[f.lastIncrementalCheckLen:consumableLen]))
+	f.lastIncrementalCheckLen = consumableLen
+	if completion == "" {
+		return
+	}
+
+	f.completion += completion
+	if len(f.completion) <= f.lastRecordedCompletionLen {
+		return
+	}
+
+	audithelper.Note(resp.Request.Context(), "completion", f.completion)
+	f.lastRecordedCompletionLen = len(f.completion)
+}
+
+func lastConsumableEventStreamOffset(allChunks []byte) int {
+	lastNewline := bytes.LastIndexByte(allChunks, '\n')
+	if lastNewline < 0 {
+		return 0
+	}
+	return lastNewline + 1
+}
+
 func ExtractEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
+	return extractEventStreamCompletionAndFcName(responseBody, true)
+}
+
+func extractIncrementalEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
+	return extractEventStreamCompletionAndFcName(responseBody, false)
+}
+
+func extractEventStreamCompletionAndFcName(responseBody string, includeTerminalSnapshot bool) (completion string, fcName string) {
 	// use strings.Split instead of bufio.Scanner to avoid ErrTooLong on large lines
 	// (e.g. response.created data: line with many tool schemas can exceed scanner limits)
 	for _, line := range strings.Split(responseBody, "\n") {
@@ -188,6 +228,9 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 				}
 			}
 		case "response.done", "response.completed":
+			if !includeTerminalSnapshot {
+				continue
+			}
 			// final snapshot — if we got content from deltas use that; otherwise extract from output
 			if completion != "" {
 				continue

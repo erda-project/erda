@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
@@ -136,7 +137,108 @@ data: {"type":"response.function_call_arguments.delta","delta":"\"value\"}"}
 	}
 }
 
-func TestOnBodyChunkRecordsStreamingCompletionBeforeComplete(t *testing.T) {
+func TestOnBodyChunkRecordsStreamingCompletionAfterThreshold(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutIsStream(ctx, true)
+	ctxhelper.PutAuditID(ctx, "audit-1")
+	ctxhelper.PutAuditSink(ctx, audittypes.New("audit-1", logrusx.New()))
+
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/chat/completions", nil).WithContext(ctx)
+	resp := &http.Response{Request: req}
+	filter := &Filter{}
+
+	firstDelta := strings.Repeat("A", streamIncrementalCheckThreshold+32)
+	chunk1 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"" + firstDelta + "\"},\"index\":0}]}\n")
+	if out, err := filter.OnBodyChunk(resp, chunk1, 0); err != nil {
+		t.Fatalf("OnBodyChunk chunk1 error: %v", err)
+	} else if string(out) != string(chunk1) {
+		t.Fatalf("OnBodyChunk chunk1 output: got %q, want %q", out, chunk1)
+	}
+
+	if filter.completion != firstDelta {
+		t.Fatalf("completion after chunk1: got len=%d, want len=%d", len(filter.completion), len(firstDelta))
+	}
+	if filter.lastRecordedCompletionLen != len(firstDelta) {
+		t.Fatalf("lastRecordedCompletionLen after chunk1: got %d, want %d", filter.lastRecordedCompletionLen, len(firstDelta))
+	}
+	if filter.lastIncrementalCheckLen != len(chunk1) {
+		t.Fatalf("lastIncrementalCheckLen after chunk1: got %d, want %d", filter.lastIncrementalCheckLen, len(chunk1))
+	}
+
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok {
+		t.Fatal("expected audit sink in context")
+	}
+	if got := sink.Snapshot()["completion"]; got != firstDelta {
+		t.Fatalf("audit completion after chunk1: got len=%d, want len=%d", len(got.(string)), len(firstDelta))
+	}
+
+	chunk2 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"tail\"},\"index\":0}]}\n")
+	if out, err := filter.OnBodyChunk(resp, chunk2, 1); err != nil {
+		t.Fatalf("OnBodyChunk chunk2 error: %v", err)
+	} else if string(out) != string(chunk2) {
+		t.Fatalf("OnBodyChunk chunk2 output: got %q, want %q", out, chunk2)
+	}
+
+	if filter.completion != firstDelta {
+		t.Fatalf("completion after chunk2 below threshold: got len=%d, want len=%d", len(filter.completion), len(firstDelta))
+	}
+	if filter.lastRecordedCompletionLen != len(firstDelta) {
+		t.Fatalf("lastRecordedCompletionLen after chunk2 below threshold: got %d, want %d", filter.lastRecordedCompletionLen, len(firstDelta))
+	}
+	if filter.lastIncrementalCheckLen != len(chunk1) {
+		t.Fatalf("lastIncrementalCheckLen after chunk2 below threshold: got %d, want %d", filter.lastIncrementalCheckLen, len(chunk1))
+	}
+	if got := sink.Snapshot()["completion"]; got != firstDelta {
+		t.Fatalf("audit completion after chunk2 below threshold: got len=%d, want len=%d", len(got.(string)), len(firstDelta))
+	}
+}
+
+func TestOnBodyChunkIncrementalCheckKeepsIncompleteLineForNextThreshold(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutIsStream(ctx, true)
+	ctxhelper.PutAuditID(ctx, "audit-1")
+	ctxhelper.PutAuditSink(ctx, audittypes.New("audit-1", logrusx.New()))
+
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/chat/completions", nil).WithContext(ctx)
+	resp := &http.Response{Request: req}
+	filter := &Filter{}
+
+	firstDelta := strings.Repeat("A", streamIncrementalCheckThreshold+32)
+	secondDelta := strings.Repeat("B", streamIncrementalCheckThreshold+64)
+	firstLine := "data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"" + firstDelta + "\"},\"index\":0}]}\n"
+	secondLinePrefix := "data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\""
+	splitAt := streamIncrementalCheckThreshold / 2
+	chunk1 := []byte(firstLine + secondLinePrefix + secondDelta[:splitAt])
+
+	if _, err := filter.OnBodyChunk(resp, chunk1, 0); err != nil {
+		t.Fatalf("OnBodyChunk chunk1 error: %v", err)
+	}
+	if filter.completion != firstDelta {
+		t.Fatalf("completion after chunk1: got len=%d, want len=%d", len(filter.completion), len(firstDelta))
+	}
+	if filter.lastIncrementalCheckLen != len(firstLine) {
+		t.Fatalf("lastIncrementalCheckLen after chunk1: got %d, want %d", filter.lastIncrementalCheckLen, len(firstLine))
+	}
+
+	chunk2 := []byte(secondDelta[splitAt:] + "\"},\"index\":0}]}\n")
+	if _, err := filter.OnBodyChunk(resp, chunk2, 1); err != nil {
+		t.Fatalf("OnBodyChunk chunk2 error: %v", err)
+	}
+
+	wantCompletion := firstDelta + secondDelta
+	if filter.completion != wantCompletion {
+		t.Fatalf("completion after chunk2: got len=%d, want len=%d", len(filter.completion), len(wantCompletion))
+	}
+	if filter.lastRecordedCompletionLen != len(wantCompletion) {
+		t.Fatalf("lastRecordedCompletionLen after chunk2: got %d, want %d", filter.lastRecordedCompletionLen, len(wantCompletion))
+	}
+	if filter.lastIncrementalCheckLen != len(chunk1)+len(chunk2) {
+		t.Fatalf("lastIncrementalCheckLen after chunk2: got %d, want %d", filter.lastIncrementalCheckLen, len(chunk1)+len(chunk2))
+	}
+}
+
+func TestOnCompleteRecordsStreamingCompletionWhenIncrementalCheckNotTriggered(t *testing.T) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutIsStream(ctx, true)
 	ctxhelper.PutAuditID(ctx, "audit-1")
@@ -147,42 +249,26 @@ func TestOnBodyChunkRecordsStreamingCompletionBeforeComplete(t *testing.T) {
 	filter := &Filter{}
 
 	chunk1 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"index\":0}]}\n")
-	if out, err := filter.OnBodyChunk(resp, chunk1, 0); err != nil {
-		t.Fatalf("OnBodyChunk chunk1 error: %v", err)
-	} else if string(out) != string(chunk1) {
-		t.Fatalf("OnBodyChunk chunk1 output: got %q, want %q", out, chunk1)
-	}
-
-	if filter.completion != "Hello" {
-		t.Fatalf("completion after chunk1: got %q, want %q", filter.completion, "Hello")
-	}
-	if filter.lastRecordedCompletionLen != len("Hello") {
-		t.Fatalf("lastRecordedCompletionLen after chunk1: got %d, want %d", filter.lastRecordedCompletionLen, len("Hello"))
-	}
-
-	sink, ok := ctxhelper.GetAuditSink(ctx)
-	if !ok {
-		t.Fatal("expected audit sink in context")
-	}
-	if got := sink.Snapshot()["completion"]; got != "Hello" {
-		t.Fatalf("audit completion after chunk1: got %#v, want %q", got, "Hello")
-	}
-
 	chunk2 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\", world!\"},\"index\":0}]}\n")
-	if out, err := filter.OnBodyChunk(resp, chunk2, 1); err != nil {
+
+	if _, err := filter.OnBodyChunk(resp, chunk1, 0); err != nil {
+		t.Fatalf("OnBodyChunk chunk1 error: %v", err)
+	}
+	if _, err := filter.OnBodyChunk(resp, chunk2, 1); err != nil {
 		t.Fatalf("OnBodyChunk chunk2 error: %v", err)
-	} else if string(out) != string(chunk2) {
-		t.Fatalf("OnBodyChunk chunk2 output: got %q, want %q", out, chunk2)
+	}
+	if filter.completion != "" {
+		t.Fatalf("completion before OnComplete: got %q, want empty", filter.completion)
 	}
 
+	if _, err := filter.OnComplete(resp); err != nil {
+		t.Fatalf("OnComplete error: %v", err)
+	}
 	if filter.completion != "Hello, world!" {
-		t.Fatalf("completion after chunk2: got %q, want %q", filter.completion, "Hello, world!")
+		t.Fatalf("completion after OnComplete: got %q, want %q", filter.completion, "Hello, world!")
 	}
-	if filter.lastRecordedCompletionLen != len("Hello, world!") {
-		t.Fatalf("lastRecordedCompletionLen after chunk2: got %d, want %d", filter.lastRecordedCompletionLen, len("Hello, world!"))
-	}
-	if got := sink.Snapshot()["completion"]; got != "Hello, world!" {
-		t.Fatalf("audit completion after chunk2: got %#v, want %q", got, "Hello, world!")
+	if filter.lastRecordedCompletionLen != 0 {
+		t.Fatalf("lastRecordedCompletionLen before final full scan should remain unchanged: got %d, want %d", filter.lastRecordedCompletionLen, 0)
 	}
 }
 
