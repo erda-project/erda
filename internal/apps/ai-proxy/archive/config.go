@@ -24,7 +24,9 @@ import (
 
 const (
 	EventArchiveStart          = eventmodel.EventArchiveStart
+	EventArchiveDryRun         = eventmodel.EventArchiveDryRun
 	EventArchiveDayStart       = eventmodel.EventArchiveDayStart
+	EventArchiveDayDryRun      = eventmodel.EventArchiveDayDryRun
 	EventArchiveDaySuccess     = eventmodel.EventArchiveDaySuccess
 	EventArchiveDayFailed      = eventmodel.EventArchiveDayFailed
 	EventArchiveDayInterrupted = eventmodel.EventArchiveDayInterrupted
@@ -41,6 +43,7 @@ type OSSConfig struct {
 type Config struct {
 	Enable        bool          `file:"enable" env:"AI_PROXY_AUDIT_ARCHIVE_ENABLE" default:"false"`
 	AutoStart     bool          `file:"auto_start" env:"AI_PROXY_AUDIT_ARCHIVE_AUTO_START" default:"false"`
+	DryRun        bool          `file:"dry_run" env:"AI_PROXY_AUDIT_ARCHIVE_DRY_RUN" default:"false"`
 	RetentionDays int           `file:"retention_days" env:"AI_PROXY_AUDIT_ARCHIVE_RETENTION_DAYS" default:"180"`
 	LoopInterval  time.Duration `file:"loop_interval" env:"AI_PROXY_AUDIT_ARCHIVE_LOOP_INTERVAL" default:"1m"`
 	BatchSize     int           `file:"batch_size" env:"AI_PROXY_AUDIT_ARCHIVE_BATCH_SIZE" default:"1000"`
@@ -51,6 +54,7 @@ type Config struct {
 type Status struct {
 	Enabled    bool
 	AutoStart  bool
+	DryRun     bool
 	Started    bool
 	Running    bool
 	CurrentDay string
@@ -85,10 +89,19 @@ func archiveDayStart(t time.Time) time.Time {
 	return time.Date(tt.Year(), tt.Month(), tt.Day(), 0, 0, 0, 0, tt.Location())
 }
 
+func archiveDayFromDetail(detail string) string {
+	detail = strings.TrimSpace(detail)
+	if len(detail) < len("2006-01-02") {
+		return detail
+	}
+	return detail[:len("2006-01-02")]
+}
+
 func buildStatus(cfg Config, latestStartEvent *eventmodel.Event, optionalEvents ...*eventmodel.Event) Status {
 	status := Status{
 		Enabled:   cfg.Enable,
 		AutoStart: cfg.AutoStart,
+		DryRun:    cfg.DryRun,
 	}
 	if !cfg.Enable {
 		return status
@@ -99,24 +112,31 @@ func buildStatus(cfg Config, latestStartEvent *eventmodel.Event, optionalEvents 
 		status.Started = latestStartEvent.Detail == "true"
 	}
 
-	var latestDayStart, latestDayEnd, latestResult *eventmodel.Event
+	var latestDryRunEvent, latestDayStart, latestDayEnd, latestResult *eventmodel.Event
 	if len(optionalEvents) > 0 {
-		latestDayStart = optionalEvents[0]
+		latestDryRunEvent = optionalEvents[0]
 	}
 	if len(optionalEvents) > 1 {
-		latestDayEnd = optionalEvents[1]
+		latestDayStart = optionalEvents[1]
 	}
 	if len(optionalEvents) > 2 {
-		latestResult = optionalEvents[2]
+		latestDayEnd = optionalEvents[2]
+	}
+	if len(optionalEvents) > 3 {
+		latestResult = optionalEvents[3]
+	}
+
+	if latestDryRunEvent != nil && latestDryRunEvent.Event == EventArchiveDryRun {
+		status.DryRun = latestDryRunEvent.Detail == "true"
 	}
 
 	if latestResult != nil {
-		status.LastDay = latestResult.Detail
+		status.LastDay = archiveDayFromDetail(latestResult.Detail)
 		status.LastResult = latestResult.Event
 	}
 	if latestDayStart != nil && isAfter(latestDayStart, latestDayEnd) {
 		status.Running = true
-		status.CurrentDay = latestDayStart.Detail
+		status.CurrentDay = archiveDayFromDetail(latestDayStart.Detail)
 	}
 
 	return status

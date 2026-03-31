@@ -108,6 +108,13 @@ func (a *AuditHandler) SetArchiveStart(ctx context.Context, req *pb.AuditArchive
 	return &commonpb.VoidResponse{}, nil
 }
 
+func (a *AuditHandler) SetArchiveDryRun(ctx context.Context, req *pb.AuditArchiveDryRunRequest) (*commonpb.VoidResponse, error) {
+	if err := a.ArchiveService.SetDryRun(ctx, req.Value); err != nil {
+		return nil, err
+	}
+	return &commonpb.VoidResponse{}, nil
+}
+
 func (a *AuditHandler) GetArchiveStatus(ctx context.Context, _ *pb.AuditArchiveStatusRequest) (*pb.AuditArchiveStatusResponse, error) {
 	status, err := a.ArchiveService.GetStatus(ctx)
 	if err != nil {
@@ -116,6 +123,7 @@ func (a *AuditHandler) GetArchiveStatus(ctx context.Context, _ *pb.AuditArchiveS
 	return &pb.AuditArchiveStatusResponse{
 		Enabled:    status.Enabled,
 		AutoStart:  status.AutoStart,
+		DryRun:     status.DryRun,
 		Started:    status.Started,
 		Running:    status.Running,
 		CurrentDay: status.CurrentDay,
@@ -129,6 +137,7 @@ func (a *AuditHandler) ListArchiveEvents(ctx context.Context, req *pb.AuditArchi
 		PageNum:  req.PageNum,
 		PageSize: req.PageSize,
 		Day:      req.Day,
+		Types:    req.Type,
 	})
 	if err != nil {
 		return nil, err

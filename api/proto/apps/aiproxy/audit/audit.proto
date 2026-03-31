@@ -23,6 +23,13 @@ service AuditService {
         };
     }
 
+    rpc SetArchiveDryRun(AuditArchiveDryRunRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/audits/actions/archive-dry-run"
+            body: "*"
+        };
+    }
+
     rpc GetArchiveStatus(AuditArchiveStatusRequest) returns (AuditArchiveStatusResponse) {
         option(google.api.http) = {
             get: "/api/ai-proxy/audits/actions/archive-status"
@@ -138,6 +145,11 @@ message AuditArchiveStatusResponse {
     string currentDay = 5;
     string lastDay = 6;
     string lastResult = 7;
+    bool dryRun = 8;
+}
+
+message AuditArchiveDryRunRequest {
+    bool value = 1;
 }
 
 message AuditArchiveEvent {
@@ -152,6 +164,7 @@ message AuditArchiveEventListRequest {
     uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
     uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 100}];
     string day = 3 [(validate.rules).string = {ignore_empty: true, len: 10}];
+    repeated string type = 4;
 }
 
 message AuditArchiveEventListResponse {

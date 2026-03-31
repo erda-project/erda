@@ -30,6 +30,7 @@ erda.app.ai-proxy:
     archive:
       enable: ${AI_PROXY_AUDIT_ARCHIVE_ENABLE:false}
       auto_start: ${AI_PROXY_AUDIT_ARCHIVE_AUTO_START:false}
+      dry_run: ${AI_PROXY_AUDIT_ARCHIVE_DRY_RUN:false}
       retention_days: ${AI_PROXY_AUDIT_ARCHIVE_RETENTION_DAYS:180}
       loop_interval: ${AI_PROXY_AUDIT_ARCHIVE_LOOP_INTERVAL:1m}
       batch_size: ${AI_PROXY_AUDIT_ARCHIVE_BATCH_SIZE:1000}

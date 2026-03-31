@@ -21,12 +21,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 
 	auditmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
+	eventmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/event"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
@@ -57,6 +59,26 @@ var archiveCSVHeader = []string{
 	"operation_id",
 	"res_func_call_name",
 	"metadata",
+}
+
+var archiveObjectExists = func(s *Service, _ context.Context, day time.Time) (bool, error) {
+	bucket, err := s.newBucket()
+	if err != nil {
+		return false, err
+	}
+	return bucket.IsObjectExist(s.objectKey(day))
+}
+
+var archivePutObject = func(s *Service, day time.Time, reader io.Reader) error {
+	bucket, err := s.newBucket()
+	if err != nil {
+		return err
+	}
+	return bucket.PutObject(s.objectKey(day), reader)
+}
+
+var archiveDeleteBatch = func(s *Service, ctx context.Context, day time.Time) (int64, error) {
+	return s.AuditClient.DeleteArchiveBatch(ctx, day, day.Add(24*time.Hour), s.Config.BatchSize)
 }
 
 func (s *Service) Run(ctx context.Context) error {
@@ -107,6 +129,15 @@ func (s *Service) markInterruptedIfNeeded(ctx context.Context) error {
 }
 
 func (s *Service) tick(ctx context.Context) error {
+	// try to acquire leadership via optimistic lock on heartbeat event
+	ok, err := s.EventClient.TryAcquireLeaderLease(ctx)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
+
 	status, err := s.GetStatus(ctx)
 	if err != nil {
 		return err
@@ -120,6 +151,13 @@ func (s *Service) tick(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	dryRunDayEvent := (*eventmodel.Event)(nil)
+	if status.DryRun {
+		dryRunDayEvent, err = s.EventClient.LatestByEvent(ctx, EventArchiveDayDryRun)
+		if err != nil {
+			return err
+		}
+	}
 
 	if successEvent != nil {
 		successDay, err := parseArchiveDay(successEvent.Detail)
@@ -131,6 +169,9 @@ func (s *Service) tick(ctx context.Context) error {
 			return err
 		}
 		if !objectExists {
+			if status.DryRun {
+				return s.dryRunDay(ctx, successDay, "would re-export because archive object is missing")
+			}
 			return s.archiveDay(ctx, successDay)
 		}
 
@@ -139,13 +180,27 @@ func (s *Service) tick(ctx context.Context) error {
 			return err
 		}
 		if hasRows {
-			_, err = s.AuditClient.DeleteArchiveBatch(ctx, successDay, successDay.Add(24*time.Hour), s.Config.BatchSize)
-			return err
+			if status.DryRun {
+				return s.dryRunDay(ctx, successDay, "would delete archived audit rows")
+			}
+			return s.deleteArchivedDayRows(ctx, successDay)
 		}
 
 		nextDay := successDay.Add(24 * time.Hour)
+		if status.DryRun && dryRunDayEvent != nil {
+			dryRunDay, err := parseArchiveDay(dryRunDayEvent.Detail)
+			if err != nil {
+				return err
+			}
+			if dryRunDay.After(successDay) {
+				nextDay = dryRunDay.Add(24 * time.Hour)
+			}
+		}
 		if !nextDay.Before(cutoff) {
 			return nil
+		}
+		if status.DryRun {
+			return s.dryRunDay(ctx, nextDay, "would export archive CSV and upload to OSS")
 		}
 		return s.archiveDay(ctx, nextDay)
 	}
@@ -154,36 +209,76 @@ func (s *Service) tick(ctx context.Context) error {
 	if err != nil || !ok {
 		return err
 	}
+	if status.DryRun && dryRunDayEvent != nil {
+		dryRunDay, err := parseArchiveDay(dryRunDayEvent.Detail)
+		if err != nil {
+			return err
+		}
+		nextDay := dryRunDay.Add(24 * time.Hour)
+		if nextDay.Before(cutoff) {
+			return s.dryRunDay(ctx, nextDay, "would export archive CSV and upload to OSS")
+		}
+		return nil
+	}
+	if status.DryRun {
+		return s.dryRunDay(ctx, oldestDay, "would export archive CSV and upload to OSS")
+	}
 	return s.archiveDay(ctx, oldestDay)
 }
 
-func (s *Service) archiveDay(ctx context.Context, day time.Time) error {
+func (s *Service) archiveDay(ctx context.Context, day time.Time) (err error) {
 	dayStr := day.Format("2006-01-02")
-	if _, err := s.EventClient.Create(ctx, EventArchiveDayStart, dayStr); err != nil {
+	defer func() {
+		if r := recover(); r != nil {
+			reason := fmt.Sprintf("panic: %v", r)
+			s.logf("archive day panic day=%s reason=%s stack=%s", dayStr, reason, strings.TrimSpace(string(debug.Stack())))
+			err = s.failDay(ctx, dayStr, fmt.Errorf("%s", reason))
+		}
+	}()
+	if _, err = s.EventClient.Create(ctx, EventArchiveDayStart, dayStr); err != nil {
 		return err
 	}
 
-	if err := s.exportDay(ctx, day); err != nil {
-		_ = s.writeEndEvents(ctx, EventArchiveDayFailed, dayStr)
-		return err
+	if err = s.exportDay(ctx, day); err != nil {
+		return s.failDay(ctx, dayStr, err)
 	}
 
-	exists, err := s.objectExists(ctx, day)
+	var exists bool
+	exists, err = s.objectExists(ctx, day)
 	if err != nil {
-		_ = s.writeEndEvents(ctx, EventArchiveDayFailed, dayStr)
-		return err
+		return s.failDay(ctx, dayStr, err)
 	}
 	if !exists {
-		_ = s.writeEndEvents(ctx, EventArchiveDayFailed, dayStr)
-		return fmt.Errorf("archive object not found for day %s", dayStr)
+		return s.failDay(ctx, dayStr, fmt.Errorf("archive object not found for day %s", dayStr))
+	}
+
+	if err = s.deleteArchivedDayRows(ctx, day); err != nil {
+		return s.failDay(ctx, dayStr, err)
 	}
 
 	if err := s.writeEndEvents(ctx, EventArchiveDaySuccess, dayStr); err != nil {
 		return err
 	}
+	return nil
+}
 
-	_, err = s.AuditClient.DeleteArchiveBatch(ctx, day, day.Add(24*time.Hour), s.Config.BatchSize)
-	return err
+func (s *Service) dryRunDay(ctx context.Context, day time.Time, action string) error {
+	dayStr := day.Format("2006-01-02")
+	if _, err := s.EventClient.Create(ctx, EventArchiveDayStart, dayStr); err != nil {
+		return err
+	}
+
+	rowCount, err := s.scanArchiveDay(ctx, day)
+	if err != nil {
+		_ = s.writeEndEvents(ctx, EventArchiveDayFailed, dayStr)
+		return err
+	}
+
+	s.logf("audit archive dry-run day=%s action=%s object_key=%s rows=%d", dayStr, action, s.objectKey(day), rowCount)
+	if err := s.writeEndEvents(ctx, EventArchiveDayDryRun, dayStr); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) writeEndEvents(ctx context.Context, resultEvent, day string) error {
@@ -192,6 +287,39 @@ func (s *Service) writeEndEvents(ctx context.Context, resultEvent, day string) e
 	}
 	_, err := s.EventClient.Create(ctx, EventArchiveDayEnd, day)
 	return err
+}
+
+func (s *Service) failDay(ctx context.Context, day string, cause error) error {
+	detail := day
+	if cause != nil {
+		detail = formatArchiveFailedDetail(day, cause.Error())
+	}
+	if err := s.writeEndEvents(ctx, EventArchiveDayFailed, detail); err != nil {
+		if cause == nil {
+			return err
+		}
+		return fmt.Errorf("%w; write failed event: %v", cause, err)
+	}
+	return cause
+}
+
+func formatArchiveFailedDetail(day, reason string) string {
+	day = archiveDayFromDetail(day)
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return day
+	}
+
+	detail := fmt.Sprintf("%s | %s", day, reason)
+	if len(detail) <= 255 {
+		return detail
+	}
+
+	maxReasonLen := 255 - len(day) - len(" | ...")
+	if maxReasonLen <= 0 {
+		return day
+	}
+	return fmt.Sprintf("%s | %s...", day, reason[:maxReasonLen])
 }
 
 func (s *Service) exportDay(ctx context.Context, day time.Time) error {
@@ -247,25 +375,55 @@ func (s *Service) exportDay(ctx context.Context, day time.Time) error {
 	return s.putObject(day, tmpFile)
 }
 
+func (s *Service) scanArchiveDay(ctx context.Context, day time.Time) (int64, error) {
+	start := day
+	end := day.Add(24 * time.Hour)
+
+	var (
+		rowCount       int64
+		afterCreatedAt *time.Time
+		afterID        string
+	)
+	for {
+		list, err := s.AuditClient.ListArchiveBatch(ctx, start, end, afterCreatedAt, afterID, s.Config.BatchSize)
+		if err != nil {
+			return 0, err
+		}
+		if len(list) == 0 {
+			break
+		}
+		rowCount += int64(len(list))
+		last := list[len(list)-1]
+		lastCreatedAt := last.CreatedAt
+		afterCreatedAt = &lastCreatedAt
+		afterID = last.ID.String
+	}
+	return rowCount, nil
+}
+
 func (s *Service) objectKey(day time.Time) string {
 	return fmt.Sprintf("ai-proxy/%s/audit/archive/%04d/%02d/audit-%s.csv.gz",
 		s.Config.Name, day.Year(), int(day.Month()), day.Format("2006-01-02"))
 }
 
-func (s *Service) objectExists(_ context.Context, day time.Time) (bool, error) {
-	bucket, err := s.newBucket()
-	if err != nil {
-		return false, err
-	}
-	return bucket.IsObjectExist(s.objectKey(day))
+func (s *Service) objectExists(ctx context.Context, day time.Time) (bool, error) {
+	return archiveObjectExists(s, ctx, day)
 }
 
 func (s *Service) putObject(day time.Time, reader io.Reader) error {
-	bucket, err := s.newBucket()
-	if err != nil {
-		return err
+	return archivePutObject(s, day, reader)
+}
+
+func (s *Service) deleteArchivedDayRows(ctx context.Context, day time.Time) error {
+	for {
+		rows, err := archiveDeleteBatch(s, ctx, day)
+		if err != nil {
+			return err
+		}
+		if rows == 0 {
+			return nil
+		}
 	}
-	return bucket.PutObject(s.objectKey(day), reader)
 }
 
 func (s *Service) newBucket() (*oss.Bucket, error) {

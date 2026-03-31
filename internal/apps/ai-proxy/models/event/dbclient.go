@@ -17,6 +17,7 @@ package event
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -29,6 +30,18 @@ type ListOptions struct {
 	PageNum  uint64
 	PageSize uint64
 	Day      string
+	Types    []string
+}
+
+var archiveListEvents = []string{
+	EventArchiveStart,
+	EventArchiveDryRun,
+	EventArchiveDayStart,
+	EventArchiveDayDryRun,
+	EventArchiveDaySuccess,
+	EventArchiveDayFailed,
+	EventArchiveDayInterrupted,
+	EventArchiveDayEnd,
 }
 
 func (dbClient *DBClient) Create(ctx context.Context, eventName, detail string) (*Event, error) {
@@ -100,15 +113,12 @@ func (dbClient *DBClient) ListDayEvents(ctx context.Context, opt ListOptions) (i
 
 	sql := dbClient.DB.WithContext(ctx).
 		Model(&Event{}).
-		Where("event IN ?", []string{
-			EventArchiveDayStart,
-			EventArchiveDaySuccess,
-			EventArchiveDayFailed,
-			EventArchiveDayInterrupted,
-			EventArchiveDayEnd,
-		})
+		Where("event IN ?", archiveListEvents)
+	if len(opt.Types) > 0 {
+		sql = sql.Where("event IN ?", opt.Types)
+	}
 	if opt.Day != "" {
-		sql = sql.Where("detail = ?", opt.Day)
+		sql = sql.Where("detail = ? OR detail LIKE ?", opt.Day, opt.Day+" | %")
 	}
 
 	var (
@@ -120,4 +130,34 @@ func (dbClient *DBClient) ListDayEvents(ctx context.Context, opt ListOptions) (i
 		return 0, nil, err
 	}
 	return total, list, nil
+}
+
+func (dbClient *DBClient) TryAcquireLeaderLease(ctx context.Context) (bool, error) {
+	rec := &Event{}
+	err := dbClient.DB.WithContext(ctx).
+		Where("event = ?", EventArchiveLeaderHeartbeat).
+		Order("id ASC").
+		Limit(1).
+		Find(rec).Error
+	if err != nil {
+		return false, err
+	}
+
+	// no existing heartbeat, create one and acquire leadership
+	if rec.ID == 0 {
+		_, err := dbClient.Create(ctx, EventArchiveLeaderHeartbeat, "0")
+		return err == nil, err
+	}
+
+	// optimistic lock: CAS version + 1
+	oldVersion := rec.Detail
+	newVersion, _ := strconv.ParseInt(oldVersion, 10, 64)
+	result := dbClient.DB.WithContext(ctx).
+		Model(&Event{}).
+		Where("id = ? AND detail = ?", rec.ID, oldVersion).
+		Updates(map[string]any{"detail": strconv.FormatInt(newVersion+1, 10)})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
 }

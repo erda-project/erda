@@ -21,7 +21,7 @@ import (
 
 func (dbClient *DBClient) OldestDayBefore(ctx context.Context, cutoff time.Time) (time.Time, bool, error) {
 	var rec Audit
-	err := dbClient.DB.WithContext(ctx).
+	err := dbClient.DB.WithContext(ctx).Unscoped().
 		Where("created_at < ?", cutoff).
 		Order("created_at ASC, id ASC").
 		Limit(1).
@@ -36,22 +36,30 @@ func (dbClient *DBClient) OldestDayBefore(ctx context.Context, cutoff time.Time)
 }
 
 func (dbClient *DBClient) HasRowsInRange(ctx context.Context, start, end time.Time) (bool, error) {
-	var count int64
-	err := dbClient.DB.WithContext(ctx).
-		Model(&Audit{}).
-		Where("created_at >= ? AND created_at < ?", start, end).
-		Count(&count).Error
+	count, err := dbClient.CountRowsInRange(ctx, start, end)
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
+func (dbClient *DBClient) CountRowsInRange(ctx context.Context, start, end time.Time) (int64, error) {
+	var count int64
+	err := dbClient.DB.WithContext(ctx).Unscoped().
+		Model(&Audit{}).
+		Where("created_at >= ? AND created_at < ?", start, end).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (dbClient *DBClient) ListArchiveBatch(ctx context.Context, start, end time.Time, afterCreatedAt *time.Time, afterID string, limit int) (Audits, error) {
 	if limit <= 0 {
 		limit = 1000
 	}
-	sql := dbClient.DB.WithContext(ctx).
+	sql := dbClient.DB.WithContext(ctx).Unscoped().
 		Model(&Audit{}).
 		Where("created_at >= ? AND created_at < ?", start, end)
 	if afterCreatedAt != nil {
@@ -70,7 +78,7 @@ func (dbClient *DBClient) DeleteArchiveBatch(ctx context.Context, start, end tim
 	var rows []struct {
 		ID string `gorm:"column:id"`
 	}
-	if err := dbClient.DB.WithContext(ctx).
+	if err := dbClient.DB.WithContext(ctx).Unscoped().
 		Model(&Audit{}).
 		Select("id").
 		Where("created_at >= ? AND created_at < ?", start, end).

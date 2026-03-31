@@ -36,22 +36,31 @@ func TestArchiveConfigNormalize(t *testing.T) {
 }
 
 func TestBuildStatus_UsesEventOverAutoStart(t *testing.T) {
-	cfg := Config{Enable: true, AutoStart: true, Name: "cluster-a"}
+	cfg := Config{Enable: true, AutoStart: true, DryRun: false, Name: "cluster-a"}
 
-	status := buildStatus(cfg, &eventmodel.Event{Event: EventArchiveStart, Detail: "false"})
+	status := buildStatus(cfg,
+		&eventmodel.Event{Event: EventArchiveStart, Detail: "false"},
+		&eventmodel.Event{Event: EventArchiveDryRun, Detail: "true"},
+	)
 	require.True(t, status.Enabled)
 	require.False(t, status.Started)
+	require.True(t, status.DryRun)
 
-	status = buildStatus(cfg, &eventmodel.Event{Event: EventArchiveStart, Detail: "true"})
+	status = buildStatus(cfg,
+		&eventmodel.Event{Event: EventArchiveStart, Detail: "true"},
+		&eventmodel.Event{Event: EventArchiveDryRun, Detail: "false"},
+	)
 	require.True(t, status.Started)
+	require.False(t, status.DryRun)
 }
 
 func TestBuildStatus_FallsBackToAutoStart(t *testing.T) {
-	cfg := Config{Enable: true, AutoStart: true, Name: "cluster-a"}
+	cfg := Config{Enable: true, AutoStart: true, DryRun: true, Name: "cluster-a"}
 
 	status := buildStatus(cfg, nil)
 	require.True(t, status.Enabled)
 	require.True(t, status.Started)
+	require.True(t, status.DryRun)
 	require.False(t, status.Running)
 }
 
@@ -62,6 +71,7 @@ func TestBuildStatus_TracksRunningDayAndLatestResult(t *testing.T) {
 	status := buildStatus(
 		cfg,
 		&eventmodel.Event{Event: EventArchiveStart, Detail: "true", CreatedAt: now},
+		&eventmodel.Event{Event: EventArchiveDryRun, Detail: "false", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayStart, Detail: "2026-03-01", CreatedAt: now.Add(time.Second)},
 		&eventmodel.Event{Event: EventArchiveDayEnd, Detail: "2026-02-28", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayFailed, Detail: "2026-02-28", CreatedAt: now},
@@ -73,6 +83,7 @@ func TestBuildStatus_TracksRunningDayAndLatestResult(t *testing.T) {
 	status = buildStatus(
 		cfg,
 		&eventmodel.Event{Event: EventArchiveStart, Detail: "true", CreatedAt: now},
+		&eventmodel.Event{Event: EventArchiveDryRun, Detail: "true", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayStart, Detail: "2026-03-01", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayEnd, Detail: "2026-03-01", CreatedAt: now.Add(time.Second)},
 		&eventmodel.Event{Event: EventArchiveDaySuccess, Detail: "2026-03-01", CreatedAt: now.Add(time.Second)},
@@ -80,4 +91,5 @@ func TestBuildStatus_TracksRunningDayAndLatestResult(t *testing.T) {
 	require.False(t, status.Running)
 	require.Empty(t, status.CurrentDay)
 	require.Equal(t, EventArchiveDaySuccess, status.LastResult)
+	require.True(t, status.DryRun)
 }

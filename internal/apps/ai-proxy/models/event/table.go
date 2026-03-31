@@ -17,12 +17,15 @@ package event
 import "time"
 
 const (
-	EventArchiveStart          = "audit.archive.start"
-	EventArchiveDayStart       = "audit.archive.day.start"
-	EventArchiveDaySuccess     = "audit.archive.day.success"
-	EventArchiveDayFailed      = "audit.archive.day.failed"
-	EventArchiveDayInterrupted = "audit.archive.day.interrupted"
-	EventArchiveDayEnd         = "audit.archive.day.end"
+	EventArchiveStart              = "audit.archive.start"
+	EventArchiveDryRun             = "audit.archive.dry_run"
+	EventArchiveDayStart           = "audit.archive.day.start"
+	EventArchiveDayDryRun          = "audit.archive.day.dry_run"
+	EventArchiveDaySuccess         = "audit.archive.day.success"
+	EventArchiveDayFailed          = "audit.archive.day.failed"
+	EventArchiveDayInterrupted     = "audit.archive.day.interrupted"
+	EventArchiveDayEnd             = "audit.archive.day.end"
+	EventArchiveLeaderHeartbeat    = "audit.archive.leader.heartbeat"
 )
 
 type Event struct {

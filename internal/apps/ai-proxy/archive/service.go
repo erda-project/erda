@@ -28,6 +28,7 @@ type ListRequest struct {
 	PageNum  uint64
 	PageSize uint64
 	Day      string
+	Types    []string
 }
 
 type Service struct {
@@ -45,11 +46,23 @@ func (s *Service) SetStart(ctx context.Context, value bool) error {
 	return err
 }
 
+func (s *Service) SetDryRun(ctx context.Context, value bool) error {
+	if !s.Config.Enable {
+		return fmt.Errorf("audit archive is disabled")
+	}
+	_, err := s.EventClient.Create(ctx, EventArchiveDryRun, strconv.FormatBool(value))
+	return err
+}
+
 func (s *Service) GetStatus(ctx context.Context) (Status, error) {
 	if !s.Config.Enable {
 		return buildStatus(s.Config, nil), nil
 	}
 	latestStart, err := s.EventClient.LatestByEvent(ctx, EventArchiveStart)
+	if err != nil {
+		return Status{}, err
+	}
+	latestDryRun, err := s.EventClient.LatestByEvent(ctx, EventArchiveDryRun)
 	if err != nil {
 		return Status{}, err
 	}
@@ -61,11 +74,11 @@ func (s *Service) GetStatus(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
-	latestResult, err := s.EventClient.LatestByEvents(ctx, EventArchiveDaySuccess, EventArchiveDayFailed, EventArchiveDayInterrupted)
+	latestResult, err := s.EventClient.LatestByEvents(ctx, EventArchiveDayDryRun, EventArchiveDaySuccess, EventArchiveDayFailed, EventArchiveDayInterrupted)
 	if err != nil {
 		return Status{}, err
 	}
-	return buildStatus(s.Config, latestStart, latestDayStart, latestDayEnd, latestResult), nil
+	return buildStatus(s.Config, latestStart, latestDryRun, latestDayStart, latestDayEnd, latestResult), nil
 }
 
 func (s *Service) ListEvents(ctx context.Context, req ListRequest) (int64, eventmodel.Events, error) {
@@ -76,6 +89,7 @@ func (s *Service) ListEvents(ctx context.Context, req ListRequest) (int64, event
 		PageNum:  req.PageNum,
 		PageSize: req.PageSize,
 		Day:      req.Day,
+		Types:    req.Types,
 	})
 }
 

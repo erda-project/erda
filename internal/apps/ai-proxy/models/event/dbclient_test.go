@@ -39,13 +39,22 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 	_, err = client.Create(ctx, EventArchiveDayStart, "2026-03-29")
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond)
+	_, err = client.Create(ctx, EventArchiveDayDryRun, "2026-03-29")
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond)
 	_, err = client.Create(ctx, EventArchiveDaySuccess, "2026-03-29")
 	require.NoError(t, err)
+	time.Sleep(time.Millisecond)
+	_, err = client.Create(ctx, EventArchiveDayFailed, "2026-03-29 | missing oss endpoint")
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond)
+	_, err = client.Create(ctx, EventArchiveLeaderHeartbeat, "1")
+	require.NoError(t, err)
 
-	latest, err := client.LatestByEvent(ctx, EventArchiveDaySuccess)
+	latest, err := client.LatestByEvent(ctx, EventArchiveDayFailed)
 	require.NoError(t, err)
 	require.NotNil(t, latest)
-	require.Equal(t, "2026-03-29", latest.Detail)
+	require.Equal(t, "2026-03-29 | missing oss endpoint", latest.Detail)
 
 	total, list, err := client.ListDayEvents(ctx, ListOptions{
 		PageNum:  1,
@@ -53,10 +62,46 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 		Day:      "2026-03-29",
 	})
 	require.NoError(t, err)
+	require.EqualValues(t, 4, total)
+	require.Len(t, list, 4)
+	require.Equal(t, EventArchiveDayFailed, list[0].Event)
+	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
+	require.Equal(t, EventArchiveDayDryRun, list[2].Event)
+	require.Equal(t, EventArchiveDayStart, list[3].Event)
+
+	total, list, err = client.ListDayEvents(ctx, ListOptions{
+		PageNum:  1,
+		PageSize: 10,
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 5, total)
+	require.Len(t, list, 5)
+	require.Equal(t, EventArchiveDayFailed, list[0].Event)
+	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
+	require.Equal(t, EventArchiveDayDryRun, list[2].Event)
+	require.Equal(t, EventArchiveDayStart, list[3].Event)
+	require.Equal(t, EventArchiveStart, list[4].Event)
+
+	total, list, err = client.ListDayEvents(ctx, ListOptions{
+		PageNum:  1,
+		PageSize: 10,
+		Types:    []string{EventArchiveStart},
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, list, 1)
+	require.Equal(t, EventArchiveStart, list[0].Event)
+
+	total, list, err = client.ListDayEvents(ctx, ListOptions{
+		PageNum:  1,
+		PageSize: 10,
+		Types:    []string{EventArchiveStart, EventArchiveDaySuccess},
+	})
+	require.NoError(t, err)
 	require.EqualValues(t, 2, total)
 	require.Len(t, list, 2)
 	require.Equal(t, EventArchiveDaySuccess, list[0].Event)
-	require.Equal(t, EventArchiveDayStart, list[1].Event)
+	require.Equal(t, EventArchiveStart, list[1].Event)
 }
 
 func prepareSQLiteEventTable(db *gorm.DB) error {
