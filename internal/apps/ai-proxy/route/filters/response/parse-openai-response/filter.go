@@ -15,7 +15,7 @@
 package audit
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -29,9 +29,13 @@ import (
 )
 
 type Filter struct {
-	allChunks  []byte
-	completion string
+	allChunks                 []byte
+	completion                string
+	lastRecordedCompletionLen int
+	lastIncrementalCheckLen   int
 }
+
+const streamIncrementalCheckThreshold = 4 * 1024
 
 func init() {
 	filter_define.RegisterFilterCreator("parse-openai-response", ResponseModifierCreator)
@@ -56,23 +60,31 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	f.allChunks = append(f.allChunks, chunk...)
-
 	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		completion, _ := ExtractEventStreamCompletionAndFcName(string(chunk))
-		f.completion += completion
+		f.noteIncrementalStreamingCompletion(resp, false)
 	}
-
 	return chunk, nil
 }
 
 func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
-	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		var completion string
+	var completion string
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
+		// extract from the full accumulated stream so the response.done fallback
+		// only fires when no delta events were present (avoiding double-counting)
+		completion, _ = ExtractEventStreamCompletionAndFcName(string(f.allChunks))
+		if f.lastIncrementalCheckLen < len(f.allChunks) {
+			f.noteIncrementalStreamingCompletion(resp, true)
+		}
+	} else {
 		// routing by model type
 		model := ctxhelper.MustGetModel(resp.Request.Context())
 		switch model.Type {
 		case modelpb.ModelType_text_generation, modelpb.ModelType_multimodal:
 			completion, _ = ExtractApplicationJsonCompletionAndFcName(string(f.allChunks))
+			if completion == "" {
+				// Responses API non-streaming: output[] instead of choices[]
+				completion, _ = ExtractResponsesAPIJsonCompletion(string(f.allChunks))
+			}
 		case modelpb.ModelType_audio:
 			var openaiAudioResp openai.AudioResponse
 			if err := json.Unmarshal(f.allChunks, &openaiAudioResp); err == nil {
@@ -89,6 +101,8 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 				}
 			}
 		}
+	}
+	if completion != "" || f.completion == "" {
 		f.completion = completion
 	}
 
@@ -97,10 +111,55 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 	return nil, nil
 }
 
+func (f *Filter) noteIncrementalStreamingCompletion(resp *http.Response, force bool) {
+	if !force && len(f.allChunks)-f.lastIncrementalCheckLen <= streamIncrementalCheckThreshold {
+		return
+	}
+
+	consumableLen := len(f.allChunks)
+	if !force {
+		consumableLen = lastConsumableEventStreamOffset(f.allChunks)
+	}
+	if consumableLen <= f.lastIncrementalCheckLen {
+		return
+	}
+
+	completion, _ := extractIncrementalEventStreamCompletionAndFcName(string(f.allChunks[f.lastIncrementalCheckLen:consumableLen]))
+	f.lastIncrementalCheckLen = consumableLen
+	if completion == "" {
+		return
+	}
+
+	f.completion += completion
+	if len(f.completion) <= f.lastRecordedCompletionLen {
+		return
+	}
+
+	audithelper.Note(resp.Request.Context(), "completion", f.completion)
+	f.lastRecordedCompletionLen = len(f.completion)
+}
+
+func lastConsumableEventStreamOffset(allChunks []byte) int {
+	lastNewline := bytes.LastIndexByte(allChunks, '\n')
+	if lastNewline < 0 {
+		return 0
+	}
+	return lastNewline + 1
+}
+
 func ExtractEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
-	scanner := bufio.NewScanner(strings.NewReader(responseBody))
-	for scanner.Scan() {
-		var line = scanner.Text()
+	return extractEventStreamCompletionAndFcName(responseBody, true)
+}
+
+func extractIncrementalEventStreamCompletionAndFcName(responseBody string) (completion string, fcName string) {
+	return extractEventStreamCompletionAndFcName(responseBody, false)
+}
+
+func extractEventStreamCompletionAndFcName(responseBody string, includeTerminalSnapshot bool) (completion string, fcName string) {
+	// use strings.Split instead of bufio.Scanner to avoid ErrTooLong on large lines
+	// (e.g. response.created data: line with many tool schemas can exceed scanner limits)
+	for _, line := range strings.Split(responseBody, "\n") {
+		line = strings.TrimRight(line, "\r")
 		left := strings.Index(line, "{")
 		right := strings.LastIndex(line, "}")
 		if left < 0 || right < 1 {
@@ -112,24 +171,109 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		if err := json.Unmarshal([]byte(line), &m); err != nil {
 			continue
 		}
-		choices, ok := m["choices"]
+
+		// OpenAI Chat Completions streaming: choices[].delta
+		if choices, ok := m["choices"]; ok {
+			var items []openai.ChatCompletionStreamChoice
+			if err := json.Unmarshal(choices, &items); err != nil || len(items) == 0 {
+				continue
+			}
+			delta := items[len(items)-1].Delta
+			completion += delta.Content
+			if delta.FunctionCall != nil {
+				if delta.FunctionCall.Name != "" {
+					fcName = delta.FunctionCall.Name
+				}
+				completion += delta.FunctionCall.Arguments
+			}
+			continue
+		}
+
+		// OpenAI Responses API streaming: type-based events
+		eventTypeRaw, ok := m["type"]
 		if !ok {
 			continue
 		}
-		var items []openai.ChatCompletionStreamChoice
-		if err := json.Unmarshal(choices, &items); err != nil {
+		var eventType string
+		if err := json.Unmarshal(eventTypeRaw, &eventType); err != nil {
 			continue
 		}
-		if len(items) == 0 {
-			continue
-		}
-		delta := items[len(items)-1].Delta
-		completion += delta.Content
-		if delta.FunctionCall != nil {
-			if delta.FunctionCall.Name != "" {
-				fcName = delta.FunctionCall.Name
+
+		switch eventType {
+		case "response.text.delta", "response.output_text.delta", "response.audio_transcript.delta":
+			// incremental text delta (delta is a plain string)
+			if deltaRaw, ok := m["delta"]; ok {
+				var delta string
+				if err := json.Unmarshal(deltaRaw, &delta); err == nil {
+					completion += delta
+				}
 			}
-			completion += delta.FunctionCall.Arguments
+		case "response.content_part.delta":
+			// delta is an object: {"type":"text","text":"..."}
+			if deltaRaw, ok := m["delta"]; ok {
+				var deltaObj struct {
+					Type string `json:"type"`
+					Text string `json:"text"`
+				}
+				if err := json.Unmarshal(deltaRaw, &deltaObj); err == nil {
+					if deltaObj.Type == "text" || deltaObj.Type == "output_text" {
+						completion += deltaObj.Text
+					}
+				}
+			}
+		case "response.function_call_arguments.delta":
+			// incremental function call arguments
+			if deltaRaw, ok := m["delta"]; ok {
+				var delta string
+				if err := json.Unmarshal(deltaRaw, &delta); err == nil {
+					completion += delta
+				}
+			}
+			if nameRaw, ok := m["name"]; ok {
+				var name string
+				if err := json.Unmarshal(nameRaw, &name); err == nil && name != "" {
+					fcName = name
+				}
+			}
+		case "response.done", "response.completed":
+			if !includeTerminalSnapshot {
+				continue
+			}
+			// final snapshot — if we got content from deltas use that; otherwise extract from output
+			if completion != "" {
+				continue
+			}
+			responseRaw, ok := m["response"]
+			if !ok {
+				continue
+			}
+			var respObj struct {
+				Output []struct {
+					Type    string `json:"type"`
+					Role    string `json:"role"`
+					Content []struct {
+						Type    string `json:"type"`
+						Text    string `json:"text"`
+						Refusal string `json:"refusal"`
+					} `json:"content"`
+					Name      string `json:"name"`
+					Arguments string `json:"arguments"`
+				} `json:"output"`
+			}
+			if err := json.Unmarshal(responseRaw, &respObj); err != nil {
+				continue
+			}
+			for _, item := range respObj.Output {
+				switch item.Type {
+				case "message":
+					for _, c := range item.Content {
+						completion += responseContentText(c.Type, c.Text, c.Refusal)
+					}
+				case "function_call":
+					fcName = item.Name
+					completion += item.Arguments
+				}
+			}
 		}
 	}
 
@@ -159,4 +303,53 @@ func ExtractApplicationJsonCompletionAndFcName(responseBody string) (completion 
 		completion = msg.FunctionCall.Arguments
 	}
 	return
+}
+
+// ExtractResponsesAPIJsonCompletion extracts completion from a non-streaming Responses API response.
+// The Responses API returns {"output":[{"type":"message","content":[{"type":"output_text","text":"..."}]}]}
+func ExtractResponsesAPIJsonCompletion(responseBody string) (completion string, fcName string) {
+	var m map[string]json.RawMessage
+	if err := json.NewDecoder(strings.NewReader(responseBody)).Decode(&m); err != nil {
+		return
+	}
+	outputRaw, ok := m["output"]
+	if !ok {
+		return
+	}
+	var output []struct {
+		Type    string `json:"type"`
+		Content []struct {
+			Type    string `json:"type"`
+			Text    string `json:"text"`
+			Refusal string `json:"refusal"`
+		} `json:"content"`
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	}
+	if err := json.Unmarshal(outputRaw, &output); err != nil {
+		return
+	}
+	for _, item := range output {
+		switch item.Type {
+		case "message":
+			for _, c := range item.Content {
+				completion += responseContentText(c.Type, c.Text, c.Refusal)
+			}
+		case "function_call":
+			fcName = item.Name
+			completion += item.Arguments
+		}
+	}
+	return
+}
+
+func responseContentText(contentType, text, refusal string) string {
+	switch contentType {
+	case "text", "output_text":
+		return text
+	case "refusal":
+		return refusal
+	default:
+		return ""
+	}
 }

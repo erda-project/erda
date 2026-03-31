@@ -12,6 +12,7 @@ routes:
       - name: openai-compatible-director
       - name: set-response-chunk-splitter
     response_filters:
+      - name: parse-openai-response
       - name: json-no-unicode
 
   - path: /v1/responses/{response_id}
