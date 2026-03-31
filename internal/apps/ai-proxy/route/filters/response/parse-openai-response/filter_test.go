@@ -267,8 +267,67 @@ func TestOnCompleteRecordsStreamingCompletionWhenIncrementalCheckNotTriggered(t 
 	if filter.completion != "Hello, world!" {
 		t.Fatalf("completion after OnComplete: got %q, want %q", filter.completion, "Hello, world!")
 	}
-	if filter.lastRecordedCompletionLen != 0 {
-		t.Fatalf("lastRecordedCompletionLen before final full scan should remain unchanged: got %d, want %d", filter.lastRecordedCompletionLen, 0)
+	if filter.lastRecordedCompletionLen != len("Hello, world!") {
+		t.Fatalf("lastRecordedCompletionLen after OnComplete: got %d, want %d", filter.lastRecordedCompletionLen, len("Hello, world!"))
+	}
+	if filter.lastIncrementalCheckLen != len(chunk1)+len(chunk2) {
+		t.Fatalf("lastIncrementalCheckLen after OnComplete: got %d, want %d", filter.lastIncrementalCheckLen, len(chunk1)+len(chunk2))
+	}
+}
+
+func TestOnCompleteConsumesRemainingStreamingTailAfterThreshold(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutIsStream(ctx, true)
+	ctxhelper.PutAuditID(ctx, "audit-1")
+	ctxhelper.PutAuditSink(ctx, audittypes.New("audit-1", logrusx.New()))
+
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/chat/completions", nil).WithContext(ctx)
+	resp := &http.Response{Request: req}
+	filter := &Filter{}
+
+	firstDelta := strings.Repeat("A", streamIncrementalCheckThreshold+32)
+	tailDelta := "tail"
+	chunk1 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"" + firstDelta + "\"},\"index\":0}]}\n")
+	chunk2 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"" + tailDelta + "\"},\"index\":0}]}\n")
+
+	if _, err := filter.OnBodyChunk(resp, chunk1, 0); err != nil {
+		t.Fatalf("OnBodyChunk chunk1 error: %v", err)
+	}
+	if _, err := filter.OnBodyChunk(resp, chunk2, 1); err != nil {
+		t.Fatalf("OnBodyChunk chunk2 error: %v", err)
+	}
+
+	wantCompletion := firstDelta + tailDelta
+	if filter.completion != firstDelta {
+		t.Fatalf("completion before OnComplete: got len=%d, want len=%d", len(filter.completion), len(firstDelta))
+	}
+	if filter.lastRecordedCompletionLen != len(firstDelta) {
+		t.Fatalf("lastRecordedCompletionLen before OnComplete: got %d, want %d", filter.lastRecordedCompletionLen, len(firstDelta))
+	}
+	if filter.lastIncrementalCheckLen != len(chunk1) {
+		t.Fatalf("lastIncrementalCheckLen before OnComplete: got %d, want %d", filter.lastIncrementalCheckLen, len(chunk1))
+	}
+
+	if _, err := filter.OnComplete(resp); err != nil {
+		t.Fatalf("OnComplete error: %v", err)
+	}
+
+	if filter.completion != wantCompletion {
+		t.Fatalf("completion after OnComplete: got len=%d, want len=%d", len(filter.completion), len(wantCompletion))
+	}
+	if filter.lastRecordedCompletionLen != len(wantCompletion) {
+		t.Fatalf("lastRecordedCompletionLen after OnComplete: got %d, want %d", filter.lastRecordedCompletionLen, len(wantCompletion))
+	}
+	if filter.lastIncrementalCheckLen != len(chunk1)+len(chunk2) {
+		t.Fatalf("lastIncrementalCheckLen after OnComplete: got %d, want %d", filter.lastIncrementalCheckLen, len(chunk1)+len(chunk2))
+	}
+
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok {
+		t.Fatal("expected audit sink in context")
+	}
+	if got := sink.Snapshot()["completion"]; got != wantCompletion {
+		t.Fatalf("audit completion after OnComplete: got len=%d, want len=%d", len(got.(string)), len(wantCompletion))
 	}
 }
 

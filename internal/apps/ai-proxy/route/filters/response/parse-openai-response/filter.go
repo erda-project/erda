@@ -61,7 +61,7 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	f.allChunks = append(f.allChunks, chunk...)
 	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
-		f.noteIncrementalStreamingCompletion(resp)
+		f.noteIncrementalStreamingCompletion(resp, false)
 	}
 	return chunk, nil
 }
@@ -72,6 +72,9 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 		// extract from the full accumulated stream so the response.done fallback
 		// only fires when no delta events were present (avoiding double-counting)
 		completion, _ = ExtractEventStreamCompletionAndFcName(string(f.allChunks))
+		if f.lastIncrementalCheckLen < len(f.allChunks) {
+			f.noteIncrementalStreamingCompletion(resp, true)
+		}
 	} else {
 		// routing by model type
 		model := ctxhelper.MustGetModel(resp.Request.Context())
@@ -99,19 +102,24 @@ func (f *Filter) OnComplete(resp *http.Response) (out []byte, err error) {
 			}
 		}
 	}
-	f.completion = completion
+	if completion != "" || f.completion == "" {
+		f.completion = completion
+	}
 
 	audithelper.Note(resp.Request.Context(), "completion", f.completion)
 
 	return nil, nil
 }
 
-func (f *Filter) noteIncrementalStreamingCompletion(resp *http.Response) {
-	if len(f.allChunks)-f.lastIncrementalCheckLen <= streamIncrementalCheckThreshold {
+func (f *Filter) noteIncrementalStreamingCompletion(resp *http.Response, force bool) {
+	if !force && len(f.allChunks)-f.lastIncrementalCheckLen <= streamIncrementalCheckThreshold {
 		return
 	}
 
-	consumableLen := lastConsumableEventStreamOffset(f.allChunks)
+	consumableLen := len(f.allChunks)
+	if !force {
+		consumableLen = lastConsumableEventStreamOffset(f.allChunks)
+	}
 	if consumableLen <= f.lastIncrementalCheckLen {
 		return
 	}
