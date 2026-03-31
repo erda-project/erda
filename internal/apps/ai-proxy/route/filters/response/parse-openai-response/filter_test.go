@@ -15,7 +15,14 @@
 package audit
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	audittypes "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
 func TestExtractEventStreamCompletionAndFcName(t *testing.T) {
@@ -126,6 +133,56 @@ data: {"type":"response.function_call_arguments.delta","delta":"\"value\"}"}
 				t.Errorf("fcName: got %q, want %q", fcName, tt.wantFcName)
 			}
 		})
+	}
+}
+
+func TestOnBodyChunkRecordsStreamingCompletionBeforeComplete(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutIsStream(ctx, true)
+	ctxhelper.PutAuditID(ctx, "audit-1")
+	ctxhelper.PutAuditSink(ctx, audittypes.New("audit-1", logrusx.New()))
+
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/chat/completions", nil).WithContext(ctx)
+	resp := &http.Response{Request: req}
+	filter := &Filter{}
+
+	chunk1 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"index\":0}]}\n")
+	if out, err := filter.OnBodyChunk(resp, chunk1, 0); err != nil {
+		t.Fatalf("OnBodyChunk chunk1 error: %v", err)
+	} else if string(out) != string(chunk1) {
+		t.Fatalf("OnBodyChunk chunk1 output: got %q, want %q", out, chunk1)
+	}
+
+	if filter.completion != "Hello" {
+		t.Fatalf("completion after chunk1: got %q, want %q", filter.completion, "Hello")
+	}
+	if filter.lastRecordedCompletionLen != len("Hello") {
+		t.Fatalf("lastRecordedCompletionLen after chunk1: got %d, want %d", filter.lastRecordedCompletionLen, len("Hello"))
+	}
+
+	sink, ok := ctxhelper.GetAuditSink(ctx)
+	if !ok {
+		t.Fatal("expected audit sink in context")
+	}
+	if got := sink.Snapshot()["completion"]; got != "Hello" {
+		t.Fatalf("audit completion after chunk1: got %#v, want %q", got, "Hello")
+	}
+
+	chunk2 := []byte("data: {\"id\":\"chatcmpl-1\",\"choices\":[{\"delta\":{\"content\":\", world!\"},\"index\":0}]}\n")
+	if out, err := filter.OnBodyChunk(resp, chunk2, 1); err != nil {
+		t.Fatalf("OnBodyChunk chunk2 error: %v", err)
+	} else if string(out) != string(chunk2) {
+		t.Fatalf("OnBodyChunk chunk2 output: got %q, want %q", out, chunk2)
+	}
+
+	if filter.completion != "Hello, world!" {
+		t.Fatalf("completion after chunk2: got %q, want %q", filter.completion, "Hello, world!")
+	}
+	if filter.lastRecordedCompletionLen != len("Hello, world!") {
+		t.Fatalf("lastRecordedCompletionLen after chunk2: got %d, want %d", filter.lastRecordedCompletionLen, len("Hello, world!"))
+	}
+	if got := sink.Snapshot()["completion"]; got != "Hello, world!" {
+		t.Fatalf("audit completion after chunk2: got %#v, want %q", got, "Hello, world!")
 	}
 }
 

@@ -77,13 +77,26 @@ func OptimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 
 	// split into individual SSE events (delimited by \n\n)
 	rawEvents := strings.Split(normalized, "\n\n")
+	hasTerminalEvent := false
+	for _, raw := range rawEvents {
+		raw = strings.TrimRight(raw, "\r\n")
+		if raw == "" {
+			continue
+		}
+		eventType, _ := parseSSEEventTypeAndData(raw)
+		if eventType == "response.done" || eventType == "response.completed" {
+			hasTerminalEvent = true
+			break
+		}
+	}
+
 	var kept []string
 	for _, raw := range rawEvents {
 		raw = strings.TrimRight(raw, "\r\n")
 		if raw == "" {
 			continue
 		}
-		optimized, drop := optimizeSSEEvent(raw)
+		optimized, drop := optimizeSSEEvent(raw, hasTerminalEvent)
 		if !drop {
 			kept = append(kept, optimized)
 		}
@@ -103,9 +116,35 @@ func OptimizeBodyForAudit(body []byte, headLimit, tailLimit int) []byte {
 // returns (optimizedEvent, drop):
 //   - drop=true  → exclude this event from the audit body entirely
 //   - drop=false → include optimizedEvent (may be rewritten)
-func optimizeSSEEvent(raw string) (string, bool) {
+func optimizeSSEEvent(raw string, hasTerminalEvent bool) (string, bool) {
+	eventType, dataLine := parseSSEEventTypeAndData(raw)
+
+	switch eventType {
+	// --- drop: ephemeral incremental events; content is captured in completion field ---
+	case "response.text.delta",
+		"response.output_text.delta",
+		"response.content_part.delta",
+		"response.function_call_arguments.delta",
+		"response.audio.delta",
+		"response.audio_transcript.delta":
+		if !hasTerminalEvent {
+			return raw, false
+		}
+		return "", true
+
+	// --- compress: response.created can be enormous due to tool schemas ---
+	case "response.created":
+		compressed := compressResponseCreatedEvent(raw, dataLine)
+		return compressed, false
+
+	// --- keep everything else as-is (response.done, output_item.done, etc.) ---
+	default:
+		return raw, false
+	}
+}
+
+func parseSSEEventTypeAndData(raw string) (eventType string, dataLine string) {
 	// extract event: and data: lines
-	var eventType, dataLine string
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimRight(line, "\r")
 		if strings.HasPrefix(line, "event: ") {
@@ -126,26 +165,7 @@ func optimizeSSEEvent(raw string) (string, bool) {
 			}
 		}
 	}
-
-	switch jsonType {
-	// --- drop: ephemeral incremental events; content is captured in completion field ---
-	case "response.text.delta",
-		"response.output_text.delta",
-		"response.content_part.delta",
-		"response.function_call_arguments.delta",
-		"response.audio.delta",
-		"response.audio_transcript.delta":
-		return "", true
-
-	// --- compress: response.created can be enormous due to tool schemas ---
-	case "response.created":
-		compressed := compressResponseCreatedEvent(raw, dataLine)
-		return compressed, false
-
-	// --- keep everything else as-is (response.done, output_item.done, etc.) ---
-	default:
-		return raw, false
-	}
+	return jsonType, dataLine
 }
 
 // compressResponseCreatedEvent strips verbose tool schemas from the response.created event.

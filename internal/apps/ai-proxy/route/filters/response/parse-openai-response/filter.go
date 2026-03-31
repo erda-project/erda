@@ -28,8 +28,9 @@ import (
 )
 
 type Filter struct {
-	allChunks  []byte
-	completion string
+	allChunks                 []byte
+	completion                string
+	lastRecordedCompletionLen int
 }
 
 func init() {
@@ -55,6 +56,14 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte, index int64) (out []byte, err error) {
 	f.allChunks = append(f.allChunks, chunk...)
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
+		completion, _ := ExtractEventStreamCompletionAndFcName(string(f.allChunks))
+		if len(completion) > f.lastRecordedCompletionLen {
+			f.completion = completion
+			audithelper.Note(resp.Request.Context(), "completion", f.completion)
+		}
+		f.lastRecordedCompletionLen = len(completion)
+	}
 	return chunk, nil
 }
 
