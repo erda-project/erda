@@ -118,7 +118,7 @@ func (dbClient *DBClient) ListDayEvents(ctx context.Context, opt ListOptions) (i
 		sql = sql.Where("event IN ?", opt.Types)
 	}
 	if opt.Day != "" {
-		sql = sql.Where("detail = ? OR detail LIKE ? OR detail LIKE ?", opt.Day, opt.Day+" | %", "{\"day\":\""+opt.Day+"\"%")
+		sql = sql.Where("detail = ? OR detail LIKE ?", opt.Day, "{\"day\":\""+opt.Day+"\"%")
 	}
 
 	var (

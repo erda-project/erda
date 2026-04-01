@@ -270,3 +270,94 @@ VALUES (?, ?, ?, NULL, ?)
 		require.Equal(t, uploadedKeys[i], part.ObjectKey)
 	}
 }
+
+func TestArchiveDay_SplitsWhenThresholdHitOnLastBatchBoundary(t *testing.T) {
+	// BatchSize == data count: the split check fires on the very last record of the only batch.
+	// With nextList empty, we still finalize the part as multipart (suffix _1).
+	svc := newTestService(t, Config{
+		Enable:                     true,
+		BatchSize:                  100,
+		MaxCompressedFileSizeBytes: 1, // always exceeded
+		Name:                       "cluster-a",
+	})
+	ctx := context.Background()
+	day := time.Date(2026, 3, 29, 0, 0, 0, 0, time.Local)
+
+	for i := 1; i <= 100; i++ {
+		require.NoError(t, svc.AuditClient.DB.WithContext(ctx).Exec(`
+INSERT INTO ai_proxy_filter_audit (id, created_at, updated_at, deleted_at, metadata)
+VALUES (?, ?, ?, NULL, ?)
+`, fmt.Sprintf("00000000-0000-0000-0000-%012d", i), day.Add(time.Duration(i)*time.Minute), day.Add(time.Duration(i)*time.Minute), []byte(`{}`)).Error)
+	}
+
+	oldPutObject := archivePutObject
+	oldObjectExists := archiveObjectExists
+	t.Cleanup(func() {
+		archivePutObject = oldPutObject
+		archiveObjectExists = oldObjectExists
+	})
+
+	var uploadedKeys []string
+	archivePutObject = func(_ *Service, objectKey string, reader io.Reader) error {
+		uploadedKeys = append(uploadedKeys, objectKey)
+		_, err := io.Copy(io.Discard, reader)
+		return err
+	}
+	archiveObjectExists = func(_ *Service, _ context.Context, objectKey string) (bool, error) {
+		for _, key := range uploadedKeys {
+			if key == objectKey {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	require.NoError(t, svc.archiveDay(ctx, day))
+
+	require.Len(t, uploadedKeys, 1)
+	require.Equal(t, "ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_1.csv.gz", uploadedKeys[0])
+
+	_, list, err := svc.ListEvents(ctx, ListRequest{PageNum: 1, PageSize: 5, Day: "2026-03-29"})
+	require.NoError(t, err)
+	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
+	var detail archiveEventDetail
+	require.NoError(t, json.Unmarshal([]byte(list[1].Detail), &detail))
+	require.EqualValues(t, 100, detail.RowCount)
+	require.Len(t, detail.Parts, 1)
+}
+
+func TestMarkInterruptedIfNeeded_WritesEventsWhenDayStartHasNoEnd(t *testing.T) {
+	svc := newTestService(t, Config{Enable: true, Name: "cluster-a"})
+	ctx := context.Background()
+
+	_, err := svc.EventClient.Create(ctx, EventArchiveDayStart, "2026-03-29")
+	require.NoError(t, err)
+
+	require.NoError(t, svc.markInterruptedIfNeeded(ctx))
+
+	interrupted, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayInterrupted)
+	require.NoError(t, err)
+	require.NotNil(t, interrupted)
+	require.Equal(t, "2026-03-29", interrupted.Detail)
+
+	end, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayEnd)
+	require.NoError(t, err)
+	require.NotNil(t, end)
+	require.Equal(t, "2026-03-29", end.Detail)
+}
+
+func TestMarkInterruptedIfNeeded_NoOpWhenDayEndIsLatest(t *testing.T) {
+	svc := newTestService(t, Config{Enable: true, Name: "cluster-a"})
+	ctx := context.Background()
+
+	_, err := svc.EventClient.Create(ctx, EventArchiveDayStart, "2026-03-29")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayEnd, "2026-03-29")
+	require.NoError(t, err)
+
+	require.NoError(t, svc.markInterruptedIfNeeded(ctx))
+
+	interrupted, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayInterrupted)
+	require.NoError(t, err)
+	require.Nil(t, interrupted)
+}

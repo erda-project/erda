@@ -64,6 +64,20 @@ func TestBuildStatus_FallsBackToAutoStart(t *testing.T) {
 	require.False(t, status.Running)
 }
 
+func TestArchiveDayFromDetail(t *testing.T) {
+	cases := []struct{ input, want string }{
+		{"2026-03-29", "2026-03-29"},
+		{"2026-03-29 | some error text", "2026-03-29"},
+		{`{"day":"2026-03-29","row_count":3}`, "2026-03-29"},
+		{"abc", "abc"},
+		{"  2026-03-29  ", "2026-03-29"},
+		{`  {"day":"2026-03-29"}  `, "2026-03-29"},
+	}
+	for _, c := range cases {
+		require.Equal(t, c.want, archiveDayFromDetail(c.input), "input: %q", c.input)
+	}
+}
+
 func TestBuildStatus_TracksRunningDayAndLatestResult(t *testing.T) {
 	cfg := Config{Enable: true, Name: "cluster-a"}
 	now := time.Now()

@@ -518,10 +518,6 @@ func (s *Service) objectExists(ctx context.Context, day time.Time, detail string
 	return true, nil
 }
 
-func (s *Service) putObject(objectKey string, reader io.Reader) error {
-	return archivePutObject(s, objectKey, reader)
-}
-
 func (s *Service) deleteArchivedDayRows(ctx context.Context, day time.Time) error {
 	for {
 		rows, err := archiveDeleteBatch(s, ctx, day)
@@ -673,7 +669,7 @@ func (s *Service) finalizeArchivePart(day time.Time, partIndex int, multipart bo
 		return archivePartDetail{}, err
 	}
 	objectKey := s.objectKey(day, partIndex, multipart)
-	if err := s.putObject(objectKey, part.tmpFile); err != nil {
+	if err := archivePutObject(s, objectKey, part.tmpFile); err != nil {
 		return archivePartDetail{}, err
 	}
 	return archivePartDetail{

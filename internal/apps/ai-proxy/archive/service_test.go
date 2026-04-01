@@ -121,6 +121,40 @@ VALUES (?, ?, ?, NULL, ?)
 	require.True(t, hasRows)
 }
 
+func TestTick_DryRunAdvancesFromDryRunDayNotSuccessDay(t *testing.T) {
+	// simulate: real archive done up to 2023-01-01, dry-run already processed 2023-01-02.
+	// tick should process 2023-01-03 (dryRunDay+1), not 2023-01-02 (successDay+1).
+	svc := newTestService(t, Config{
+		Enable:        true,
+		DryRun:        true,
+		Name:          "cluster-a",
+		RetentionDays: 180,
+	})
+	ctx := context.Background()
+
+	_, err := svc.EventClient.Create(ctx, EventArchiveStart, "true")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDryRun, "true")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDaySuccess, `{"day":"2023-01-01","row_count":1,"raw_size_bytes":100,"compressed_size_bytes":50,"parts":[{"index":1,"object_key":"ai-proxy/cluster-a/audit/archive/2023/01/audit-2023-01-01.csv.gz","row_count":1,"raw_size_bytes":100,"compressed_size_bytes":50}]}`)
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayDryRun, "2023-01-02")
+	require.NoError(t, err)
+
+	oldObjectExists := archiveObjectExists
+	t.Cleanup(func() { archiveObjectExists = oldObjectExists })
+	archiveObjectExists = func(_ *Service, _ context.Context, _ string) (bool, error) {
+		return true, nil
+	}
+
+	require.NoError(t, svc.tick(ctx))
+
+	dayStart, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayStart)
+	require.NoError(t, err)
+	require.NotNil(t, dayStart)
+	require.Equal(t, "2023-01-03", dayStart.Detail)
+}
+
 func newTestService(t *testing.T, cfg Config) *Service {
 	t.Helper()
 
