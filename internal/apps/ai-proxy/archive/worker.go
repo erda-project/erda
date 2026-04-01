@@ -179,15 +179,15 @@ func (s *Service) tick(ctx context.Context) error {
 		return nil
 	}
 
+	if err := s.markInterruptedIfNeeded(ctx); err != nil {
+		return err
+	}
 	status, err := s.GetStatus(ctx)
 	if err != nil {
 		return err
 	}
 	if status.Running {
 		return nil
-	}
-	if err := s.markInterruptedIfNeeded(ctx); err != nil {
-		return err
 	}
 	if !status.Enabled || !status.Started {
 		return nil
@@ -453,15 +453,18 @@ func (s *Service) failDay(ctx context.Context, day string, stats archiveExportSt
 }
 
 func (s *Service) markUploadedDaySucceeded(ctx context.Context, detail string) error {
-	day := archiveDayFromDetail(detail)
-	latestSuccess, err := s.EventClient.LatestByEventAndDetail(ctx, EventArchiveDaySuccess, day)
+	successDetail := strings.TrimSpace(detail)
+	if successDetail == "" {
+		successDetail = archiveDayFromDetail(detail)
+	}
+	latestSuccess, err := s.EventClient.LatestByEventAndDetail(ctx, EventArchiveDaySuccess, successDetail)
 	if err != nil {
 		return err
 	}
 	if latestSuccess != nil {
 		return nil
 	}
-	return s.writeEndEvents(ctx, EventArchiveDaySuccess, day)
+	return s.writeEndEvents(ctx, EventArchiveDaySuccess, successDetail)
 }
 
 func (s *Service) markUploadedDayDBDeleted(ctx context.Context, detail string, deletedRowCount int64) error {

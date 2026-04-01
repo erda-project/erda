@@ -178,7 +178,7 @@ VALUES (?, ?, ?, NULL, ?)
 	require.Contains(t, detail.Error, "AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET")
 }
 
-func TestArchiveDay_SuccessWritesDayOnlyDetail(t *testing.T) {
+func TestArchiveDay_SuccessPreservesUploadedDetail(t *testing.T) {
 	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a"})
 	ctx := context.Background()
 	day := time.Date(2026, 3, 29, 0, 0, 0, 0, time.Local)
@@ -216,7 +216,6 @@ VALUES (?, ?, ?, NULL, ?)
 	require.Equal(t, EventArchiveDayEnd, list[0].Event)
 	requireEventDay(t, list[0].Detail, "2026-03-29")
 	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
-	requireEventDay(t, list[1].Detail, "2026-03-29")
 	require.Equal(t, EventArchiveDayDBDeleted, list[2].Event)
 	require.Equal(t, EventArchiveDayUploaded, list[3].Event)
 
@@ -235,6 +234,7 @@ VALUES (?, ?, ?, NULL, ?)
 	require.EqualValues(t, 1, detail.Parts[0].RowCount)
 	require.Positive(t, detail.Parts[0].RawSizeBytes)
 	require.Positive(t, detail.Parts[0].CompressedSizeBytes)
+	require.JSONEq(t, list[3].Detail, list[1].Detail)
 }
 
 func TestTick_ContinuesDeletingUploadedDayWithoutReExport(t *testing.T) {
@@ -493,10 +493,9 @@ func TestMarkInterruptedIfNeeded_NoOpWhenDayEndIsLatest(t *testing.T) {
 	require.Nil(t, interrupted)
 }
 
-func TestRun_NonLeaderDoesNotMarkInterrupted(t *testing.T) {
+func TestTick_NonLeaderDoesNotMarkInterrupted(t *testing.T) {
 	svc := newTestService(t, Config{
 		Enable:       true,
-		LoopInterval: 10 * time.Millisecond,
 		Name:         "cluster-a",
 	})
 	ctx := context.Background()
@@ -520,14 +519,7 @@ WHERE event = ?
 		require.NoError(t, err)
 	}))
 
-	runCtx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() {
-		done <- svc.Run(runCtx)
-	}()
-	time.Sleep(30 * time.Millisecond)
-	cancel()
-	require.NoError(t, <-done)
+	require.NoError(t, svc.tick(ctx))
 
 	interrupted, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayInterrupted)
 	require.NoError(t, err)
