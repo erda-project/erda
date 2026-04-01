@@ -286,7 +286,15 @@ func (s *Service) tick(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		objectExists, err := s.objectExists(ctx, successDay, successEvent.Detail)
+		objectDetail := successEvent.Detail
+		uploadedForSuccessDay, err := s.EventClient.LatestByEventAndDay(ctx, EventArchiveDayUploaded, successDay.Format("2006-01-02"))
+		if err != nil {
+			return err
+		}
+		if uploadedForSuccessDay != nil {
+			objectDetail = uploadedForSuccessDay.Detail
+		}
+		objectExists, err := s.objectExists(ctx, successDay, objectDetail)
 		if err != nil {
 			return err
 		}
@@ -462,7 +470,8 @@ func (s *Service) markUploadedDaySucceeded(ctx context.Context, detail string) e
 		return err
 	}
 	if latestSuccess != nil {
-		return nil
+		_, err = s.EventClient.Create(ctx, EventArchiveDayEnd, archiveDayFromDetail(successDetail))
+		return err
 	}
 	return s.writeEndEvents(ctx, EventArchiveDaySuccess, successDetail)
 }

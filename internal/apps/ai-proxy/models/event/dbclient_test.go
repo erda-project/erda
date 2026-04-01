@@ -104,6 +104,30 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 	require.Equal(t, EventArchiveStart, list[1].Event)
 }
 
+func TestDBClient_LatestByEventAndDay(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, prepareSQLiteEventTable(db))
+
+	client := &DBClient{DB: db}
+	ctx := context.Background()
+
+	_, err = client.Create(ctx, EventArchiveDayUploaded, `{"day":"2026-03-29","row_count":1}`)
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond)
+	_, err = client.Create(ctx, EventArchiveDayUploaded, `{"day":"2026-03-30","row_count":2}`)
+	require.NoError(t, err)
+
+	rec, err := client.LatestByEventAndDay(ctx, EventArchiveDayUploaded, "2026-03-29")
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+	require.Equal(t, `{"day":"2026-03-29","row_count":1}`, rec.Detail)
+
+	rec, err = client.LatestByEventAndDay(ctx, EventArchiveDayUploaded, "2026-03-31")
+	require.NoError(t, err)
+	require.Nil(t, rec)
+}
+
 func TestDBClient_TryAcquireLeaderLease_ReturnsFalseOnDuplicateHeartbeatCreate(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	require.NoError(t, err)

@@ -237,6 +237,67 @@ VALUES (?, ?, ?, NULL, ?)
 	require.Positive(t, detail.Parts[0].CompressedSizeBytes)
 }
 
+func TestMarkUploadedDaySucceeded_WritesEndWhenSuccessAlreadyExists(t *testing.T) {
+	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a"})
+	ctx := context.Background()
+
+	_, err := svc.EventClient.Create(ctx, EventArchiveDaySuccess, "2026-03-29")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayStart, "2026-03-29")
+	require.NoError(t, err)
+
+	require.NoError(t, svc.markUploadedDaySucceeded(ctx, `{"day":"2026-03-29","row_count":2}`))
+
+	end, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayEnd)
+	require.NoError(t, err)
+	require.NotNil(t, end)
+	requireEventDay(t, end.Detail, "2026-03-29")
+}
+
+func TestTick_UsesUploadedDetailForMultipartSuccessDay(t *testing.T) {
+	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a", RetentionDays: 180})
+	ctx := context.Background()
+
+	_, err := svc.EventClient.Create(ctx, EventArchiveStart, "true")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayUploaded, `{"day":"2026-03-29","row_count":2,"raw_size_bytes":100,"compressed_size_bytes":50,"parts":[{"index":1,"object_key":"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_1.csv.gz","row_count":1,"raw_size_bytes":50,"compressed_size_bytes":25},{"index":2,"object_key":"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_2.csv.gz","row_count":1,"raw_size_bytes":50,"compressed_size_bytes":25}]}`)
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayDBDeleted, `{"day":"2026-03-29","deleted_row_count":2}`)
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDaySuccess, "2026-03-29")
+	require.NoError(t, err)
+
+	oldObjectExists := archiveObjectExists
+	oldPutObject := archivePutObject
+	t.Cleanup(func() {
+		archiveObjectExists = oldObjectExists
+		archivePutObject = oldPutObject
+	})
+
+	var checked []string
+	archiveObjectExists = func(_ *Service, _ context.Context, objectKey string) (bool, error) {
+		checked = append(checked, objectKey)
+		return true, nil
+	}
+	archivePutObject = func(_ *Service, _ string, _ io.Reader) error {
+		return errors.New("should not re-export")
+	}
+
+	require.NoError(t, svc.tick(ctx))
+	require.Equal(t, []string{
+		"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_1.csv.gz",
+		"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_2.csv.gz",
+	}, checked)
+
+	latestStart, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayStart)
+	require.NoError(t, err)
+	require.Nil(t, latestStart)
+
+	latestInterrupted, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayInterrupted)
+	require.NoError(t, err)
+	require.Nil(t, latestInterrupted)
+}
+
 func TestTick_ContinuesDeletingUploadedDayWithoutReExport(t *testing.T) {
 	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a", RetentionDays: 180})
 	ctx := context.Background()
@@ -495,8 +556,8 @@ func TestMarkInterruptedIfNeeded_NoOpWhenDayEndIsLatest(t *testing.T) {
 
 func TestTick_NonLeaderDoesNotMarkInterrupted(t *testing.T) {
 	svc := newTestService(t, Config{
-		Enable:       true,
-		Name:         "cluster-a",
+		Enable: true,
+		Name:   "cluster-a",
 	})
 	ctx := context.Background()
 

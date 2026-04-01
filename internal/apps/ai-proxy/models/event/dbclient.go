@@ -104,6 +104,21 @@ func (dbClient *DBClient) LatestByEventAndDetail(ctx context.Context, eventName,
 	return rec, nil
 }
 
+func (dbClient *DBClient) LatestByEventAndDay(ctx context.Context, eventName, day string) (*Event, error) {
+	rec := &Event{}
+	err := dbClient.DB.WithContext(ctx).
+		Where("event = ? AND (detail = ? OR detail LIKE ?)", eventName, day, "{\"day\":\""+day+"\"%").
+		Order("created_at DESC, id DESC").
+		First(rec).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return rec, nil
+}
+
 func (dbClient *DBClient) ListDayEvents(ctx context.Context, opt ListOptions) (int64, Events, error) {
 	if opt.PageNum == 0 {
 		opt.PageNum = 1
