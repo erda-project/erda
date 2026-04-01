@@ -371,7 +371,7 @@ func (s *Service) exportDay(ctx context.Context, day time.Time) (archiveExportSt
 	if err != nil {
 		return stats, err
 	}
-	defer part.cleanup()
+	defer func() { part.cleanup() }()
 	list, err := s.AuditClient.ListArchiveBatch(ctx, start, end, afterCreatedAt, afterID, s.Config.BatchSize)
 	if err != nil {
 		return stats, err
@@ -393,17 +393,18 @@ func (s *Service) exportDay(ctx context.Context, day time.Time) (archiveExportSt
 				continue
 			}
 			if i < len(list)-1 {
-				partStats, err := s.finalizeArchivePart(day, partIndex, true, part)
+				oldPart := part
+				partStats, err := s.finalizeArchivePart(day, partIndex, true, oldPart)
 				if err != nil {
 					return stats, err
 				}
+				oldPart.cleanup()
 				stats.addPart(partStats)
 				partIndex++
 				part, err = newArchivePartFile()
 				if err != nil {
 					return stats, err
 				}
-				defer part.cleanup()
 				continue
 			}
 			splitAfterBatch = true
@@ -419,18 +420,19 @@ func (s *Service) exportDay(ctx context.Context, day time.Time) (archiveExportSt
 			return stats, err
 		}
 
-		if splitAfterBatch && len(nextList) > 0 {
-			partStats, err := s.finalizeArchivePart(day, partIndex, true, part)
+		if splitAfterBatch {
+			oldPart := part
+			partStats, err := s.finalizeArchivePart(day, partIndex, true, oldPart)
 			if err != nil {
 				return stats, err
 			}
+			oldPart.cleanup()
 			stats.addPart(partStats)
 			partIndex++
 			part, err = newArchivePartFile()
 			if err != nil {
 				return stats, err
 			}
-			defer part.cleanup()
 		}
 		list = nextList
 	}
