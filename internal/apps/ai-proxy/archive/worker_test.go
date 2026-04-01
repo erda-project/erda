@@ -178,7 +178,7 @@ VALUES (?, ?, ?, NULL, ?)
 	require.Contains(t, detail.Error, "AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET")
 }
 
-func TestArchiveDay_SuccessPreservesUploadedDetail(t *testing.T) {
+func TestArchiveDay_SuccessOnlyStoresArchiveDay(t *testing.T) {
 	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a"})
 	ctx := context.Background()
 	day := time.Date(2026, 3, 29, 0, 0, 0, 0, time.Local)
@@ -218,6 +218,7 @@ VALUES (?, ?, ?, NULL, ?)
 	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
 	require.Equal(t, EventArchiveDayDBDeleted, list[2].Event)
 	require.Equal(t, EventArchiveDayUploaded, list[3].Event)
+	require.Equal(t, "2026-03-29", strings.TrimSpace(list[1].Detail))
 
 	dbDeleted := requireDBDeletedPayload(t, list[2].Detail)
 	require.Equal(t, "2026-03-29", dbDeleted.Day)
@@ -234,7 +235,6 @@ VALUES (?, ?, ?, NULL, ?)
 	require.EqualValues(t, 1, detail.Parts[0].RowCount)
 	require.Positive(t, detail.Parts[0].RawSizeBytes)
 	require.Positive(t, detail.Parts[0].CompressedSizeBytes)
-	require.JSONEq(t, list[3].Detail, list[1].Detail)
 }
 
 func TestTick_ContinuesDeletingUploadedDayWithoutReExport(t *testing.T) {

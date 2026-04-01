@@ -453,9 +453,9 @@ func (s *Service) failDay(ctx context.Context, day string, stats archiveExportSt
 }
 
 func (s *Service) markUploadedDaySucceeded(ctx context.Context, detail string) error {
-	successDetail := strings.TrimSpace(detail)
+	successDetail := archiveDayFromDetail(detail)
 	if successDetail == "" {
-		successDetail = archiveDayFromDetail(detail)
+		successDetail = strings.TrimSpace(detail)
 	}
 	latestSuccess, err := s.EventClient.LatestByEventAndDetail(ctx, EventArchiveDaySuccess, successDetail)
 	if err != nil {
