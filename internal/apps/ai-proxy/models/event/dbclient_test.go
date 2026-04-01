@@ -134,6 +134,82 @@ VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
 	require.False(t, won)
 }
 
+func TestDBClient_TryAcquireLeaderLease(t *testing.T) {
+	t.Run("creates heartbeat and wins when no row exists", func(t *testing.T) {
+		db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+		require.NoError(t, err)
+		require.NoError(t, prepareSQLiteUniqueEventTable(db))
+
+		client := &DBClient{DB: db}
+		ctx := context.Background()
+
+		won, err := client.TryAcquireLeaderLease(ctx)
+		require.NoError(t, err)
+		require.True(t, won)
+
+		rec, err := client.LatestByEvent(ctx, EventArchiveLeaderHeartbeat)
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		require.Equal(t, "0", rec.Detail)
+	})
+
+	t.Run("updates heartbeat version and wins when cas matches", func(t *testing.T) {
+		db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+		require.NoError(t, err)
+		require.NoError(t, prepareSQLiteUniqueEventTable(db))
+
+		client := &DBClient{DB: db}
+		ctx := context.Background()
+
+		_, err = client.Create(ctx, EventArchiveLeaderHeartbeat, "0")
+		require.NoError(t, err)
+
+		won, err := client.TryAcquireLeaderLease(ctx)
+		require.NoError(t, err)
+		require.True(t, won)
+
+		rec, err := client.LatestByEvent(ctx, EventArchiveLeaderHeartbeat)
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		require.Equal(t, "1", rec.Detail)
+	})
+
+	t.Run("returns false when cas version was changed by another writer", func(t *testing.T) {
+		db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+		require.NoError(t, err)
+		require.NoError(t, prepareSQLiteUniqueEventTable(db))
+
+		client := &DBClient{DB: db}
+		ctx := context.Background()
+
+		_, err = client.Create(ctx, EventArchiveLeaderHeartbeat, "0")
+		require.NoError(t, err)
+
+		consumed := false
+		require.NoError(t, db.Callback().Update().Before("gorm:update").Register("test:lose-leader-cas", func(tx *gorm.DB) {
+			if consumed || tx.Statement.Table != "ai_proxy_event" {
+				return
+			}
+			consumed = true
+			err := tx.Session(&gorm.Session{NewDB: true}).Exec(`
+UPDATE ai_proxy_event
+SET detail = CAST(CAST(detail AS INTEGER) + 1 AS TEXT)
+WHERE event = ?
+`, EventArchiveLeaderHeartbeat).Error
+			require.NoError(t, err)
+		}))
+
+		won, err := client.TryAcquireLeaderLease(ctx)
+		require.NoError(t, err)
+		require.False(t, won)
+
+		rec, err := client.LatestByEvent(ctx, EventArchiveLeaderHeartbeat)
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		require.Equal(t, "1", rec.Detail)
+	})
+}
+
 func prepareSQLiteEventTable(db *gorm.DB) error {
 	return db.Exec(`
 CREATE TABLE ai_proxy_event (

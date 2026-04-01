@@ -147,7 +147,8 @@ func (dbClient *DBClient) TryAcquireLeaderLease(ctx context.Context) (bool, erro
 		return false, err
 	}
 
-	// no existing heartbeat, create one and acquire leadership
+	// This path is only reachable in tests or before the migration runs,
+	// because real deployments pre-insert the heartbeat row in migration SQL.
 	if rec.ID == 0 {
 		_, err := dbClient.Create(ctx, EventArchiveLeaderHeartbeat, "0")
 		if isDuplicateKeyError(err) {
