@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
+	auditconfig "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -43,10 +44,6 @@ import (
 )
 
 const Name = "erda.app.ai-proxy"
-
-type AuditConfig struct {
-	Archive archivepkg.Config `file:"archive"`
-}
 
 type Config struct {
 	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"MCP_PROXY_PUBLIC_URL"`
@@ -73,7 +70,7 @@ type Config struct {
 	EtcdUsername  string `file:"etcd_username" env:"ETCD_USERNAME"`
 	EtcdPassword  string `file:"etcd_password" env:"ETCD_PASSWORD"`
 
-	Audit AuditConfig `file:"audit"`
+	Audit auditconfig.Config `file:"audit"`
 }
 
 type provider struct {
@@ -160,14 +157,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		},
 	))
 
-	return nil
-}
+	p.archiveService.AsyncRun(ctx)
 
-func (p *provider) Run(ctx context.Context) error {
-	if p.archiveService == nil {
-		return nil
-	}
-	return p.archiveService.Run(ctx)
+	return nil
 }
 
 func (p *provider) initPolicyGroupStateStore() (store state_store.LBStateStore, desc string, err error) {

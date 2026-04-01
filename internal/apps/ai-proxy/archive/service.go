@@ -101,3 +101,11 @@ func NewService(cfg Config, eventClient *eventmodel.DBClient, auditClient *audit
 		Logger:      logger,
 	}
 }
+
+func (s *Service) AsyncRun(ctx context.Context) {
+	go func() {
+		if err := s.Run(ctx); err != nil {
+			s.logf("archive service exited with error: %v", err)
+		}
+	}()
+}
