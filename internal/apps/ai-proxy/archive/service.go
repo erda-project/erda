@@ -74,7 +74,7 @@ func (s *Service) GetStatus(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
-	latestResult, err := s.EventClient.LatestByEvents(ctx, EventArchiveDayDryRun, EventArchiveDaySuccess, EventArchiveDayFailed, EventArchiveDayInterrupted)
+	latestResult, err := s.EventClient.LatestByEvents(ctx, EventArchiveDayDryRun, EventArchiveDayUploaded, EventArchiveDayDBDeleted, EventArchiveDaySuccess, EventArchiveDayFailed, EventArchiveDayInterrupted)
 	if err != nil {
 		return Status{}, err
 	}

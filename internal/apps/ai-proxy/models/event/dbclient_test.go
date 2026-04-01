@@ -42,7 +42,7 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 	_, err = client.Create(ctx, EventArchiveDayDryRun, "2026-03-29")
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond)
-	_, err = client.Create(ctx, EventArchiveDaySuccess, `{"day":"2026-03-29","row_count":3,"raw_size_bytes":111,"compressed_size_bytes":55}`)
+	_, err = client.Create(ctx, EventArchiveDaySuccess, "2026-03-29")
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond)
 	_, err = client.Create(ctx, EventArchiveDayFailed, `{"day":"2026-03-29","row_count":0,"raw_size_bytes":0,"compressed_size_bytes":0,"error":"missing oss endpoint"}`)

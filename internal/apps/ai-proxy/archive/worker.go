@@ -93,6 +93,11 @@ type archiveEventDetail struct {
 	Error               string              `json:"error,omitempty"`
 }
 
+type archiveDBDeletedEventDetail struct {
+	Day             string `json:"day"`
+	DeletedRowCount int64  `json:"deleted_row_count"`
+}
+
 type archivePartDetail struct {
 	Index               int    `json:"index"`
 	ObjectKey           string `json:"object_key"`
@@ -189,6 +194,14 @@ func (s *Service) tick(ctx context.Context) error {
 	}
 
 	cutoff := archiveDayStart(time.Now()).AddDate(0, 0, -s.Config.RetentionDays)
+	uploadedEvent, err := s.EventClient.LatestByEvent(ctx, EventArchiveDayUploaded)
+	if err != nil {
+		return err
+	}
+	dbDeletedEvent, err := s.EventClient.LatestByEvent(ctx, EventArchiveDayDBDeleted)
+	if err != nil {
+		return err
+	}
 	successEvent, err := s.EventClient.LatestByEvent(ctx, EventArchiveDaySuccess)
 	if err != nil {
 		return err
@@ -198,6 +211,73 @@ func (s *Service) tick(ctx context.Context) error {
 		dryRunDayEvent, err = s.EventClient.LatestByEvent(ctx, EventArchiveDayDryRun)
 		if err != nil {
 			return err
+		}
+	}
+
+	if dbDeletedEvent != nil {
+		dbDeletedDay, err := parseArchiveDay(dbDeletedEvent.Detail)
+		if err != nil {
+			return err
+		}
+		successDayHandled := false
+		if successEvent != nil {
+			successDay, err := parseArchiveDay(successEvent.Detail)
+			if err != nil {
+				return err
+			}
+			successDayHandled = !dbDeletedDay.After(successDay)
+		}
+		if !successDayHandled {
+			return s.markUploadedDaySucceeded(ctx, dbDeletedEvent.Detail)
+		}
+	}
+
+	if uploadedEvent != nil {
+		uploadedDay, err := parseArchiveDay(uploadedEvent.Detail)
+		if err != nil {
+			return err
+		}
+		dbDeletedDayHandled := false
+		if dbDeletedEvent != nil {
+			dbDeletedDay, err := parseArchiveDay(dbDeletedEvent.Detail)
+			if err != nil {
+				return err
+			}
+			dbDeletedDayHandled = !uploadedDay.After(dbDeletedDay)
+		}
+		if !dbDeletedDayHandled {
+			objectExists, err := s.objectExists(ctx, uploadedDay, uploadedEvent.Detail)
+			if err != nil {
+				return err
+			}
+			if !objectExists {
+				if status.DryRun {
+					return s.dryRunDay(ctx, uploadedDay, "would re-export because archive object is missing")
+				}
+				return s.archiveDay(ctx, uploadedDay)
+			}
+
+			hasRows, err := s.AuditClient.HasRowsInRange(ctx, uploadedDay, uploadedDay.Add(24*time.Hour))
+			if err != nil {
+				return err
+			}
+			if status.DryRun {
+				if hasRows {
+					return s.dryRunDay(ctx, uploadedDay, "would delete uploaded audit rows")
+				}
+				if err := s.markUploadedDayDBDeleted(ctx, uploadedEvent.Detail, 0); err != nil {
+					return err
+				}
+				return s.markUploadedDaySucceeded(ctx, uploadedEvent.Detail)
+			}
+			deletedRows, err := s.deleteArchivedDayRows(ctx, uploadedDay)
+			if err != nil {
+				return err
+			}
+			if err := s.markUploadedDayDBDeleted(ctx, uploadedEvent.Detail, deletedRows); err != nil {
+				return err
+			}
+			return s.markUploadedDaySucceeded(ctx, uploadedEvent.Detail)
 		}
 	}
 
@@ -225,7 +305,8 @@ func (s *Service) tick(ctx context.Context) error {
 			if status.DryRun {
 				return s.dryRunDay(ctx, successDay, "would delete archived audit rows")
 			}
-			return s.deleteArchivedDayRows(ctx, successDay)
+			_, err := s.deleteArchivedDayRows(ctx, successDay)
+			return err
 		}
 
 		nextDay := successDay.Add(24 * time.Hour)
@@ -301,17 +382,26 @@ func (s *Service) archiveDay(ctx context.Context, day time.Time) (err error) {
 		return s.failDay(ctx, dayStr, stats, fmt.Errorf("archive object not found for day %s", dayStr))
 	}
 
-	if err = s.deleteArchivedDayRows(ctx, day); err != nil {
-		return s.failDay(ctx, dayStr, stats, err)
-	}
-
-	if err := s.writeEndEvents(ctx, EventArchiveDaySuccess, mustArchiveEventDetailJSON(archiveEventDetail{
+	detail := mustArchiveEventDetailJSON(archiveEventDetail{
 		Day:                 dayStr,
 		RowCount:            stats.RowCount,
 		RawSizeBytes:        stats.RawSizeBytes,
 		CompressedSizeBytes: stats.CompressedSizeBytes,
 		Parts:               stats.Parts,
-	})); err != nil {
+	})
+	if _, err = s.EventClient.Create(ctx, EventArchiveDayUploaded, detail); err != nil {
+		return err
+	}
+
+	deletedRows, err := s.deleteArchivedDayRows(ctx, day)
+	if err != nil {
+		return s.failDay(ctx, dayStr, stats, err)
+	}
+	if err := s.markUploadedDayDBDeleted(ctx, detail, deletedRows); err != nil {
+		return err
+	}
+
+	if err := s.markUploadedDaySucceeded(ctx, detail); err != nil {
 		return err
 	}
 	return nil
@@ -360,6 +450,34 @@ func (s *Service) failDay(ctx context.Context, day string, stats archiveExportSt
 		return fmt.Errorf("%w; write failed event: %v", cause, err)
 	}
 	return cause
+}
+
+func (s *Service) markUploadedDaySucceeded(ctx context.Context, detail string) error {
+	day := archiveDayFromDetail(detail)
+	latestSuccess, err := s.EventClient.LatestByEventAndDetail(ctx, EventArchiveDaySuccess, day)
+	if err != nil {
+		return err
+	}
+	if latestSuccess != nil {
+		return nil
+	}
+	return s.writeEndEvents(ctx, EventArchiveDaySuccess, day)
+}
+
+func (s *Service) markUploadedDayDBDeleted(ctx context.Context, detail string, deletedRowCount int64) error {
+	dbDeletedDetail := mustArchiveDBDeletedEventDetailJSON(archiveDBDeletedEventDetail{
+		Day:             archiveDayFromDetail(detail),
+		DeletedRowCount: deletedRowCount,
+	})
+	latestDBDeleted, err := s.EventClient.LatestByEventAndDetail(ctx, EventArchiveDayDBDeleted, dbDeletedDetail)
+	if err != nil {
+		return err
+	}
+	if latestDBDeleted != nil {
+		return nil
+	}
+	_, err = s.EventClient.Create(ctx, EventArchiveDayDBDeleted, dbDeletedDetail)
+	return err
 }
 
 func (s *Service) exportDay(ctx context.Context, day time.Time) (archiveExportStats, error) {
@@ -521,14 +639,16 @@ func (s *Service) objectExists(ctx context.Context, day time.Time, detail string
 	return true, nil
 }
 
-func (s *Service) deleteArchivedDayRows(ctx context.Context, day time.Time) error {
+func (s *Service) deleteArchivedDayRows(ctx context.Context, day time.Time) (int64, error) {
+	var totalRows int64
 	for {
 		rows, err := archiveDeleteBatch(s, ctx, day)
 		if err != nil {
-			return err
+			return totalRows, err
 		}
+		totalRows += rows
 		if rows == 0 {
-			return nil
+			return totalRows, nil
 		}
 	}
 }
@@ -572,6 +692,14 @@ func mustArchiveEventDetailJSON(detail archiveEventDetail) string {
 	raw, err := json.Marshal(detail)
 	if err != nil {
 		return fmt.Sprintf("{\"day\":%q,\"error\":%q}", detail.Day, fmt.Sprintf("marshal archive detail failed: %v", err))
+	}
+	return string(raw)
+}
+
+func mustArchiveDBDeletedEventDetailJSON(detail archiveDBDeletedEventDetail) string {
+	raw, err := json.Marshal(detail)
+	if err != nil {
+		return fmt.Sprintf("{\"day\":%q,\"deleted_row_count\":%d}", detail.Day, detail.DeletedRowCount)
 	}
 	return string(raw)
 }

@@ -40,6 +40,8 @@ var archiveListEvents = []string{
 	EventArchiveDryRun,
 	EventArchiveDayStart,
 	EventArchiveDayDryRun,
+	EventArchiveDayUploaded,
+	EventArchiveDayDBDeleted,
 	EventArchiveDaySuccess,
 	EventArchiveDayFailed,
 	EventArchiveDayInterrupted,

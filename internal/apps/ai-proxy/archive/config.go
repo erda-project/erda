@@ -28,6 +28,8 @@ const (
 	EventArchiveDryRun         = eventmodel.EventArchiveDryRun
 	EventArchiveDayStart       = eventmodel.EventArchiveDayStart
 	EventArchiveDayDryRun      = eventmodel.EventArchiveDayDryRun
+	EventArchiveDayUploaded    = eventmodel.EventArchiveDayUploaded
+	EventArchiveDayDBDeleted   = eventmodel.EventArchiveDayDBDeleted
 	EventArchiveDaySuccess     = eventmodel.EventArchiveDaySuccess
 	EventArchiveDayFailed      = eventmodel.EventArchiveDayFailed
 	EventArchiveDayInterrupted = eventmodel.EventArchiveDayInterrupted

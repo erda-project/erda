@@ -21,6 +21,8 @@ const (
 	EventArchiveDryRun          = "audit.archive.dry_run"
 	EventArchiveDayStart        = "audit.archive.day.start"
 	EventArchiveDayDryRun       = "audit.archive.day.dry_run"
+	EventArchiveDayUploaded     = "audit.archive.day.uploaded"
+	EventArchiveDayDBDeleted    = "audit.archive.day.db.deleted"
 	EventArchiveDaySuccess      = "audit.archive.day.success"
 	EventArchiveDayFailed       = "audit.archive.day.failed"
 	EventArchiveDayInterrupted  = "audit.archive.day.interrupted"
