@@ -17,15 +17,15 @@ package event
 import "time"
 
 const (
-	EventArchiveStart              = "audit.archive.start"
-	EventArchiveDryRun             = "audit.archive.dry_run"
-	EventArchiveDayStart           = "audit.archive.day.start"
-	EventArchiveDayDryRun          = "audit.archive.day.dry_run"
-	EventArchiveDaySuccess         = "audit.archive.day.success"
-	EventArchiveDayFailed          = "audit.archive.day.failed"
-	EventArchiveDayInterrupted     = "audit.archive.day.interrupted"
-	EventArchiveDayEnd             = "audit.archive.day.end"
-	EventArchiveLeaderHeartbeat    = "audit.archive.leader.heartbeat"
+	EventArchiveStart           = "audit.archive.start"
+	EventArchiveDryRun          = "audit.archive.dry_run"
+	EventArchiveDayStart        = "audit.archive.day.start"
+	EventArchiveDayDryRun       = "audit.archive.day.dry_run"
+	EventArchiveDaySuccess      = "audit.archive.day.success"
+	EventArchiveDayFailed       = "audit.archive.day.failed"
+	EventArchiveDayInterrupted  = "audit.archive.day.interrupted"
+	EventArchiveDayEnd          = "audit.archive.day.end"
+	EventArchiveLeaderHeartbeat = "audit.archive.leader.heartbeat"
 )
 
 type Event struct {
@@ -33,7 +33,7 @@ type Event struct {
 	CreatedAt time.Time `gorm:"column:created_at;type:datetime(3)" json:"createdAt"`
 	UpdatedAt time.Time `gorm:"column:updated_at;type:datetime(3)" json:"updatedAt"`
 	Event     string    `gorm:"column:event;type:varchar(191);index:idx_event_created_at,priority:1" json:"event"`
-	Detail    string    `gorm:"column:detail;type:varchar(255)" json:"detail"`
+	Detail    string    `gorm:"column:detail;type:text" json:"detail"`
 }
 
 func (*Event) TableName() string { return "ai_proxy_event" }

@@ -150,6 +150,6 @@ CREATE TABLE ai_proxy_event (
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
 	event VARCHAR(191) NOT NULL,
-	detail VARCHAR(255) NOT NULL DEFAULT ''
+	detail TEXT NOT NULL DEFAULT ''
 );`).Error
 }

@@ -15,6 +15,7 @@
 package archive
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -37,18 +38,19 @@ type OSSConfig struct {
 	Endpoint        string `file:"endpoint" env:"AI_PROXY_AUDIT_ARCHIVE_OSS_ENDPOINT"`
 	AccessKeyID     string `file:"access_key_id" env:"AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_ID"`
 	AccessKeySecret string `file:"access_key_secret" env:"AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_SECRET"`
-	Bucket          string `file:"bucket" env:"AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET" default:"backup-ai"`
+	Bucket          string `file:"bucket" env:"AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET"`
 }
 
 type Config struct {
-	Enable        bool          `file:"enable" env:"AI_PROXY_AUDIT_ARCHIVE_ENABLE" default:"false"`
-	AutoStart     bool          `file:"auto_start" env:"AI_PROXY_AUDIT_ARCHIVE_AUTO_START" default:"false"`
-	DryRun        bool          `file:"dry_run" env:"AI_PROXY_AUDIT_ARCHIVE_DRY_RUN" default:"false"`
-	RetentionDays int           `file:"retention_days" env:"AI_PROXY_AUDIT_ARCHIVE_RETENTION_DAYS" default:"180"`
-	LoopInterval  time.Duration `file:"loop_interval" env:"AI_PROXY_AUDIT_ARCHIVE_LOOP_INTERVAL" default:"1m"`
-	BatchSize     int           `file:"batch_size" env:"AI_PROXY_AUDIT_ARCHIVE_BATCH_SIZE" default:"1000"`
-	Name          string        `file:"name" env:"AI_PROXY_AUDIT_ARCHIVE_NAME"`
-	OSS           OSSConfig     `file:"oss"`
+	Enable                     bool          `file:"enable" env:"AI_PROXY_AUDIT_ARCHIVE_ENABLE" default:"false"`
+	AutoStart                  bool          `file:"auto_start" env:"AI_PROXY_AUDIT_ARCHIVE_AUTO_START" default:"false"`
+	DryRun                     bool          `file:"dry_run" env:"AI_PROXY_AUDIT_ARCHIVE_DRY_RUN" default:"false"`
+	RetentionDays              int           `file:"retention_days" env:"AI_PROXY_AUDIT_ARCHIVE_RETENTION_DAYS" default:"180"`
+	LoopInterval               time.Duration `file:"loop_interval" env:"AI_PROXY_AUDIT_ARCHIVE_LOOP_INTERVAL" default:"1m"`
+	BatchSize                  int           `file:"batch_size" env:"AI_PROXY_AUDIT_ARCHIVE_BATCH_SIZE" default:"1000"`
+	MaxCompressedFileSizeBytes int64         `file:"max_compressed_file_size_bytes" env:"AI_PROXY_AUDIT_ARCHIVE_MAX_COMPRESSED_FILE_SIZE_BYTES" default:"1073741824"`
+	Name                       string        `file:"name" env:"AI_PROXY_AUDIT_ARCHIVE_NAME"`
+	OSS                        OSSConfig     `file:"oss"`
 }
 
 type Status struct {
@@ -78,8 +80,8 @@ func (cfg *Config) Normalize() error {
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 1000
 	}
-	if strings.TrimSpace(cfg.OSS.Bucket) == "" {
-		cfg.OSS.Bucket = "backup-ai"
+	if cfg.MaxCompressedFileSizeBytes <= 0 {
+		cfg.MaxCompressedFileSizeBytes = 1 << 30
 	}
 	return nil
 }
@@ -91,6 +93,14 @@ func archiveDayStart(t time.Time) time.Time {
 
 func archiveDayFromDetail(detail string) string {
 	detail = strings.TrimSpace(detail)
+	if strings.HasPrefix(detail, "{") {
+		var payload struct {
+			Day string `json:"day"`
+		}
+		if err := json.Unmarshal([]byte(detail), &payload); err == nil && strings.TrimSpace(payload.Day) != "" {
+			return strings.TrimSpace(payload.Day)
+		}
+	}
 	if len(detail) < len("2006-01-02") {
 		return detail
 	}

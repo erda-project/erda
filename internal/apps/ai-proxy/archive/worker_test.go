@@ -16,8 +16,11 @@ package archive
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,11 +46,11 @@ VALUES (?, ?, ?, NULL, ?)
 		archiveDeleteBatch = oldDeleteBatch
 	})
 
-	archivePutObject = func(_ *Service, _ time.Time, reader io.Reader) error {
+	archivePutObject = func(_ *Service, _ string, reader io.Reader) error {
 		_, err := io.Copy(io.Discard, reader)
 		return err
 	}
-	archiveObjectExists = func(_ *Service, _ context.Context, _ time.Time) (bool, error) {
+	archiveObjectExists = func(_ *Service, _ context.Context, _ string) (bool, error) {
 		return true, nil
 	}
 	archiveDeleteBatch = func(_ *Service, _ context.Context, _ time.Time) (int64, error) {
@@ -66,9 +69,13 @@ VALUES (?, ?, ?, NULL, ?)
 	require.EqualValues(t, 3, total)
 	require.Len(t, list, 3)
 	require.Equal(t, EventArchiveDayEnd, list[0].Event)
+	require.Equal(t, "2026-03-29", list[0].Detail)
 	require.Equal(t, EventArchiveDayFailed, list[1].Event)
 	require.Equal(t, EventArchiveDayStart, list[2].Event)
-	require.Contains(t, list[1].Detail, "2026-03-29 | delete failed")
+	var detail archiveEventDetail
+	require.NoError(t, json.Unmarshal([]byte(list[1].Detail), &detail))
+	require.Equal(t, "2026-03-29", detail.Day)
+	require.Equal(t, "delete failed", detail.Error)
 }
 
 func TestArchiveDay_PanicIsConvertedToFailedEvent(t *testing.T) {
@@ -86,7 +93,7 @@ VALUES (?, ?, ?, NULL, ?)
 		archivePutObject = oldPutObject
 	})
 
-	archivePutObject = func(_ *Service, _ time.Time, _ io.Reader) error {
+	archivePutObject = func(_ *Service, _ string, _ io.Reader) error {
 		panic("missing oss endpoint")
 	}
 
@@ -102,7 +109,164 @@ VALUES (?, ?, ?, NULL, ?)
 	require.EqualValues(t, 3, total)
 	require.Len(t, list, 3)
 	require.Equal(t, EventArchiveDayEnd, list[0].Event)
+	require.Equal(t, "2026-03-29", list[0].Detail)
 	require.Equal(t, EventArchiveDayFailed, list[1].Event)
 	require.Equal(t, EventArchiveDayStart, list[2].Event)
-	require.Contains(t, list[1].Detail, "2026-03-29 | panic: missing oss endpoint")
+	var detail archiveEventDetail
+	require.NoError(t, json.Unmarshal([]byte(list[1].Detail), &detail))
+	require.Equal(t, "2026-03-29", detail.Day)
+	require.Equal(t, "panic: missing oss endpoint", detail.Error)
+}
+
+func TestArchiveDay_MissingOSSConfigReturnsMeaningfulError(t *testing.T) {
+	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a"})
+	ctx := context.Background()
+	day := time.Date(2026, 3, 29, 0, 0, 0, 0, time.Local)
+
+	require.NoError(t, svc.AuditClient.DB.WithContext(ctx).Exec(`
+INSERT INTO ai_proxy_filter_audit (id, created_at, updated_at, deleted_at, metadata)
+VALUES (?, ?, ?, NULL, ?)
+`, "00000000-0000-0000-0000-000000000001", day.Add(time.Hour), day.Add(time.Hour), []byte("{}")).Error)
+
+	err := svc.archiveDay(ctx, day)
+	require.ErrorContains(t, err, "missing OSS archive config")
+	require.ErrorContains(t, err, "AI_PROXY_AUDIT_ARCHIVE_OSS_ENDPOINT")
+	require.ErrorContains(t, err, "AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_ID")
+	require.ErrorContains(t, err, "AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_SECRET")
+	require.ErrorContains(t, err, "AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET")
+
+	total, list, err := svc.ListEvents(ctx, ListRequest{
+		PageNum:  1,
+		PageSize: 10,
+		Day:      "2026-03-29",
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 3, total)
+	require.Len(t, list, 3)
+	require.Equal(t, EventArchiveDayEnd, list[0].Event)
+	require.Equal(t, "2026-03-29", list[0].Detail)
+	require.Equal(t, EventArchiveDayFailed, list[1].Event)
+	require.Equal(t, EventArchiveDayStart, list[2].Event)
+	var detail archiveEventDetail
+	require.NoError(t, json.Unmarshal([]byte(list[1].Detail), &detail))
+	require.Equal(t, "2026-03-29", detail.Day)
+	require.Contains(t, detail.Error, "missing OSS archive config")
+	require.Contains(t, detail.Error, "AI_PROXY_AUDIT_ARCHIVE_OSS_ENDPOINT")
+	require.Contains(t, detail.Error, "AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET")
+}
+
+func TestArchiveDay_SuccessWritesJSONDetail(t *testing.T) {
+	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a"})
+	ctx := context.Background()
+	day := time.Date(2026, 3, 29, 0, 0, 0, 0, time.Local)
+
+	require.NoError(t, svc.AuditClient.DB.WithContext(ctx).Exec(`
+INSERT INTO ai_proxy_filter_audit (id, created_at, updated_at, deleted_at, metadata)
+VALUES (?, ?, ?, NULL, ?)
+`, "00000000-0000-0000-0000-000000000001", day.Add(time.Hour), day.Add(time.Hour), []byte("{}")).Error)
+
+	oldPutObject := archivePutObject
+	oldObjectExists := archiveObjectExists
+	t.Cleanup(func() {
+		archivePutObject = oldPutObject
+		archiveObjectExists = oldObjectExists
+	})
+
+	archivePutObject = func(_ *Service, _ string, reader io.Reader) error {
+		_, err := io.Copy(io.Discard, reader)
+		return err
+	}
+	archiveObjectExists = func(_ *Service, _ context.Context, _ string) (bool, error) {
+		return true, nil
+	}
+
+	require.NoError(t, svc.archiveDay(ctx, day))
+
+	total, list, err := svc.ListEvents(ctx, ListRequest{
+		PageNum:  1,
+		PageSize: 10,
+		Day:      "2026-03-29",
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 3, total)
+	require.Len(t, list, 3)
+	require.Equal(t, EventArchiveDayEnd, list[0].Event)
+	require.Equal(t, "2026-03-29", list[0].Detail)
+	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
+
+	var detail archiveEventDetail
+	require.NoError(t, json.Unmarshal([]byte(list[1].Detail), &detail))
+	require.Equal(t, "2026-03-29", detail.Day)
+	require.EqualValues(t, 1, detail.RowCount)
+	require.Positive(t, detail.RawSizeBytes)
+	require.Positive(t, detail.CompressedSizeBytes)
+	require.Len(t, detail.Parts, 1)
+	require.Equal(t, 1, detail.Parts[0].Index)
+	require.Equal(t, "ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29.csv.gz", detail.Parts[0].ObjectKey)
+	require.EqualValues(t, 1, detail.Parts[0].RowCount)
+	require.Positive(t, detail.Parts[0].RawSizeBytes)
+	require.Positive(t, detail.Parts[0].CompressedSizeBytes)
+}
+
+func TestArchiveDay_SplitsLargeArchiveWithinSingleQueryBatch(t *testing.T) {
+	svc := newTestService(t, Config{
+		Enable:                     true,
+		BatchSize:                  1000,
+		MaxCompressedFileSizeBytes: 1,
+		Name:                       "cluster-a",
+	})
+	ctx := context.Background()
+	day := time.Date(2026, 3, 29, 0, 0, 0, 0, time.Local)
+
+	for i := 1; i <= 300; i++ {
+		require.NoError(t, svc.AuditClient.DB.WithContext(ctx).Exec(`
+INSERT INTO ai_proxy_filter_audit (id, created_at, updated_at, deleted_at, metadata)
+VALUES (?, ?, ?, NULL, ?)
+`, fmt.Sprintf("00000000-0000-0000-0000-%012d", i), day.Add(time.Duration(i)*time.Minute), day.Add(time.Duration(i)*time.Minute), []byte(fmt.Sprintf(`{"payload":%q}`, strings.Repeat("x", 256)))).Error)
+	}
+
+	oldPutObject := archivePutObject
+	oldObjectExists := archiveObjectExists
+	t.Cleanup(func() {
+		archivePutObject = oldPutObject
+		archiveObjectExists = oldObjectExists
+	})
+
+	var uploadedKeys []string
+	archivePutObject = func(_ *Service, objectKey string, reader io.Reader) error {
+		uploadedKeys = append(uploadedKeys, objectKey)
+		_, err := io.Copy(io.Discard, reader)
+		return err
+	}
+	archiveObjectExists = func(_ *Service, _ context.Context, objectKey string) (bool, error) {
+		for _, key := range uploadedKeys {
+			if key == objectKey {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	require.NoError(t, svc.archiveDay(ctx, day))
+
+	require.Greater(t, len(uploadedKeys), 1)
+	for i, key := range uploadedKeys {
+		require.Equal(t, fmt.Sprintf("ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_%d.csv.gz", i+1), key)
+	}
+
+	_, list, err := svc.ListEvents(ctx, ListRequest{
+		PageNum:  1,
+		PageSize: 10,
+		Day:      "2026-03-29",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EventArchiveDaySuccess, list[1].Event)
+
+	var detail archiveEventDetail
+	require.NoError(t, json.Unmarshal([]byte(list[1].Detail), &detail))
+	require.Len(t, detail.Parts, len(uploadedKeys))
+	require.EqualValues(t, 300, detail.RowCount)
+	for i, part := range detail.Parts {
+		require.Equal(t, uploadedKeys[i], part.ObjectKey)
+	}
 }

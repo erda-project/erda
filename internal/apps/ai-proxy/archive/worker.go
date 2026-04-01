@@ -18,6 +18,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -61,24 +62,62 @@ var archiveCSVHeader = []string{
 	"metadata",
 }
 
-var archiveObjectExists = func(s *Service, _ context.Context, day time.Time) (bool, error) {
+const archiveSplitCheckStride = 100
+
+var archiveObjectExists = func(s *Service, _ context.Context, objectKey string) (bool, error) {
 	bucket, err := s.newBucket()
 	if err != nil {
 		return false, err
 	}
-	return bucket.IsObjectExist(s.objectKey(day))
+	return bucket.IsObjectExist(objectKey)
 }
 
-var archivePutObject = func(s *Service, day time.Time, reader io.Reader) error {
+var archivePutObject = func(s *Service, objectKey string, reader io.Reader) error {
 	bucket, err := s.newBucket()
 	if err != nil {
 		return err
 	}
-	return bucket.PutObject(s.objectKey(day), reader)
+	return bucket.PutObject(objectKey, reader)
 }
 
 var archiveDeleteBatch = func(s *Service, ctx context.Context, day time.Time) (int64, error) {
 	return s.AuditClient.DeleteArchiveBatch(ctx, day, day.Add(24*time.Hour), s.Config.BatchSize)
+}
+
+type archiveEventDetail struct {
+	Day                 string              `json:"day"`
+	RowCount            int64               `json:"row_count"`
+	RawSizeBytes        int64               `json:"raw_size_bytes"`
+	CompressedSizeBytes int64               `json:"compressed_size_bytes"`
+	Parts               []archivePartDetail `json:"parts,omitempty"`
+	Error               string              `json:"error,omitempty"`
+}
+
+type archivePartDetail struct {
+	Index               int    `json:"index"`
+	ObjectKey           string `json:"object_key"`
+	RowCount            int64  `json:"row_count"`
+	RawSizeBytes        int64  `json:"raw_size_bytes"`
+	CompressedSizeBytes int64  `json:"compressed_size_bytes"`
+}
+
+type archiveExportStats struct {
+	Day                 string
+	RowCount            int64
+	RawSizeBytes        int64
+	CompressedSizeBytes int64
+	Parts               []archivePartDetail
+}
+
+type countingWriter struct {
+	w io.Writer
+	n int64
+}
+
+func (w *countingWriter) Write(p []byte) (int, error) {
+	n, err := w.w.Write(p)
+	w.n += int64(n)
+	return n, err
 }
 
 func (s *Service) Run(ctx context.Context) error {
@@ -164,7 +203,7 @@ func (s *Service) tick(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		objectExists, err := s.objectExists(ctx, successDay)
+		objectExists, err := s.objectExists(ctx, successDay, successEvent.Detail)
 		if err != nil {
 			return err
 		}
@@ -232,31 +271,44 @@ func (s *Service) archiveDay(ctx context.Context, day time.Time) (err error) {
 		if r := recover(); r != nil {
 			reason := fmt.Sprintf("panic: %v", r)
 			s.logf("archive day panic day=%s reason=%s stack=%s", dayStr, reason, strings.TrimSpace(string(debug.Stack())))
-			err = s.failDay(ctx, dayStr, fmt.Errorf("%s", reason))
+			err = s.failDay(ctx, dayStr, archiveExportStats{}, fmt.Errorf("%s", reason))
 		}
 	}()
 	if _, err = s.EventClient.Create(ctx, EventArchiveDayStart, dayStr); err != nil {
 		return err
 	}
 
-	if err = s.exportDay(ctx, day); err != nil {
-		return s.failDay(ctx, dayStr, err)
+	stats, err := s.exportDay(ctx, day)
+	if err != nil {
+		return s.failDay(ctx, dayStr, stats, err)
 	}
 
 	var exists bool
-	exists, err = s.objectExists(ctx, day)
+	exists, err = s.objectExists(ctx, day, mustArchiveEventDetailJSON(archiveEventDetail{
+		Day:                 dayStr,
+		RowCount:            stats.RowCount,
+		RawSizeBytes:        stats.RawSizeBytes,
+		CompressedSizeBytes: stats.CompressedSizeBytes,
+		Parts:               stats.Parts,
+	}))
 	if err != nil {
-		return s.failDay(ctx, dayStr, err)
+		return s.failDay(ctx, dayStr, stats, err)
 	}
 	if !exists {
-		return s.failDay(ctx, dayStr, fmt.Errorf("archive object not found for day %s", dayStr))
+		return s.failDay(ctx, dayStr, stats, fmt.Errorf("archive object not found for day %s", dayStr))
 	}
 
 	if err = s.deleteArchivedDayRows(ctx, day); err != nil {
-		return s.failDay(ctx, dayStr, err)
+		return s.failDay(ctx, dayStr, stats, err)
 	}
 
-	if err := s.writeEndEvents(ctx, EventArchiveDaySuccess, dayStr); err != nil {
+	if err := s.writeEndEvents(ctx, EventArchiveDaySuccess, mustArchiveEventDetailJSON(archiveEventDetail{
+		Day:                 dayStr,
+		RowCount:            stats.RowCount,
+		RawSizeBytes:        stats.RawSizeBytes,
+		CompressedSizeBytes: stats.CompressedSizeBytes,
+		Parts:               stats.Parts,
+	})); err != nil {
 		return err
 	}
 	return nil
@@ -270,11 +322,11 @@ func (s *Service) dryRunDay(ctx context.Context, day time.Time, action string) e
 
 	rowCount, err := s.scanArchiveDay(ctx, day)
 	if err != nil {
-		_ = s.writeEndEvents(ctx, EventArchiveDayFailed, dayStr)
+		_ = s.failDay(ctx, dayStr, archiveExportStats{}, err)
 		return err
 	}
 
-	s.logf("audit archive dry-run day=%s action=%s object_key=%s rows=%d", dayStr, action, s.objectKey(day), rowCount)
+	s.logf("audit archive dry-run day=%s action=%s object_key_pattern=%s rows=%d", dayStr, action, s.objectKeyPattern(day), rowCount)
 	if err := s.writeEndEvents(ctx, EventArchiveDayDryRun, dayStr); err != nil {
 		return err
 	}
@@ -285,16 +337,20 @@ func (s *Service) writeEndEvents(ctx context.Context, resultEvent, day string) e
 	if _, err := s.EventClient.Create(ctx, resultEvent, day); err != nil {
 		return err
 	}
-	_, err := s.EventClient.Create(ctx, EventArchiveDayEnd, day)
+	_, err := s.EventClient.Create(ctx, EventArchiveDayEnd, archiveDayFromDetail(day))
 	return err
 }
 
-func (s *Service) failDay(ctx context.Context, day string, cause error) error {
-	detail := day
+func (s *Service) failDay(ctx context.Context, day string, stats archiveExportStats, cause error) error {
+	detail := archiveEventDetail{Day: archiveDayFromDetail(day)}
 	if cause != nil {
-		detail = formatArchiveFailedDetail(day, cause.Error())
+		detail.Error = strings.TrimSpace(cause.Error())
 	}
-	if err := s.writeEndEvents(ctx, EventArchiveDayFailed, detail); err != nil {
+	detail.RowCount = stats.RowCount
+	detail.RawSizeBytes = stats.RawSizeBytes
+	detail.CompressedSizeBytes = stats.CompressedSizeBytes
+	detail.Parts = stats.Parts
+	if err := s.writeEndEvents(ctx, EventArchiveDayFailed, mustArchiveEventDetailJSON(detail)); err != nil {
 		if cause == nil {
 			return err
 		}
@@ -303,76 +359,90 @@ func (s *Service) failDay(ctx context.Context, day string, cause error) error {
 	return cause
 }
 
-func formatArchiveFailedDetail(day, reason string) string {
-	day = archiveDayFromDetail(day)
-	reason = strings.TrimSpace(reason)
-	if reason == "" {
-		return day
-	}
-
-	detail := fmt.Sprintf("%s | %s", day, reason)
-	if len(detail) <= 255 {
-		return detail
-	}
-
-	maxReasonLen := 255 - len(day) - len(" | ...")
-	if maxReasonLen <= 0 {
-		return day
-	}
-	return fmt.Sprintf("%s | %s...", day, reason[:maxReasonLen])
-}
-
-func (s *Service) exportDay(ctx context.Context, day time.Time) error {
+func (s *Service) exportDay(ctx context.Context, day time.Time) (archiveExportStats, error) {
 	start := day
 	end := day.Add(24 * time.Hour)
-
-	tmpFile, err := os.CreateTemp("", "ai-proxy-audit-archive-*.csv.gz")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-
-	gzipWriter := gzip.NewWriter(tmpFile)
-	csvWriter := csv.NewWriter(gzipWriter)
-	if err := csvWriter.Write(archiveCSVHeader); err != nil {
-		return err
-	}
+	stats := archiveExportStats{Day: day.Format("2006-01-02")}
 
 	var afterCreatedAt *time.Time
 	var afterID string
-	for {
-		list, err := s.AuditClient.ListArchiveBatch(ctx, start, end, afterCreatedAt, afterID, s.Config.BatchSize)
-		if err != nil {
-			return err
-		}
-		if len(list) == 0 {
-			break
-		}
-		for _, rec := range list {
-			if err := csvWriter.Write(toArchiveCSVRow(rec)); err != nil {
-				return err
+	partIndex := 1
+	part, err := newArchivePartFile()
+	if err != nil {
+		return stats, err
+	}
+	defer part.cleanup()
+	list, err := s.AuditClient.ListArchiveBatch(ctx, start, end, afterCreatedAt, afterID, s.Config.BatchSize)
+	if err != nil {
+		return stats, err
+	}
+	for len(list) > 0 {
+		splitAfterBatch := false
+		for i, rec := range list {
+			if err := part.writeRow(toArchiveCSVRow(rec)); err != nil {
+				return stats, err
 			}
+			if part.rowCount%archiveSplitCheckStride != 0 {
+				continue
+			}
+			_, compressedSize, err := part.syncStats()
+			if err != nil {
+				return stats, err
+			}
+			if compressedSize < s.Config.MaxCompressedFileSizeBytes {
+				continue
+			}
+			if i < len(list)-1 {
+				partStats, err := s.finalizeArchivePart(day, partIndex, true, part)
+				if err != nil {
+					return stats, err
+				}
+				stats.addPart(partStats)
+				partIndex++
+				part, err = newArchivePartFile()
+				if err != nil {
+					return stats, err
+				}
+				defer part.cleanup()
+				continue
+			}
+			splitAfterBatch = true
 		}
+
 		last := list[len(list)-1]
 		lastCreatedAt := last.CreatedAt
 		afterCreatedAt = &lastCreatedAt
 		afterID = last.ID.String
+
+		nextList, err := s.AuditClient.ListArchiveBatch(ctx, start, end, afterCreatedAt, afterID, s.Config.BatchSize)
+		if err != nil {
+			return stats, err
+		}
+
+		if splitAfterBatch && len(nextList) > 0 {
+			partStats, err := s.finalizeArchivePart(day, partIndex, true, part)
+			if err != nil {
+				return stats, err
+			}
+			stats.addPart(partStats)
+			partIndex++
+			part, err = newArchivePartFile()
+			if err != nil {
+				return stats, err
+			}
+			defer part.cleanup()
+		}
+		list = nextList
 	}
 
-	csvWriter.Flush()
-	if err := csvWriter.Error(); err != nil {
-		return err
+	if len(stats.Parts) == 0 || part.rowCount > 0 {
+		partStats, err := s.finalizeArchivePart(day, partIndex, len(stats.Parts) > 0, part)
+		if err != nil {
+			return stats, err
+		}
+		stats.addPart(partStats)
 	}
-	if err := gzipWriter.Close(); err != nil {
-		return err
-	}
-	if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
-		return err
-	}
-	return s.putObject(day, tmpFile)
+	return stats, nil
 }
 
 func (s *Service) scanArchiveDay(ctx context.Context, day time.Time) (int64, error) {
@@ -401,17 +471,53 @@ func (s *Service) scanArchiveDay(ctx context.Context, day time.Time) (int64, err
 	return rowCount, nil
 }
 
-func (s *Service) objectKey(day time.Time) string {
-	return fmt.Sprintf("ai-proxy/%s/audit/archive/%04d/%02d/audit-%s.csv.gz",
+func (s *Service) objectKey(day time.Time, partIndex int, multipart bool) string {
+	if !multipart {
+		return fmt.Sprintf("ai-proxy/%s/audit/archive/%04d/%02d/audit-%s.csv.gz",
+			s.Config.Name, day.Year(), int(day.Month()), day.Format("2006-01-02"))
+	}
+	return fmt.Sprintf("ai-proxy/%s/audit/archive/%04d/%02d/audit-%s_%d.csv.gz",
+		s.Config.Name, day.Year(), int(day.Month()), day.Format("2006-01-02"), partIndex)
+}
+
+func (s *Service) objectKeyPattern(day time.Time) string {
+	return fmt.Sprintf("ai-proxy/%s/audit/archive/%04d/%02d/audit-%s*.csv.gz",
 		s.Config.Name, day.Year(), int(day.Month()), day.Format("2006-01-02"))
 }
 
-func (s *Service) objectExists(ctx context.Context, day time.Time) (bool, error) {
-	return archiveObjectExists(s, ctx, day)
+func (s *Service) objectKeysFromDetail(day time.Time, detail string) []string {
+	payload, ok := parseArchiveEventDetail(detail)
+	if ok && len(payload.Parts) > 0 {
+		keys := make([]string, 0, len(payload.Parts))
+		for _, part := range payload.Parts {
+			if strings.TrimSpace(part.ObjectKey) == "" {
+				continue
+			}
+			keys = append(keys, strings.TrimSpace(part.ObjectKey))
+		}
+		if len(keys) > 0 {
+			return keys
+		}
+	}
+	return []string{s.objectKey(day, 1, false)}
 }
 
-func (s *Service) putObject(day time.Time, reader io.Reader) error {
-	return archivePutObject(s, day, reader)
+func (s *Service) objectExists(ctx context.Context, day time.Time, detail string) (bool, error) {
+	keys := s.objectKeysFromDetail(day, detail)
+	for _, objectKey := range keys {
+		exists, err := archiveObjectExists(s, ctx, objectKey)
+		if err != nil {
+			return false, err
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (s *Service) putObject(objectKey string, reader io.Reader) error {
+	return archivePutObject(s, objectKey, reader)
 }
 
 func (s *Service) deleteArchivedDayRows(ctx context.Context, day time.Time) error {
@@ -427,6 +533,9 @@ func (s *Service) deleteArchivedDayRows(ctx context.Context, day time.Time) erro
 }
 
 func (s *Service) newBucket() (*oss.Bucket, error) {
+	if err := s.validateOSSConfig(); err != nil {
+		return nil, err
+	}
 	client, err := oss.New(s.Config.OSS.Endpoint, s.Config.OSS.AccessKeyID, s.Config.OSS.AccessKeySecret)
 	if err != nil {
 		return nil, err
@@ -434,8 +543,151 @@ func (s *Service) newBucket() (*oss.Bucket, error) {
 	return client.Bucket(s.Config.OSS.Bucket)
 }
 
+func (s *Service) validateOSSConfig() error {
+	var missing []string
+	if strings.TrimSpace(s.Config.OSS.Endpoint) == "" {
+		missing = append(missing, "AI_PROXY_AUDIT_ARCHIVE_OSS_ENDPOINT")
+	}
+	if strings.TrimSpace(s.Config.OSS.AccessKeyID) == "" {
+		missing = append(missing, "AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_ID")
+	}
+	if strings.TrimSpace(s.Config.OSS.AccessKeySecret) == "" {
+		missing = append(missing, "AI_PROXY_AUDIT_ARCHIVE_OSS_ACCESS_KEY_SECRET")
+	}
+	if strings.TrimSpace(s.Config.OSS.Bucket) == "" {
+		missing = append(missing, "AI_PROXY_AUDIT_ARCHIVE_OSS_BUCKET")
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("missing OSS archive config: %s", strings.Join(missing, ", "))
+}
+
 func parseArchiveDay(v string) (time.Time, error) {
-	return time.ParseInLocation("2006-01-02", strings.TrimSpace(v), time.Local)
+	return time.ParseInLocation("2006-01-02", archiveDayFromDetail(v), time.Local)
+}
+
+func mustArchiveEventDetailJSON(detail archiveEventDetail) string {
+	raw, err := json.Marshal(detail)
+	if err != nil {
+		return fmt.Sprintf("{\"day\":%q,\"error\":%q}", detail.Day, fmt.Sprintf("marshal archive detail failed: %v", err))
+	}
+	return string(raw)
+}
+
+func parseArchiveEventDetail(detail string) (archiveEventDetail, bool) {
+	var payload archiveEventDetail
+	if err := json.Unmarshal([]byte(strings.TrimSpace(detail)), &payload); err != nil {
+		return archiveEventDetail{}, false
+	}
+	if strings.TrimSpace(payload.Day) == "" {
+		return archiveEventDetail{}, false
+	}
+	return payload, true
+}
+
+type archivePartFile struct {
+	tmpFile    *os.File
+	gzipWriter *gzip.Writer
+	rawCounter *countingWriter
+	csvWriter  *csv.Writer
+	rowCount   int64
+}
+
+func newArchivePartFile() (*archivePartFile, error) {
+	tmpFile, err := os.CreateTemp("", "ai-proxy-audit-archive-*.csv.gz")
+	if err != nil {
+		return nil, err
+	}
+	gzipWriter := gzip.NewWriter(tmpFile)
+	rawCounter := &countingWriter{w: gzipWriter}
+	csvWriter := csv.NewWriter(rawCounter)
+	if err := csvWriter.Write(archiveCSVHeader); err != nil {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
+		return nil, err
+	}
+	return &archivePartFile{
+		tmpFile:    tmpFile,
+		gzipWriter: gzipWriter,
+		rawCounter: rawCounter,
+		csvWriter:  csvWriter,
+	}, nil
+}
+
+func (p *archivePartFile) writeRow(row []string) error {
+	if err := p.csvWriter.Write(row); err != nil {
+		return err
+	}
+	p.rowCount++
+	return nil
+}
+
+func (p *archivePartFile) syncStats() (int64, int64, error) {
+	p.csvWriter.Flush()
+	if err := p.csvWriter.Error(); err != nil {
+		return 0, 0, err
+	}
+	if err := p.gzipWriter.Flush(); err != nil {
+		return 0, 0, err
+	}
+	info, err := p.tmpFile.Stat()
+	if err != nil {
+		return 0, 0, err
+	}
+	return p.rawCounter.n, info.Size(), nil
+}
+
+func (p *archivePartFile) close() (int64, int64, error) {
+	p.csvWriter.Flush()
+	if err := p.csvWriter.Error(); err != nil {
+		return 0, 0, err
+	}
+	rawSize := p.rawCounter.n
+	if err := p.gzipWriter.Close(); err != nil {
+		return 0, 0, err
+	}
+	info, err := p.tmpFile.Stat()
+	if err != nil {
+		return 0, 0, err
+	}
+	return rawSize, info.Size(), nil
+}
+
+func (p *archivePartFile) cleanup() {
+	if p == nil || p.tmpFile == nil {
+		return
+	}
+	_ = p.tmpFile.Close()
+	_ = os.Remove(p.tmpFile.Name())
+}
+
+func (s *Service) finalizeArchivePart(day time.Time, partIndex int, multipart bool, part *archivePartFile) (archivePartDetail, error) {
+	rawSize, compressedSize, err := part.close()
+	if err != nil {
+		return archivePartDetail{}, err
+	}
+	if _, err := part.tmpFile.Seek(0, io.SeekStart); err != nil {
+		return archivePartDetail{}, err
+	}
+	objectKey := s.objectKey(day, partIndex, multipart)
+	if err := s.putObject(objectKey, part.tmpFile); err != nil {
+		return archivePartDetail{}, err
+	}
+	return archivePartDetail{
+		Index:               partIndex,
+		ObjectKey:           objectKey,
+		RowCount:            part.rowCount,
+		RawSizeBytes:        rawSize,
+		CompressedSizeBytes: compressedSize,
+	}, nil
+}
+
+func (s *archiveExportStats) addPart(part archivePartDetail) {
+	s.Parts = append(s.Parts, part)
+	s.RowCount += part.RowCount
+	s.RawSizeBytes += part.RawSizeBytes
+	s.CompressedSizeBytes += part.CompressedSizeBytes
 }
 
 func toArchiveCSVRow(rec *auditmodel.Audit) []string {

@@ -42,10 +42,10 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 	_, err = client.Create(ctx, EventArchiveDayDryRun, "2026-03-29")
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond)
-	_, err = client.Create(ctx, EventArchiveDaySuccess, "2026-03-29")
+	_, err = client.Create(ctx, EventArchiveDaySuccess, `{"day":"2026-03-29","row_count":3,"raw_size_bytes":111,"compressed_size_bytes":55}`)
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond)
-	_, err = client.Create(ctx, EventArchiveDayFailed, "2026-03-29 | missing oss endpoint")
+	_, err = client.Create(ctx, EventArchiveDayFailed, `{"day":"2026-03-29","row_count":0,"raw_size_bytes":0,"compressed_size_bytes":0,"error":"missing oss endpoint"}`)
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond)
 	_, err = client.Create(ctx, EventArchiveLeaderHeartbeat, "1")
@@ -54,7 +54,7 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 	latest, err := client.LatestByEvent(ctx, EventArchiveDayFailed)
 	require.NoError(t, err)
 	require.NotNil(t, latest)
-	require.Equal(t, "2026-03-29 | missing oss endpoint", latest.Detail)
+	require.Equal(t, `{"day":"2026-03-29","row_count":0,"raw_size_bytes":0,"compressed_size_bytes":0,"error":"missing oss endpoint"}`, latest.Detail)
 
 	total, list, err := client.ListDayEvents(ctx, ListOptions{
 		PageNum:  1,
@@ -111,6 +111,6 @@ CREATE TABLE ai_proxy_event (
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
 	event VARCHAR(191) NOT NULL,
-	detail VARCHAR(255) NOT NULL DEFAULT ''
+	detail TEXT NOT NULL DEFAULT ''
 );`).Error
 }

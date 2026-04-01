@@ -74,10 +74,11 @@ func TestBuildStatus_TracksRunningDayAndLatestResult(t *testing.T) {
 		&eventmodel.Event{Event: EventArchiveDryRun, Detail: "false", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayStart, Detail: "2026-03-01", CreatedAt: now.Add(time.Second)},
 		&eventmodel.Event{Event: EventArchiveDayEnd, Detail: "2026-02-28", CreatedAt: now},
-		&eventmodel.Event{Event: EventArchiveDayFailed, Detail: "2026-02-28", CreatedAt: now},
+		&eventmodel.Event{Event: EventArchiveDayFailed, Detail: `{"day":"2026-02-28","row_count":0,"raw_size_bytes":0,"compressed_size_bytes":0,"error":"boom"}`, CreatedAt: now},
 	)
 	require.True(t, status.Running)
 	require.Equal(t, "2026-03-01", status.CurrentDay)
+	require.Equal(t, "2026-02-28", status.LastDay)
 	require.Equal(t, EventArchiveDayFailed, status.LastResult)
 
 	status = buildStatus(
@@ -86,10 +87,11 @@ func TestBuildStatus_TracksRunningDayAndLatestResult(t *testing.T) {
 		&eventmodel.Event{Event: EventArchiveDryRun, Detail: "true", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayStart, Detail: "2026-03-01", CreatedAt: now},
 		&eventmodel.Event{Event: EventArchiveDayEnd, Detail: "2026-03-01", CreatedAt: now.Add(time.Second)},
-		&eventmodel.Event{Event: EventArchiveDaySuccess, Detail: "2026-03-01", CreatedAt: now.Add(time.Second)},
+		&eventmodel.Event{Event: EventArchiveDaySuccess, Detail: `{"day":"2026-03-01","row_count":8,"raw_size_bytes":1234,"compressed_size_bytes":456}`, CreatedAt: now.Add(time.Second)},
 	)
 	require.False(t, status.Running)
 	require.Empty(t, status.CurrentDay)
+	require.Equal(t, "2026-03-01", status.LastDay)
 	require.Equal(t, EventArchiveDaySuccess, status.LastResult)
 	require.True(t, status.DryRun)
 }

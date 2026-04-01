@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS `ai_proxy_event`
     `updated_at` DATETIME(3)         NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
 
     `event`      VARCHAR(191)        NOT NULL COMMENT '事件类型',
-    `detail`     VARCHAR(255)        NOT NULL DEFAULT '' COMMENT '事件详情',
+    `detail`     TEXT                NOT NULL COMMENT '事件详情',
 
     PRIMARY KEY (`id`),
     INDEX `idx_event_created_at` (`event`, `created_at`)
