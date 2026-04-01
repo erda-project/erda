@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -146,6 +148,9 @@ func (dbClient *DBClient) TryAcquireLeaderLease(ctx context.Context) (bool, erro
 	// no existing heartbeat, create one and acquire leadership
 	if rec.ID == 0 {
 		_, err := dbClient.Create(ctx, EventArchiveLeaderHeartbeat, "0")
+		if isDuplicateKeyError(err) {
+			return false, nil
+		}
 		return err == nil, err
 	}
 
@@ -160,4 +165,21 @@ func (dbClient *DBClient) TryAcquireLeaderLease(ctx context.Context) (bool, erro
 		return false, result.Error
 	}
 	return result.RowsAffected > 0, nil
+}
+
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "duplicate entry") ||
+		strings.Contains(msg, "unique constraint failed")
 }

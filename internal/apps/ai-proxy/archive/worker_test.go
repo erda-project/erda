@@ -25,6 +25,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
+	eventmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/event"
 )
 
 func TestArchiveDay_DoesNotRecordSuccessBeforeDeleteCompletes(t *testing.T) {
@@ -360,4 +363,49 @@ func TestMarkInterruptedIfNeeded_NoOpWhenDayEndIsLatest(t *testing.T) {
 	interrupted, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayInterrupted)
 	require.NoError(t, err)
 	require.Nil(t, interrupted)
+}
+
+func TestRun_NonLeaderDoesNotMarkInterrupted(t *testing.T) {
+	svc := newTestService(t, Config{
+		Enable:       true,
+		LoopInterval: 10 * time.Millisecond,
+		Name:         "cluster-a",
+	})
+	ctx := context.Background()
+
+	_, err := svc.EventClient.Create(ctx, eventmodel.EventArchiveLeaderHeartbeat, "0")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayStart, "2026-03-29")
+	require.NoError(t, err)
+
+	consumed := false
+	require.NoError(t, svc.EventClient.DB.Callback().Update().Before("gorm:update").Register("test:lose-leader-cas", func(tx *gorm.DB) {
+		if consumed || tx.Statement.Table != "ai_proxy_event" {
+			return
+		}
+		consumed = true
+		err := tx.Session(&gorm.Session{NewDB: true}).Exec(`
+UPDATE ai_proxy_event
+SET detail = CAST(CAST(detail AS INTEGER) + 1 AS TEXT)
+WHERE event = ?
+`, eventmodel.EventArchiveLeaderHeartbeat).Error
+		require.NoError(t, err)
+	}))
+
+	runCtx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		done <- svc.Run(runCtx)
+	}()
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+	require.NoError(t, <-done)
+
+	interrupted, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayInterrupted)
+	require.NoError(t, err)
+	require.Nil(t, interrupted)
+
+	end, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayEnd)
+	require.NoError(t, err)
+	require.Nil(t, end)
 }

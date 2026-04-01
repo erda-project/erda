@@ -127,9 +127,6 @@ func (s *Service) Run(ctx context.Context) error {
 	if err := s.Config.Normalize(); err != nil {
 		return err
 	}
-	if err := s.markInterruptedIfNeeded(ctx); err != nil {
-		s.logf("mark interrupted archive day failed: %v", err)
-	}
 	if err := s.tick(ctx); err != nil {
 		s.logf("initial archive tick failed: %v", err)
 	}
@@ -179,6 +176,12 @@ func (s *Service) tick(ctx context.Context) error {
 
 	status, err := s.GetStatus(ctx)
 	if err != nil {
+		return err
+	}
+	if status.Running {
+		return nil
+	}
+	if err := s.markInterruptedIfNeeded(ctx); err != nil {
 		return err
 	}
 	if !status.Enabled || !status.Started {

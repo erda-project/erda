@@ -104,6 +104,36 @@ func TestDBClient_CreateLatestAndList(t *testing.T) {
 	require.Equal(t, EventArchiveStart, list[1].Event)
 }
 
+func TestDBClient_TryAcquireLeaderLease_ReturnsFalseOnDuplicateHeartbeatCreate(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, prepareSQLiteUniqueEventTable(db))
+
+	client := &DBClient{DB: db}
+	ctx := context.Background()
+
+	injected := false
+	require.NoError(t, db.Callback().Create().Before("gorm:create").Register("test:inject-heartbeat-duplicate", func(tx *gorm.DB) {
+		if injected {
+			return
+		}
+		rec, ok := tx.Statement.Dest.(*Event)
+		if !ok || rec.Event != EventArchiveLeaderHeartbeat {
+			return
+		}
+		injected = true
+		err := tx.Session(&gorm.Session{NewDB: true}).Exec(`
+INSERT INTO ai_proxy_event (created_at, updated_at, event, detail)
+VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
+`, EventArchiveLeaderHeartbeat, "0").Error
+		require.NoError(t, err)
+	}))
+
+	won, err := client.TryAcquireLeaderLease(ctx)
+	require.NoError(t, err)
+	require.False(t, won)
+}
+
 func prepareSQLiteEventTable(db *gorm.DB) error {
 	return db.Exec(`
 CREATE TABLE ai_proxy_event (
@@ -111,6 +141,17 @@ CREATE TABLE ai_proxy_event (
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
 	event VARCHAR(191) NOT NULL,
+	detail TEXT NOT NULL DEFAULT ''
+);`).Error
+}
+
+func prepareSQLiteUniqueEventTable(db *gorm.DB) error {
+	return db.Exec(`
+CREATE TABLE ai_proxy_event (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	created_at DATETIME NOT NULL,
+	updated_at DATETIME NOT NULL,
+	event VARCHAR(191) NOT NULL UNIQUE,
 	detail TEXT NOT NULL DEFAULT ''
 );`).Error
 }

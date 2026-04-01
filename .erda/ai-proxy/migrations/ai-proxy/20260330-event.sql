@@ -11,3 +11,11 @@ CREATE TABLE IF NOT EXISTS `ai_proxy_event`
     INDEX `idx_event_created_at` (`event`, `created_at`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT 'AI-Proxy 事件表';
+
+INSERT IGNORE INTO `ai_proxy_event` (`created_at`, `updated_at`, `event`, `detail`)
+SELECT CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 'audit.archive.leader.heartbeat', '0'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `ai_proxy_event`
+    WHERE `event` = 'audit.archive.leader.heartbeat'
+);

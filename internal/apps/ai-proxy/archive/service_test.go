@@ -155,6 +155,39 @@ func TestTick_DryRunAdvancesFromDryRunDayNotSuccessDay(t *testing.T) {
 	require.Equal(t, "2023-01-03", dayStart.Detail)
 }
 
+func TestTick_SkipsWhenArchiveStatusIsRunning(t *testing.T) {
+	svc := newTestService(t, Config{
+		Enable:        true,
+		AutoStart:     true,
+		DryRun:        true,
+		Name:          "cluster-a",
+		RetentionDays: 1,
+	})
+	ctx := context.Background()
+	day := time.Date(2020, 1, 2, 0, 0, 0, 0, time.Local)
+
+	_, err := svc.EventClient.Create(ctx, eventmodel.EventArchiveLeaderHeartbeat, "0")
+	require.NoError(t, err)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayStart, day.Format("2006-01-02"))
+	require.NoError(t, err)
+	require.NoError(t, svc.AuditClient.DB.WithContext(ctx).Exec(`
+INSERT INTO ai_proxy_filter_audit (id, created_at, updated_at, deleted_at, metadata)
+VALUES (?, ?, ?, NULL, ?)
+`, "00000000-0000-0000-0000-000000000001", day.Add(time.Hour), day.Add(time.Hour), []byte("{}")).Error)
+
+	require.NoError(t, svc.tick(ctx))
+
+	total, list, err := svc.ListEvents(ctx, ListRequest{
+		PageNum:  1,
+		PageSize: 10,
+		Day:      day.Format("2006-01-02"),
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, list, 1)
+	require.Equal(t, EventArchiveDayStart, list[0].Event)
+}
+
 func newTestService(t *testing.T, cfg Config) *Service {
 	t.Helper()
 
