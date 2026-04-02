@@ -20,8 +20,26 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+const generalPromptMatchWindow = 200
+
 func matchPromptPrefix(content, prefix string) bool {
 	return strings.HasPrefix(strings.TrimSpace(content), prefix)
+}
+
+func matchPromptWithinWindowContains(content, target string, window int) bool {
+	if window <= 0 {
+		return false
+	}
+	normalizedContent := normalize(content)
+	normalizedTarget := normalize(target)
+	if normalizedContent == "" || normalizedTarget == "" {
+		return false
+	}
+	runes := []rune(normalizedContent)
+	if len(runes) > window {
+		runes = runes[:window]
+	}
+	return strings.Contains(string(runes), normalizedTarget)
 }
 
 func chatMessageText(msg openai.ChatCompletionMessage) string {

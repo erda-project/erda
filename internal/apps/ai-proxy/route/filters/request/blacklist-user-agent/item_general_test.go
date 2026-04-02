@@ -29,39 +29,43 @@ func TestGeneralItem_MatchHeaderByConfiguredRules(t *testing.T) {
 	}
 }
 
-func TestGeneralItem_MatchPromptByConfiguredPrefix(t *testing.T) {
+func TestGeneralItem_MatchPromptByConfiguredWindowContains(t *testing.T) {
 	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "you are claude code ;;; you are opencode")
+	SetGeneralRules("", "terminal-based coding assistant ;;; you are opencode")
 
 	matcher, ok := any(generalItem{}).(PromptMatcher)
 	if !ok {
 		t.Fatal("expected general item to implement PromptMatcher")
 	}
-	if !matcher.MatchPrompt("You are Claude Code, Anthropic's official CLI for Claude.") {
-		t.Fatal("expected general item to match configured prompt prefix")
+	if !matcher.MatchPrompt("You are GPT-5.2 running in the Assistant client, a terminal-based coding assistant.") {
+		t.Fatal("expected general item to match configured prompt substring within first 200 chars")
 	}
 }
 
-func TestGeneralItem_IgnorePromptWithoutConfiguredPrefix(t *testing.T) {
+func TestGeneralItem_IgnorePromptOutsideConfiguredWindow(t *testing.T) {
 	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "you are claude code")
+	SetGeneralRules("", "target-window-marker")
 
 	matcher := any(generalItem{}).(PromptMatcher)
-	if matcher.MatchPrompt("Tooling follows below.\nYou are Claude Code.") {
-		t.Fatal("expected general item not to match non-prefixed prompt")
+	longPrefix := ""
+	for i := 0; i < 201; i++ {
+		longPrefix += "a"
+	}
+	if matcher.MatchPrompt(longPrefix + "target-window-marker") {
+		t.Fatal("expected general item not to match prompt substring beyond first 200 chars")
 	}
 }
 
-func TestGeneralItem_MatchMessageGroupTextByConfiguredPrefix(t *testing.T) {
+func TestGeneralItem_MatchMessageGroupTextByConfiguredWindowContains(t *testing.T) {
 	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "you are opencode")
+	SetGeneralRules("", "assistant client")
 
 	matcher, ok := any(generalItem{}).(MessageGroupMatcher)
 	if !ok {
 		t.Fatal("expected general item to implement MessageGroupMatcher")
 	}
-	if !matcher.MatchMessageGroupText("You are OpenCode, running in this environment.") {
-		t.Fatal("expected general item to match configured message-group prefix")
+	if !matcher.MatchMessageGroupText("You are GPT-5.1 running in the Assistant client, a terminal-based coding assistant.") {
+		t.Fatal("expected general item to match configured message-group substring within first 200 chars")
 	}
 }
 

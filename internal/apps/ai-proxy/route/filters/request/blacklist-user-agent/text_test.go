@@ -29,6 +29,19 @@ func TestMatchPromptPrefix(t *testing.T) {
 	}
 }
 
+func TestMatchPromptWithinWindowContains(t *testing.T) {
+	if !matchPromptWithinWindowContains("\n \tYou are GPT-5.2 running in the Assistant client, a terminal-based coding assistant.", "terminal-based coding assistant", generalPromptMatchWindow) {
+		t.Fatal("expected substring within first 200 chars to match after trimming leading whitespace")
+	}
+	longPrefix := ""
+	for i := 0; i < generalPromptMatchWindow+1; i++ {
+		longPrefix += "a"
+	}
+	if matchPromptWithinWindowContains(longPrefix+"terminal-based coding assistant", "terminal-based coding assistant", generalPromptMatchWindow) {
+		t.Fatal("expected substring beyond first 200 chars not to match")
+	}
+}
+
 func TestChatMessageText(t *testing.T) {
 	if got := chatMessageText(openai.ChatCompletionMessage{Content: "plain text"}); got != "plain text" {
 		t.Fatalf("expected plain content to be returned when multi-content is empty, got %q", got)
