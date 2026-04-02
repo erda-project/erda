@@ -25,11 +25,14 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	auditconfig "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
+	eventmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/event"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
@@ -66,6 +69,8 @@ type Config struct {
 	EtcdEndpoints string `file:"etcd_endpoints" env:"ETCD_ENDPOINTS"`
 	EtcdUsername  string `file:"etcd_username" env:"ETCD_USERNAME"`
 	EtcdPassword  string `file:"etcd_password" env:"ETCD_PASSWORD"`
+
+	Audit auditconfig.Config `file:"audit"`
 }
 
 type provider struct {
@@ -77,6 +82,8 @@ type provider struct {
 
 	cache cachetypes.Manager
 
+	archiveService *archivepkg.Service
+
 	handlers           *aiproxytypes.Handlers
 	ctxhelperFunctions []func(context.Context)
 
@@ -84,6 +91,14 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if err := p.Config.Audit.Archive.Normalize(); err != nil {
+		return err
+	}
+	if p.Config.Audit.Archive.Enable {
+		if err := p.Dao.Q().AutoMigrate(&eventmodel.Event{}); err != nil {
+			return fmt.Errorf("auto migrate ai_proxy_event failed: %w", err)
+		}
+	}
 	blacklist_user_agent.SetConfig(p.Config.BlacklistUserAgent)
 	blacklist_user_agent.SetGeneralRules(
 		p.Config.BlacklistUserAgentGeneralHeaders,
@@ -121,6 +136,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// initialize token usage collector
 	token_usage.InitUsageCollector(p.Dao)
 
+	p.archiveService = archivepkg.NewService(
+		p.Config.Audit.Archive,
+		&eventmodel.DBClient{DB: p.Dao.Q()},
+		p.Dao.AuditClient(),
+		p.L,
+	)
+
 	p.initHandlers(templatesByType)
 
 	p.registerAIProxyManageAPI()
@@ -134,6 +156,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			ctxhelper.PutAIProxyHandlers(ctx, p.handlers)
 		},
 	))
+
+	p.archiveService.AsyncRun(ctx)
 
 	return nil
 }

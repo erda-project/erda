@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
+	eventmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/event"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 )
 
@@ -39,6 +40,9 @@ func (p *provider) checkTables(r *http.Request) error {
 	tables := []string{
 		(&audit.Audit{}).TableName(),
 		(&mcp_server.MCPServer{}).TableName(),
+	}
+	if p.Config.Audit.Archive.Enable {
+		tables = append(tables, (&eventmodel.Event{}).TableName())
 	}
 	for _, table := range tables {
 		var dummy int

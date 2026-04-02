@@ -70,7 +70,7 @@ func (p *provider) initHandlers(templates templatetypes.TemplatesByType) {
 		ClientTokenHandler:         &handler_client_token.ClientTokenHandler{DAO: p.Dao},
 		I18nHandler:                &handler_i18n.I18nHandler{DAO: p.Dao},
 		RichClientHandler:          &handler_rich_client.ClientHandler{DAO: p.Dao},
-		AuditHandler:               &handler_audit.AuditHandler{DAO: p.Dao},
+		AuditHandler:               &handler_audit.AuditHandler{DAO: p.Dao, ArchiveService: p.archiveService},
 		TokenUsageHandler:          &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache},
 		TemplateHandler:            &handler_template.TemplateHandler{Cache: p.cache},
 		PolicyGroupHandler:         &handler_policy_group.Handler{DAO: p.Dao},
