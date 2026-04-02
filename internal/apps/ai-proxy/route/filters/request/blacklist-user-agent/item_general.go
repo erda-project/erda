@@ -48,9 +48,8 @@ func containsConfiguredGeneralHeaderRule(input string) bool {
 }
 
 func hasConfiguredGeneralPromptPrefix(input string) bool {
-	normalizedInput := normalize(input)
 	for _, rule := range getGeneralRules().Prompts {
-		if rule != "" && strings.HasPrefix(normalizedInput, rule) {
+		if rule != "" && matchPromptWithinWindowContains(input, rule, generalPromptMatchWindow) {
 			return true
 		}
 	}
