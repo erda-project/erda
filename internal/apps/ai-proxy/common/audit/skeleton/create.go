@@ -32,6 +32,10 @@ import (
 )
 
 func CreateSkeleton(in *http.Request) error {
+	if audithelper.AuditWriteDisabled() {
+		return nil
+	}
+
 	var createReq pb.AuditCreateRequestWhenReceived
 	createReq.RequestAt = timestamppb.New(time.Now())
 	createReq.AuthKey = vars.TrimBearer(in.Header.Get(vars.TrimBearer(httperrorutil.HeaderKeyAuthorization)))
