@@ -4,6 +4,8 @@
 
 set -o errexit -o pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/git_context.sh"
+
 echo "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}"
 
 # check parameters and print usage if need
@@ -27,7 +29,28 @@ MODULE_PATH=$1
 ACTION=$2
 
 # cd to root directory
-cd $(git rev-parse --show-toplevel)
+cd "$(git rev-parse --show-toplevel)"
+REPO_ROOT="$(pwd)"
+CONTAINER_REPO_PATH="/go/src/github.com/erda-project/erda"
+BUILD_CONTEXT="${REPO_ROOT}"
+TEMP_BUILD_CONTEXT=""
+
+cleanup() {
+    if [[ -n "${TEMP_BUILD_CONTEXT}" && -d "${TEMP_BUILD_CONTEXT}" ]]; then
+        rm -rf "${TEMP_BUILD_CONTEXT}"
+    fi
+}
+trap cleanup EXIT
+
+prepare_build_context() {
+    if ! is_git_worktree "${REPO_ROOT}"; then
+        return
+    fi
+
+    TEMP_BUILD_CONTEXT="$(mktemp -d)"
+    prepare_git_build_context "${REPO_ROOT}" "${TEMP_BUILD_CONTEXT}" "${CONTAINER_REPO_PATH}"
+    BUILD_CONTEXT="${TEMP_BUILD_CONTEXT}"
+}
 
 # image version and url
 CURRENT_ARCH="$(go env GOARCH)"
@@ -89,6 +112,7 @@ print_details() {
     echo "Target Arch    : ${TARGET_ARCH}"
 }
 print_details
+prepare_build_context
 
 # login
 docker_login() {
@@ -137,7 +161,7 @@ build_image()  {
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
         --build-arg "GOPROXY=${GOPROXY}" \
-        -f "${DOCKERFILE}" . \
+        -f "${BUILD_CONTEXT}/${DOCKERFILE}" "${BUILD_CONTEXT}" \
         "${args[@]}"
     echo "action meta: image=${DOCKER_IMAGE}"
     echo "action meta: tag=${IMAGE_TAG}"

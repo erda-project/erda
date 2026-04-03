@@ -2,7 +2,30 @@
 
 set -o errexit -o pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/git_context.sh"
+
 cd "$(git rev-parse --show-toplevel)"
+REPO_ROOT="$(pwd)"
+CONTAINER_REPO_PATH="/go/src/github.com/erda-project/erda"
+BUILD_CONTEXT="${REPO_ROOT}"
+TEMP_BUILD_CONTEXT=""
+
+cleanup() {
+    if [[ -n "${TEMP_BUILD_CONTEXT}" && -d "${TEMP_BUILD_CONTEXT}" ]]; then
+        rm -rf "${TEMP_BUILD_CONTEXT}"
+    fi
+}
+trap cleanup EXIT
+
+prepare_build_context() {
+    if ! is_git_worktree "${REPO_ROOT}"; then
+        return
+    fi
+
+    TEMP_BUILD_CONTEXT="$(mktemp -d)"
+    prepare_git_build_context "${REPO_ROOT}" "${TEMP_BUILD_CONTEXT}" "${CONTAINER_REPO_PATH}"
+    BUILD_CONTEXT="${TEMP_BUILD_CONTEXT}"
+}
 
 BASE_DOCKER_IMAGE=registry.erda.cloud/erda/erda-base:20250812
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
@@ -30,6 +53,8 @@ if [[ -n "$DOCKER_REGISTRY" ]]; then
     fi
 fi
 
+prepare_build_context
+
 buildctl \
     --addr tcp://buildkitd.default.svc.cluster.local:1234 \
     --tlscacert=/.buildkit/ca.pem \
@@ -37,8 +62,8 @@ buildctl \
     --tlskey=/.buildkit/key.pem \
      build \
     --frontend dockerfile.v0 \
-    --local context=. \
-    --local dockerfile="$DOCKERFILE" \
+    --local context="$BUILD_CONTEXT" \
+    --local dockerfile="$BUILD_CONTEXT/$DOCKERFILE" \
     --opt label:"branch=$(git rev-parse --abbrev-ref HEAD)" \
     --opt label:"commit=$(git rev-parse HEAD)" \
     --opt label:"build-time=$(date '+%Y-%m-%d %T%z')" \
