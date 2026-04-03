@@ -1,0 +1,64 @@
+{
+  "qwen3.6-plus": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3.6-plus"
+    },
+    "desc": "Qwen3.6原生视觉语言系列Plus模型，展现出与当前顶尖前沿模型相媲美的卓越性能，模型效果相较3.5系列显著提升。模型在Agentic coding、前端编程、Vibe coding等代码能力、多模态万物识别、OCR、物体定位等能力上显著增强。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "enable_thinking",
+              "structured_output",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1000000,
+            "max_prompt_tokens": 991000,
+            "max_completion_tokens": 64000
+          },
+          "pricing": {
+            "prompt": "0.000002",
+            "completion": "0.000012",
+            "request": "0",
+            "image": "0",
+            "web_search": "0.004",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.0000002",
+            "input_cache_write": "0.0000025",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
