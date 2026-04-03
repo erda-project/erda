@@ -46,6 +46,10 @@ func NoteOnce(ctx context.Context, k string, v any) {
 }
 
 func Flush(ctx context.Context) {
+	if AuditWriteDisabled() {
+		return
+	}
+
 	sink, ok := ctxhelper.GetAuditSink(ctx)
 	if !ok || sink == nil {
 		return

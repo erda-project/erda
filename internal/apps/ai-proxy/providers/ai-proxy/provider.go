@@ -28,6 +28,7 @@ import (
 	archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
 	auditconfig "github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
@@ -91,6 +92,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	audithelper.SetAuditWriteDisabled(p.Config.Audit.Disable)
 	if err := p.Config.Audit.Archive.Normalize(); err != nil {
 		return err
 	}

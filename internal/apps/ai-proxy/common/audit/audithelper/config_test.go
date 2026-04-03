@@ -12,11 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auditconfig
+package audithelper
 
-import archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
+import "testing"
 
-type Config struct {
-	Disable bool              `file:"disable" env:"AI_PROXY_AUDIT_DISABLE" default:"false"`
-	Archive archivepkg.Config `file:"archive"`
+func TestSetAuditWriteDisabled(t *testing.T) {
+	SetAuditWriteDisabled(false)
+	if AuditWriteDisabled() {
+		t.Fatalf("expected audit write disabled to be false by default")
+	}
+
+	SetAuditWriteDisabled(true)
+	if !AuditWriteDisabled() {
+		t.Fatalf("expected audit write disabled to be true after set")
+	}
+}
+
+func TestSetAuditWriteDisabledReset(t *testing.T) {
+	SetAuditWriteDisabled(true)
+	SetAuditWriteDisabled(false)
+	if AuditWriteDisabled() {
+		t.Fatalf("expected audit write disabled to be false after reset")
+	}
 }

@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auditconfig
+package audithelper
 
-import archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
+import "sync/atomic"
 
-type Config struct {
-	Disable bool              `file:"disable" env:"AI_PROXY_AUDIT_DISABLE" default:"false"`
-	Archive archivepkg.Config `file:"archive"`
+var auditWriteDisabled atomic.Bool
+
+func SetAuditWriteDisabled(disabled bool) {
+	auditWriteDisabled.Store(disabled)
+}
+
+func AuditWriteDisabled() bool {
+	return auditWriteDisabled.Load()
 }
