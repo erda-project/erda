@@ -17,5 +17,6 @@ package auditconfig
 import archivepkg "github.com/erda-project/erda/internal/apps/ai-proxy/archive"
 
 type Config struct {
+	Disable bool              `file:"disable" env:"AI_PROXY_AUDIT_DISABLE" default:"false"`
 	Archive archivepkg.Config `file:"archive"`
 }

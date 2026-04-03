@@ -14,19 +14,14 @@
 
 package audithelper
 
-import (
-	"os"
-	"strconv"
-	"strings"
-)
+import "sync/atomic"
 
-const envKeyAuditWriteDisabled = "AI_PROXY_AUDIT_WRITE_DISABLED"
+var auditWriteDisabled atomic.Bool
+
+func SetAuditWriteDisabled(disabled bool) {
+	auditWriteDisabled.Store(disabled)
+}
 
 func AuditWriteDisabled() bool {
-	raw, ok := os.LookupEnv(envKeyAuditWriteDisabled)
-	if !ok {
-		return false
-	}
-	disabled, err := strconv.ParseBool(strings.TrimSpace(raw))
-	return err == nil && disabled
+	return auditWriteDisabled.Load()
 }

@@ -16,16 +16,22 @@ package audithelper
 
 import "testing"
 
-func TestAuditWriteDisabled(t *testing.T) {
-	t.Setenv(envKeyAuditWriteDisabled, "true")
+func TestSetAuditWriteDisabled(t *testing.T) {
+	SetAuditWriteDisabled(false)
+	if AuditWriteDisabled() {
+		t.Fatalf("expected audit write disabled to be false by default")
+	}
+
+	SetAuditWriteDisabled(true)
 	if !AuditWriteDisabled() {
-		t.Fatalf("expected audit write disabled to be true")
+		t.Fatalf("expected audit write disabled to be true after set")
 	}
 }
 
-func TestAuditWriteDisabledInvalidValue(t *testing.T) {
-	t.Setenv(envKeyAuditWriteDisabled, "invalid")
+func TestSetAuditWriteDisabledReset(t *testing.T) {
+	SetAuditWriteDisabled(true)
+	SetAuditWriteDisabled(false)
 	if AuditWriteDisabled() {
-		t.Fatalf("expected invalid env value to keep audit write enabled")
+		t.Fatalf("expected audit write disabled to be false after reset")
 	}
 }
