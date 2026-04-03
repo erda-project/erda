@@ -27,6 +27,7 @@ erda.app.ai-proxy:
   log_level: ${LOG_LEVEL:info}
   mcp_proxy_public_url: ${MCP_PROXY_PUBLIC_URL}
   audit:
+    disable: ${AI_PROXY_AUDIT_DISABLE:false}
     archive:
       enable: ${AI_PROXY_AUDIT_ARCHIVE_ENABLE:false}
       auto_start: ${AI_PROXY_AUDIT_ARCHIVE_AUTO_START:false}
