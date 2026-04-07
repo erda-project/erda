@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/usage/token_usage"
 	eventmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/event"
-	settingmodel "github.com/erda-project/erda/internal/apps/ai-proxy/models/setting"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/ai-proxy/aiproxytypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/reverseproxy"
@@ -87,16 +86,8 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	audithelper.SetAuditWriteDisabled(p.Config.Audit.Disable)
-	if err := p.Dao.Q().AutoMigrate(&settingmodel.Setting{}); err != nil {
-		return fmt.Errorf("auto migrate ai_proxy_setting failed: %w", err)
-	}
 	if err := p.Config.Audit.Archive.Normalize(); err != nil {
 		return err
-	}
-	if p.Config.Audit.Archive.Enable {
-		if err := p.Dao.Q().AutoMigrate(&eventmodel.Event{}); err != nil {
-			return fmt.Errorf("auto migrate ai_proxy_event failed: %w", err)
-		}
 	}
 
 	// load templates
