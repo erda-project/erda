@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.setting;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service SettingService {
+    rpc Create(SettingCreateRequest) returns (Setting) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/settings"
+        };
+    }
+
+    rpc Get(SettingGetRequest) returns (Setting) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/settings/{id}"
+        };
+    }
+
+    rpc Delete(SettingDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/settings/{id}"
+        };
+    }
+
+    rpc Update(SettingUpdateRequest) returns (Setting) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/settings/{id}"
+        };
+    }
+
+    rpc Paging(SettingPagingRequest) returns (SettingPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/settings"
+        };
+    }
+}
+
+message Setting {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string namespace = 5 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string key = 6 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string value = 7 [(validate.rules).string.min_len = 0];
+}
+
+message SettingCreateRequest {
+    string namespace = 1 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string key = 2 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string value = 3 [(validate.rules).string.min_len = 0];
+}
+
+message SettingGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message SettingDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message SettingUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string namespace = 2 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string key = 3 [(validate.rules).string = {min_len: 1, max_len: 191}];
+    string value = 4 [(validate.rules).string.min_len = 0];
+}
+
+message SettingPagingRequest {
+    int64 pageNum = 1;
+    int64 pageSize = 2;
+
+    repeated string ids = 3 [(validate.rules).repeated.items.string = {len: 36}];
+    string namespace = 4 [(validate.rules).string.max_len = 191];
+    string key = 5 [(validate.rules).string.max_len = 191];
+    repeated string orderBys = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+}
+
+message SettingPagingResponse {
+    int64 total = 1;
+    repeated Setting list = 2;
+}

@@ -17,10 +17,7 @@ package blacklist_user_agent
 import "testing"
 
 func TestGeneralItem_MatchHeaderByConfiguredRules(t *testing.T) {
-	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("claude code ;;; opencode", "")
-
-	matcher, ok := any(generalItem{}).(HeaderMatcher)
+	matcher, ok := any(generalItem{rules: GeneralRules{Headers: []string{"claude code", "opencode"}}}).(HeaderMatcher)
 	if !ok {
 		t.Fatal("expected general item to implement HeaderMatcher")
 	}
@@ -30,10 +27,7 @@ func TestGeneralItem_MatchHeaderByConfiguredRules(t *testing.T) {
 }
 
 func TestGeneralItem_MatchPromptByConfiguredWindowContains(t *testing.T) {
-	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "terminal-based coding assistant ;;; you are opencode")
-
-	matcher, ok := any(generalItem{}).(PromptMatcher)
+	matcher, ok := any(generalItem{rules: GeneralRules{Prompts: []string{"terminal-based coding assistant", "you are opencode"}}}).(PromptMatcher)
 	if !ok {
 		t.Fatal("expected general item to implement PromptMatcher")
 	}
@@ -43,10 +37,7 @@ func TestGeneralItem_MatchPromptByConfiguredWindowContains(t *testing.T) {
 }
 
 func TestGeneralItem_IgnorePromptOutsideConfiguredWindow(t *testing.T) {
-	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "target-window-marker")
-
-	matcher := any(generalItem{}).(PromptMatcher)
+	matcher := any(generalItem{rules: GeneralRules{Prompts: []string{"target-window-marker"}}}).(PromptMatcher)
 	longPrefix := ""
 	for i := 0; i < 201; i++ {
 		longPrefix += "a"
@@ -57,10 +48,7 @@ func TestGeneralItem_IgnorePromptOutsideConfiguredWindow(t *testing.T) {
 }
 
 func TestGeneralItem_MatchMessageGroupTextByConfiguredWindowContains(t *testing.T) {
-	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "assistant client")
-
-	matcher, ok := any(generalItem{}).(MessageGroupMatcher)
+	matcher, ok := any(generalItem{rules: GeneralRules{Prompts: []string{"assistant client"}}}).(MessageGroupMatcher)
 	if !ok {
 		t.Fatal("expected general item to implement MessageGroupMatcher")
 	}
@@ -70,9 +58,6 @@ func TestGeneralItem_MatchMessageGroupTextByConfiguredWindowContains(t *testing.
 }
 
 func TestGeneralItem_IgnoreSignalsWhenNoConfiguredRules(t *testing.T) {
-	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("", "")
-
 	headerMatcher := any(generalItem{}).(HeaderMatcher)
 	if headerMatcher.MatchHeader("User-Agent", "claude code/1.0") {
 		t.Fatal("expected general item not to match header when config is empty")

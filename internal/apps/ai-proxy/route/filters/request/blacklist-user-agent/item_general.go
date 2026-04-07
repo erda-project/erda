@@ -16,30 +16,32 @@ package blacklist_user_agent
 
 import "strings"
 
-type generalItem struct{}
+type generalItem struct {
+	rules GeneralRules
+}
 
 func (generalItem) Name() string {
 	return "general"
 }
 
-func (generalItem) MatchHeader(key, value string) bool {
-	return containsConfiguredGeneralHeaderRule(key) || containsConfiguredGeneralHeaderRule(value)
+func (g generalItem) MatchHeader(key, value string) bool {
+	return g.containsConfiguredGeneralHeaderRule(key) || g.containsConfiguredGeneralHeaderRule(value)
 }
 
-func (generalItem) MatchPrompt(prompt string) bool {
-	return hasConfiguredGeneralPromptPrefix(prompt)
+func (g generalItem) MatchPrompt(prompt string) bool {
+	return g.hasConfiguredGeneralPromptPrefix(prompt)
 }
 
-func (generalItem) MatchMessageGroupText(text string) bool {
-	return hasConfiguredGeneralPromptPrefix(text)
+func (g generalItem) MatchMessageGroupText(text string) bool {
+	return g.hasConfiguredGeneralPromptPrefix(text)
 }
 
-func containsConfiguredGeneralHeaderRule(input string) bool {
+func (g generalItem) containsConfiguredGeneralHeaderRule(input string) bool {
 	if input == "" {
 		return false
 	}
 	normalizedInput := normalize(input)
-	for _, rule := range getGeneralRules().Headers {
+	for _, rule := range g.rules.Headers {
 		if rule != "" && strings.Contains(normalizedInput, rule) {
 			return true
 		}
@@ -47,8 +49,8 @@ func containsConfiguredGeneralHeaderRule(input string) bool {
 	return false
 }
 
-func hasConfiguredGeneralPromptPrefix(input string) bool {
-	for _, rule := range getGeneralRules().Prompts {
+func (g generalItem) hasConfiguredGeneralPromptPrefix(input string) bool {
+	for _, rule := range g.rules.Prompts {
 		if rule != "" && matchPromptWithinWindowContains(input, rule, generalPromptMatchWindow) {
 			return true
 		}

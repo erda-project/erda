@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/service_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/session"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/setting"
 	usage_token "github.com/erda-project/erda/internal/apps/ai-proxy/models/usage/token"
 )
 
@@ -79,6 +80,7 @@ type DAO interface {
 	MCPServerTemplateClient() *mcp_server_template.DBClient
 	MCPServerConfigInstanceClient() *mcp_server_config_instance.DBClient
 	PolicyGroupClient() *policy_group.DBClient
+	SettingClient() *setting.DBClient
 }
 
 type provider struct {
@@ -155,4 +157,8 @@ func (p *provider) MCPServerConfigInstanceClient() *mcp_server_config_instance.D
 
 func (p *provider) PolicyGroupClient() *policy_group.DBClient {
 	return &policy_group.DBClient{DB: p.DB}
+}
+
+func (p *provider) SettingClient() *setting.DBClient {
+	return &setting.DBClient{DB: p.DB}
 }
