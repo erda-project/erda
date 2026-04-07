@@ -23,6 +23,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	settingpb "github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
@@ -117,6 +119,24 @@ func TestResolveSettings_UsesSettingValues(t *testing.T) {
 	require.Equal(t, []string{"you are claude code", "you are opencode"}, got.GeneralRules.Prompts)
 }
 
+func TestResolveSettings_PrefersCacheManager(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	ctxhelper.PutCacheManager(ctx, &mockSettingCacheManager{
+		settings: []*settingpb.Setting{
+			{Namespace: blacklistUserAgentSettingNamespace, Key: settingKeyClientTokenBlacklist, Value: "openclaw,coding-agent"},
+			{Namespace: blacklistUserAgentSettingNamespace, Key: settingKeyClientBlacklist, Value: "coding-agent"},
+			{Namespace: blacklistUserAgentSettingNamespace, Key: settingKeyGeneralHeaders, Value: "claude code"},
+			{Namespace: blacklistUserAgentSettingNamespace, Key: settingKeyGeneralPrompts, Value: "You are Claude Code"},
+		},
+	})
+
+	got := resolveSettings(ctx)
+	require.Equal(t, []string{"openclaw", "coding-agent"}, got.ClientTokenBlacklist)
+	require.Equal(t, []string{"coding-agent"}, got.ClientBlacklist)
+	require.Equal(t, []string{"claude code"}, got.GeneralRules.Headers)
+	require.Equal(t, []string{"you are claude code"}, got.GeneralRules.Prompts)
+}
+
 func newContextWithSettingDAO(t *testing.T) context.Context {
 	t.Helper()
 
@@ -146,6 +166,23 @@ CREATE TABLE ai_proxy_setting (
 type testDAO struct {
 	db *gorm.DB
 }
+
+type mockSettingCacheManager struct {
+	settings []*settingpb.Setting
+}
+
+func (m *mockSettingCacheManager) ListAll(ctx context.Context, itemType cachetypes.ItemType) (uint64, any, error) {
+	if itemType != cachetypes.ItemTypeSetting {
+		return 0, nil, fmt.Errorf("unsupported item type: %v", itemType)
+	}
+	return uint64(len(m.settings)), m.settings, nil
+}
+
+func (m *mockSettingCacheManager) GetByID(ctx context.Context, itemType cachetypes.ItemType, id string) (any, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (m *mockSettingCacheManager) TriggerRefresh(ctx context.Context, itemTypes ...cachetypes.ItemType) {}
 
 func (d testDAO) Q() *gorm.DB { return d.db }
 func (d testDAO) Tx() *gorm.DB { return d.db }

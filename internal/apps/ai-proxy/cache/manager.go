@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_policy_group"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_provider"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_setting"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cacheimpl/item_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/config"
@@ -52,6 +53,7 @@ func NewCacheManager(dao dao.DAO, logger logs.Logger, templatesByType templatety
 	}
 	manager.items[cachetypes.ItemTypeClient] = item_client.NewClientCacheItem(dao, cfg)
 	manager.items[cachetypes.ItemTypeClientToken] = item_clienttoken.NewClientTokenCacheItem(dao, cfg)
+	manager.items[cachetypes.ItemTypeSetting] = item_setting.NewSettingCacheItem(dao, cfg)
 	if !isMcpProxy {
 		manager.items[cachetypes.ItemTypeModel] = item_model.NewModelCacheItem(dao, cfg)
 		manager.items[cachetypes.ItemTypeProvider] = item_provider.NewProviderCacheItem(dao, cfg)

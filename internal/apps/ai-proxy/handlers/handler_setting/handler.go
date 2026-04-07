@@ -19,15 +19,23 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
 type Handler struct {
-	DAO dao.DAO
+	DAO   dao.DAO
+	Cache cachetypes.Manager
 }
 
 func (h *Handler) Create(ctx context.Context, req *pb.SettingCreateRequest) (*pb.Setting, error) {
-	return h.DAO.SettingClient().Create(ctx, req)
+	resp, err := h.DAO.SettingClient().Create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	h.triggerSettingCacheRefresh(ctx)
+	return resp, nil
 }
 
 func (h *Handler) Get(ctx context.Context, req *pb.SettingGetRequest) (*pb.Setting, error) {
@@ -35,13 +43,35 @@ func (h *Handler) Get(ctx context.Context, req *pb.SettingGetRequest) (*pb.Setti
 }
 
 func (h *Handler) Delete(ctx context.Context, req *pb.SettingDeleteRequest) (*commonpb.VoidResponse, error) {
-	return h.DAO.SettingClient().Delete(ctx, req)
+	resp, err := h.DAO.SettingClient().Delete(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	h.triggerSettingCacheRefresh(ctx)
+	return resp, nil
 }
 
 func (h *Handler) Update(ctx context.Context, req *pb.SettingUpdateRequest) (*pb.Setting, error) {
-	return h.DAO.SettingClient().Update(ctx, req)
+	resp, err := h.DAO.SettingClient().Update(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	h.triggerSettingCacheRefresh(ctx)
+	return resp, nil
 }
 
 func (h *Handler) Paging(ctx context.Context, req *pb.SettingPagingRequest) (*pb.SettingPagingResponse, error) {
 	return h.DAO.SettingClient().Paging(ctx, req)
+}
+
+func (h *Handler) triggerSettingCacheRefresh(ctx context.Context) {
+	if h.Cache != nil {
+		go h.Cache.TriggerRefresh(ctx, cachetypes.ItemTypeSetting)
+		return
+	}
+	if cache, ok := ctxhelper.GetCacheManager(ctx); ok {
+		if manager, ok := cache.(cachetypes.Manager); ok && manager != nil {
+			go manager.TriggerRefresh(ctx, cachetypes.ItemTypeSetting)
+		}
+	}
 }

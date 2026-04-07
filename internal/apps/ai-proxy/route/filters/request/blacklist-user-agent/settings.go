@@ -17,6 +17,8 @@ package blacklist_user_agent
 import (
 	"context"
 
+	settingpb "github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
@@ -36,6 +38,16 @@ type Settings struct {
 }
 
 func resolveSettings(ctx context.Context) Settings {
+	if cache, ok := ctxhelper.GetCacheManager(ctx); ok && cache != nil {
+		if manager, ok := cache.(cachetypes.Manager); ok && manager != nil {
+			if _, settingsV, err := manager.ListAll(ctx, cachetypes.ItemTypeSetting); err == nil {
+				if list, ok := settingsV.([]*settingpb.Setting); ok {
+					return buildSettingsFromList(list)
+				}
+			}
+		}
+	}
+
 	dbClient, ok := ctxhelper.GetDBClient(ctx)
 	if !ok || dbClient == nil {
 		return Settings{}
@@ -53,20 +65,38 @@ func resolveSettings(ctx context.Context) Settings {
 		return Settings{}
 	}
 
-	settings := Settings{}
-	if item, ok := items[settingKeyClientTokenBlacklist]; ok {
-		settings.ClientTokenBlacklist = normalizeBlacklist(splitBlacklist(item.Value))
-	}
-	if item, ok := items[settingKeyClientBlacklist]; ok {
-		settings.ClientBlacklist = normalizeBlacklist(splitBlacklist(item.Value))
-	}
-	if item, ok := items[settingKeyGeneralHeaders]; ok {
-		settings.GeneralRules.Headers = normalizeGeneralRules(splitGeneralRules(item.Value))
-	}
-	if item, ok := items[settingKeyGeneralPrompts]; ok {
-		settings.GeneralRules.Prompts = normalizeGeneralRules(splitGeneralRules(item.Value))
+	list := make([]*settingpb.Setting, 0, len(items))
+	for _, key := range []string{
+		settingKeyClientTokenBlacklist,
+		settingKeyClientBlacklist,
+		settingKeyGeneralHeaders,
+		settingKeyGeneralPrompts,
+	} {
+		if item, ok := items[key]; ok {
+			list = append(list, item.ToProtobuf())
+		}
 	}
 
+	return buildSettingsFromList(list)
+}
+
+func buildSettingsFromList(items []*settingpb.Setting) Settings {
+	settings := Settings{}
+	for _, item := range items {
+		if item == nil || item.Namespace != blacklistUserAgentSettingNamespace {
+			continue
+		}
+		switch item.Key {
+		case settingKeyClientTokenBlacklist:
+			settings.ClientTokenBlacklist = normalizeBlacklist(splitBlacklist(item.Value))
+		case settingKeyClientBlacklist:
+			settings.ClientBlacklist = normalizeBlacklist(splitBlacklist(item.Value))
+		case settingKeyGeneralHeaders:
+			settings.GeneralRules.Headers = normalizeGeneralRules(splitGeneralRules(item.Value))
+		case settingKeyGeneralPrompts:
+			settings.GeneralRules.Prompts = normalizeGeneralRules(splitGeneralRules(item.Value))
+		}
+	}
 	return settings
 }
 
