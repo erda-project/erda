@@ -32,6 +32,7 @@ func TestItemType_String(t *testing.T) {
 		{ItemTypeClientToken, "clientToken"},
 		{ItemTypeTemplate, "template"},
 		{ItemTypePolicyGroup, "policyGroup"},
+		{ItemTypeSetting, "setting"},
 		{ItemType(999), "unknown(999)"},
 	}
 
@@ -51,6 +52,7 @@ func TestIsValidItemType(t *testing.T) {
 		"clientToken",
 		"template",
 		"policyGroup",
+		"setting",
 	}
 
 	for _, typeName := range validTypes {
@@ -75,7 +77,7 @@ func TestIsValidItemType(t *testing.T) {
 
 func TestAllItemTypes(t *testing.T) {
 	allTypes := AllItemTypes()
-	assert.Len(t, allTypes, 7) // Update this count if new types are added
+	assert.Len(t, allTypes, 8) // Update this count if new types are added
 
 	// Ensure all returned types are valid and have string representations
 	for _, itemType := range allTypes {

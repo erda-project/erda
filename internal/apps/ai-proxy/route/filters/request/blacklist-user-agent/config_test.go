@@ -14,60 +14,23 @@
 
 package blacklist_user_agent
 
-import (
-	"reflect"
-	"testing"
-)
+import "testing"
 
-func TestConfigFileTags(t *testing.T) {
-	clientTokenField, ok := reflect.TypeOf(ClientTokenConfig{}).FieldByName("BlacklistStr")
-	if !ok {
-		t.Fatal("BlacklistStr field not found in ClientTokenConfig")
-	}
-	if got := clientTokenField.Tag.Get("file"); got != "blacklist_str" {
-		t.Fatalf("unexpected client_token file tag: %q", got)
-	}
-
-	clientField, ok := reflect.TypeOf(ClientConfig{}).FieldByName("BlacklistStr")
-	if !ok {
-		t.Fatal("BlacklistStr field not found in ClientConfig")
-	}
-	if got := clientField.Tag.Get("file"); got != "blacklist_str" {
-		t.Fatalf("unexpected client file tag: %q", got)
+func TestNormalizeBlacklist_NormalizesCommaSeparatedValues(t *testing.T) {
+	got := normalizeBlacklist(splitBlacklist(" openclaw, Coding-Agent ,, "))
+	if len(got) != 2 || got[0] != "openclaw" || got[1] != "coding-agent" {
+		t.Fatalf("unexpected normalized blacklist: %#v", got)
 	}
 }
 
-func TestSetConfig_NormalizesBlacklistStr(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-
-	SetConfig(Config{
-		ClientToken: ClientTokenConfig{
-			BlacklistStr: " openclaw, Coding-Agent ,, ",
-		},
-		Client: ClientConfig{
-			BlacklistStr: " coding-agent, openclaw ",
-		},
-	})
-
-	cfg := getConfig()
-	if len(cfg.ClientToken.Blacklist) != 2 || cfg.ClientToken.Blacklist[0] != "openclaw" || cfg.ClientToken.Blacklist[1] != "coding-agent" {
-		t.Fatalf("unexpected client_token blacklist: %#v", cfg.ClientToken.Blacklist)
+func TestNormalizeGeneralRules_NormalizesHeadersAndPrompts(t *testing.T) {
+	headers := normalizeGeneralRules(splitGeneralRules(" Claude Code ;;; X-Code;Agent ;;; ;; "))
+	if len(headers) != 2 || headers[0] != "claude code" || headers[1] != "x-code;agent" {
+		t.Fatalf("unexpected general header rules: %#v", headers)
 	}
-	if len(cfg.Client.Blacklist) != 2 || cfg.Client.Blacklist[0] != "coding-agent" || cfg.Client.Blacklist[1] != "openclaw" {
-		t.Fatalf("unexpected client blacklist: %#v", cfg.Client.Blacklist)
-	}
-}
 
-func TestSetGeneralRules_NormalizesHeadersAndPrompts(t *testing.T) {
-	t.Cleanup(func() { SetGeneralRules("", "") })
-
-	SetGeneralRules(" Claude Code ;;; X-Code;Agent ;;; ;; ", " You are OpenCode ;;; You are Claude; Code ;;; ;; ")
-
-	cfg := getGeneralRules()
-	if len(cfg.Headers) != 2 || cfg.Headers[0] != "claude code" || cfg.Headers[1] != "x-code;agent" {
-		t.Fatalf("unexpected general header rules: %#v", cfg.Headers)
-	}
-	if len(cfg.Prompts) != 2 || cfg.Prompts[0] != "you are opencode" || cfg.Prompts[1] != "you are claude; code" {
-		t.Fatalf("unexpected general prompt rules: %#v", cfg.Prompts)
+	prompts := normalizeGeneralRules(splitGeneralRules(" You are OpenCode ;;; You are Claude; Code ;;; ;; "))
+	if len(prompts) != 2 || prompts[0] != "you are opencode" || prompts[1] != "you are claude; code" {
+		t.Fatalf("unexpected general prompt rules: %#v", prompts)
 	}
 }

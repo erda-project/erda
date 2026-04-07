@@ -15,14 +15,12 @@
 package blacklist_user_agent
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/audithelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 )
@@ -49,7 +47,8 @@ func init() {
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
-	activeItems := resolveActiveItems(getBlacklistByCredential(ctx))
+	settings := resolveSettings(ctx)
+	activeItems := resolveActiveItems(getBlacklistByCredential(ctx, settings), settings.GeneralRules)
 	if len(activeItems) == 0 {
 		return nil
 	}
@@ -125,16 +124,4 @@ func detectBlacklistedUserAgentFromMessageGroup(items []BlacklistItem, texts []s
 		}
 	}
 	return ""
-}
-
-func getBlacklistByCredential(ctx context.Context) []string {
-	cfg := getConfig()
-	switch {
-	case auth.IsClientToken(ctx):
-		return cfg.ClientToken.Blacklist
-	case auth.IsClient(ctx):
-		return cfg.Client.Blacklist
-	default:
-		return nil
-	}
 }

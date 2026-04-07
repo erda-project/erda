@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/sashabaranov/go-openai"
+	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
@@ -30,19 +31,23 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/audit/types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/setting"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 )
 
 func TestFilter_RejectsBlacklistedUserAgentForClientTokenFromAuditPrompt(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		ClientToken: ClientTokenConfig{Blacklist: []string{"openclaw"}},
-	})
+	ctx := newContextWithSettingDAO(t)
+	dbClient := ctxhelper.MustGetDBClient(ctx).SettingClient()
+	require.NoError(t, dbClient.CreateOrUpdate(ctx, &setting.Setting{
+		Namespace: blacklistUserAgentSettingNamespace,
+		Key:       settingKeyClientTokenBlacklist,
+		Value:     "openclaw",
+	}))
 
 	filter := newFilterForTest(t)
-	pr, sink := newProxyRequestForTest()
-	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	audithelper.Note(pr.In.Context(), "prompt", openClawSystemPromptHint+"\n## Tooling\nTool availability")
+	pr, sink := newProxyRequestForContext(ctx)
+	ctxhelper.PutClientToken(ctx, &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(ctx, "prompt", openClawSystemPromptHint+"\n## Tooling\nTool availability")
 
 	err := filter.OnProxyRequest(pr)
 	if err == nil {
@@ -57,15 +62,18 @@ func TestFilter_RejectsBlacklistedUserAgentForClientTokenFromAuditPrompt(t *test
 }
 
 func TestFilter_RejectsAKClientWhenClientBlacklistConfiguredFromMessageGroup(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		Client: ClientConfig{Blacklist: []string{"openclaw"}},
-	})
+	ctx := newContextWithSettingDAO(t)
+	dbClient := ctxhelper.MustGetDBClient(ctx).SettingClient()
+	require.NoError(t, dbClient.CreateOrUpdate(ctx, &setting.Setting{
+		Namespace: blacklistUserAgentSettingNamespace,
+		Key:       settingKeyClientBlacklist,
+		Value:     "openclaw",
+	}))
 
 	filter := newFilterForTest(t)
-	pr, _ := newProxyRequestForTest()
-	ctxhelper.PutClient(pr.In.Context(), &clientpb.Client{Id: "c1"})
-	ctxhelper.PutMessageGroup(pr.In.Context(), message.Group{
+	pr, _ := newProxyRequestForContext(ctx)
+	ctxhelper.PutClient(ctx, &clientpb.Client{Id: "c1"})
+	ctxhelper.PutMessageGroup(ctx, message.Group{
 		RequestedMessages: message.Messages{
 			openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleSystem,
@@ -79,18 +87,19 @@ func TestFilter_RejectsAKClientWhenClientBlacklistConfiguredFromMessageGroup(t *
 	}
 }
 
-func TestFilter_RejectsGeneralFallbackWhenConfiguredFromAuditPrompt(t *testing.T) {
-	t.Cleanup(func() {
-		SetConfig(Config{})
-		SetGeneralRules("", "")
-	})
-	SetConfig(Config{})
-	SetGeneralRules("", "you are claude code")
+func TestFilter_RejectsGeneralFallbackWhenConfiguredFromSettingAuditPrompt(t *testing.T) {
+	ctx := newContextWithSettingDAO(t)
+	dbClient := ctxhelper.MustGetDBClient(ctx).SettingClient()
+	require.NoError(t, dbClient.CreateOrUpdate(ctx, &setting.Setting{
+		Namespace: blacklistUserAgentSettingNamespace,
+		Key:       settingKeyGeneralPrompts,
+		Value:     "you are claude code",
+	}))
 
 	filter := newFilterForTest(t)
-	pr, sink := newProxyRequestForTest()
-	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	audithelper.Note(pr.In.Context(), "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
+	pr, sink := newProxyRequestForContext(ctx)
+	ctxhelper.PutClientToken(ctx, &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(ctx, "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
 
 	err := filter.OnProxyRequest(pr)
 	if err == nil {
@@ -101,18 +110,13 @@ func TestFilter_RejectsGeneralFallbackWhenConfiguredFromAuditPrompt(t *testing.T
 	}
 }
 
-func TestFilter_AllowsGeneralFallbackWhenNoConfiguredRules(t *testing.T) {
-	t.Cleanup(func() {
-		SetConfig(Config{})
-		SetGeneralRules("", "")
-	})
-	SetConfig(Config{})
-	SetGeneralRules("", "")
+func TestFilter_AllowsGeneralFallbackWhenNoSettingRules(t *testing.T) {
+	ctx := newContextWithSettingDAO(t)
 
 	filter := newFilterForTest(t)
-	pr, _ := newProxyRequestForTest()
-	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	audithelper.Note(pr.In.Context(), "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
+	pr, _ := newProxyRequestForContext(ctx)
+	ctxhelper.PutClientToken(ctx, &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(ctx, "prompt", "You are Claude Code, Anthropic's official CLI for Claude.")
 
 	if err := filter.OnProxyRequest(pr); err != nil {
 		t.Fatalf("expected request to pass when general fallback has no configured rules, got %v", err)
@@ -140,25 +144,26 @@ func TestResolveActiveItems_AppendsGeneralFallbackLast(t *testing.T) {
 		"coding-agent": namedStubItem{name: "coding-agent"},
 	})
 	t.Cleanup(restore)
-	t.Cleanup(func() { SetGeneralRules("", "") })
-	SetGeneralRules("claude code", "")
 
-	items := resolveActiveItems([]string{"coding-agent"})
+	items := resolveActiveItems([]string{"coding-agent"}, GeneralRules{Headers: []string{"claude code"}})
 	if len(items) != 2 || items[0].Name() != "coding-agent" || items[1].Name() != "general" {
 		t.Fatalf("expected general fallback to be appended last, got %#v", items)
 	}
 }
 
 func TestFilter_RejectsBlacklistedCodingAgentForClientTokenFromAuditPrompt(t *testing.T) {
-	t.Cleanup(func() { SetConfig(Config{}) })
-	SetConfig(Config{
-		ClientToken: ClientTokenConfig{Blacklist: []string{"coding-agent"}},
-	})
+	ctx := newContextWithSettingDAO(t)
+	dbClient := ctxhelper.MustGetDBClient(ctx).SettingClient()
+	require.NoError(t, dbClient.CreateOrUpdate(ctx, &setting.Setting{
+		Namespace: blacklistUserAgentSettingNamespace,
+		Key:       settingKeyClientTokenBlacklist,
+		Value:     "coding-agent",
+	}))
 
 	filter := newFilterForTest(t)
-	pr, sink := newProxyRequestForTest()
-	ctxhelper.PutClientToken(pr.In.Context(), &clienttokenpb.ClientToken{Token: "t_test"})
-	audithelper.Note(pr.In.Context(), "prompt", cursorSystemPromptHint+"\nYou can help with editing and running commands.")
+	pr, sink := newProxyRequestForContext(ctx)
+	ctxhelper.PutClientToken(ctx, &clienttokenpb.ClientToken{Token: "t_test"})
+	audithelper.Note(ctx, "prompt", cursorSystemPromptHint+"\nYou can help with editing and running commands.")
 
 	err := filter.OnProxyRequest(pr)
 	if err == nil {
@@ -347,6 +352,14 @@ func newFilterForTest(t *testing.T) filter_define.ProxyRequestRewriter {
 func newProxyRequestForTest() (*httputil.ProxyRequest, types.Sink) {
 	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 	ctxhelper.PutLogger(ctx, logrusx.New())
+	return newProxyRequestForContext(ctx)
+}
+
+func newProxyRequestForContext(ctx context.Context) (*httputil.ProxyRequest, types.Sink) {
+	ctx = ctxhelper.InitCtxMapIfNeed(ctx)
+	if _, ok := ctxhelper.GetLogger(ctx); !ok {
+		ctxhelper.PutLogger(ctx, logrusx.New())
+	}
 	sink := types.New("audit-1", logrusx.New())
 	ctxhelper.PutAuditSink(ctx, sink)
 

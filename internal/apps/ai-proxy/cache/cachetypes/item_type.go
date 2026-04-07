@@ -29,6 +29,7 @@ const (
 	ItemTypeClientToken
 	ItemTypeTemplate
 	ItemTypePolicyGroup
+	ItemTypeSetting
 )
 
 func (itemType ItemType) String() string {
@@ -47,6 +48,7 @@ var ItemTypeToString = map[ItemType]string{
 	ItemTypeClientToken:         "clientToken",
 	ItemTypeTemplate:            "template",
 	ItemTypePolicyGroup:         "policyGroup",
+	ItemTypeSetting:             "setting",
 }
 
 var ItemTypeStrToType map[string]ItemType = func() map[string]ItemType {
@@ -67,6 +69,7 @@ func AllItemTypes() []ItemType {
 		ItemTypeClientToken,
 		ItemTypeTemplate,
 		ItemTypePolicyGroup,
+		ItemTypeSetting,
 	}
 }
 

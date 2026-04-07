@@ -30,6 +30,7 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	settingpb "github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	usagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 )
@@ -131,6 +132,14 @@ var CheckI18nPerm = CheckPermissions(
 	&MethodPermission{Method: i18npb.I18NServiceServer.Paging, OnlyAdmin: true},
 	&MethodPermission{Method: i18npb.I18NServiceServer.BatchCreate, OnlyAdmin: true},
 	&MethodPermission{Method: i18npb.I18NServiceServer.GetByConfig, OnlyAdmin: true},
+)
+
+var CheckSettingPerm = CheckPermissions(
+	&MethodPermission{Method: settingpb.SettingServiceServer.Create, OnlyAdmin: true},
+	&MethodPermission{Method: settingpb.SettingServiceServer.Get, OnlyAdmin: true},
+	&MethodPermission{Method: settingpb.SettingServiceServer.Update, OnlyAdmin: true},
+	&MethodPermission{Method: settingpb.SettingServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: settingpb.SettingServiceServer.Paging, OnlyAdmin: true},
 )
 
 var CheckAuditPerm = CheckPermissions(

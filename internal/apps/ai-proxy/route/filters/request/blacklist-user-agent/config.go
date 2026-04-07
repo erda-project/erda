@@ -14,83 +14,11 @@
 
 package blacklist_user_agent
 
-import (
-	"strings"
-	"sync"
-)
-
-type ClientTokenConfig struct {
-	BlacklistStr string   `json:"blacklist_str" yaml:"blacklist_str" file:"blacklist_str"`
-	Blacklist    []string `json:"-" yaml:"-" file:"-"`
-}
-
-type ClientConfig struct {
-	BlacklistStr string   `json:"blacklist_str" yaml:"blacklist_str" file:"blacklist_str"`
-	Blacklist    []string `json:"-" yaml:"-" file:"-"`
-}
-
-type Config struct {
-	ClientToken ClientTokenConfig `json:"client_token" yaml:"client_token" file:"client_token"`
-	Client      ClientConfig      `json:"client" yaml:"client" file:"client"`
-}
+import "strings"
 
 type GeneralRules struct {
 	Headers []string
 	Prompts []string
-}
-
-var (
-	configMu            sync.RWMutex
-	currentConfig       Config
-	currentGeneralRules GeneralRules
-)
-
-func SetConfig(cfg Config) {
-	configMu.Lock()
-	defer configMu.Unlock()
-
-	currentConfig = Config{
-		ClientToken: ClientTokenConfig{
-			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.ClientToken.Blacklist, cfg.ClientToken.BlacklistStr)),
-		},
-		Client: ClientConfig{
-			Blacklist: normalizeBlacklist(resolveBlacklist(cfg.Client.Blacklist, cfg.Client.BlacklistStr)),
-		},
-	}
-}
-
-func SetGeneralRules(headersRaw, promptsRaw string) {
-	configMu.Lock()
-	defer configMu.Unlock()
-
-	currentGeneralRules = GeneralRules{
-		Headers: normalizeGeneralRules(splitGeneralRules(headersRaw)),
-		Prompts: normalizeGeneralRules(splitGeneralRules(promptsRaw)),
-	}
-}
-
-func getConfig() Config {
-	configMu.RLock()
-	defer configMu.RUnlock()
-
-	return Config{
-		ClientToken: ClientTokenConfig{
-			Blacklist: append([]string(nil), currentConfig.ClientToken.Blacklist...),
-		},
-		Client: ClientConfig{
-			Blacklist: append([]string(nil), currentConfig.Client.Blacklist...),
-		},
-	}
-}
-
-func getGeneralRules() GeneralRules {
-	configMu.RLock()
-	defer configMu.RUnlock()
-
-	return GeneralRules{
-		Headers: append([]string(nil), currentGeneralRules.Headers...),
-		Prompts: append([]string(nil), currentGeneralRules.Prompts...),
-	}
 }
 
 func normalizeBlacklist(items []string) []string {
@@ -103,10 +31,7 @@ func normalizeBlacklist(items []string) []string {
 	return normalized
 }
 
-func resolveBlacklist(items []string, raw string) []string {
-	if len(items) > 0 {
-		return items
-	}
+func splitBlacklist(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return nil
 	}
