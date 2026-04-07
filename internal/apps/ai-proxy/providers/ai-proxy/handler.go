@@ -32,6 +32,7 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	settingpb "github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 	templatepb "github.com/erda-project/erda-proto-go/apps/aiproxy/template/pb"
 	tokenusagepb "github.com/erda-project/erda-proto-go/apps/aiproxy/usage/token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
@@ -49,6 +50,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_service_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_setting"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_template"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_token_usage"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
@@ -69,6 +71,7 @@ func (p *provider) initHandlers(templates templatetypes.TemplatesByType) {
 		SessionHandler:             &handler_session.SessionHandler{DAO: p.Dao},
 		ClientTokenHandler:         &handler_client_token.ClientTokenHandler{DAO: p.Dao},
 		I18nHandler:                &handler_i18n.I18nHandler{DAO: p.Dao},
+		SettingHandler:             &handler_setting.Handler{DAO: p.Dao},
 		RichClientHandler:          &handler_rich_client.ClientHandler{DAO: p.Dao},
 		AuditHandler:               &handler_audit.AuditHandler{DAO: p.Dao, ArchiveService: p.archiveService},
 		TokenUsageHandler:          &handler_token_usage.TokenUsageHandler{DAO: p.Dao, Cache: p.cache},
@@ -89,6 +92,7 @@ func (p *provider) registerAIProxyManageAPI() {
 	sessionpb.RegisterSessionServiceImp(register, p.handlers.SessionHandler, p.getProtoOptions(permission.CheckSessionPerm)...)
 	clienttokenpb.RegisterClientTokenServiceImp(register, p.handlers.ClientTokenHandler, p.getProtoOptions(permission.CheckClientTokenPerm)...)
 	i18npb.RegisterI18NServiceImp(register, p.handlers.I18nHandler, p.getProtoOptions(permission.CheckI18nPerm)...)
+	settingpb.RegisterSettingServiceImp(register, p.handlers.SettingHandler, p.getProtoOptions(permission.CheckSettingPerm)...)
 	richclientpb.RegisterRichClientServiceImp(register, p.handlers.RichClientHandler, p.getProtoOptions(permission.CheckRichClientPerm)...)
 	auditpb.RegisterAuditServiceImp(register, p.handlers.AuditHandler, p.getProtoOptions(permission.CheckAuditPerm)...)
 	tokenusagepb.RegisterTokenUsageServiceImp(register, p.handlers.TokenUsageHandler, p.getProtoOptions(permission.CheckTokenUsagePerm)...)

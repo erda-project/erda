@@ -71,15 +71,14 @@ func resolveEnabledItems(blacklist []string) []BlacklistItem {
 	return items
 }
 
-func resolveActiveItems(blacklist []string) []BlacklistItem {
+func resolveActiveItems(blacklist []string, generalRules GeneralRules) []BlacklistItem {
 	items := resolveEnabledItems(blacklist)
-	if hasGeneralFallbackRules() {
-		items = append(items, generalItem{})
+	if hasGeneralFallbackRules(generalRules) {
+		items = append(items, generalItem{rules: generalRules})
 	}
 	return items
 }
 
-func hasGeneralFallbackRules() bool {
-	cfg := getGeneralRules()
-	return len(cfg.Headers) > 0 || len(cfg.Prompts) > 0
+func hasGeneralFallbackRules(rules GeneralRules) bool {
+	return len(rules.Headers) > 0 || len(rules.Prompts) > 0
 }
