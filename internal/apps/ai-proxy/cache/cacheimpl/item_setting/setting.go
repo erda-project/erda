@@ -35,14 +35,15 @@ func NewSettingCacheItem(dao dao.DAO, config *config.Config) cachetypes.CacheIte
 }
 
 func (c *settingCacheItem) QueryFromDB(ctx context.Context) (uint64, any, error) {
-	resp, err := c.DBClient.SettingClient().Paging(ctx, &settingpb.SettingPagingRequest{
-		PageNum:  1,
-		PageSize: 9999,
-	})
+	list, err := c.DBClient.SettingClient().ListAll(ctx)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to query settings: %w", err)
 	}
-	return uint64(resp.Total), resp.List, nil
+	pbList := make([]*settingpb.Setting, 0, len(list))
+	for _, item := range list {
+		pbList = append(pbList, item.ToProtobuf())
+	}
+	return uint64(len(pbList)), pbList, nil
 }
 
 func (c *settingCacheItem) GetIDValue(item any) (string, error) {

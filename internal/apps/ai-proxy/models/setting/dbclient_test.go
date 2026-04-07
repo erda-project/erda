@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -86,6 +88,35 @@ func TestDBClient_GetByNamespaceKeys(t *testing.T) {
 	require.Len(t, got, 2)
 	require.Equal(t, "codex", got["general.headers"].Value)
 	require.Equal(t, "claude", got["general.prompts"].Value)
+}
+
+func TestDBClient_CreateConflict(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, prepareSQLiteSettingTable(db))
+
+	client := &DBClient{DB: db}
+	ctx := context.Background()
+
+	first, err := client.Create(ctx, &pb.SettingCreateRequest{
+		Namespace: "blacklist_user_agent",
+		Key:       "general.prompts",
+		Value:     "claude;;;codex",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, first)
+
+	second, err := client.Create(ctx, &pb.SettingCreateRequest{
+		Namespace: "blacklist_user_agent",
+		Key:       "general.prompts",
+		Value:     "cursor",
+	})
+	require.Error(t, err)
+	assert.Nil(t, second)
+
+	got, err := client.GetByNamespaceKey(ctx, "blacklist_user_agent", "general.prompts")
+	require.NoError(t, err)
+	require.Equal(t, "claude;;;codex", got.Value)
 }
 
 func prepareSQLiteSettingTable(db *gorm.DB) error {

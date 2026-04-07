@@ -87,7 +87,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.SettingCreateReque
 		Key:       req.Key,
 		Value:     req.Value,
 	}
-	if err := dbClient.CreateOrUpdate(ctx, item); err != nil {
+	if err := dbClient.DB.WithContext(ctx).Create(item).Error; err != nil {
 		return nil, err
 	}
 	got, err := dbClient.GetByNamespaceKey(ctx, req.Namespace, req.Key)
@@ -131,6 +131,14 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.SettingUpdateReque
 		return nil, gorm.ErrRecordNotFound
 	}
 	return dbClient.Get(ctx, &pb.SettingGetRequest{Id: req.Id})
+}
+
+func (dbClient *DBClient) ListAll(ctx context.Context) ([]*Setting, error) {
+	var list []*Setting
+	if err := dbClient.DB.WithContext(ctx).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.SettingPagingRequest) (*pb.SettingPagingResponse, error) {

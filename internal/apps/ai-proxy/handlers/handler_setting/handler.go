@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/cache/cachetypes"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
@@ -65,13 +64,8 @@ func (h *Handler) Paging(ctx context.Context, req *pb.SettingPagingRequest) (*pb
 }
 
 func (h *Handler) triggerSettingCacheRefresh(ctx context.Context) {
-	if h.Cache != nil {
-		go h.Cache.TriggerRefresh(ctx, cachetypes.ItemTypeSetting)
+	if h.Cache == nil {
 		return
 	}
-	if cache, ok := ctxhelper.GetCacheManager(ctx); ok {
-		if manager, ok := cache.(cachetypes.Manager); ok && manager != nil {
-			go manager.TriggerRefresh(ctx, cachetypes.ItemTypeSetting)
-		}
-	}
+	go h.Cache.TriggerRefresh(ctx, cachetypes.ItemTypeSetting)
 }
