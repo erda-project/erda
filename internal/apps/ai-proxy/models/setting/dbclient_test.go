@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 )
 
 func TestDBClient_CreateOrUpdateAndGetByNamespaceKey(t *testing.T) {
