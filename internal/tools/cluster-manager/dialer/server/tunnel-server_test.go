@@ -40,8 +40,7 @@ const (
 )
 
 func Test_netportal(t *testing.T) {
-	serverCtx, cancelServer := context.WithCancel(context.Background())
-	defer cancelServer()
+	serverCtx := context.Background()
 	go Start(serverCtx, &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
@@ -66,8 +65,7 @@ func Test_netportal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	clientCtx, cancelClient := context.WithCancel(context.Background())
-	defer cancelClient()
+	clientCtx := context.Background()
 	startTestClusterAgent(t, clientCtx, dialerListenAddr2, fakeClusterKey, fakeClusterAccessKey)
 	waitForClusterSession(t, dialerListenAddr2, fakeClusterKey)
 	hc := &http.Client{}

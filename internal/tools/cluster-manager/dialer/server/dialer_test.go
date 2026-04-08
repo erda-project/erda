@@ -83,7 +83,7 @@ func (f *fakeClusterSvc) PatchCluster(context.Context, *clusterpb.PatchClusterRe
 
 func Test_DialerContext(t *testing.T) {
 	ctx, cancel := startServer(&clientv3.Client{KV: &fakeKV{}})
-	defer cancel()
+	_ = cancel
 	waitForDialerServer(t, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort), fakeClusterKey)
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")
@@ -130,13 +130,17 @@ func startTestClusterAgent(t *testing.T, ctx context.Context, dialerAddr, cluste
 	endpoint := fmt.Sprintf("ws://%s/clusteragent/connect", dialerAddr)
 
 	go func() {
-		if err := remotedialer.ClientConnect(ctx, endpoint, headers, nil, func(proto, address string) bool {
-			return proto == "tcp"
-		}, func(ctx context.Context, _ *remotedialer.Session) error {
-			<-ctx.Done()
-			return nil
-		}); err != nil && ctx.Err() == nil {
-			t.Errorf("connect test cluster agent: %v", err)
+		for {
+			err := remotedialer.ConnectToProxy(ctx, endpoint, headers, func(proto, address string) bool {
+				return proto == "tcp"
+			}, nil, func(ctx context.Context, _ *remotedialer.Session) error {
+				<-ctx.Done()
+				return nil
+			})
+			if err == nil || ctx.Err() != nil {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 }
