@@ -19,17 +19,16 @@ import (
 	"sync"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 )
 
 func TestGetUpdateClientData(t *testing.T) {
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent", func(_ *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+	resetClientDataTestState(t)
+	createEvent = func(ev *apistructs.EventCreateRequest) error {
 		return nil
-	})
+	}
 	type args struct {
 		clusterKey string
 		clientType apistructs.ClusterManagerClientType
@@ -119,10 +118,10 @@ func TestGetUpdateClientData(t *testing.T) {
 }
 
 func Test_listClientDetailByType(t *testing.T) {
-	clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent", func(_ *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+	resetClientDataTestState(t)
+	createEvent = func(ev *apistructs.EventCreateRequest) error {
 		return nil
-	})
+	}
 	type args struct {
 		clusterKey string
 		clientType apistructs.ClusterManagerClientType
@@ -176,5 +175,16 @@ func Test_listClientDetailByType(t *testing.T) {
 		{
 			"host": "localhost",
 		},
+	})
+}
+
+func resetClientDataTestState(t *testing.T) {
+	t.Helper()
+
+	oldCreateEvent := createEvent
+	clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
+	t.Cleanup(func() {
+		clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
+		createEvent = oldCreateEvent
 	})
 }

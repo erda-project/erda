@@ -19,20 +19,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
-	"bou.ke/monkey"
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/remotedialer"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
-	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/pkg/client"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
 	"github.com/erda-project/erda/pkg/clusterdialer"
@@ -42,7 +41,6 @@ import (
 const (
 	dialerListenAddr = "127.0.0.1"
 	dialerListenPort = "18751"
-	helloListenAddr  = "127.0.0.1:18752"
 )
 
 func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
@@ -50,6 +48,7 @@ func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 	go Start(ctx, &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort),
 		NeedClusterInfo: false,
+		AuthWhitelist:   auth.SkipAllKey,
 	}, etcd, &bundle.Bundle{})
 	return ctx, cancel
 }
@@ -83,37 +82,19 @@ func (f *fakeClusterSvc) PatchCluster(context.Context, *clusterpb.PatchClusterRe
 }
 
 func Test_DialerContext(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	logrus.SetLevel(logrus.DebugLevel)
-	authorizer := auth.New(auth.WithCredentialClient(nil))
-	monkey.Patch(authorizer.Authorizer, func(req *http.Request) (string, bool, error) {
-		return fakeClusterKey, true, nil
-	})
-
-	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
-		ClusterManagerEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort)),
-		ClusterKey:             fakeClusterKey,
-		CollectClusterInfo:     false,
-		ClusterAccessKey:       fakeClusterAccessKey,
-	}))
-
 	ctx, cancel := startServer(&clientv3.Client{KV: &fakeKV{}})
+	defer cancel()
+	waitForDialerServer(t, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort), fakeClusterKey)
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")
 	}
 	mx := mux.NewRouter()
 	mx.HandleFunc("/hello", helloHandler)
-	go http.ListenAndServe(helloListenAddr, mx)
+	helloServer := httptest.NewServer(mx)
+	defer helloServer.Close()
 
-	go client.Start(ctx)
-	for {
-		if client.IsConnected() {
-			logrus.Info("client connected at Test_DialerContext")
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
+	startTestClusterAgent(t, ctx, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort), fakeClusterKey, fakeClusterAccessKey)
+	waitForClusterSession(t, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort), fakeClusterKey)
 
 	os.Setenv(discover.EnvClusterDialer, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort))
 	hc := http.Client{
@@ -122,10 +103,10 @@ func Test_DialerContext(t *testing.T) {
 		},
 		Timeout: 10 * time.Second,
 	}
-	req, _ := http.NewRequest("GET", fmt.Sprintf("http://%s/hello", helloListenAddr), nil)
+	req, _ := http.NewRequest("GET", helloServer.URL+"/hello", nil)
 	resp, err := hc.Do(req)
 	if err != nil {
-		t.Errorf("dialer failed, err:%+v", err)
+		t.Fatalf("dialer failed, err:%+v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
@@ -137,8 +118,25 @@ func Test_DialerContext(t *testing.T) {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return
 	}
-	cancel()
-	select {
-	case <-ctx.Done():
+}
+
+func startTestClusterAgent(t *testing.T, ctx context.Context, dialerAddr, clusterKey, accessKey string) {
+	t.Helper()
+
+	headers := http.Header{
+		apistructs.ClusterManagerHeaderKeyClusterKey.String():    {clusterKey},
+		apistructs.ClusterManagerHeaderKeyAuthorization.String(): {accessKey},
 	}
+	endpoint := fmt.Sprintf("ws://%s/clusteragent/connect", dialerAddr)
+
+	go func() {
+		if err := remotedialer.ClientConnect(ctx, endpoint, headers, nil, func(proto, address string) bool {
+			return proto == "tcp"
+		}, func(ctx context.Context, _ *remotedialer.Session) error {
+			<-ctx.Done()
+			return nil
+		}); err != nil && ctx.Err() == nil {
+			t.Errorf("connect test cluster agent: %v", err)
+		}
+	}()
 }

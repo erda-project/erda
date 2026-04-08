@@ -19,46 +19,33 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
-	"bou.ke/monkey"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/bundle"
-	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
-	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/pkg/client"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
 )
 
 const (
 	dialerListenAddr2    = "127.0.0.1:18753"
-	helloListenAddr2     = "127.0.0.1:18754"
 	fakeClusterKey       = "test"
 	fakeClusterAccessKey = "init"
 )
 
 func Test_netportal(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	authorizer := auth.New(auth.WithCredentialClient(nil))
-	monkey.Patch(authorizer.Authorizer, func(req *http.Request) (string, bool, error) {
-		return fakeClusterKey, true, nil
-	})
-
-	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
-		ClusterManagerEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
-		ClusterKey:             fakeClusterKey,
-		CollectClusterInfo:     false,
-		ClusterAccessKey:       fakeClusterAccessKey,
-	}))
-
-	go Start(context.Background(), &fakeClusterSvc{}, nil, &config.Config{
+	serverCtx, cancelServer := context.WithCancel(context.Background())
+	defer cancelServer()
+	go Start(serverCtx, &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
+		AuthWhitelist:   auth.SkipAllKey,
 	}, &clientv3.Client{KV: &fakeKV{}}, bundle.New())
 
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -66,7 +53,12 @@ func Test_netportal(t *testing.T) {
 	}
 	mx := mux.NewRouter()
 	mx.HandleFunc("/hello2", helloHandler)
-	go http.ListenAndServe(helloListenAddr2, mx)
+	helloServer := httptest.NewServer(mx)
+	defer helloServer.Close()
+	helloURL, err := url.Parse(helloServer.URL)
+	if err != nil {
+		t.Fatalf("parse hello server url: %v", err)
+	}
 
 	tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -74,19 +66,15 @@ func Test_netportal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	go client.Start(context.Background())
-	for {
-		if client.IsConnected() {
-			logrus.Info("client connected at Test_netportal")
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
+	clientCtx, cancelClient := context.WithCancel(context.Background())
+	defer cancelClient()
+	startTestClusterAgent(t, clientCtx, dialerListenAddr2, fakeClusterKey, fakeClusterAccessKey)
+	waitForClusterSession(t, dialerListenAddr2, fakeClusterKey)
 	hc := &http.Client{}
 	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr2+"/hello2", nil)
 	req.Header = http.Header{
 		portalHostHeader:    {fakeClusterKey},
-		portalDestHeader:    {helloListenAddr2},
+		portalDestHeader:    {helloURL.Host},
 		portalTimeoutHeader: {"10"},
 	}
 	req.URL.RawQuery = "query=ut"
@@ -127,4 +115,41 @@ func serverHealthCheck(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func waitForClusterSession(t *testing.T, dialerAddr, clusterKey string) {
+	t.Helper()
+
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		resp, err := http.Get(fmt.Sprintf("http://%s/clusteragent/check?clusterKey=%s", dialerAddr, clusterKey))
+		if err == nil {
+			body, readErr := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if readErr == nil && resp.StatusCode == http.StatusOK && string(body) == "true" {
+				return
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	t.Fatalf("cluster session not ready for %s", clusterKey)
+}
+
+func waitForDialerServer(t *testing.T, dialerAddr, clusterKey string) {
+	t.Helper()
+
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		resp, err := http.Get(fmt.Sprintf("http://%s/clusterdialer/ip?clusterKey=%s", dialerAddr, clusterKey))
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	t.Fatalf("dialer server not ready for %s", dialerAddr)
 }
