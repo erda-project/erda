@@ -16,8 +16,8 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -27,54 +27,75 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
 
 	"github.com/erda-project/erda/apistructs"
 )
 
+const maxCredentialWatchRetryInterval = 30 * time.Second
+
+var errCredentialWatcherClosed = errors.New("cluster credential watcher closed")
+
+type credentialWatcher interface {
+	ResultChan() <-chan watch.Event
+	Stop()
+}
+
 func (c *Client) watchClusterCredential(ctx context.Context) error {
-	var retryWatcher *watchtools.RetryWatcher
-
-	rc, err := rest.InClusterConfig()
+	kc, err := c.newInClusterClient()
 	if err != nil {
-		return fmt.Errorf("get incluster config error: %v", err)
+		return err
 	}
+	cs := kc.ClientSet
 
-	cs, err := kubernetes.NewForConfig(rc)
-	if err != nil {
-		return fmt.Errorf("create clientset error: %v", err)
-	}
-
-	// Wait cluster credential secret ready.
+	attempt := 0
 	for {
-		retryWatcher, err = c.getRetryWatcher(cs, c.cfg.ErdaNamespace)
+		retryWatcher, err := c.newCredentialWatcher(ctx, cs, c.cfg.ErdaNamespace)
 		if err != nil {
-			logrus.Errorf("get retry warcher, %v", err)
-		} else if retryWatcher != nil {
-			break
+			logrus.Errorf("get retry watcher, %v", err)
+		} else {
+			attempt = 0
+			logrus.Info("start retry watcher")
+			err = c.consumeClusterCredentialEvents(ctx, retryWatcher)
+			if err == nil {
+				return nil
+			}
+			if errors.Is(err, errCredentialWatcherClosed) {
+				logrus.Warn("cluster credential watcher closed, rebuild watcher")
+			} else {
+				logrus.Errorf("cluster credential watcher stopped, rebuild watcher: %v", err)
+			}
 		}
 
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-time.After(time.Duration(rand.Int()%10) * time.Second):
-			logrus.Warnf("failed to get retry watcher, try agin")
+		case <-time.After(c.credentialWatchRetryDelay(attempt)):
+			attempt++
 		}
 	}
+}
 
+func (c *Client) consumeClusterCredentialEvents(ctx context.Context, retryWatcher credentialWatcher) error {
 	defer retryWatcher.Stop()
-
-	logrus.Info("start retry watcher")
-
 	for {
 		select {
-		case event := <-retryWatcher.ResultChan():
+		case <-ctx.Done():
+			return nil
+		case event, ok := <-retryWatcher.ResultChan():
+			if !ok {
+				return errCredentialWatcherClosed
+			}
+
+			if event.Type == watch.Error {
+				logrus.Warnf("cluster credential watcher error event: %v", k8serrors.FromObject(event.Object))
+				continue
+			}
+
 			sec, ok := event.Object.(*corev1.Secret)
 			if !ok {
-				logrus.Errorf("illegal secret object, igonre, content: %+v", event.Object)
-				time.Sleep(time.Second)
+				logrus.Errorf("illegal secret object, ignore, content: %+v", event.Object)
 				continue
 			}
 
@@ -92,29 +113,46 @@ func (c *Client) watchClusterCredential(ctx context.Context) error {
 					continue
 				}
 
+				currentAccessKey := c.getAccessKey()
+
 				// Access key values doesn't change, skip reconnect
-				if string(ak) == c.getAccessKey() {
+				if string(ak) == currentAccessKey {
 					logrus.Debug("cluster access key doesn't change, skip")
 					continue
 				}
 
-				if c.getAccessKey() == "" {
-					logrus.Infof("get cluster accesskey %s", string(ak))
+				if currentAccessKey == "" {
+					logrus.Info("get cluster accesskey")
 				} else {
-					logrus.Infof("cluster accesskey change from %s to %s", c.getAccessKey(), string(ak))
+					logrus.Info("cluster accesskey changed")
 				}
 
 				// change value
 				c.setAccessKey(string(ak))
-				// if connected, reconnect.
-				if c.IsConnected() {
-					c.disconnect <- struct{}{}
-				}
+				c.requestReconnect()
 			}
-		case <-ctx.Done():
-			return nil
 		}
 	}
+}
+
+func (c *Client) credentialWatchRetryDelay(attempt int) time.Duration {
+	delay := c.watchRetryInterval
+	if delay <= 0 {
+		delay = time.Second
+	}
+
+	if attempt < 0 {
+		attempt = 0
+	}
+	if attempt > 5 {
+		attempt = 5
+	}
+
+	delay *= time.Duration(1 << attempt)
+	if delay > maxCredentialWatchRetryInterval {
+		return maxCredentialWatchRetryInterval
+	}
+	return delay
 }
 
 func (c *Client) setAccessKey(ac string) {
@@ -124,47 +162,64 @@ func (c *Client) setAccessKey(ac string) {
 }
 
 func (c *Client) getAccessKey() string {
+	c.Lock()
+	defer c.Unlock()
 	return c.accessKey
 }
 
-func (c *Client) getRetryWatcher(cs kubernetes.Interface, ns string) (*watchtools.RetryWatcher, error) {
-	selector, err := fields.ParseSelector(fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential))
+func (c *Client) getRetryWatcher(ctx context.Context, cs kubernetes.Interface, ns string) (*watchtools.RetryWatcher, error) {
+	selector, err := clusterCredentialSelector()
 	if err != nil {
 		return nil, fmt.Errorf("parse selector error: %v", err)
 	}
 
-	// Get or create secret
-	secInit, err := cs.CoreV1().Secrets(ns).List(context.Background(), metav1.ListOptions{
-		FieldSelector: selector.String(),
-	})
-	if err != nil && !k8serrors.IsNotFound(err) {
+	secInit, err := c.listClusterCredentialSecrets(ctx, cs, ns, selector)
+	if err != nil {
 		return nil, fmt.Errorf("get init secret list error: %v", err)
 	}
 
-	// load initial secret
-	if secInit != nil && len(secInit.Items) > 0 {
-		initData, ok := secInit.Items[0].Data[apistructs.ClusterAccessKey]
-		if !ok {
-			logrus.Warn("no valid cluster access key was got")
-		} else {
-			logrus.Infof("load initial cluster access key, content %s", string(initData))
-			c.setAccessKey(string(initData))
-		}
-	} else {
-		logrus.Warn("no valid cluster access key was got")
-	}
+	c.loadInitialClusterAccessKey(secInit)
 
-	// create retry watcher
-	retryWatcher, err := watchtools.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.FieldSelector = selector.String()
-			return cs.CoreV1().Secrets(ns).Watch(context.Background(), options)
-		},
-	})
+	retryWatcher, err := newClusterCredentialRetryWatcher(ctx, cs, ns, selector, secInit.ResourceVersion)
 
 	if err != nil {
 		return nil, fmt.Errorf("create retry watcher error: %v", err)
 	}
 
 	return retryWatcher, nil
+}
+
+func clusterCredentialSelector() (fields.Selector, error) {
+	return fields.ParseSelector(fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential))
+}
+
+func (c *Client) listClusterCredentialSecrets(ctx context.Context, cs kubernetes.Interface, ns string, selector fields.Selector) (*corev1.SecretList, error) {
+	return cs.CoreV1().Secrets(ns).List(ctx, metav1.ListOptions{
+		FieldSelector: selector.String(),
+	})
+}
+
+func (c *Client) loadInitialClusterAccessKey(secInit *corev1.SecretList) {
+	if secInit != nil && len(secInit.Items) > 0 {
+		initData, ok := secInit.Items[0].Data[apistructs.ClusterAccessKey]
+		if !ok {
+			logrus.Warn("no valid cluster access key was got")
+			return
+		}
+
+		logrus.Info("load initial cluster access key")
+		c.setAccessKey(string(initData))
+		return
+	}
+
+	logrus.Warn("no valid cluster access key was got")
+}
+
+func newClusterCredentialRetryWatcher(ctx context.Context, cs kubernetes.Interface, ns string, selector fields.Selector, resourceVersion string) (*watchtools.RetryWatcher, error) {
+	return watchtools.NewRetryWatcher(resourceVersion, &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.FieldSelector = selector.String()
+			return cs.CoreV1().Secrets(ns).Watch(ctx, options)
+		},
+	})
 }
