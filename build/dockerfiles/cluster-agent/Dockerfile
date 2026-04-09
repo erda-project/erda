@@ -1,6 +1,6 @@
 # syntax = registry.erda.cloud/retag/dockerfile:latest
 ARG BASE_DOCKER_IMAGE
-FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} as build
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} AS build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GOPROXY=${GOPROXY}
 
 
-FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} as app-handler
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} AS app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
 
@@ -25,7 +25,7 @@ WORKDIR /erda
 RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handled
 
 
-FROM --platform=$TARGETPLATFORM registry.erda.cloud/retag/kubectl:1.24.16 as kubectl
+FROM --platform=$TARGETPLATFORM registry.erda.cloud/retag/kubectl:1.24.16 AS kubectl
 FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ARG TARGETARCH

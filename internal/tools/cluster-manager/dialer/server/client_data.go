@@ -28,11 +28,16 @@ import (
 var (
 	clientMutex sync.Mutex
 	clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
-	bdl         *bundle.Bundle
+	createEvent = noopCreateEvent
 )
 
+func noopCreateEvent(*apistructs.EventCreateRequest) error { return nil }
+
 func initClientData(b *bundle.Bundle) {
-	bdl = b
+	createEvent = noopCreateEvent
+	if b != nil {
+		createEvent = b.CreateEvent
+	}
 }
 
 func updateClientDetailWithEvent(clientType apistructs.ClusterManagerClientType, clusterKey string, data apistructs.ClusterManagerClientDetail) {
@@ -45,7 +50,7 @@ func updateClientDetailWithEvent(clientType apistructs.ClusterManagerClientType,
 		clientDatas[clientType] = apistructs.ClusterManagerClientMap{}
 	}
 	clientDatas[clientType][clusterKey] = data
-	if err := bdl.CreateEvent(&apistructs.EventCreateRequest{
+	if err := createEvent(&apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:     clientType.GenEventName(apistructs.ClusterManagerClientEventRegister),
 			Action:    bundle.UpdateAction,

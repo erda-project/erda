@@ -1,6 +1,6 @@
 # syntax = registry.erda.cloud/retag/dockerfile:latest
 ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as build
+FROM ${BASE_DOCKER_IMAGE} AS build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 
 
 
-FROM ${BASE_DOCKER_IMAGE} as app-handler
+FROM ${BASE_DOCKER_IMAGE} AS app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
 COPY --from=build "${PROJ_ROOT}" /erda
