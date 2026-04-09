@@ -1,6 +1,6 @@
 # syntax = registry.erda.cloud/retag/dockerfile:latest
 ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as build
+FROM ${BASE_DOCKER_IMAGE} AS build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"

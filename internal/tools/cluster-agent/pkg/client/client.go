@@ -33,6 +33,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 
 	"github.com/erda-project/erda/apistructs"
@@ -65,15 +66,21 @@ type Option func(*Client)
 
 type Client struct {
 	sync.Mutex
-	cfg        *config.Config
-	accessKey  string
-	connected  bool
-	disconnect chan struct{}
+	cfg                  *config.Config
+	accessKey            string
+	activeConnectCancel  context.CancelFunc
+	newInClusterClient   func(...k8sclient.Option) (*k8sclient.K8sClient, error)
+	newCredentialWatcher func(context.Context, kubernetes.Interface, string) (credentialWatcher, error)
+	watchRetryInterval   time.Duration
 }
 
 func New(ops ...Option) *Client {
 	c := Client{
-		disconnect: make(chan struct{}),
+		newInClusterClient: k8sclient.NewForInCluster,
+		watchRetryInterval: time.Second,
+	}
+	c.newCredentialWatcher = func(ctx context.Context, cs kubernetes.Interface, ns string) (credentialWatcher, error) {
+		return c.getRetryWatcher(ctx, cs, ns)
 	}
 	for _, op := range ops {
 		op(&c)
@@ -88,10 +95,7 @@ func WithConfig(cfg *config.Config) Option {
 }
 
 func (c *Client) DisConnect() {
-	if !c.IsConnected() {
-		return
-	}
-	c.disconnect <- struct{}{}
+	c.requestReconnect()
 }
 
 func (c *Client) Start(ctx context.Context) error {
@@ -128,16 +132,24 @@ func (c *Client) Start(ctx context.Context) error {
 	} else {
 		// Set access key values default
 		c.setAccessKey(c.cfg.ClusterAccessKey)
-		logrus.Infof("use specified cluster access key: %v", c.cfg.ClusterAccessKey)
+		logrus.Info("use specified cluster access key")
 	}
 
 	for {
-		if c.getAccessKey() == "" {
+		accessKey := c.getAccessKey()
+		if accessKey == "" {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(c.credentialWatchRetryDelay(0)):
+			}
 			continue
 		}
 
-		headers.Set("Authorization", c.getAccessKey())
-		_ = remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
+		headers.Set("Authorization", accessKey)
+		connectCtx, cancel := context.WithCancel(ctx)
+		c.setActiveConnectCancel(cancel)
+		_ = remotedialer.ClientConnect(connectCtx, ep, headers, nil, func(proto, address string) bool {
 			switch proto {
 			case "tcp":
 				return true
@@ -148,6 +160,8 @@ func (c *Client) Start(ctx context.Context) error {
 			}
 			return false
 		}, c.onConnect)
+		c.setActiveConnectCancel(nil)
+		cancel()
 
 		select {
 		case <-ctx.Done():
@@ -159,32 +173,23 @@ func (c *Client) Start(ctx context.Context) error {
 
 // onConnect
 func (c *Client) onConnect(ctx context.Context, _ *remotedialer.Session) error {
-	defer func() {
-		c.setConnected(false)
-	}()
+	<-ctx.Done()
+	return nil
+}
 
-	c.setConnected(true)
-
-	// Or passThrough cancel() function
-	select {
-	case <-c.disconnect:
-		return fmt.Errorf("cluster credential reload")
-	case <-ctx.Done():
-		return nil
+func (c *Client) requestReconnect() {
+	c.Lock()
+	cancel := c.activeConnectCancel
+	c.Unlock()
+	if cancel != nil {
+		cancel()
 	}
 }
 
-func (c *Client) setConnected(b bool) {
+func (c *Client) setActiveConnectCancel(cancel context.CancelFunc) {
 	c.Lock()
 	defer c.Unlock()
-	c.connected = b
-}
-
-func (c *Client) IsConnected() bool {
-	// data race
-	c.Lock()
-	defer c.Unlock()
-	return c.connected
+	c.activeConnectCancel = cancel
 }
 
 func (c *Client) loadClusterInfo(ctx context.Context) (*KubernetesClusterInfo, error) {
@@ -192,7 +197,7 @@ func (c *Client) loadClusterInfo(ctx context.Context) (*KubernetesClusterInfo, e
 		Address: c.cfg.K8SApiServerAddr,
 	}
 
-	k, err := k8sclient.NewForInCluster()
+	k, err := c.newInClusterClient()
 	if err != nil {
 		return nil, err
 	}
