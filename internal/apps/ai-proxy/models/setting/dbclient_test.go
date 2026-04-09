@@ -120,10 +120,6 @@ func TestDBClient_CreateConflict(t *testing.T) {
 	require.Equal(t, "claude;;;codex", got.Value)
 }
 
-func TestDBClient_UseQuotedKeyColumnInWhereClauses(t *testing.T) {
-	require.Equal(t, []any{"a", "b"}, stringSliceToAnySlice([]string{"a", "b"}))
-}
-
 func prepareSQLiteSettingTable(db *gorm.DB) error {
 	return db.Exec(`
 CREATE TABLE ai_proxy_setting (

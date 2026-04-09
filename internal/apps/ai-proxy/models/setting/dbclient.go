@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/setting/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -70,8 +69,7 @@ func (dbClient *DBClient) GetByNamespaceKeys(ctx context.Context, namespace stri
 
 	var items []*Setting
 	if err := dbClient.DB.WithContext(ctx).
-		Where(&Setting{Namespace: namespace}).
-		Where(clause.IN{Column: clause.Column{Name: "key"}, Values: stringSliceToAnySlice(keys)}).
+		Where("namespace = ? AND `key` IN ?", namespace, keys).
 		Find(&items).Error; err != nil {
 		return nil, err
 	}
@@ -81,14 +79,6 @@ func (dbClient *DBClient) GetByNamespaceKeys(ctx context.Context, namespace stri
 		result[item.Key] = item
 	}
 	return result, nil
-}
-
-func stringSliceToAnySlice(values []string) []any {
-	items := make([]any, 0, len(values))
-	for _, value := range values {
-		items = append(items, value)
-	}
-	return items
 }
 
 func (dbClient *DBClient) Create(ctx context.Context, req *pb.SettingCreateRequest) (*pb.Setting, error) {
