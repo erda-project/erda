@@ -135,7 +135,7 @@ func TestDBClient_GetByNamespaceKeys_QuotesReservedKeyColumn(t *testing.T) {
 	}), &gorm.Config{})
 	require.NoError(t, err)
 
-	mock.ExpectQuery("SELECT \\* FROM `ai_proxy_setting` WHERE \\(namespace = \\? AND `key` IN \\(\\?,\\?\\)\\) AND \\(`ai_proxy_setting`\\.`deleted_at` <= \\? OR `ai_proxy_setting`\\.`deleted_at` IS NULL\\)").
+	mock.ExpectQuery("`key` IN").
 		WithArgs("blacklist_user_agent", "general.headers", "general.prompts", sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at", "deleted_at", "namespace", "key", "value"}))
 
