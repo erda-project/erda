@@ -69,7 +69,7 @@ func (dbClient *DBClient) GetByNamespaceKeys(ctx context.Context, namespace stri
 
 	var items []*Setting
 	if err := dbClient.DB.WithContext(ctx).
-		Where("namespace = ? AND `key` IN ?", namespace, keys).
+		Where("namespace = ? AND `key` IN (?)", namespace, keys).
 		Find(&items).Error; err != nil {
 		return nil, err
 	}
