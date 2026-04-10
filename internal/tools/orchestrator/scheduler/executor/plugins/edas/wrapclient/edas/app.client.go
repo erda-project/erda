@@ -39,6 +39,7 @@ func (c *wrapEDAS) GetAppID(appName string) (string, error) {
 	req := api.CreateListApplicationRequest()
 	req.SetDomain(c.addr)
 	req.AppName = appName
+	req.ClusterId = c.clusterID
 
 	// get application list
 	resp, err := c.client.ListApplication(req)
@@ -49,7 +50,7 @@ func (c *wrapEDAS) GetAppID(appName string) (string, error) {
 	l.Info("request id: ", resp.RequestId)
 
 	for _, app := range resp.ApplicationList.Application {
-		if app.Name == appName && app.ClusterId == c.clusterID {
+		if app.Name == appName {
 			l.Infof("successfully to get app id: %s, name: %s", app.AppId, appName)
 			return app.AppId, nil
 		}
