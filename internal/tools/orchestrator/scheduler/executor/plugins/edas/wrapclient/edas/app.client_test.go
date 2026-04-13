@@ -20,6 +20,9 @@ import (
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	api "github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -87,170 +90,125 @@ var fakeServiceSpec = &types.ServiceSpec{
 func mock(c *api.Client) *gomonkey.Patches {
 	patches := gomonkey.NewPatches()
 
-	patches.ApplyMethod(reflect.TypeOf(c), "ListApplication", func(c *api.Client,
-		req *api.ListApplicationRequest) (*api.ListApplicationResponse, error) {
-		var apps []api.ApplicationInListApplication
-
-		if req.AppName == fakeAppName {
-			apps = append(apps, api.ApplicationInListApplication{
-				AppId: fakeAppId,
-				Name:  fakeAppName,
-			})
-		}
-		return &api.ListApplicationResponse{
-			RequestId: uuid.New(),
-			ApplicationList: api.ApplicationList{
-				Application: apps,
-			},
-		}, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "StopK8sApplication", func(c *api.Client,
-		req *api.StopK8sApplicationRequest) (*api.StopK8sApplicationResponse, error) {
-		resp := &api.StopK8sApplicationResponse{
-			RequestId: uuid.New(),
-		}
-
-		if req.AppId == fakeAppId {
+	mockDoAction := func(_ *sdk.Client, request requests.AcsRequest, response responses.AcsResponse) error {
+		switch req := request.(type) {
+		case *api.ListApplicationRequest:
+			resp := response.(*api.ListApplicationResponse)
+			resp.RequestId = uuid.New()
+			if req.AppName == fakeAppName {
+				resp.ApplicationList = api.ApplicationList{
+					Application: []api.ApplicationInListApplication{
+						{
+							AppId:     fakeAppId,
+							Name:      fakeAppName,
+							ClusterId: "cluster-a",
+						},
+					},
+				}
+			}
+			return nil
+		case *api.StopK8sApplicationRequest:
+			resp := response.(*api.StopK8sApplicationResponse)
+			resp.RequestId = uuid.New()
+			if req.AppId == fakeAppId {
+				resp.ChangeOrderId = fakeChangeOrderId
+			}
+			return nil
+		case *api.ListRecentChangeOrderRequest:
+			resp := response.(*api.ListRecentChangeOrderResponse)
+			resp.RequestId = uuid.New()
+			if req.AppId == fakeAppId {
+				resp.ChangeOrderList = api.ChangeOrderList{
+					ChangeOrder: []api.ChangeOrder{
+						{
+							Status:        1,
+							ChangeOrderId: fakeChangeOrderId,
+							AppId:         fakeAppId,
+						},
+					},
+				}
+			}
+			return nil
+		case *api.AbortChangeOrderRequest:
+			resp := response.(*api.AbortChangeOrderResponse)
+			resp.RequestId = uuid.New()
+			return nil
+		case *api.DeleteK8sApplicationRequest:
+			resp := response.(*api.DeleteK8sApplicationResponse)
+			resp.RequestId = uuid.New()
+			return nil
+		case *api.GetChangeOrderInfoRequest:
+			resp := response.(*api.GetChangeOrderInfoResponse)
+			resp.RequestId = uuid.New()
+			if req.ChangeOrderId == fakeChangeOrderId {
+				resp.ChangeOrderInfo = api.ChangeOrderInfo{
+					ChangeOrderId: fakeChangeOrderId,
+					Status:        int(types.CHANGE_ORDER_STATUS_SUCC),
+				}
+			}
+			return nil
+		case *api.GetAppDeploymentRequest:
+			resp := response.(*api.GetAppDeploymentResponse)
+			resp.RequestId = uuid.New()
+			if req.AppId == fakeAppId {
+				deployJSON, err := json.Marshal(fakeDeployment)
+				if err != nil {
+					return err
+				}
+				resp.Data = string(deployJSON)
+			}
+			return nil
+		case *api.ScaleK8sApplicationRequest:
+			if req.AppId != fakeAppId {
+				return errors.New("scale fail")
+			}
+			resp := response.(*api.ScaleK8sApplicationResponse)
+			resp.RequestId = uuid.New()
+			return nil
+		case *api.DeployK8sApplicationRequest:
+			if req.AppId != fakeAppId {
+				return errors.New("deploy fail")
+			}
+			resp := response.(*api.DeployK8sApplicationResponse)
+			resp.RequestId = uuid.New()
 			resp.ChangeOrderId = fakeChangeOrderId
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "ListRecentChangeOrder", func(c *api.Client,
-		req *api.ListRecentChangeOrderRequest) (*api.ListRecentChangeOrderResponse, error) {
-		resp := &api.ListRecentChangeOrderResponse{
-			RequestId: uuid.New(),
-		}
-
-		if req.AppId == fakeAppId {
-			resp.ChangeOrderList = api.ChangeOrderList{
-				ChangeOrder: []api.ChangeOrder{
-					{
-						Status:        1,
-						ChangeOrderId: fakeChangeOrderId,
-						AppId:         fakeAppId,
-					},
-				},
+			return nil
+		case *api.InsertK8sApplicationRequest:
+			if req.AppName != fakeAppName {
+				return errors.New("insert k8s application fail")
 			}
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "AbortChangeOrder", func(c *api.Client,
-		req *api.AbortChangeOrderRequest) (*api.AbortChangeOrderResponse, error) {
-		resp := &api.AbortChangeOrderResponse{
-			RequestId: uuid.New(),
-		}
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "DeleteK8sApplication", func(c *api.Client,
-		req *api.DeleteK8sApplicationRequest) (*api.DeleteK8sApplicationResponse, error) {
-		resp := &api.DeleteK8sApplicationResponse{
-			RequestId: uuid.New(),
-		}
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "GetChangeOrderInfo", func(c *api.Client,
-		req *api.GetChangeOrderInfoRequest) (*api.GetChangeOrderInfoResponse, error) {
-		resp := &api.GetChangeOrderInfoResponse{
-			RequestId: uuid.New(),
-		}
-
-		if req.ChangeOrderId == fakeChangeOrderId {
-			resp.ChangeOrderInfo = api.ChangeOrderInfo{
+			resp := response.(*api.InsertK8sApplicationResponse)
+			resp.RequestId = uuid.New()
+			resp.ApplicationInfo = api.ApplicationInfo{
+				AppId:         fakeAppId,
 				ChangeOrderId: fakeChangeOrderId,
-				Status:        int(types.CHANGE_ORDER_STATUS_SUCC),
 			}
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "GetAppDeployment", func(c *api.Client,
-		req *api.GetAppDeploymentRequest) (*api.GetAppDeploymentResponse, error) {
-		resp := &api.GetAppDeploymentResponse{
-			RequestId: uuid.New(),
-		}
-
-		if req.AppId == fakeAppId {
-			deployJson, err := json.Marshal(fakeDeployment)
-			if err != nil {
-				return nil, err
+			return nil
+		case *api.QueryApplicationStatusRequest:
+			if req.AppId != fakeAppId {
+				return errors.New("query application fail")
 			}
-			resp.Data = string(deployJson)
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "ScaleK8sApplication", func(c *api.Client,
-		req *api.ScaleK8sApplicationRequest) (*api.ScaleK8sApplicationResponse, error) {
-		resp := &api.ScaleK8sApplicationResponse{
-			RequestId: uuid.New(),
-		}
-
-		if req.AppId != fakeAppId {
-			return nil, errors.New("scale fail")
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "DeployK8sApplication", func(c *api.Client,
-		req *api.DeployK8sApplicationRequest) (*api.DeployK8sApplicationResponse, error) {
-		resp := &api.DeployK8sApplicationResponse{
-			RequestId:     uuid.New(),
-			ChangeOrderId: fakeChangeOrderId,
-		}
-
-		if req.AppId != fakeAppId {
-			return nil, errors.New("deploy fail")
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "InsertK8sApplication", func(c *api.Client,
-		req *api.InsertK8sApplicationRequest) (*api.InsertK8sApplicationResponse, error) {
-		resp := api.CreateInsertK8sApplicationResponse()
-		resp.RequestId = uuid.New()
-		resp.ApplicationInfo = api.ApplicationInfo{
-			AppId:         fakeAppId,
-			ChangeOrderId: fakeChangeOrderId,
-		}
-
-		if req.AppName != fakeAppName {
-			return nil, errors.New("insert k8s application fail")
-		}
-
-		return resp, nil
-	})
-
-	patches.ApplyMethod(reflect.TypeOf(c), "QueryApplicationStatus", func(c *api.Client,
-		req *api.QueryApplicationStatusRequest) (*api.QueryApplicationStatusResponse, error) {
-		resp := api.CreateQueryApplicationStatusResponse()
-		resp.RequestId = uuid.New()
-		resp.AppInfo = api.AppInfo{
-			EccList: api.EccList{
-				Ecc: []api.Ecc{
-					{
-						AppState:  int(types.APP_STATE_STOPPED),
-						TaskState: int(types.TASK_STATE_SUCCESS),
+			resp := response.(*api.QueryApplicationStatusResponse)
+			resp.RequestId = uuid.New()
+			resp.AppInfo = api.AppInfo{
+				EccList: api.EccList{
+					Ecc: []api.Ecc{
+						{
+							AppState:  int(types.APP_STATE_STOPPED),
+							TaskState: int(types.TASK_STATE_SUCCESS),
+						},
 					},
 				},
-			},
+			}
+			return nil
+		default:
+			return nil
 		}
+	}
 
-		if req.AppId != fakeAppId {
-			return nil, errors.New("query application fail")
-		}
-
-		return resp, nil
+	patches.ApplyMethod(reflect.TypeOf(&sdk.Client{}), "DoAction", mockDoAction)
+	patches.ApplyMethod(reflect.TypeOf(c), "DoAction", func(_ *api.Client, request requests.AcsRequest, response responses.AcsResponse) error {
+		return mockDoAction(nil, request, response)
 	})
 
 	return patches
