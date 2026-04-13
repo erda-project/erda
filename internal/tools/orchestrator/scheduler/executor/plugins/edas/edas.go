@@ -483,27 +483,27 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	sg, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
 		errMsg := fmt.Sprintf("edas k8s scale: invalid service group spec")
-		l.Errorf(errMsg)
+		l.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
 	if _, ok = sg.Labels[pstypes.ErdaPALabelKey]; ok {
 		errMsg := fmt.Sprintf("edas k8s scale: not support sg with label %s", pstypes.ErdaPALabelKey)
-		l.Errorf(errMsg)
+		l.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
 	// only support scale one service resources
 	if len(sg.Services) != 1 {
 		errMsg := fmt.Sprintf("the scaling service count is not equal 1")
-		l.Errorf(errMsg)
-		return nil, fmt.Errorf(errMsg)
+		l.Error(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	if err := utils.CheckRuntime(&sg); err != nil {
 		errMsg := fmt.Sprintf("check the runtime struct err: %v", err)
-		l.Errorf(errMsg)
-		return nil, fmt.Errorf(errMsg)
+		l.Error(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	services := []apistructs.Service{}
@@ -517,8 +517,8 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	)
 	if appID, err = e.wrapEDASClient.GetAppID(appName); err != nil {
 		errMsg := fmt.Sprintf("get appID err in scale: %v", err)
-		l.Errorf(errMsg)
-		return nil, fmt.Errorf(errMsg)
+		l.Error(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	if e.unlimitCPU == "true" {
@@ -555,7 +555,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 				err = e.wrapEDASClient.AbortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
 				if err != nil {
 					errMsg := fmt.Sprintf("scale k8s application err: %v", err)
-					l.Errorf(errMsg)
+					l.Error(errMsg)
 					errString <- errMsg
 				}
 			}
@@ -575,13 +575,13 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 				spec, err := e.fillServiceSpec(&destService, &sg, true)
 				if err != nil {
 					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
-					l.Errorf(errMsg)
+					l.Error(errMsg)
 					errString <- errMsg
 				}
 				err = e.wrapEDASClient.DeployApp(appID, spec)
 				if err != nil {
 					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
-					l.Errorf(errMsg)
+					l.Error(errMsg)
 					errString <- errMsg
 				}
 			}
@@ -592,7 +592,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	select {
 	case str := <-errString:
 		if str != "" {
-			return nil, fmt.Errorf(str)
+			return nil, errors.New(str)
 		}
 	case <-time.After(5 * time.Second):
 	}
