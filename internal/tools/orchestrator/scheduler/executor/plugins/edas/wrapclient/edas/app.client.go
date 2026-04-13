@@ -45,11 +45,17 @@ func (c *wrapEDAS) GetAppID(appName string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "list application")
 	}
+	if resp == nil {
+		return "", errors.New("list application: nil response")
+	}
 
 	l.Info("request id: ", resp.RequestId)
 
-	if resp.GetHttpStatus() != http.StatusOK {
-		return "", errors.Wrapf(err, "list application status")
+	if status := resp.GetHttpStatus(); status != 0 && status != http.StatusOK {
+		return "", errors.Errorf(
+			"list application status not ok: status=%d requestID=%s body=%s",
+			status, resp.RequestId, resp.GetHttpContentString(),
+		)
 	}
 
 	for _, app := range resp.ApplicationList.Application {
