@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -118,6 +120,30 @@ func TestDBClient_CreateConflict(t *testing.T) {
 	got, err := client.GetByNamespaceKey(ctx, "blacklist_user_agent", "general.prompts")
 	require.NoError(t, err)
 	require.Equal(t, "claude;;;codex", got.Value)
+}
+
+func TestDBClient_GetByNamespaceKeys_QuotesReservedKeyColumn(t *testing.T) {
+	sqlDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() {
+		_ = sqlDB.Close()
+	}()
+
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      sqlDB,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	require.NoError(t, err)
+
+	mock.ExpectQuery("`key` IN").
+		WithArgs("blacklist_user_agent", "general.headers", "general.prompts", sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at", "deleted_at", "namespace", "key", "value"}))
+
+	client := &DBClient{DB: db}
+	got, err := client.GetByNamespaceKeys(context.Background(), "blacklist_user_agent", "general.headers", "general.prompts")
+	require.NoError(t, err)
+	require.Empty(t, got)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func prepareSQLiteSettingTable(db *gorm.DB) error {

@@ -36,7 +36,7 @@ func (dbClient *DBClient) CreateOrUpdate(ctx context.Context, item *Setting) err
 
 	var existing Setting
 	err := dbClient.DB.WithContext(ctx).
-		Where("namespace = ? AND key = ?", item.Namespace, item.Key).
+		Where(&Setting{Namespace: item.Namespace, Key: item.Key}).
 		First(&existing).Error
 	if err == nil {
 		existing.Value = item.Value
@@ -54,7 +54,7 @@ func (dbClient *DBClient) CreateOrUpdate(ctx context.Context, item *Setting) err
 func (dbClient *DBClient) GetByNamespaceKey(ctx context.Context, namespace, key string) (*Setting, error) {
 	var item Setting
 	err := dbClient.DB.WithContext(ctx).
-		Where("namespace = ? AND key = ?", namespace, key).
+		Where(&Setting{Namespace: namespace, Key: key}).
 		First(&item).Error
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (dbClient *DBClient) GetByNamespaceKeys(ctx context.Context, namespace stri
 
 	var items []*Setting
 	if err := dbClient.DB.WithContext(ctx).
-		Where("namespace = ? AND key IN ?", namespace, keys).
+		Where("namespace = ? AND `key` IN (?)", namespace, keys).
 		Find(&items).Error; err != nil {
 		return nil, err
 	}
