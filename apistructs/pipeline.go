@@ -565,6 +565,26 @@ func PostHandlePBQueryString(req *pipelinepb.PipelinePagingRequest) error {
 	if req.MustMatchLabelsJSON == nil {
 		req.MustMatchLabelsJSON = make(map[string]*structpb.Value)
 	}
+	// Legacy query keys appID and branch: PageListPipelines only constrains app/branch via
+	// mustMatchLabelsJSON. Without folding these fields, GET /api/pipelines?appID=&branch=
+	// would ignore them and return arbitrary pipelines matching source/status only.
+	if req.AppID > 0 {
+		v, err := appendStructValue(req.MustMatchLabelsJSON[LabelAppID], strconv.FormatUint(req.AppID, 10))
+		if err != nil {
+			return err
+		}
+		req.MustMatchLabelsJSON[LabelAppID] = v
+	}
+	for _, b := range req.Branch {
+		if b == "" {
+			continue
+		}
+		v, err := appendStructValue(req.MustMatchLabelsJSON[LabelBranch], b)
+		if err != nil {
+			return err
+		}
+		req.MustMatchLabelsJSON[LabelBranch] = v
+	}
 	if req.MustMatchLabels != "" {
 		mustMatchLabels := make(map[string]string)
 		if err := json.Unmarshal([]byte(req.MustMatchLabels), &mustMatchLabels); err != nil {

@@ -1,0 +1,172 @@
+package command
+
+import (
+	"net/url"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/erda-project/erda/tools/cli/status"
+	"github.com/erda-project/erda/tools/cli/utils"
+)
+
+func TestDecodeLoginStatusWithTokenResponse(t *testing.T) {
+	now := time.Date(2026, 4, 14, 10, 0, 0, 0, time.UTC)
+	body := []byte(`{
+		"user": {
+			"id": "1001",
+			"email": "ash@example.com",
+			"nick": "ash"
+		},
+		"token": {
+			"access_token": "access-token",
+			"expires_in": 3600,
+			"token_type": "Bearer"
+		}
+	}`)
+
+	info, err := decodeLoginStatus(body, func() time.Time { return now })
+	require.NoError(t, err)
+	require.Equal(t, "Bearer access-token", info.Token)
+	require.Equal(t, "1001", info.ID)
+	require.Equal(t, "ash@example.com", info.Email)
+	require.Equal(t, "ash", info.NickName)
+	require.NotNil(t, info.ExpiredAt)
+	require.Equal(t, now.Add(time.Hour), *info.ExpiredAt)
+}
+
+func TestDecodeLoginStatusWithLegacySessionResponse(t *testing.T) {
+	body := []byte(`{
+		"sessionid": "legacy-session",
+		"id": "1002",
+		"email": "legacy@example.com",
+		"nickName": "legacy"
+	}`)
+
+	info, err := decodeLoginStatus(body, time.Now)
+	require.NoError(t, err)
+	require.Equal(t, "legacy-session", info.SessionID)
+	require.Equal(t, "1002", info.ID)
+	require.Equal(t, "legacy@example.com", info.Email)
+	require.Equal(t, "legacy", info.NickName)
+	require.Empty(t, info.Token)
+}
+
+func TestContextCurrentAuthInfoFallsBackToOpenapiHost(t *testing.T) {
+	ctx := Context{
+		CurrentHost: "https://erda.example.com",
+		Sessions: map[string]status.StatusInfo{
+			"https://openapi.erda.example.com": {Token: "Bearer access-token"},
+		},
+	}
+
+	var err error
+	ctx.Domain, err = parseURLForTest("https://erda.example.com")
+	require.NoError(t, err)
+	ctx.Openapi, err = parseURLForTest("https://openapi.erda.example.com")
+	require.NoError(t, err)
+
+	info, ok := ctx.CurrentAuthInfo()
+	require.True(t, ok)
+	require.Equal(t, "Bearer access-token", info.Token)
+}
+
+func parseURLForTest(rawURL string) (*url.URL, error) {
+	return url.Parse(rawURL)
+}
+
+func TestResolveBaseHostPrefersExplicitHost(t *testing.T) {
+	origHost, origGetEnv, origGetGlobalConfig := host, getEnv, getGlobalConfig
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+		getGlobalConfig = origGetGlobalConfig
+	})
+
+	host = "https://flag.example.com"
+	getEnv = func(string) string { return "https://env.example.com" }
+	getGlobalConfig = func() (string, *GlobalConfig, error) {
+		return "", &GlobalConfig{Host: "https://global.example.com"}, nil
+	}
+
+	resolved, err := resolveBaseHost()
+	require.NoError(t, err)
+	require.Equal(t, "https://flag.example.com", resolved)
+}
+
+func TestResolveBaseHostPrefersEnvOverGlobalConfig(t *testing.T) {
+	origHost, origGetEnv, origGetGlobalConfig := host, getEnv, getGlobalConfig
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+		getGlobalConfig = origGetGlobalConfig
+	})
+
+	host = ""
+	getEnv = func(string) string { return "https://env.example.com" }
+	getGlobalConfig = func() (string, *GlobalConfig, error) {
+		return "", &GlobalConfig{Host: "https://global.example.com"}, nil
+	}
+
+	resolved, err := resolveBaseHost()
+	require.NoError(t, err)
+	require.Equal(t, "https://env.example.com", resolved)
+}
+
+func TestResolveBaseHostFallsBackToGlobalConfig(t *testing.T) {
+	origHost, origGetEnv, origGetGlobalConfig := host, getEnv, getGlobalConfig
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+		getGlobalConfig = origGetGlobalConfig
+	})
+
+	host = ""
+	getEnv = func(string) string { return "" }
+	getGlobalConfig = func() (string, *GlobalConfig, error) {
+		return "", &GlobalConfig{Host: "https://global.example.com"}, nil
+	}
+
+	resolved, err := resolveBaseHost()
+	require.NoError(t, err)
+	require.Equal(t, "https://global.example.com", resolved)
+}
+
+func TestResolveBaseHostIgnoresMissingGlobalConfig(t *testing.T) {
+	origHost, origGetEnv, origGetGlobalConfig := host, getEnv, getGlobalConfig
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+		getGlobalConfig = origGetGlobalConfig
+	})
+
+	host = ""
+	getEnv = func(string) string { return "" }
+	getGlobalConfig = func() (string, *GlobalConfig, error) {
+		return "", &GlobalConfig{}, utils.NotExist
+	}
+
+	resolved, err := resolveBaseHost()
+	require.NoError(t, err)
+	require.Empty(t, resolved)
+}
+
+func TestResolveBaseHostReturnsEmptyWithoutConfiguredSources(t *testing.T) {
+	origHost, origGetEnv, origGetGlobalConfig := host, getEnv, getGlobalConfig
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+		getGlobalConfig = origGetGlobalConfig
+	})
+
+	host = ""
+	getEnv = func(string) string { return "" }
+	getGlobalConfig = func() (string, *GlobalConfig, error) {
+		return "", &GlobalConfig{}, nil
+	}
+
+	resolved, err := resolveBaseHost()
+	require.NoError(t, err)
+	require.Empty(t, resolved)
+}
