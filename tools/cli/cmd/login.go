@@ -20,8 +20,10 @@ var LOGIN = command.Command{
 	Name:      "login",
 	ShortHelp: "login and persist the default erda host",
 	Example: `
+$ erda-cli login -u yourname
+$ erda-cli login --host https://erda.cloud -u yourname
+$ ERDA_HOST=https://erda.cloud erda-cli login
 $ erda-cli login --host https://openapi.erda.cloud -u yourname
-$ ERDA_HOST=https://openapi.erda.cloud erda-cli login
 `,
 	Run: RunLogin,
 }

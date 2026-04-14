@@ -21,7 +21,7 @@ var LOGOUT = command.Command{
 	ShortHelp: "remove current erda authentication info",
 	Example: `
 $ erda-cli logout
-$ ERDA_HOST=https://openapi.erda.cloud erda-cli logout
+$ ERDA_HOST=https://erda.cloud erda-cli logout
 `,
 	Run: RunLogout,
 }

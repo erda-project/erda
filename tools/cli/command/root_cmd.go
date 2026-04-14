@@ -52,7 +52,9 @@ var (
 	getGlobalConfig = GetGlobalConfig
 )
 
-const defaultErdaHost = "https://openapi.erda.cloud"
+// Default portal origin (same host family as git clone URLs, e.g. https://erda.cloud/org/dop/...).
+// parseCtx then calls FetchOpenapi(), which reads /metadata.json here and switches API calls to openapi_public_url.
+const defaultErdaHost = "https://erda.cloud"
 
 // Cmds which not require login
 var (
@@ -543,7 +545,7 @@ func Execute() {
 		}()
 	}
 
-	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda host to visit (default: https://openapi.erda.cloud; overrides ERDA_HOST and ~/.erda.d/config)")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda portal base URL (default: https://erda.cloud, same as git remote host; use your OpenAPI URL only if the deployment exposes API without portal; overrides ERDA_HOST and ~/.erda.d/config)")
 	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "", "origin", "the remote for Erda repo")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Erda username to authenticate")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Erda password to authenticate")

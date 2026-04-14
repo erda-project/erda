@@ -28,7 +28,7 @@ var WHOAMI = command.Command{
 	ShortHelp: "show current erda authentication info",
 	Example: `
 $ erda-cli whoami
-$ ERDA_HOST=https://openapi.erda.cloud erda-cli whoami
+$ ERDA_HOST=https://erda.cloud erda-cli whoami
 `,
 	Run: RunWhoami,
 }
