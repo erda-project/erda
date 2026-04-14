@@ -47,6 +47,13 @@ var (
 	IsCompletion bool
 )
 
+var (
+	getEnv          = os.Getenv
+	getGlobalConfig = GetGlobalConfig
+)
+
+const defaultErdaHost = "https://openapi.erda.cloud"
+
 // Cmds which not require login
 var (
 	loginWhiteList = []string{
@@ -59,8 +66,11 @@ var (
 		"migrate mkpypkg",
 		"migrate record",
 		"gw debug-auth",
+		"login",
+		"logout",
 		"pipeline",
 		"version",
+		"whoami",
 		"help",
 		"help [command]",
 	}
@@ -90,6 +100,23 @@ type BaseResponse struct {
 type OrgsResponseData struct {
 	List  []OrgInfo `json:"list"`
 	Total int       `json:"total"`
+}
+
+type loginResponseUser struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Nick  string `json:"nick"`
+}
+
+type loginResponseToken struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+}
+
+type loginResponse struct {
+	User  *loginResponseUser  `json:"user"`
+	Token *loginResponseToken `json:"token"`
 }
 
 func PrepareCtx(cmd *cobra.Command, args []string) error {
@@ -179,9 +206,9 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 	}
 	// file ~/.erda.d/sessions exist & and session for host also exist; otherwise need login fisrt
 	currentSession, ok := sessionInfos[ctx.CurrentHost]
-	if ok {
+	if ok && hasUsableAuth(currentSession) {
 		// check session if expired
-		if currentSession.ExpiredAt != nil && time.Now().Before(*currentSession.ExpiredAt) {
+		if currentSession.ExpiredAt == nil || time.Now().Before(*currentSession.ExpiredAt) {
 			return sessionInfos, nil
 		}
 	}
@@ -207,40 +234,136 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 			return nil, err
 		}
 	} else {
-		return nil, errors.Errorf("session expired at %s", currentSession.ExpiredAt.String())
+		if ok && currentSession.ExpiredAt != nil {
+			return nil, errors.Errorf("session expired at %s", currentSession.ExpiredAt.String())
+		}
+		return nil, errors.New("not login yet, please login first")
 	}
 
 	return sessionInfos, nil
 }
 
-func parseCtx() error {
-	if host == "" {
-		_, config, err := GetProjectConfig()
+func LoadAuthState() error {
+	if err := parseCtx(); err != nil {
+		return err
+	}
+	sessionInfos, err := status.GetSessionInfos()
+	if err != nil {
+		if err == utils.NotExist {
+			ctx.Sessions = map[string]status.StatusInfo{}
+			return nil
+		}
+		return err
+	}
+	ctx.Sessions = sessionInfos
+	return nil
+}
+
+func Login() error {
+	if err := parseCtx(); err != nil {
+		return err
+	}
+	sessionInfos, err := ensureSessionInfos()
+	if err != nil {
+		return err
+	}
+	ctx.Sessions = sessionInfos
+	return SaveDefaultHost(ctx.CurrentHost)
+}
+
+func Logout() error {
+	if err := LoadAuthState(); err != nil {
+		return err
+	}
+	if _, ok := ctx.CurrentAuthInfo(); !ok {
+		return errors.New("not login yet, please login first")
+	}
+	if err := status.DeleteSessionInfo(ctx.CurrentHost); err != nil {
+		return err
+	}
+	ctx.Sessions = map[string]status.StatusInfo{}
+	return nil
+}
+
+func SaveDefaultHost(defaultHost string) error {
+	if defaultHost == "" {
+		return nil
+	}
+	configFile, globalConfig, err := GetGlobalConfig()
+	if err != nil && err != utils.NotExist {
+		return err
+	}
+	if err == utils.NotExist {
+		configFile, err = utils.FindGlobalConfig()
 		if err != nil && err != utils.NotExist {
 			return err
 		}
-		if err == nil {
-			host = config.Server
-			ctx.CurrentOrg.ID = config.OrgID
-			ctx.CurrentOrg.Name = config.Org
-			ctx.CurrentProject.ProjectID = config.ProjectID
-			ctx.CurrentProject.Project = config.Project
-			for _, a := range config.Applications {
-				a2 := ApplicationInfo{
-					a.Application,
-					a.ApplicationID,
-					a.Mode,
-					a.Desc,
-					a.Sonarhost,
-					a.Sonartoken,
-					a.Sonarproject,
-				}
-				ctx.Applications = append(ctx.Applications, a2)
-			}
+		if err == utils.NotExist {
+			globalConfig = &GlobalConfig{Version: ConfigVersion}
 		}
+	}
+	if globalConfig == nil {
+		globalConfig = &GlobalConfig{Version: ConfigVersion}
+	}
+	globalConfig.Host = defaultHost
+	globalConfig.Server = ""
+	return SetGlobalConfig(configFile, globalConfig)
+}
 
+func resolveBaseHost() (string, error) {
+	if host != "" {
+		return host, nil
+	}
+
+	if envHost := strings.TrimSpace(getEnv("ERDA_HOST")); envHost != "" {
+		return envHost, nil
+	}
+
+	_, globalConfig, err := getGlobalConfig()
+	if err != nil && err != utils.NotExist {
+		return "", err
+	}
+	if err == nil {
+		if resolved := globalConfig.ResolvedHost(); resolved != "" {
+			return resolved, nil
+		}
+	}
+	return "", nil
+}
+
+func parseCtx() error {
+	resolvedHost, err := resolveBaseHost()
+	if err != nil {
+		return err
+	}
+	host = resolvedHost
+
+	_, config, err := GetProjectConfig()
+	if err != nil && err != utils.NotExist {
+		return err
+	}
+	if err == nil {
+		ctx.CurrentOrg.ID = config.OrgID
+		ctx.CurrentOrg.Name = config.Org
+		ctx.CurrentProject.ProjectID = config.ProjectID
+		ctx.CurrentProject.Project = config.Project
+		ctx.Applications = nil
+		for _, a := range config.Applications {
+			a2 := ApplicationInfo{
+				a.Application,
+				a.ApplicationID,
+				a.Mode,
+				a.Desc,
+				a.Sonarhost,
+				a.Sonartoken,
+				a.Sonarproject,
+			}
+			ctx.Applications = append(ctx.Applications, a2)
+		}
+	}
+
+	if host == "" {
 		if _, err := os.Stat(".git"); err == nil {
-			// fetch host from git remote url
 			info, err := utils.GetWorkspaceInfo(".", Remote)
 			for _, a := range ctx.Applications {
 				if a.Application == info.Application {
@@ -254,36 +377,21 @@ func parseCtx() error {
 			}
 
 			if err == nil {
-				if host == "" {
-					host = fmt.Sprintf("%s://%s", info.Scheme, info.Host)
+				host = fmt.Sprintf("%s://%s", info.Scheme, info.Host)
 
-					if username == "" || password == "" {
-						gitCredentialStorage := fetchGitCredentialStorage()
-						switch gitCredentialStorage {
-						case "osxkeychain", "store":
-							// fetch username & password from osxkeychain
-							username, password, _ = fetchGitUserInfo(info.Host, gitCredentialStorage)
-						}
-					}
-				} else {
-					if !strings.Contains(host, info.Host) {
-						fmt.Println(color_str.Yellow(
-							fmt.Sprintf("current git repo remote %s: %s, different from config: %s",
-								Remote, info.Scheme+"://"+info.Host, host)))
+				if username == "" || password == "" {
+					gitCredentialStorage := fetchGitCredentialStorage()
+					switch gitCredentialStorage {
+					case "osxkeychain", "store":
+						username, password, _ = fetchGitUserInfo(info.Host, gitCredentialStorage)
 					}
 				}
 			}
 		}
+	}
 
-		if host == "" {
-			if Interactive {
-				// fetch host from stdin
-				fmt.Print("Enter a erda host: ")
-				fmt.Scanln(&host)
-			} else {
-				return errors.New("Not set a erda host")
-			}
-		}
+	if host == "" {
+		host = defaultErdaHost
 	}
 
 	slashIndex := strings.Index(host, "://")
@@ -355,20 +463,63 @@ func loginAndStoreSession(host, username, password string) error {
 		return fmt.Errorf(utils.FormatErrMsg("login",
 			"failed to login, status code: "+strconv.Itoa(res.StatusCode())+string(res.Body()), false))
 	}
-	var s status.StatusInfo
-	d := json.NewDecoder(&body)
-	if err := d.Decode(&s); err != nil {
+	s, err := decodeLoginStatus(body.Bytes(), time.Now)
+	if err != nil {
 		return fmt.Errorf(utils.FormatErrMsg(
 			"login", "failed to  decode login response ("+err.Error()+")", false))
 	}
-	// 从 openapi 获取的 session 无过期时间，暂设 12 小时，小于 openapi 的 24 小时
-	expiredAt := time.Now().Add(time.Hour * 12)
-	s.ExpiredAt = &expiredAt
 
 	if err := status.StoreSessionInfo(host, s); err != nil {
 		return err
 	}
 	return nil
+}
+
+func decodeLoginStatus(body []byte, now func() time.Time) (status.StatusInfo, error) {
+	var loginResp loginResponse
+	if err := json.Unmarshal(body, &loginResp); err == nil && loginResp.Token != nil && loginResp.Token.AccessToken != "" {
+		loginStatus := status.StatusInfo{
+			Token: formatAuthorization(loginResp.Token.TokenType, loginResp.Token.AccessToken),
+		}
+		if loginResp.User != nil {
+			loginStatus.UserInfo = status.UserInfo{
+				ID:       loginResp.User.ID,
+				Email:    loginResp.User.Email,
+				NickName: loginResp.User.Nick,
+			}
+		}
+		if loginResp.Token.ExpiresIn > 0 {
+			expiredAt := now().Add(time.Duration(loginResp.Token.ExpiresIn) * time.Second)
+			loginStatus.ExpiredAt = &expiredAt
+		}
+		return loginStatus, nil
+	}
+
+	var legacyStatus status.StatusInfo
+	if err := json.Unmarshal(body, &legacyStatus); err != nil {
+		return status.StatusInfo{}, err
+	}
+	if !hasUsableAuth(legacyStatus) {
+		return status.StatusInfo{}, fmt.Errorf("unrecognized login response")
+	}
+	return legacyStatus, nil
+}
+
+func formatAuthorization(tokenType, accessToken string) string {
+	if accessToken == "" {
+		return ""
+	}
+	if strings.Contains(accessToken, " ") {
+		return accessToken
+	}
+	if tokenType == "" {
+		return accessToken
+	}
+	return tokenType + " " + accessToken
+}
+
+func hasUsableAuth(s status.StatusInfo) bool {
+	return s.Token != "" || s.SessionID != ""
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -392,7 +543,7 @@ func Execute() {
 		}()
 	}
 
-	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda host to visit (e.g. https://erda.cloud)")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda host to visit (default: https://openapi.erda.cloud; overrides ERDA_HOST and ~/.erda.d/config)")
 	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "", "origin", "the remote for Erda repo")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Erda username to authenticate")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Erda password to authenticate")
