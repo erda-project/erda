@@ -34,25 +34,29 @@ func GetRecord(ctx *command.Context, orgID, id uint64) (apistructs.TestFileRecor
 		Path(fmt.Sprintf("/api/test-file-records/%d", id)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg(
+		return apistructs.TestFileRecord{}, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get project detail", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg("get record",
+		return apistructs.TestFileRecord{}, fmt.Errorf("%s", utils.FormatErrMsg("get record",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg("get record",
-			fmt.Sprintf("failed to unmarshal record  response ("+err.Error()+")"), false))
+		return apistructs.TestFileRecord{}, fmt.Errorf("%s", utils.FormatErrMsg("get record",
+			"failed to unmarshal record  response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg("get record",
+		return apistructs.TestFileRecord{}, fmt.Errorf("%s", utils.FormatErrMsg("get record",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil

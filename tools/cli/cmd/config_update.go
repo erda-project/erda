@@ -42,8 +42,9 @@ var CONFIGUPDATE = command.Command{
 
 func RunFeaturesUpdate(ctx *command.Context, feature, org, project, workspace string) error {
 	if project == "" || workspace == "" || org == "" {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", "failed to update config, one of the flags [org, project, workspace] not set", true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config update", "failed to update config, one of the flags [org, project, workspace] not set", true))
+
 	}
 
 	if err := common.UpdateProjectWorkspaceConfigs(ctx, feature, org, project, workspace); err != nil {

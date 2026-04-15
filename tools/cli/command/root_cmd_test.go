@@ -15,10 +15,16 @@
 package command
 
 import (
+	"bytes"
+	"errors"
 	"net/url"
+	"os"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda/tools/cli/status"
@@ -183,4 +189,108 @@ func TestResolveBaseHostReturnsEmptyWithoutConfiguredSources(t *testing.T) {
 	resolved, err := resolveBaseHost()
 	require.NoError(t, err)
 	require.Empty(t, resolved)
+}
+
+func TestExecuteRootCommandPrintsReturnedErrorWhenNotReported(t *testing.T) {
+	origOutput := commandErrorOutput
+	origPrinted := commandErrorPrinted
+	t.Cleanup(func() {
+		commandErrorOutput = origOutput
+		commandErrorPrinted = origPrinted
+	})
+
+	var output bytes.Buffer
+	commandErrorOutput = &output
+	commandErrorPrinted = false
+
+	root := &cobra.Command{Use: "erda-cli", SilenceUsage: true}
+	logs := &cobra.Command{
+		Use: "logs",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			t.Fatal("RunE should not be called when required flag is missing")
+			return nil
+		},
+	}
+	logs.Flags().Uint64("pipelineID", 0, "")
+	logs.MarkFlagRequired("pipelineID")
+	root.AddCommand(logs)
+	root.SetArgs([]string{"logs"})
+
+	err := executeRootCommand(root)
+	require.Error(t, err)
+	require.Contains(t, output.String(), `required flag(s) "pipelineID" not set`)
+}
+
+func TestExecuteRootCommandDoesNotDuplicateReportedError(t *testing.T) {
+	origOutput := commandErrorOutput
+	origPrinted := commandErrorPrinted
+	t.Cleanup(func() {
+		commandErrorOutput = origOutput
+		commandErrorPrinted = origPrinted
+	})
+
+	var output bytes.Buffer
+	commandErrorOutput = &output
+	commandErrorPrinted = false
+
+	root := &cobra.Command{
+		Use: "erda-cli",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			MarkCommandErrorPrinted()
+			_, _ = output.WriteString("already printed\n")
+			return errors.New("boom")
+		},
+	}
+
+	err := executeRootCommand(root)
+	require.Error(t, err)
+	require.Equal(t, 1, strings.Count(output.String(), "already printed"))
+	require.NotContains(t, output.String(), "boom")
+}
+
+func TestHandleInterruptSignalsExits(t *testing.T) {
+	sigCh := make(chan os.Signal, 1)
+	exitCh := make(chan int, 1)
+	restoreCh := make(chan struct{}, 1)
+
+	handleInterruptSignals(sigCh, func(code int) {
+		exitCh <- code
+	}, func() {
+		restoreCh <- struct{}{}
+	})
+
+	sigCh <- syscall.SIGINT
+
+	require.Equal(t, 1, <-exitCh)
+	require.Len(t, restoreCh, 1)
+}
+
+func TestCursorControlRespectsInteractiveFlag(t *testing.T) {
+	origInteractive := Interactive
+	origCursorHidden := cursorHidden
+	t.Cleanup(func() {
+		Interactive = origInteractive
+		cursorHidden = origCursorHidden
+	})
+
+	var calls []string
+	control := func(arg string) error {
+		calls = append(calls, arg)
+		return nil
+	}
+
+	Interactive = false
+	cursorHidden = false
+	hideCursorIfInteractive(control)
+	require.Empty(t, calls)
+	require.False(t, cursorHidden)
+
+	Interactive = true
+	hideCursorIfInteractive(control)
+	require.Equal(t, []string{"civis"}, calls)
+	require.True(t, cursorHidden)
+
+	restoreCursorIfHidden(control)
+	require.Equal(t, []string{"civis", "cnorm"}, calls)
+	require.False(t, cursorHidden)
 }

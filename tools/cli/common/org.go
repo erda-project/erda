@@ -31,31 +31,36 @@ func GetOrgDetail(ctx *command.Context, orgIDorName string) (apistructs.OrgDTO, 
 	var b bytes.Buffer
 
 	if orgIDorName == "" {
-		return apistructs.OrgDTO{}, fmt.Errorf(utils.FormatErrMsg("get organization detail",
+		return apistructs.OrgDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get organization detail",
 			"invalid required parameter organization", false))
+
 	}
 
 	response, err := ctx.Get().Header("org", orgIDorName).Path(fmt.Sprintf("/api/orgs/%s", orgIDorName)).Do().Body(&b)
 	if err != nil {
-		return apistructs.OrgDTO{}, fmt.Errorf(utils.FormatErrMsg(
+		return apistructs.OrgDTO{}, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get organization detail", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.OrgDTO{}, fmt.Errorf(utils.FormatErrMsg("get organization detail",
+		return apistructs.OrgDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get organization detail",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.OrgDTO{}, fmt.Errorf(utils.FormatErrMsg("get organization detail",
-			fmt.Sprintf("failed to unmarshal organization detail response ("+err.Error()+")"), false))
+		return apistructs.OrgDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get organization detail",
+			"failed to unmarshal organization detail response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.OrgDTO{}, fmt.Errorf(utils.FormatErrMsg("get organization detail",
+		return apistructs.OrgDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get organization detail",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil

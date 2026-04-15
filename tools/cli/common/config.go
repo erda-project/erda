@@ -74,15 +74,17 @@ func UpdateProjectWorkspaceConfigs(ctx *command.Context, feature, org, project, 
 
 	uop, err := GetUserOrgProjID(ctx, org, project)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", "failed to update config, can not get orgID or userID or projectID: "+err.Error(), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config update", "failed to update config, can not get orgID or userID or projectID: "+err.Error(), true))
+
 	}
 
 	prjId, _ := strconv.ParseUint(uop.ProjectId, 10, 64)
 	abilities, err := ParseProjectWorkspaceConfigs(feature)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", fmt.Sprintf("failed to update config, parse config list failed: %v", err), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config update", fmt.Sprintf("failed to update config, parse config list failed: %v", err), true))
+
 	}
 
 	updateReq := apistructs.ProjectWorkSpaceAbility{
@@ -95,20 +97,23 @@ func UpdateProjectWorkspaceConfigs(ctx *command.Context, feature, org, project, 
 		Header(httputil.OrgHeader, uop.OrgId).
 		JSONBody(updateReq).Do().JSON(&resp)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config update", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("config update",
+		return fmt.Errorf("%s", utils.FormatErrMsg("config update",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("config update",
+		return fmt.Errorf("%s", utils.FormatErrMsg("config update",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return nil
@@ -121,8 +126,9 @@ func GetProjectWorkspaceConfigs(ctx *command.Context, org, project, workspace st
 
 	uop, err := GetUserOrgProjID(ctx, org, project)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config get", "failed to get configs, can not get orgID or userID or projectID: "+err.Error(), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config get", "failed to get configs, can not get orgID or userID or projectID: "+err.Error(), true))
+
 	}
 
 	urlPath := "/api/project-workspace-abilities/" + uop.ProjectId + "/" + workspace
@@ -132,25 +138,29 @@ func GetProjectWorkspaceConfigs(ctx *command.Context, org, project, workspace st
 		Do().Body(&b)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config get", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config get", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("config get",
+		return fmt.Errorf("%s", utils.FormatErrMsg("config get",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("config get",
-			fmt.Sprintf("failed to unmarshal get config response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("config get",
+			"failed to unmarshal get config response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("config get",
+		return fmt.Errorf("%s", utils.FormatErrMsg("config get",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	ctx.Info("Configs get result: %s\n", resp.Data.Abilities)
@@ -163,8 +173,9 @@ func DelelteProjectWorkspaceConfigs(ctx *command.Context, org, project, workspac
 
 	uop, err := GetUserOrgProjID(ctx, org, project)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config delete", "failed to delete config, can not get orgID or userID or projectID: "+err.Error(), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config delete", "failed to delete config, can not get orgID or userID or projectID: "+err.Error(), true))
+
 	}
 
 	urlPath := ""
@@ -179,25 +190,29 @@ func DelelteProjectWorkspaceConfigs(ctx *command.Context, org, project, workspac
 		Do().Body(&b)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config delete", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config delete", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("config delete",
+		return fmt.Errorf("%s", utils.FormatErrMsg("config delete",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("config delete",
-			fmt.Sprintf("failed to unmarshal config delete response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("config delete",
+			"failed to unmarshal config delete response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("config delete",
+		return fmt.Errorf("%s", utils.FormatErrMsg("config delete",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return nil

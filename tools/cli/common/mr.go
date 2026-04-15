@@ -38,19 +38,22 @@ func CreateMr(ctx *command.Context, orgID uint64, project, application string, r
 		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"create", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !respponse.IsOK() {
-		return nil, fmt.Errorf(utils.FormatErrMsg("create mr",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("create mr",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				respponse.StatusCode(), respponse.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg("create mr",
-			fmt.Sprintf("failed to unmarshal create response ("+err.Error()+")"), false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("create mr",
+			"failed to unmarshal create response ("+err.Error()+")", false))
+
 	}
 
 	return resp.Data, nil
