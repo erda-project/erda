@@ -22,6 +22,23 @@ import (
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
+// ResolveWorkspaceApplication resolves DOP project and application IDs from names under orgID.
+// Use this for workspace commands instead of GetRepoStats when the git remote URL encodes the
+// target org: GetRepoStats is proxied to gittar /wb/:project/:app, which resolves org from the
+// OpenAPI session Org-ID (or host), not from the org derived from the remote, so the wrong app
+// can be returned when project/app names exist under the session org.
+func ResolveWorkspaceApplication(ctx *command.Context, orgID uint64, projectName, applicationName string) (projectID uint64, applicationID int64, err error) {
+	projectID, err = GetProjectIDByName(ctx, orgID, projectName)
+	if err != nil {
+		return 0, 0, err
+	}
+	appID, err := GetApplicationIdByName(ctx, orgID, projectID, applicationName)
+	if err != nil {
+		return 0, 0, err
+	}
+	return projectID, int64(appID), nil
+}
+
 func GetRepoStats(ctx *command.Context, orgID uint64, project, application string) (apistructs.GittarStatsData, error) {
 	var gitResp apistructs.GittarStatsResponse
 	resp, err := ctx.Get().Path(fmt.Sprintf("/api/repo/%s/%s/stats/", project, application)).

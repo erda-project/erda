@@ -196,18 +196,51 @@ func (ctx *Context) wrapRequest(m func(host string, retry ...httpclient.RetryOpt
 	if ctx.Token != "" {
 		req.Header("Authorization", ctx.Token)
 	}
-	if v, ok := ctx.Sessions[ctx.CurrentHost]; ok && v.SessionID != "" {
-		req.Cookie(&http.Cookie{Name: "OPENAPISESSION", Value: ctx.Sessions[ctx.CurrentHost].SessionID})
+	if authInfo, ok := ctx.CurrentAuthInfo(); ok {
+		if ctx.Token == "" && authInfo.Token != "" {
+			req.Header("Authorization", authInfo.Token)
+		}
+		if authInfo.SessionID != "" {
+			req.Cookie(&http.Cookie{Name: "OPENAPISESSION", Value: authInfo.SessionID})
+		}
 	}
 	return req
 }
 
 func (ctx *Context) GetUserID() string {
-	if sessionInfo, ok := ctx.Sessions[ctx.CurrentHost]; ok {
+	if sessionInfo, ok := ctx.CurrentAuthInfo(); ok {
 		return sessionInfo.ID
 	}
 
 	return ""
+}
+
+func (ctx *Context) CurrentAuthInfo() (status.StatusInfo, bool) {
+	seen := make(map[string]struct{})
+	candidates := []string{ctx.CurrentHost}
+	if ctx.Openapi != nil {
+		candidates = append(candidates, ctx.Openapi.String())
+	}
+	if ctx.Domain != nil {
+		candidates = append(candidates, ctx.Domain.String())
+	}
+	if ctx.Hepaapi != nil {
+		candidates = append(candidates, ctx.Hepaapi.String())
+	}
+
+	for _, host := range candidates {
+		if host == "" {
+			continue
+		}
+		if _, ok := seen[host]; ok {
+			continue
+		}
+		seen[host] = struct{}{}
+		if authInfo, ok := ctx.Sessions[host]; ok {
+			return authInfo, true
+		}
+	}
+	return status.StatusInfo{}, false
 }
 
 func (ctx *Context) Info(format string, a ...interface{}) {

@@ -30,6 +30,12 @@ type OrgInfo struct {
 	Desc string `json:"desc"`
 }
 
+type GlobalConfig struct {
+	Version string `yaml:"version"`
+	Host    string `yaml:"host,omitempty"`
+	Server  string `yaml:"server,omitempty"`
+}
+
 type ProjectInfo struct {
 	Version      string            `yaml:"version"`
 	Server       string            `yaml:"server"`
@@ -48,6 +54,61 @@ type ApplicationInfo struct {
 	Sonarhost     string `yaml:"sonarhost"`
 	Sonartoken    string `yaml:"sonartoken"`
 	Sonarproject  string `yaml:"sonarproject"`
+}
+
+func (c *GlobalConfig) ResolvedHost() string {
+	if c == nil {
+		return ""
+	}
+	if c.Host != "" {
+		return c.Host
+	}
+	return c.Server
+}
+
+func GetGlobalConfigFrom(configfile string) (*GlobalConfig, error) {
+	info := GlobalConfig{Version: ConfigVersion}
+
+	f, err := os.Open(configfile)
+	if err != nil {
+		return &info, err
+	}
+	if err := yaml.NewDecoder(f).Decode(&info); err != nil {
+		return &info, err
+	}
+
+	return &info, nil
+}
+
+func GetGlobalConfig() (string, *GlobalConfig, error) {
+	info := GlobalConfig{Version: ConfigVersion}
+	config, err := utils.FindGlobalConfig()
+	if err != nil {
+		return config, &info, err
+	}
+
+	f, err := os.Open(config)
+	if err != nil {
+		return config, &info, err
+	}
+	if err := yaml.NewDecoder(f).Decode(&info); err != nil {
+		return config, &info, err
+	}
+
+	return config, &info, nil
+}
+
+func SetGlobalConfig(file string, conf *GlobalConfig) error {
+	c, err := yaml.Marshal(conf)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(file, c, 0655)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetProjectConfigFrom(configfile string) (*ProjectInfo, error) {

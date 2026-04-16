@@ -102,9 +102,9 @@ func GetWorkspaceInfo(dir, remoteName string) (GitterURLInfo, error) {
 	re := regexp.MustCompile(`\r?\n`)
 	newStr := re.ReplaceAllString(string(out), "")
 
-	u, err := url.Parse(newStr)
+	u, err := parseGitRemoteURL(newStr)
 	if err != nil {
-		return GitterURLInfo{}, err
+		return GitterURLInfo{}, InvalidErdaRepo
 	}
 	t, paths, err := ClassifyURL(u.Path)
 	if err != nil || t != GittarURL {
@@ -114,6 +114,28 @@ func GetWorkspaceInfo(dir, remoteName string) (GitterURLInfo, error) {
 	// /<org>/dop/<project>/<app>
 	return GitterURLInfo{
 		OrganizationURLInfo{u.Scheme, u.Host, paths[1]}, paths[3], paths[4],
+	}, nil
+}
+
+func parseGitRemoteURL(remote string) (*url.URL, error) {
+	if strings.Contains(remote, "://") {
+		return url.Parse(remote)
+	}
+
+	parts := strings.SplitN(remote, ":", 2)
+	if len(parts) != 2 || !strings.Contains(parts[0], "@") {
+		return nil, errors.Errorf("invalid git remote url: %s", remote)
+	}
+
+	host := strings.SplitN(parts[0], "@", 2)[1]
+	if host == "" || parts[1] == "" {
+		return nil, errors.Errorf("invalid git remote url: %s", remote)
+	}
+
+	return &url.URL{
+		Scheme: "ssh",
+		Host:   host,
+		Path:   "/" + strings.TrimPrefix(parts[1], "/"),
 	}, nil
 }
 

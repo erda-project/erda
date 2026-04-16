@@ -43,6 +43,7 @@ var SessionInfos = map[string]StatusInfo{}
 
 type StatusInfo struct {
 	SessionID string     `json:"sessionid"`
+	Token     string     `json:"token,omitempty"`
 	ExpiredAt *time.Time `json:"expiredAt"`
 	UserInfo
 }
@@ -122,4 +123,42 @@ func StoreSessionInfo(host string, stat StatusInfo) error {
 	f.Write(content)
 
 	return nil
+}
+
+func DeleteSessionInfo(host string) error {
+	erdaDir, err := utils.FindGlobalErdaDir()
+	if err != nil {
+		return err
+	}
+
+	sessionPath := filepath.Join(erdaDir, sessionFile)
+	sessions, err := GetSessionInfos()
+	if err != nil {
+		return err
+	}
+	sessions = deleteSessionInfoFromMap(sessions, host)
+
+	f, err := os.OpenFile(sessionPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	content, err := json.MarshalIndent(sessions, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(content)
+	return err
+}
+
+func deleteSessionInfoFromMap(sessions map[string]StatusInfo, host string) map[string]StatusInfo {
+	result := make(map[string]StatusInfo, len(sessions))
+	for k, v := range sessions {
+		if k == host {
+			continue
+		}
+		result[k] = v
+	}
+	return result
 }

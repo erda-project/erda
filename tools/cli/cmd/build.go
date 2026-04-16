@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path"
@@ -32,7 +33,8 @@ import (
 var PIPELINERUN = command.Command{
 	Name:      "build",
 	ShortHelp: "create a pipeline and run it",
-	Example:   "$ erda-cli build <path-to/pipeline.yml>",
+	LongHelp:  `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log.`,
+	Example:   "$ erda-cli build <path-to/pipeline.yml>\n$ erda-cli -V build <path-to/pipeline.yml>",
 	Args: []command.Arg{
 		command.StringArg{}.Name("filename"),
 	},
@@ -138,7 +140,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return err
 	}
 
-	repoStats, err := common.GetRepoStats(ctx, org.ID, info.Project, info.Application)
+	_, applicationID, err := common.ResolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}
@@ -147,12 +149,18 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		request      apistructs.PipelineCreateRequest
 		pipelineResp apistructs.PipelineCreateResponse
 	)
-	request.AppID = uint64(repoStats.ApplicationID)
+	request.AppID = uint64(applicationID)
 	request.Branch = branch
 	request.Source = apistructs.PipelineSourceDice
 	request.PipelineYmlSource = apistructs.PipelineYmlSourceGittar
-	request.PipelineYmlName = filename
+	request.PipelineYmlName = normalizePipelineYmlName(filename)
 	request.AutoRun = true
+
+	if ctx.Debug {
+		if reqJSON, err := json.Marshal(request); err == nil {
+			ctx.Info("debug: cicds request body: %s", string(reqJSON))
+		}
+	}
 
 	// create pipeline
 	response, err := ctx.Post().Path("/api/cicds").JSONBody(request).Do().JSON(&pipelineResp)
@@ -160,14 +168,20 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return err
 	}
 	if !response.IsOK() {
+		if ctx.Debug {
+			ctx.Info("debug: cicds response status=%d body=%s", response.StatusCode(), string(response.Body()))
+		}
 		return errors.Errorf("build fail, status code: %d, err: %+v", response.StatusCode(), pipelineResp.Error)
 	}
 	if !pipelineResp.Success {
+		if ctx.Debug {
+			ctx.Info("debug: cicds response status=%d body=%s", response.StatusCode(), string(response.Body()))
+		}
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
 
 	if watch {
-		err = PipelineView(ctx, branch, pipelineResp.Data.ID, true)
+		err = PipelineView(ctx, branch, pipelineResp.Data.ID, true, false, 0, 0, "", "", "")
 		if err != nil {
 			ctx.Fail("failed to watch status of pipeline %d", pipelineResp.Data.ID)
 		}
@@ -177,4 +191,10 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 	}
 
 	return nil
+}
+
+func normalizePipelineYmlName(filename string) string {
+	filename = strings.TrimSpace(filename)
+	filename = strings.TrimPrefix(filename, "./")
+	return path.Clean(filename)
 }
