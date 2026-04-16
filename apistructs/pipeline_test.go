@@ -140,6 +140,25 @@ func TestPostHandlePBQueryString(t *testing.T) {
 	}
 	err := PostHandlePBQueryString(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 5, len(req.MustMatchLabelsJSON))
+	// mustMatch: JSON keys + mustMatchLabel keys + branch folded from Branches
+	assert.Equal(t, 6, len(req.MustMatchLabelsJSON))
 	assert.Equal(t, 4, len(req.AnyMatchLabelsJSON))
+}
+
+func TestPostHandlePBQueryString_LegacyAppIDAndBranchBecomeMustMatchLabels(t *testing.T) {
+	req := &pipelinepb.PipelinePagingRequest{
+		AppID:  1003418,
+		Branch: []string{"master"},
+		Source: []string{"dice"},
+	}
+	err := PostHandlePBQueryString(req)
+	assert.NoError(t, err)
+	assert.Contains(t, req.MustMatchLabelsJSON, LabelAppID)
+	assert.Contains(t, req.MustMatchLabelsJSON, LabelBranch)
+	appVals := req.MustMatchLabelsJSON[LabelAppID].GetListValue().GetValues()
+	assert.Len(t, appVals, 1)
+	assert.Equal(t, "1003418", appVals[0].GetStringValue())
+	brVals := req.MustMatchLabelsJSON[LabelBranch].GetListValue().GetValues()
+	assert.Len(t, brVals, 1)
+	assert.Equal(t, "master", brVals[0].GetStringValue())
 }

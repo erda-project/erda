@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -41,6 +42,89 @@ func GetPipeline(ctx *command.Context, pipelineID uint64) (pipelinepb.PipelineDe
 	}
 
 	return *pipelineInfoResp.Data, nil
+}
+
+func latestPipelineID(pipelines []apistructs.PagePipeline) (uint64, bool) {
+	var latest uint64
+	for _, p := range pipelines {
+		if p.ID > latest {
+			latest = p.ID
+		}
+	}
+	return latest, latest > 0
+}
+
+func GetLatestPipelineID(ctx *command.Context, appID uint64, branch string) (uint64, error) {
+	var pipelinePageResp apistructs.PipelinePageListResponse
+	// Use DOP /api/cicds (not pipeline /api/pipelines): dop/endpoints pipelineList folds
+	// appID and branches into mustMatchLabel before PageListPipeline. Raw /api/pipelines
+	// historically ignored top-level appID/branch unless mustMatchLabel was set.
+	response, err := ctx.Get().Path("/api/cicds").
+		Param("appID", fmt.Sprintf("%d", appID)).
+		Param("branches", branch).
+		Param("sources", string(apistructs.PipelineSourceDice)).
+		Param("pageNo", "1").
+		Param("pageSize", "20").
+		Do().JSON(&pipelinePageResp)
+	if err != nil {
+		return 0, err
+	}
+	if !response.IsOK() {
+		return 0, errors.Errorf("status fail, status code: %d, err: %+v", response.StatusCode(), pipelinePageResp.Error)
+	}
+	if !pipelinePageResp.Success {
+		return 0, errors.Errorf("status fail: %+v", pipelinePageResp.Error)
+	}
+	if pipelinePageResp.Data == nil || len(pipelinePageResp.Data.Pipelines) == 0 {
+		return 0, errors.Errorf("no pipeline found for branch %s", branch)
+	}
+	pipelineID, ok := latestPipelineID(pipelinePageResp.Data.Pipelines)
+	if !ok {
+		return 0, errors.Errorf("no pipeline found for branch %s", branch)
+	}
+	return pipelineID, nil
+}
+
+// ListPipelinesCICD lists pipelines via DOP GET /api/cicds (same query keys as CICDPipelineListRequest).
+func ListPipelinesCICD(ctx *command.Context, appID uint64, branches, sources, statuses, ymlNames string, pageNo, pageSize int) (*apistructs.PipelinePageListData, error) {
+	if pageNo <= 0 {
+		pageNo = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if sources == "" {
+		sources = string(apistructs.PipelineSourceDice)
+	}
+	var pipelinePageResp apistructs.PipelinePageListResponse
+	req := ctx.Get().Path("/api/cicds").
+		Param("appID", fmt.Sprintf("%d", appID)).
+		Param("sources", sources).
+		Param("pageNo", strconv.Itoa(pageNo)).
+		Param("pageSize", strconv.Itoa(pageSize))
+	if branches != "" {
+		req = req.Param("branches", branches)
+	}
+	if statuses != "" {
+		req = req.Param("statuses", statuses)
+	}
+	if ymlNames != "" {
+		req = req.Param("ymlNames", ymlNames)
+	}
+	response, err := req.Do().JSON(&pipelinePageResp)
+	if err != nil {
+		return nil, err
+	}
+	if !response.IsOK() {
+		return nil, errors.Errorf("status fail, status code: %d, err: %+v", response.StatusCode(), pipelinePageResp.Error)
+	}
+	if !pipelinePageResp.Success {
+		return nil, errors.Errorf("status fail: %+v", pipelinePageResp.Error)
+	}
+	if pipelinePageResp.Data == nil {
+		return nil, errors.New("empty pipeline list response")
+	}
+	return pipelinePageResp.Data, nil
 }
 
 // BuildCheckLoop checks build status in a loop while interactive is true
