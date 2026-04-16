@@ -18,10 +18,11 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestFlattenPipelineTasks(t *testing.T) {
