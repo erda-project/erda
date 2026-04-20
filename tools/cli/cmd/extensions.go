@@ -51,25 +51,29 @@ func RunExtensions(ctx *command.Context, all bool) error {
 		Do().Body(&b)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("extension list", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"extension list", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("extension list",
+		return fmt.Errorf("%s", utils.FormatErrMsg("extension list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("extension list",
-			fmt.Sprintf("failed to unmarshal extension list response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("extension list",
+			"failed to unmarshal extension list response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("extension list",
+		return fmt.Errorf("%s", utils.FormatErrMsg("extension list",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	data := [][]string{}
@@ -202,7 +206,7 @@ func inputPWD(prompt string) string {
 }
 
 func inputNormal(prompt string) string {
-	fmt.Printf(prompt)
+	fmt.Printf("%s", prompt)
 	r := bufio.NewReader(os.Stdin)
 	input, err := r.ReadString('\n')
 	if err != nil {

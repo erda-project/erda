@@ -51,25 +51,29 @@ func RunExtensionsPull(ctx *command.Context, extension string, dir string) error
 		Do().Body(&b)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("extension get", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"extension get", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("extension get",
+		return fmt.Errorf("%s", utils.FormatErrMsg("extension get",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("extension get",
-			fmt.Sprintf("failed to unmarshal build extension response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("extension get",
+			"failed to unmarshal build extension response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("extension get",
+		return fmt.Errorf("%s", utils.FormatErrMsg("extension get",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	workDir, err := os.Getwd()

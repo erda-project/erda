@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -50,6 +52,13 @@ var (
 var (
 	getEnv          = os.Getenv
 	getGlobalConfig = GetGlobalConfig
+)
+
+var (
+	commandErrorOutput  io.Writer = os.Stdout
+	commandErrorPrinted bool
+	cursorStateMu       sync.Mutex
+	cursorHidden        bool
 )
 
 // Default portal origin (same host family as git clone URLs, e.g. https://erda.cloud/org/dop/...).
@@ -123,12 +132,14 @@ type loginResponse struct {
 
 func PrepareCtx(cmd *cobra.Command, args []string) error {
 	logrus.SetOutput(os.Stdout)
+	hideCursorIfInteractive(tput)
 	var err error
 	defer func() {
 		cmd.SilenceErrors = true
 	}()
 	defer func() {
 		if !IsCompletion && err != nil {
+			MarkCommandErrorPrinted()
 			fmt.Println(err)
 		}
 	}()
@@ -148,7 +159,7 @@ func PrepareCtx(cmd *cobra.Command, args []string) error {
 
 	u, err := getFullUse(cmd)
 	if err != nil {
-		err = fmt.Errorf(color_str.Red("✗ ") + err.Error())
+		err = fmt.Errorf("%s", color_str.Red("✗ ")+err.Error())
 		return err
 	}
 
@@ -172,13 +183,13 @@ func PrepareCtx(cmd *cobra.Command, args []string) error {
 
 	// parse and use context according to host param or config file
 	if err := parseCtx(); err != nil {
-		err = fmt.Errorf(color_str.Red("✗ ") + err.Error())
+		err = fmt.Errorf("%s", color_str.Red("✗ ")+err.Error())
 		return err
 	}
 
 	sessionInfos, err := ensureSessionInfos()
 	if err != nil {
-		err = fmt.Errorf(color_str.Red("✗ ") + err.Error())
+		err = fmt.Errorf("%s", color_str.Red("✗ ")+err.Error())
 		return err
 	}
 	ctx.Sessions = sessionInfos
@@ -458,17 +469,19 @@ func loginAndStoreSession(host, username, password string) error {
 	request := ctx.UseOpenapi().Post().Path("/login").FormBody(form)
 	res, err := request.Do().Body(&body)
 	if err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("login", "error: "+err.Error(), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("login", "error: "+err.Error(), false))
 	}
 	if !res.IsOK() {
 		ctx.Error("login not ok, url: %s, response body: %s", request.GetUrl(), body.String())
-		return fmt.Errorf(utils.FormatErrMsg("login",
+		return fmt.Errorf("%s", utils.FormatErrMsg("login",
 			"failed to login, status code: "+strconv.Itoa(res.StatusCode())+string(res.Body()), false))
+
 	}
 	s, err := decodeLoginStatus(body.Bytes(), time.Now)
 	if err != nil {
-		return fmt.Errorf(utils.FormatErrMsg(
+		return fmt.Errorf("%s", utils.FormatErrMsg(
 			"login", "failed to  decode login response ("+err.Error()+")", false))
+
 	}
 
 	if err := status.StoreSessionInfo(host, s); err != nil {
@@ -527,24 +540,6 @@ func hasUsableAuth(s status.StatusInfo) bool {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if Interactive {
-		// hind cursor
-		tput("civis")
-		// unhind cursor
-		defer tput("cnorm")
-	}
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
-	if Interactive {
-		go func() {
-			for range c {
-				tput("cnorm")
-				os.Exit(1)
-			}
-		}()
-	}
-
 	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda portal base URL (default: https://erda.cloud, same as git remote host; use your OpenAPI URL only if the deployment exposes API without portal; overrides ERDA_HOST and ~/.erda.d/config)")
 	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "", "origin", "the remote for Erda repo")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Erda username to authenticate")
@@ -552,7 +547,60 @@ func Execute() {
 	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "if true, enable verbose mode")
 	RootCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "", true, "if true, interactive with user")
 
-	RootCmd.Execute()
+	defer restoreCursorIfHidden(tput)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	handleInterruptSignals(c, os.Exit, func() {
+		restoreCursorIfHidden(tput)
+	})
+
+	_ = executeRootCommand(RootCmd)
+}
+
+func MarkCommandErrorPrinted() {
+	commandErrorPrinted = true
+}
+
+func executeRootCommand(root *cobra.Command) error {
+	commandErrorPrinted = false
+	err := root.Execute()
+	if err != nil && !IsCompletion && !commandErrorPrinted {
+		MarkCommandErrorPrinted()
+		_, _ = fmt.Fprintln(commandErrorOutput, err)
+	}
+	return err
+}
+
+func handleInterruptSignals(c <-chan os.Signal, exit func(int), restore func()) {
+	go func() {
+		for range c {
+			restore()
+			exit(1)
+		}
+	}()
+}
+
+func hideCursorIfInteractive(control func(string) error) {
+	cursorStateMu.Lock()
+	defer cursorStateMu.Unlock()
+
+	if !Interactive || cursorHidden {
+		return
+	}
+	_ = control("civis")
+	cursorHidden = true
+}
+
+func restoreCursorIfHidden(control func(string) error) {
+	cursorStateMu.Lock()
+	defer cursorStateMu.Unlock()
+
+	if !cursorHidden {
+		return
+	}
+	_ = control("cnorm")
+	cursorHidden = false
 }
 
 func tput(arg string) error {
