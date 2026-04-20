@@ -258,6 +258,7 @@ var {{.Name}}Cmd = &cobra.Command{
 		var err error
 		defer func(){
 			if err != nil {
+				command.MarkCommandErrorPrinted()
 				fmt.Println(color_str.Red("✗ "), translate.Translate(err))
 			}
 		}()

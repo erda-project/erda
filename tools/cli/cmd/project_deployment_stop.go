@@ -70,14 +70,16 @@ type PDParameters struct {
 
 func RunStopProjectInWorkspace(ctx *command.Context, org, project, workspace string) error {
 	if project == "" || workspace == "" || org == "" {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to stop project deployments, one of the flags [org, project, workspace] not set", true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to stop project deployments, one of the flags [org, project, workspace] not set", true))
+
 	}
 
 	uop, err := common.GetUserOrgProjID(ctx, org, project)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to stop project deployments, can not get orgID or userID or projectID: "+err.Error(), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to stop project deployments, can not get orgID or userID or projectID: "+err.Error(), true))
+
 	}
 
 	params := PDParameters{
@@ -175,8 +177,9 @@ func StopProjectWorkspaceRuntimes(ctx *command.Context, runtimeIds []string, par
 	for _, runtimeId := range runtimeIds {
 		id, err := strconv.ParseUint(runtimeId, 10, 64)
 		if err != nil {
-			return fmt.Errorf(
-				utils.FormatErrMsg("project-deployment stop", "failed to ParseUint "+runtimeId, false))
+			return fmt.Errorf("%s", utils.FormatErrMsg(
+				"project-deployment stop", "failed to ParseUint "+runtimeId, false))
+
 		}
 		req.IDs = append(req.IDs, id)
 	}
@@ -187,19 +190,22 @@ func StopProjectWorkspaceRuntimes(ctx *command.Context, runtimeIds []string, par
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to stop project runtimes ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to stop project runtimes ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !rsp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to stop project runtimes, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	if rsp.Data == nil {
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to stop project runtimes, return of scale action scaleDown is nil. status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	return nil
@@ -222,8 +228,9 @@ func StopProjectWorkspaceAddons(ctx *command.Context, addonIds []string, params 
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to stop project addons ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to stop project addons ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !rsp.Success {
 		if rsp.Data.Faild > 0 {
@@ -241,9 +248,10 @@ func StopProjectWorkspaceAddons(ctx *command.Context, addonIds []string, params 
 			}
 		}
 
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to stop project addons, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	ctx.Info("Successed to stop all addons: %v\n", addonIds)
@@ -262,13 +270,15 @@ func GetProjectApplicationIds(ctx *command.Context, params PDParameters) ([]stri
 		Param("pageNo", "1").
 		Do().JSON(&listResp)
 	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to get applications ("+err.Error()+")", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to get applications ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !listResp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to get applications, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	appIds := make([]string, 0)
@@ -285,13 +295,15 @@ func GetProjectApplicationIds(ctx *command.Context, params PDParameters) ([]stri
 			Param("pageNo", strconv.FormatInt(int64(page), 10)).
 			Do().JSON(&listResp)
 		if err != nil {
-			return nil, fmt.Errorf(
-				utils.FormatErrMsg("project-deployment stop", "failed to get applications ("+err.Error()+")", false))
+			return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+				"project-deployment stop", "failed to get applications ("+err.Error()+")", false))
+
 		}
 		if !response.IsOK() || !listResp.Success {
-			return nil, fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+			return nil, fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 				fmt.Sprintf("failed to get applications, status-code: %d, content-type: %s, raw bod: %s",
 					response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 		}
 		for _, app := range listResp.Data.List {
 			appIds = append(appIds, strconv.FormatUint(app.ID, 10))
@@ -311,13 +323,15 @@ func GetProjectApplicationRuntimesIDsForStopOrStart(ctx *command.Context, params
 		Do().
 		JSON(&listResp)
 	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to get runtimes ("+err.Error()+")", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to get runtimes ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !listResp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to get runtimes, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	runtimeIds := make([]string, 0)
@@ -352,13 +366,15 @@ func checkProjectRuntimes(ctx *command.Context, applicationId string, params PDP
 		Do().
 		JSON(&listResp)
 	if err != nil {
-		return []bundle.GetApplicationRuntimesDataEle{}, fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to check runtime stopped ("+err.Error()+")", false))
+		return []bundle.GetApplicationRuntimesDataEle{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to check runtime stopped ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !listResp.Success {
-		return []bundle.GetApplicationRuntimesDataEle{}, fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return []bundle.GetApplicationRuntimesDataEle{}, fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to check runtime stopped, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	unStoppedRuntimeIds := make([]bundle.GetApplicationRuntimesDataEle, 0)
@@ -393,8 +409,9 @@ func waitProjectRuntimesComplete(appIds []string, ctx *command.Context, params P
 					time.Sleep(15 * time.Second)
 					break
 				} else {
-					return fmt.Errorf(
-						utils.FormatErrMsg("project-deployment stop", fmt.Sprintf("check runtimes for project %s failed ", params.projectId), false))
+					return fmt.Errorf("%s", utils.FormatErrMsg(
+						"project-deployment stop", fmt.Sprintf("check runtimes for project %s failed ", params.projectId), false))
+
 				}
 			}
 
@@ -421,7 +438,7 @@ func waitProjectRuntimesComplete(appIds []string, ctx *command.Context, params P
 			ctx.Error("RuntimeID:%d  Name:%s  ProjectID:%d  ApplicationID:%d  ReleaseID:%s  Workspace: %s\n",
 				runtime.ID, runtime.Name, runtime.ProjectID, runtime.ApplicationID, runtime.ReleaseID, runtime.Extra.Workspace)
 		}
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment stop", "some runtimes stop failed", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop", "some runtimes stop failed", false))
 	}
 	return nil
 }
@@ -437,13 +454,15 @@ func GetProjectAddonsRoutingKeysForStopOrStart(ctx *command.Context, params PDPa
 		Do().
 		JSON(&listResp)
 	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to get addons ("+err.Error()+")", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment stop", "failed to get addons ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !listResp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("project-deployment stop",
 			fmt.Sprintf("failed to get addons, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	addonRoutingKeyIds := make([]string, 0)

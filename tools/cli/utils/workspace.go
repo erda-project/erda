@@ -157,7 +157,7 @@ func InputPWD(prompt string) string {
 }
 
 func InputNormal(prompt string) string {
-	fmt.Printf(prompt)
+	fmt.Printf("%s", prompt)
 	r := bufio.NewReader(os.Stdin)
 	input, err := r.ReadString('\n')
 	if err != nil {

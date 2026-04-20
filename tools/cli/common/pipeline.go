@@ -213,8 +213,9 @@ func BuildCheckLoop(ctx *command.Context, pipelineID uint64) error {
 				fmt.Println(showMessage.Stacks)
 				msg = showMessage.Msg
 			}
-			return fmt.Errorf(utils.FormatErrMsg("pipeline info",
+			return fmt.Errorf("%s", utils.FormatErrMsg("pipeline info",
 				"build error: "+msg, false))
+
 		}
 
 		if pipelineStatus == apistructs.PipelineStatusSuccess {

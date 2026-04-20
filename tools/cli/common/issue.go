@@ -36,25 +36,29 @@ func GetIssue(ctx *command.Context, orgID, projectID, issueID uint64) (*apistruc
 		Param("projectID", strconv.FormatUint(projectID, 10)).
 		Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg(
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get issue", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf(utils.FormatErrMsg("get issue",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("get issue",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg("get issue",
-			fmt.Sprintf("failed to unmarshal response ("+err.Error()+")"), false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("get issue",
+			"failed to unmarshal response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("get issue",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("get issue",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -83,25 +87,29 @@ func ListMyIssue(ctx *command.Context, req *apistructs.IssuePagingRequest) (*api
 		Param("orderBy", req.OrderBy).Param("asc", "false").
 		Params(values).Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg(
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get issues", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list issue",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list issue",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list issue",
-			fmt.Sprintf("failed to unmarshal response ("+err.Error()+")"), false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list issue",
+			"failed to unmarshal response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list issue",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list issue",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -117,25 +125,29 @@ func ListState(ctx *command.Context, orgID uint64, req apistructs.IssueStateRela
 		Do().Body(&b)
 
 	if err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg(
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get state-relations detail", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf(utils.FormatErrMsg("get state-relations",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("get state-relations",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg("get state-relations",
-			fmt.Sprintf("failed to unmarshal response ("+err.Error()+")"), false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("get state-relations",
+			"failed to unmarshal response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("get state-relations",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("get state-relations",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -172,25 +184,29 @@ func CreateIssueComment(ctx *command.Context, orgID uint64, request *pb.CommentI
 		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().Body(&b)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"create", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !respponse.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("create issue comments",
+		return fmt.Errorf("%s", utils.FormatErrMsg("create issue comments",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				respponse.StatusCode(), respponse.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("create issue comments",
-			fmt.Sprintf("failed to unmarshal create response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("create issue comments",
+			"failed to unmarshal create response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("create issue comments",
+		return fmt.Errorf("%s", utils.FormatErrMsg("create issue comments",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return nil
@@ -205,25 +221,29 @@ func UpdateIssue(ctx *command.Context, orgID uint64, request *apistructs.IssueUp
 		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().Body(&b)
 	if err != nil {
-		return fmt.Errorf(utils.FormatErrMsg(
+		return fmt.Errorf("%s", utils.FormatErrMsg(
 			"get issues", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("update issue",
+		return fmt.Errorf("%s", utils.FormatErrMsg("update issue",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("update issue",
-			fmt.Sprintf("failed to unmarshal response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("update issue",
+			"failed to unmarshal response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("update issue",
+		return fmt.Errorf("%s", utils.FormatErrMsg("update issue",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return nil

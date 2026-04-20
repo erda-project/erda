@@ -40,25 +40,29 @@ func GetApplicationDetail(ctx *command.Context, orgID, projectID, applicationID 
 		Path(fmt.Sprintf("/api/applications/%d?projectID=%d", applicationID, projectID)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg(
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get application detail", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg("get application detail",
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get application detail",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg("get application detail",
-			fmt.Sprintf("failed to unmarshal application detail response ("+err.Error()+")"), false))
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get application detail",
+			"failed to unmarshal application detail response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg("get application detail",
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get application detail",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -122,26 +126,30 @@ func GetPagingApplications(ctx *command.Context, orgID, projectID uint64, pageNo
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(
-			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(utils.FormatErrMsg("list",
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to unmarshal application list response ("+err.Error()+")"), false))
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
+			"failed to unmarshal application list response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(
-			utils.FormatErrMsg("list",
-				fmt.Sprintf("failed to request, error code: %s, error message: %s",
-					resp.Error.Code, resp.Error.Msg), false))
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -157,26 +165,30 @@ func GetPagingMyApplications(ctx *command.Context, orgID, projectID uint64, page
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(
-			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(utils.FormatErrMsg("list",
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to unmarshal application list response ("+err.Error()+")"), false))
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
+			"failed to unmarshal application list response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf(
-			utils.FormatErrMsg("list",
-				fmt.Sprintf("failed to request, error code: %s, error message: %s",
-					resp.Error.Code, resp.Error.Msg), false))
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -189,25 +201,29 @@ func DeleteApplication(ctx *command.Context, applicationID uint64) error {
 	response, err := ctx.Delete().
 		Path(fmt.Sprintf("/api/applications/%d", applicationID)).Do().Body(&b)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("delete", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"delete", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("delete",
+		return fmt.Errorf("%s", utils.FormatErrMsg("delete",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(utils.FormatErrMsg("delete",
-			fmt.Sprintf("failed to unmarshal releases remove application response ("+err.Error()+")"), false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("delete",
+			"failed to unmarshal releases remove application response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("delete",
+		return fmt.Errorf("%s", utils.FormatErrMsg("delete",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 	return nil
 }
@@ -234,25 +250,29 @@ func CreateApplication(ctx *command.Context, orgID, projectID uint64, applicatio
 		Header("org", strconv.FormatUint(orgID, 10)).
 		JSONBody(request).Do().Body(&b)
 	if err != nil {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(
-			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"create", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !resp.IsOK() {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg("create",
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg("create",
-			fmt.Sprintf("failed to unmarshal application create response ("+err.Error()+")"), false))
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("create",
+			"failed to unmarshal application create response ("+err.Error()+")", false))
+
 	}
 
 	if !response.Success {
-		return apistructs.ApplicationDTO{}, fmt.Errorf(utils.FormatErrMsg("create",
+		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				response.Error.Code, response.Error.Msg), false))
+
 	}
 
 	return response.Data, nil

@@ -40,8 +40,9 @@ var CONFIGDELETE = command.Command{
 
 func RunFeaturesDelete(ctx *command.Context, org, project, workspace string) error {
 	if project == "" || workspace == "" || org == "" {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config delete", "failed to delete config, one of the flags [org, project, workspace] not set", true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config delete", "failed to delete config, one of the flags [org, project, workspace] not set", true))
+
 	}
 
 	if err := common.DelelteProjectWorkspaceConfigs(ctx, org, project, workspace); err != nil {

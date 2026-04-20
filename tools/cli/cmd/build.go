@@ -31,10 +31,11 @@ import (
 )
 
 var PIPELINERUN = command.Command{
-	Name:      "build",
-	ShortHelp: "create a pipeline and run it",
-	LongHelp:  `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log.`,
-	Example:   "$ erda-cli build <path-to/pipeline.yml>\n$ erda-cli -V build <path-to/pipeline.yml>",
+	ParentName: "PIPELINE",
+	Name:       "run",
+	ShortHelp:  "create a pipeline and run it",
+	LongHelp:   `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log.`,
+	Example:    "$ erda-cli pipeline run <path-to/pipeline.yml>\n$ erda-cli -V pipeline run <path-to/pipeline.yml>",
 	Args: []command.Arg{
 		command.StringArg{}.Name("filename"),
 	},
@@ -181,12 +182,12 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 	}
 
 	if watch {
-		err = PipelineView(ctx, branch, pipelineResp.Data.ID, true, false, 0, 0, "", "", "")
+		err = PipelineStatus(ctx, branch, pipelineResp.Data.ID, true)
 		if err != nil {
 			ctx.Fail("failed to watch status of pipeline %d", pipelineResp.Data.ID)
 		}
 	} else {
-		ctx.Succ("run pipeline: %s for branch: %s, pipelineID: %d, you can view building status via `erda-cli view -i %d`",
+		ctx.Succ("run pipeline: %s for branch: %s, pipelineID: %d, you can view building status via `erda-cli pipeline status -i %d`",
 			filename, branch, pipelineResp.Data.ID, pipelineResp.Data.ID)
 	}
 

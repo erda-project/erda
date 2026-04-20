@@ -42,14 +42,16 @@ var PROJECTDEPLOYMENTSTART = command.Command{
 
 func RunStartProjectInWorkspace(ctx *command.Context, org, project, workspace string) error {
 	if project == "" || workspace == "" || org == "" {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment start", "failed to start project deployments, one of the flags [org, project, workspace] not set", true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment start", "failed to start project deployments, one of the flags [org, project, workspace] not set", true))
+
 	}
 
 	uop, err := common.GetUserOrgProjID(ctx, org, project)
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment start", "failed to start project deployments, can not get orgID or userID or projectID: "+err.Error(), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment start", "failed to start project deployments, can not get orgID or userID or projectID: "+err.Error(), true))
+
 	}
 
 	params := PDParameters{
@@ -146,8 +148,9 @@ func StartProjectWorkspaceRuntimes(ctx *command.Context, runtimeIds []string, pa
 	for _, runtimeId := range runtimeIds {
 		id, err := strconv.ParseUint(runtimeId, 10, 64)
 		if err != nil {
-			return fmt.Errorf(
-				utils.FormatErrMsg("project-deployment start", "failed to ParseUint "+runtimeId, false))
+			return fmt.Errorf("%s", utils.FormatErrMsg(
+				"project-deployment start", "failed to ParseUint "+runtimeId, false))
+
 		}
 		req.IDs = append(req.IDs, id)
 	}
@@ -158,19 +161,22 @@ func StartProjectWorkspaceRuntimes(ctx *command.Context, runtimeIds []string, pa
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment start", "failed to get applications ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment start", "failed to get applications ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !rsp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment start",
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment start",
 			fmt.Sprintf("failed to start project runtimes, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	if rsp.Data == nil {
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment start",
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment start",
 			fmt.Sprintf("failed to start project runtimes, return of scale action scaleDown is nil. status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	return nil
@@ -193,8 +199,9 @@ func StartProjectWorkspaceAddons(ctx *command.Context, addonIds []string, params
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment start", "failed to start project addons ("+err.Error()+")", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment start", "failed to start project addons ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !rsp.Success {
 		if rsp.Data.Faild > 0 {
@@ -212,9 +219,10 @@ func StartProjectWorkspaceAddons(ctx *command.Context, addonIds []string, params
 			}
 		}
 
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment start",
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment start",
 			fmt.Sprintf("failed to start project addons, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	ctx.Info("Successed to start all addons: %v\n", addonIds)
@@ -233,8 +241,9 @@ func waitProjectAddonsComplete(ctx *command.Context, params PDParameters) error 
 				time.Sleep(15 * time.Second)
 				continue
 			} else {
-				return fmt.Errorf(
-					utils.FormatErrMsg("project-deployment start", fmt.Sprintf("check addons for project %s failed ", params.projectId), false))
+				return fmt.Errorf("%s", utils.FormatErrMsg(
+					"project-deployment start", fmt.Sprintf("check addons for project %s failed ", params.projectId), false))
+
 			}
 		}
 
@@ -258,7 +267,7 @@ func waitProjectAddonsComplete(ctx *command.Context, params PDParameters) error 
 			ctx.Error("AddonID:%d  Name:%s  DisplayName:%s  Plan:%s  Version:%s  OrgID:%d  ProjectID:%d  ProjectName:%s  Workspace: %s Status:%s  Reference: %d AttachCount:%d\n",
 				addon.ID, addon.Name, addon.AddonDisplayName, addon.Plan, addon.Version, addon.OrgID, addon.ProjectID, addon.ProjectName, addon.Workspace, addon.Status, addon.Reference, addon.AttachCount)
 		}
-		return fmt.Errorf(utils.FormatErrMsg("project-deployment start", "some addons start failed", false))
+		return fmt.Errorf("%s", utils.FormatErrMsg("project-deployment start", "some addons start failed", false))
 	}
 	return nil
 }
@@ -274,13 +283,15 @@ func checkProjectAddons(ctx *command.Context, params PDParameters) ([]apistructs
 		Do().
 		JSON(&listResp)
 	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("project-deployment start", "failed to get addons ("+err.Error()+")", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"project-deployment start", "failed to get addons ("+err.Error()+")", false))
+
 	}
 	if !response.IsOK() || !listResp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("project-deployment start",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("project-deployment start",
 			fmt.Sprintf("failed to get addons, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+
 	}
 
 	addons := make([]apistructs.AddonFetchResponseData, 0)

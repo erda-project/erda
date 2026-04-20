@@ -45,25 +45,29 @@ func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs
 		Path(fmt.Sprintf("/api/projects/%d", projectID)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg(
+		return apistructs.ProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg(
 			"get project detail", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("get project detail",
+		return apistructs.ProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get project detail",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("get project detail",
-			fmt.Sprintf("failed to unmarshal project detail response ("+err.Error()+")"), false))
+		return apistructs.ProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get project detail",
+			"failed to unmarshal project detail response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("get project detail",
+		return apistructs.ProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get project detail",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	return resp.Data, nil
@@ -87,25 +91,29 @@ func CreateProject(ctx *command.Context, orgID uint64, name, desc string,
 		Header("org", strconv.FormatUint(orgID, 10)).
 		JSONBody(request).Do().Body(&b)
 	if err != nil {
-		return response.Data, fmt.Errorf(
-			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg(
+			"create", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !resp.IsOK() {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
-			fmt.Sprintf("failed to unmarshal project create response ("+err.Error()+")"), false))
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
+			"failed to unmarshal project create response ("+err.Error()+")", false))
+
 	}
 
 	if !response.Success {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				response.Error.Code, response.Error.Msg), false))
+
 	}
 
 	return response.Data, nil
@@ -127,19 +135,22 @@ func CreateMSPProject(ctx *command.Context, projectID uint64, name string) (*pb.
 	resp, err := ctx.Post().Path("/api/msp/tenant/project").
 		JSONBody(request).Do().Body(&b)
 	if err != nil {
-		return response.Data, fmt.Errorf(
-			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg(
+			"create", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !resp.IsOK() {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
-			fmt.Sprintf("failed to unmarshal project create response ("+err.Error()+")"), false))
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
+			"failed to unmarshal project create response ("+err.Error()+")", false))
+
 	}
 
 	return response.Data, nil
@@ -169,19 +180,22 @@ func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (u
 			},
 		}).Do().Body(&b)
 	if err != nil {
-		return response.Data, fmt.Errorf(
-			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg(
+			"create", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !resp.IsOK() {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("import",
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("import",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
-		return response.Data, fmt.Errorf(utils.FormatErrMsg("import",
-			fmt.Sprintf("failed to unmarshal project import response ("+err.Error()+")"), false))
+		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("import",
+			"failed to unmarshal project import response ("+err.Error()+")", false))
+
 	}
 
 	return response.Data, nil
@@ -199,34 +213,39 @@ func ListMyProjectInOrg(ctx *command.Context, orgId string, projectName string) 
 		Header("org", orgId).
 		Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list",
+			"failed to unmarshal projects list response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	if resp.Data.Total < 0 {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
+		return nil, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list", "critical: the number of projects is less than 0", false))
+
 	}
 
 	if resp.Data.Total == 0 {
-		fmt.Printf(utils.FormatErrMsg("list", "no projects created\n", false))
+		fmt.Printf("%s", utils.FormatErrMsg("list", "no projects created\n", false))
 		return nil, nil
 	}
 
@@ -362,30 +381,35 @@ func GetPagingProjects(ctx *command.Context, orgId uint64, pageNo, pageSize int)
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.PagingProjectDTO{}, fmt.Errorf(
-			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+		return apistructs.PagingProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list", "failed to request ("+err.Error()+")", false))
+
 	}
 
 	if !response.IsOK() {
-		return apistructs.PagingProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("list",
+		return apistructs.PagingProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.PagingProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
+		return apistructs.PagingProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
+			"failed to unmarshal projects list response ("+err.Error()+")", false))
+
 	}
 
 	if !resp.Success {
-		return apistructs.PagingProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("list",
+		return apistructs.PagingProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
+
 	}
 
 	if resp.Data.Total < 0 {
-		return apistructs.PagingProjectDTO{}, fmt.Errorf(
-			utils.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
+		return apistructs.PagingProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg(
+			"list", "critical: the number of projects is less than 0", false))
+
 	}
 
 	return resp.Data, nil

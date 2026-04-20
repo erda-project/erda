@@ -34,107 +34,47 @@ import (
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
-var VIEW = command.Command{
-	Name:      "view",
-	ShortHelp: "View pipeline status",
-	Example: ` $ erda-cli view
-  $ erda-cli view -i <pipelineId>
-  $ erda-cli view --list
-  $ erda-cli view --list --page 2 --page-size 10 --statuses Running --sources dice`,
+var STATUS = command.Command{
+	ParentName: "PIPELINE",
+	Name:       "status",
+	ShortHelp:  "Show pipeline status",
+	Example: ` $ erda-cli pipeline status
+  $ erda-cli pipeline status -i <pipelineId>
+  $ erda-cli pipeline status -w`,
 	Flags: []command.Flag{
-		command.StringFlag{Short: "b", Name: "branch", Doc: "branch filter: single branch, or comma-separated branches (matches /api/cicds branches); default is current git branch", DefaultValue: ""},
+		command.StringFlag{Short: "b", Name: "branch", Doc: "branch filter; default is current git branch", DefaultValue: ""},
 		command.Uint64Flag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},
-		command.BoolFlag{Short: "w", Name: "watch", Doc: "watch the status (not with --list)", DefaultValue: false},
-		command.BoolFlag{Short: "l", Name: "list", Doc: "list pipelines for the workspace app via /api/cicds", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "page", Doc: "for --list: page number (default 1)", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "page-size", Doc: "for --list: page size (default 20)", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "sources", Doc: "for --list: pipeline sources, comma-separated (default dice)", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "statuses", Doc: "for --list: filter by pipeline status", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "yml-names", Doc: "for --list: filter by pipeline yml name(s), comma-separated (query ymlNames)", DefaultValue: ""},
+		command.BoolFlag{Short: "w", Name: "watch", Doc: "watch the status", DefaultValue: false},
 	},
-	Run: PipelineView,
+	Run: PipelineStatus,
 }
 
-func PipelineView(ctx *command.Context, branch string, pipelineID uint64, watch bool, list bool, page int, pageSize int, sources string, statuses string, ymlNames string) (err error) {
-	if _, err := os.Stat(".git"); err != nil {
-		return errors.New("Not a valid git repository directory.")
-	}
-
+func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64, watch bool) (err error) {
 	if branch == "" {
-		b, err := utils.GetWorkspaceBranch(".")
+		b, err := getWorkspaceBranch(".")
 		if err != nil {
 			return err
 		}
 		branch = b
 	}
 
-	info, err := utils.GetWorkspaceInfo(".", command.Remote)
+	info, err := getWorkspaceInfo(".", command.Remote)
 	if err != nil {
 		return errors.Wrap(err, "failed to get  workspace info")
 	}
 
-	org, err := common.GetOrgDetail(ctx, info.Org)
+	org, err := getOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
-	projectID, applicationID, err := common.ResolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
+	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", org.ID, info.Project, info.Application)
 	}
 
-	if list {
-		if watch {
-			return errors.New("cannot use --watch with --list")
-		}
-		if pipelineID > 0 {
-			ctx.Info("ignoring --pipelineID when using --list")
-		}
-		data, err := common.ListPipelinesCICD(ctx, uint64(applicationID), branch, sources, statuses, ymlNames, page, pageSize)
-		if err != nil {
-			return err
-		}
-		pn := page
-		if pn <= 0 {
-			pn = 1
-		}
-		ps := pageSize
-		if ps <= 0 {
-			ps = 20
-		}
-		fmt.Printf("pipelines (appID=%d, total=%d, page=%d, pageSize=%d)\n",
-			applicationID, data.Total, pn, ps)
-		var rows [][]string
-		for _, p := range data.Pipelines {
-			br := p.FilterLabels[apistructs.LabelBranch]
-			commit := p.Commit
-			if len(commit) > 7 {
-				commit = commit[:7]
-			}
-			tb := ""
-			if p.TimeBegin != nil {
-				tb = p.TimeBegin.Format("2006-01-02 15:04:05")
-			}
-			rows = append(rows, []string{
-				strconv.FormatUint(p.ID, 10),
-				string(p.Status),
-				br,
-				commit,
-				p.YmlName,
-				tb,
-			})
-		}
-		if err = table.NewTable().Header([]string{
-			"pipelineID", "status", "branch", "commit", "ymlName", "startedAt",
-		}).Data(rows).Flush(); err != nil {
-			return err
-		}
-		fmt.Printf("view one: erda-cli view -i <pipelineID>\n")
-		return nil
-	}
-
 	if pipelineID <= 0 {
-		pipelineID, err = common.GetLatestPipelineID(ctx, uint64(applicationID), branch)
+		pipelineID, err = getLatestPipelineID(ctx, uint64(applicationID), branch)
 		if err != nil {
 			return err
 		}
@@ -174,7 +114,7 @@ func PipelineView(ctx *command.Context, branch string, pipelineID uint64, watch 
 	}
 
 	// fetch pipeline info
-	pipelineInfo, err := common.GetPipeline(ctx, pipelineID)
+	pipelineInfo, err := loadPipelineDetail(ctx, pipelineID)
 	if err != nil {
 		return err
 	}

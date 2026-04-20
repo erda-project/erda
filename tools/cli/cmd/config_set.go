@@ -42,13 +42,14 @@ var CONFIGSET = command.Command{
 
 func RunFeaturesSet(ctx *command.Context, feature, org, project, workspace string) error {
 	if project == "" || workspace == "" || org == "" {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config set", "failed to set config, one of the flags [org, project, workspace] not set", true))
+		return fmt.Errorf("%s", utils.FormatErrMsg(
+			"config set", "failed to set config, one of the flags [org, project, workspace] not set", true))
+
 	}
 
 	if err := common.SetProjectWorkspaceConfigs(ctx, feature, org, project, workspace); err != nil {
 		ctx.Error("failed to set config: " + err.Error() + "\n")
-		return fmt.Errorf(utils.FormatErrMsg("config set", "failed to set configs: "+err.Error(), true))
+		return fmt.Errorf("%s", utils.FormatErrMsg("config set", "failed to set configs: "+err.Error(), true))
 	}
 
 	ctx.Succ("config set success\n")
