@@ -16,7 +16,10 @@ package command
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -27,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/tools/cli/status"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
@@ -92,8 +96,232 @@ func TestContextCurrentAuthInfoFallsBackToOpenapiHost(t *testing.T) {
 	require.Equal(t, "Bearer access-token", info.Token)
 }
 
+func TestEnsureSessionInfosRefreshesExpiredTokenWithStoredCredential(t *testing.T) {
+	expiredAt := time.Now().Add(-time.Hour)
+	refreshedAt := time.Now().Add(time.Hour)
+	host := "https://openapi.erda.cloud"
+	sessions := map[string]status.StatusInfo{
+		host: {
+			Token:     "Bearer old-token",
+			ExpiredAt: &expiredAt,
+			Credential: &status.Credential{
+				Type: credentialTypeBasic,
+				Auth: encodeBasicAuth("ash", "secret"),
+			},
+		},
+	}
+
+	origCtx := ctx
+	origInteractive := Interactive
+	origUsername := username
+	origPassword := password
+	origGetSessionInfos := getSessionInfos
+	origLoginAndStoreSession := loginAndStoreSession
+	t.Cleanup(func() {
+		ctx = origCtx
+		Interactive = origInteractive
+		username = origUsername
+		password = origPassword
+		getSessionInfos = origGetSessionInfos
+		loginAndStoreSession = origLoginAndStoreSession
+	})
+
+	ctx = Context{CurrentHost: host}
+	Interactive = false
+	username = ""
+	password = ""
+	getSessionInfos = func() (map[string]status.StatusInfo, error) {
+		return sessions, nil
+	}
+
+	var loginHost, loginUsername, loginPassword string
+	loginAndStoreSession = func(host, username, password string) error {
+		loginHost = host
+		loginUsername = username
+		loginPassword = password
+		sessions[host] = status.StatusInfo{
+			Token:     "Bearer new-token",
+			ExpiredAt: &refreshedAt,
+			Credential: &status.Credential{
+				Type: credentialTypeBasic,
+				Auth: encodeBasicAuth(username, password),
+			},
+		}
+		return nil
+	}
+
+	got, err := ensureSessionInfos()
+	require.NoError(t, err)
+	require.Equal(t, host, loginHost)
+	require.Equal(t, "ash", loginUsername)
+	require.Equal(t, "secret", loginPassword)
+	require.Equal(t, "Bearer new-token", got[host].Token)
+	credentialUsername, _, err := decodeBasicAuth(got[host].Credential.Auth)
+	require.NoError(t, err)
+	require.Equal(t, "ash", credentialUsername)
+}
+
+func TestLoginAndStoreSessionPersistsBasicAuthCredential(t *testing.T) {
+	client := httpclient.New()
+	client.BackendClient().Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		require.Equal(t, "/login", r.URL.Path)
+		require.NoError(t, r.ParseForm())
+		require.Equal(t, "ash", r.Form.Get("username"))
+		require.Equal(t, "secret", r.Form.Get("password"))
+		body, err := json.Marshal(loginResponse{
+			User: &loginResponseUser{
+				ID:    "1001",
+				Email: "ash@example.com",
+				Nick:  "ash",
+			},
+			Token: &loginResponseToken{
+				AccessToken: "access-token",
+				ExpiresIn:   3600,
+				TokenType:   "Bearer",
+			},
+		})
+		require.NoError(t, err)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       io.NopCloser(bytes.NewReader(body)),
+		}, nil
+	})
+
+	origCtx := ctx
+	origStoreSessionInfo := storeSessionInfo
+	t.Cleanup(func() {
+		ctx = origCtx
+		storeSessionInfo = origStoreSessionInfo
+	})
+
+	ctx = Context{
+		CurrentHost: "http://127.0.0.1:12345",
+		Openapi:     mustParseURLForTest(t, "http://127.0.0.1:12345"),
+		HttpClient:  client,
+	}
+
+	var stored status.StatusInfo
+	storeSessionInfo = func(_ string, stat status.StatusInfo) error {
+		stored = stat
+		return nil
+	}
+
+	require.NoError(t, loginAndStoreSession(ctx.CurrentHost, "ash", "secret"))
+	require.Equal(t, "Bearer access-token", stored.Token)
+	require.NotNil(t, stored.Credential)
+	require.Equal(t, credentialTypeBasic, stored.Credential.Type)
+	decodedUsername, decodedPassword, err := decodeBasicAuth(stored.Credential.Auth)
+	require.NoError(t, err)
+	require.Equal(t, "ash", decodedUsername)
+	require.Equal(t, "secret", decodedPassword)
+	require.NotEqual(t, "ash:secret", stored.Credential.Auth)
+}
+
+func TestEnsureSessionInfosPromptsWithCurrentHost(t *testing.T) {
+	host := "https://openapi.erda.cloud"
+
+	origCtx := ctx
+	origInteractive := Interactive
+	origUsername := username
+	origPassword := password
+	origGetSessionInfos := getSessionInfos
+	origInputNormal := inputNormal
+	origInputPassword := inputPassword
+	origOutput := contextOutput
+	t.Cleanup(func() {
+		ctx = origCtx
+		Interactive = origInteractive
+		username = origUsername
+		password = origPassword
+		getSessionInfos = origGetSessionInfos
+		inputNormal = origInputNormal
+		inputPassword = origInputPassword
+		contextOutput = origOutput
+	})
+
+	ctx = Context{CurrentHost: host}
+	Interactive = true
+	username = ""
+	password = ""
+	getSessionInfos = func() (map[string]status.StatusInfo, error) {
+		return map[string]status.StatusInfo{}, nil
+	}
+	var out bytes.Buffer
+	contextOutput = func() io.Writer { return &out }
+
+	var usernamePrompt, passwordPrompt string
+	inputNormal = func(prompt string) string {
+		usernamePrompt = prompt
+		return "ash"
+	}
+	inputPassword = func(prompt string) string {
+		passwordPrompt = prompt
+		return ""
+	}
+
+	_, err := ensureSessionInfos()
+	require.EqualError(t, err, "password is required to login to https://openapi.erda.cloud")
+	require.Equal(t, "Username: ", usernamePrompt)
+	require.Equal(t, "Password: ", passwordPrompt)
+	require.Contains(t, out.String(), "Login required for https://openapi.erda.cloud")
+}
+
+func TestEnsureSessionInfosReturnsPromptErrorWhenInteractivePasswordMissing(t *testing.T) {
+	expiredAt := time.Now().Add(-time.Hour)
+	host := "https://openapi.erda.cloud"
+
+	origCtx := ctx
+	origInteractive := Interactive
+	origUsername := username
+	origPassword := password
+	origGetSessionInfos := getSessionInfos
+	origInputNormal := inputNormal
+	origInputPassword := inputPassword
+	origOutput := contextOutput
+	t.Cleanup(func() {
+		ctx = origCtx
+		Interactive = origInteractive
+		username = origUsername
+		password = origPassword
+		getSessionInfos = origGetSessionInfos
+		inputNormal = origInputNormal
+		inputPassword = origInputPassword
+		contextOutput = origOutput
+	})
+
+	ctx = Context{CurrentHost: host}
+	Interactive = true
+	username = ""
+	password = ""
+	getSessionInfos = func() (map[string]status.StatusInfo, error) {
+		return map[string]status.StatusInfo{
+			host: {
+				Token:     "Bearer old-token",
+				ExpiredAt: &expiredAt,
+			},
+		}, nil
+	}
+	var out bytes.Buffer
+	contextOutput = func() io.Writer { return &out }
+	inputNormal = func(string) string { return "ash" }
+	inputPassword = func(string) string { return "" }
+
+	_, err := ensureSessionInfos()
+	require.EqualError(t, err, "password is required to login to https://openapi.erda.cloud")
+	require.Contains(t, out.String(), "Session expired for https://openapi.erda.cloud, please log in again")
+}
+
 func parseURLForTest(rawURL string) (*url.URL, error) {
 	return url.Parse(rawURL)
+}
+
+func mustParseURLForTest(t *testing.T, rawURL string) *url.URL {
+	t.Helper()
+	u, err := url.Parse(rawURL)
+	require.NoError(t, err)
+	return u
 }
 
 func TestResolveBaseHostPrefersExplicitHost(t *testing.T) {

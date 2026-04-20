@@ -42,10 +42,16 @@ const (
 var SessionInfos = map[string]StatusInfo{}
 
 type StatusInfo struct {
-	SessionID string     `json:"sessionid"`
-	Token     string     `json:"token,omitempty"`
-	ExpiredAt *time.Time `json:"expiredAt"`
+	SessionID  string      `json:"sessionid"`
+	Token      string      `json:"token,omitempty"`
+	ExpiredAt  *time.Time  `json:"expiredAt"`
+	Credential *Credential `json:"credential,omitempty"`
 	UserInfo
+}
+
+type Credential struct {
+	Type string `json:"type"`
+	Auth string `json:"auth,omitempty"`
 }
 
 type UserInfo struct {
@@ -107,7 +113,7 @@ func StoreSessionInfo(host string, stat StatusInfo) error {
 			return err
 		}
 	}
-	f, err := os.OpenFile(sessionPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	f, err := os.OpenFile(sessionPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
@@ -138,7 +144,7 @@ func DeleteSessionInfo(host string) error {
 	}
 	sessions = deleteSessionInfoFromMap(sessions, host)
 
-	f, err := os.OpenFile(sessionPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	f, err := os.OpenFile(sessionPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
