@@ -17,3 +17,6 @@ bin
 # go cache
 .gocache/
 .gomodcache/
+
+# AI
+docs/plans/
