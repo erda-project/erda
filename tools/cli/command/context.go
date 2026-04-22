@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,10 @@ import (
 
 var ctx = Context{
 	Sessions: make(map[string]status.StatusInfo),
+}
+
+var contextOutput = func() io.Writer {
+	return os.Stdout
 }
 
 func GetContext() *Context {
@@ -136,7 +141,8 @@ func (ctx *Context) FetchOpenapi() error {
 	*ctx.Hepaapi = *ctx.Openapi
 	ctx.Hepaapi.Host = strings.Replace(ctx.Openapi.Host, "openapi.", "hepa.", 1)
 	ctx.CurrentHost = ctx.Openapi.String()
-	ctx.Info(`erda openapi info:
+	if ctx.Debug {
+		ctx.Info(`erda openapi info:
 	domain: %s
 	openapi: %s
 	hepa: %s
@@ -145,6 +151,7 @@ func (ctx *Context) FetchOpenapi() error {
 	git_commit: %s
 	go_version: %s
 	`, ctx.Domain.String(), ctx.Openapi.String(), ctx.Hepaapi.String(), resp.Version.Built, resp.Version.DiceVersion, resp.Version.GitCommit, resp.Version.GoVersion)
+	}
 	return nil
 }
 
@@ -245,25 +252,25 @@ func (ctx *Context) CurrentAuthInfo() (status.StatusInfo, bool) {
 
 func (ctx *Context) Info(format string, a ...interface{}) {
 	f := "[INFO] " + strings.TrimSuffix(format, "\n") + "\n"
-	fmt.Printf(f, a...)
+	fmt.Fprintf(contextOutput(), f, a...)
 }
 
 func (ctx *Context) Warn(format string, a ...interface{}) {
 	f := "[WARN] " + strings.TrimSuffix(format, "\n") + "\n"
-	fmt.Printf(f, a...)
+	fmt.Fprintf(contextOutput(), f, a...)
 }
 
 func (ctx *Context) Error(format string, a ...interface{}) {
 	f := "[ERROR] " + strings.TrimSuffix(format, "\n") + "\n"
-	fmt.Printf(f, a...)
+	fmt.Fprintf(contextOutput(), f, a...)
 }
 
 func (ctx *Context) Succ(format string, a ...interface{}) {
 	f := color_str.Green("✔ ") + strings.TrimSuffix(format, "\n") + "\n"
-	fmt.Printf(f, a...)
+	fmt.Fprintf(contextOutput(), f, a...)
 }
 
 func (ctx *Context) Fail(format string, a ...interface{}) {
 	f := color_str.Red("✗ ") + strings.TrimSuffix(format, "\n") + "\n"
-	fmt.Printf(f, a...)
+	fmt.Fprintf(contextOutput(), f, a...)
 }

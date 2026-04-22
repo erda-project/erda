@@ -16,6 +16,7 @@ package command
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,9 +51,15 @@ var (
 )
 
 var (
-	getEnv          = os.Getenv
-	getGlobalConfig = GetGlobalConfig
+	getEnv           = os.Getenv
+	getGlobalConfig  = GetGlobalConfig
+	getSessionInfos  = status.GetSessionInfos
+	storeSessionInfo = status.StoreSessionInfo
+	inputNormal      = utils.InputNormal
+	inputPassword    = utils.InputPWD
 )
+
+var loginAndStoreSession = loginAndStoreSessionWithPassword
 
 var (
 	commandErrorOutput  io.Writer = os.Stdout
@@ -129,6 +136,8 @@ type loginResponse struct {
 	User  *loginResponseUser  `json:"user"`
 	Token *loginResponseToken `json:"token"`
 }
+
+const credentialTypeBasic = "basic"
 
 func PrepareCtx(cmd *cobra.Command, args []string) error {
 	logrus.SetOutput(os.Stdout)
@@ -213,7 +222,7 @@ func getFullUse(cmd *cobra.Command) (string, error) {
 }
 
 func ensureSessionInfos() (map[string]status.StatusInfo, error) {
-	sessionInfos, err := status.GetSessionInfos()
+	sessionInfos, err := getSessionInfos()
 	if err != nil && err != utils.NotExist {
 		return nil, err
 	}
@@ -225,13 +234,41 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 			return sessionInfos, nil
 		}
 	}
+	if ok && currentSession.Credential != nil {
+		credentialUsername, credentialPassword, err := decodeBasicAuth(currentSession.Credential.Auth)
+		if err != nil {
+			return nil, err
+		}
+		if currentSession.Credential.Type == credentialTypeBasic &&
+			credentialUsername != "" &&
+			credentialPassword != "" {
+			if err = loginAndStoreSession(ctx.CurrentHost, credentialUsername, credentialPassword); err != nil {
+				return nil, err
+			}
+			sessionInfos, err = getSessionInfos()
+			if err != nil {
+				return nil, err
+			}
+			return sessionInfos, nil
+		}
+	}
+
+	if Interactive {
+		printLoginPrompt(ctx.CurrentHost, ok && currentSession.ExpiredAt != nil)
+		if username == "" {
+			username = inputNormal("Username: ")
+		}
+		if password == "" {
+			password = inputPassword("Password: ")
+		}
+	}
 
 	if Interactive {
 		if username == "" {
-			username = utils.InputNormal("Enter your erda username: ")
+			return nil, errors.Errorf("username is required to login to %s", ctx.CurrentHost)
 		}
 		if password == "" {
-			password = utils.InputPWD("Enter your erda password: ")
+			return nil, errors.Errorf("password is required to login to %s", ctx.CurrentHost)
 		}
 	}
 
@@ -242,7 +279,7 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 		}
 
 		// fetch sessions again
-		sessionInfos, err = status.GetSessionInfos()
+		sessionInfos, err = getSessionInfos()
 		if err != nil {
 			return nil, err
 		}
@@ -256,11 +293,19 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 	return sessionInfos, nil
 }
 
+func printLoginPrompt(host string, sessionExpired bool) {
+	if sessionExpired {
+		fmt.Fprintf(contextOutput(), "Session expired for %s, please log in again.\n", host)
+		return
+	}
+	fmt.Fprintf(contextOutput(), "Login required for %s\n", host)
+}
+
 func LoadAuthState() error {
 	if err := parseCtx(); err != nil {
 		return err
 	}
-	sessionInfos, err := status.GetSessionInfos()
+	sessionInfos, err := ensureSessionInfos()
 	if err != nil {
 		if err == utils.NotExist {
 			ctx.Sessions = map[string]status.StatusInfo{}
@@ -459,7 +504,7 @@ func fetchGitUserInfo(host, credentialStorage string) (string, string, error) {
 	return username, password, nil
 }
 
-func loginAndStoreSession(host, username, password string) error {
+func loginAndStoreSessionWithPassword(host, username, password string) error {
 	form := make(url.Values)
 	form.Set("username", username)
 	form.Set("password", password)
@@ -483,11 +528,31 @@ func loginAndStoreSession(host, username, password string) error {
 			"login", "failed to  decode login response ("+err.Error()+")", false))
 
 	}
+	s.Credential = &status.Credential{
+		Type: credentialTypeBasic,
+		Auth: encodeBasicAuth(username, password),
+	}
 
-	if err := status.StoreSessionInfo(host, s); err != nil {
+	if err := storeSessionInfo(host, s); err != nil {
 		return err
 	}
 	return nil
+}
+
+func encodeBasicAuth(username, password string) string {
+	return base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+}
+
+func decodeBasicAuth(auth string) (string, string, error) {
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		return "", "", err
+	}
+	username, password, ok := strings.Cut(string(decodedAuth), ":")
+	if !ok {
+		return "", "", errors.New("invalid basic auth credential")
+	}
+	return username, password, nil
 }
 
 func decodeLoginStatus(body []byte, now func() time.Time) (status.StatusInfo, error) {
