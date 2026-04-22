@@ -51,17 +51,21 @@ var (
 )
 
 var (
-	getEnv            = os.Getenv
-	getGlobalConfig   = GetGlobalConfig
-	getSessionInfos   = status.GetSessionInfos
-	storeSessionInfo  = status.StoreSessionInfo
-	deleteSessionInfo = status.DeleteSessionInfo
-	parseContext      = parseCtx
-	inputNormal       = utils.InputNormal
-	inputPassword     = utils.InputPWD
+	getEnv             = os.Getenv
+	getGlobalConfig    = GetGlobalConfig
+	getSessionInfos    = status.GetSessionInfos
+	storeSessionInfo   = status.StoreSessionInfo
+	deleteSessionInfo  = status.DeleteSessionInfo
+	parseContext       = parseCtx
+	inputNormal        = utils.InputNormal
+	inputPassword      = utils.InputPWD
+	statPath           = os.Stat
+	getWorkspaceInfo   = utils.GetWorkspaceInfo
 )
 
 var loginAndStoreSession = loginAndStoreSessionWithPassword
+
+var preferWorkspaceHost bool
 
 var (
 	commandErrorOutput  io.Writer = os.Stdout
@@ -89,6 +93,11 @@ var (
 		"login",
 		"logout",
 		"pipeline",
+		"update",
+		"update check",
+		"update list",
+		"update set-default",
+		"update set-default [channel]",
 		"version",
 		"whoami",
 		"help",
@@ -173,6 +182,7 @@ func PrepareCtx(cmd *cobra.Command, args []string) error {
 		err = fmt.Errorf("%s", color_str.Red("✗ ")+err.Error())
 		return err
 	}
+	preferWorkspaceHost = commandPrefersWorkspaceHost(u)
 
 	// For completion zsh etc.
 	if strings.HasPrefix(u, "completion ") || strings.HasPrefix(u, "__complete") {
@@ -379,7 +389,7 @@ func SaveDefaultHost(defaultHost string) error {
 	return SetGlobalConfig(configFile, globalConfig)
 }
 
-func resolveBaseHost() (string, error) {
+func resolveHostFromFlagOrEnv() (string, error) {
 	if host != "" {
 		return host, nil
 	}
@@ -388,6 +398,10 @@ func resolveBaseHost() (string, error) {
 		return envHost, nil
 	}
 
+	return "", nil
+}
+
+func resolveGlobalHost() (string, error) {
 	_, globalConfig, err := getGlobalConfig()
 	if err != nil && err != utils.NotExist {
 		return "", err
@@ -400,8 +414,53 @@ func resolveBaseHost() (string, error) {
 	return "", nil
 }
 
+func resolveBaseHost() (string, error) {
+	resolved, err := resolveHostFromFlagOrEnv()
+	if err != nil || resolved != "" {
+		return resolved, err
+	}
+
+	return resolveGlobalHost()
+}
+
+func commandPrefersWorkspaceHost(fullUse string) bool {
+	switch {
+	case fullUse == "whoami":
+		return true
+	case strings.HasPrefix(fullUse, "pipeline "):
+		return true
+	case strings.HasPrefix(fullUse, "runtime "):
+		return true
+	case strings.HasPrefix(fullUse, "build "):
+		return true
+	}
+	return false
+}
+
+func SetPreferWorkspaceHost(v bool) {
+	preferWorkspaceHost = v
+}
+
+func loadWorkspaceInfo() (utils.GitterURLInfo, bool, error) {
+	if _, err := statPath(".git"); err != nil {
+		if os.IsNotExist(err) {
+			return utils.GitterURLInfo{}, false, nil
+		}
+		return utils.GitterURLInfo{}, false, err
+	}
+
+	info, err := getWorkspaceInfo(".", Remote)
+	if err != nil {
+		if err == utils.InvalidErdaRepo {
+			return utils.GitterURLInfo{}, false, nil
+		}
+		return utils.GitterURLInfo{}, false, err
+	}
+	return info, true, nil
+}
+
 func parseCtx() error {
-	resolvedHost, err := resolveBaseHost()
+	resolvedHost, err := resolveHostFromFlagOrEnv()
 	if err != nil {
 		return err
 	}
@@ -431,32 +490,41 @@ func parseCtx() error {
 		}
 	}
 
-	if host == "" {
-		if _, err := os.Stat(".git"); err == nil {
-			info, err := utils.GetWorkspaceInfo(".", Remote)
-			for _, a := range ctx.Applications {
-				if a.Application == info.Application {
-					ctx.CurrentApplication.Application = a.Application
-					ctx.CurrentApplication.ApplicationID = a.ApplicationID
-				}
+	workspaceInfo, hasWorkspaceInfo, err := loadWorkspaceInfo()
+	if err != nil {
+		return err
+	}
+	if hasWorkspaceInfo {
+		for _, a := range ctx.Applications {
+			if a.Application == workspaceInfo.Application {
+				ctx.CurrentApplication.Application = a.Application
+				ctx.CurrentApplication.ApplicationID = a.ApplicationID
 			}
+		}
 
-			if err != nil && err != utils.InvalidErdaRepo {
-				return err
-			}
+		if host == "" && preferWorkspaceHost {
+			host = fmt.Sprintf("%s://%s", workspaceInfo.Scheme, workspaceInfo.Host)
 
-			if err == nil {
-				host = fmt.Sprintf("%s://%s", info.Scheme, info.Host)
-
-				if username == "" || password == "" {
-					gitCredentialStorage := fetchGitCredentialStorage()
-					switch gitCredentialStorage {
-					case "osxkeychain", "store":
-						username, password, _ = fetchGitUserInfo(info.Host, gitCredentialStorage)
-					}
+			if username == "" || password == "" {
+				gitCredentialStorage := fetchGitCredentialStorage()
+				switch gitCredentialStorage {
+				case "osxkeychain", "store":
+					username, password, _ = fetchGitUserInfo(workspaceInfo.Host, gitCredentialStorage)
 				}
 			}
 		}
+	}
+
+	if host == "" {
+		resolvedHost, err = resolveGlobalHost()
+		if err != nil {
+			return err
+		}
+		host = resolvedHost
+	}
+
+	if host == "" && hasWorkspaceInfo {
+		host = fmt.Sprintf("%s://%s", workspaceInfo.Scheme, workspaceInfo.Host)
 	}
 
 	if host == "" {

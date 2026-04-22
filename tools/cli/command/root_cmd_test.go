@@ -489,6 +489,62 @@ func TestResolveBaseHostReturnsEmptyWithoutConfiguredSources(t *testing.T) {
 	require.Empty(t, resolved)
 }
 
+func TestCommandPrefersWorkspaceHost(t *testing.T) {
+	require.True(t, commandPrefersWorkspaceHost("whoami"))
+	require.True(t, commandPrefersWorkspaceHost("pipeline history"))
+	require.True(t, commandPrefersWorkspaceHost("runtime logs"))
+	require.True(t, commandPrefersWorkspaceHost("build list"))
+
+	require.False(t, commandPrefersWorkspaceHost("login"))
+	require.False(t, commandPrefersWorkspaceHost("update check"))
+	require.False(t, commandPrefersWorkspaceHost("project list"))
+}
+
+func TestResolveHostFromFlagOrEnvPrefersFlag(t *testing.T) {
+	origHost, origGetEnv := host, getEnv
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+	})
+
+	host = "https://flag.example.com"
+	getEnv = func(string) string { return "https://env.example.com" }
+
+	resolved, err := resolveHostFromFlagOrEnv()
+	require.NoError(t, err)
+	require.Equal(t, "https://flag.example.com", resolved)
+}
+
+func TestResolveHostFromFlagOrEnvFallsBackToEnv(t *testing.T) {
+	origHost, origGetEnv := host, getEnv
+	t.Cleanup(func() {
+		host = origHost
+		getEnv = origGetEnv
+	})
+
+	host = ""
+	getEnv = func(string) string { return "https://env.example.com" }
+
+	resolved, err := resolveHostFromFlagOrEnv()
+	require.NoError(t, err)
+	require.Equal(t, "https://env.example.com", resolved)
+}
+
+func TestResolveGlobalHostFallsBackToGlobalConfig(t *testing.T) {
+	origGetGlobalConfig := getGlobalConfig
+	t.Cleanup(func() {
+		getGlobalConfig = origGetGlobalConfig
+	})
+
+	getGlobalConfig = func() (string, *GlobalConfig, error) {
+		return "", &GlobalConfig{Host: "https://global.example.com"}, nil
+	}
+
+	resolved, err := resolveGlobalHost()
+	require.NoError(t, err)
+	require.Equal(t, "https://global.example.com", resolved)
+}
+
 func TestExecuteRootCommandPrintsReturnedErrorWhenNotReported(t *testing.T) {
 	origOutput := commandErrorOutput
 	origPrinted := commandErrorPrinted

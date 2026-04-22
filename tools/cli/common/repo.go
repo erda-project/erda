@@ -22,37 +22,50 @@ import (
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
-// ResolveWorkspaceApplication resolves DOP project and application IDs from names under orgID.
-// Use this for workspace commands instead of GetRepoStats when the git remote URL encodes the
-// target org: GetRepoStats is proxied to gittar /wb/:project/:app, which resolves org from the
-// OpenAPI session Org-ID (or host), not from the org derived from the remote, so the wrong app
-// can be returned when project/app names exist under the session org.
-func ResolveWorkspaceApplication(ctx *command.Context, orgID uint64, projectName, applicationName string) (projectID uint64, applicationID int64, err error) {
-	projectID, err = GetProjectIDByName(ctx, orgID, projectName)
-	if err != nil {
-		return 0, 0, err
-	}
-	appID, err := GetApplicationIdByName(ctx, orgID, projectID, applicationName)
-	if err != nil {
-		return 0, 0, err
-	}
-	return projectID, int64(appID), nil
-}
+var (
+	resolveWorkspaceRepoStats = GetWorkspaceRepoStats
+)
 
-func GetRepoStats(ctx *command.Context, orgID uint64, project, application string) (apistructs.GittarStatsData, error) {
-	var gitResp apistructs.GittarStatsResponse
-	resp, err := ctx.Get().Path(fmt.Sprintf("/api/repo/%s/%s/stats/", project, application)).
+func GetWorkspaceRepoStats(ctx *command.Context, orgID uint64, projectName, applicationName string) (apistructs.GittarStatsData, error) {
+	var resp apistructs.GittarStatsResponse
+
+	response, err := ctx.Get().
+		Path(fmt.Sprintf("/api/repo/%s/%s/stats", projectName, applicationName)).
 		Header("org", strconv.FormatUint(orgID, 10)).
-		Do().JSON(&gitResp)
+		Do().JSON(&resp)
 	if err != nil {
 		return apistructs.GittarStatsData{}, err
 	}
-	if !resp.IsOK() {
-		return apistructs.GittarStatsData{}, fmt.Errorf("faild to find application stats, status code: %d", resp.StatusCode())
+	if !response.IsOK() {
+		return apistructs.GittarStatsData{}, fmt.Errorf("failed to find application stats, status code: %d", response.StatusCode())
 	}
-	if !gitResp.Success {
-		return apistructs.GittarStatsData{}, fmt.Errorf("failed to find application stats, %+v", gitResp.Error)
+	if !resp.Success {
+		return apistructs.GittarStatsData{}, fmt.Errorf("failed to find application stats, %+v", resp.Error)
 	}
 
-	return gitResp.Data, nil
+	return resp.Data, nil
+}
+
+// ResolveWorkspaceApplication resolves DOP project and application IDs from workspace context.
+// Resolution order:
+//  1. current project config/context IDs when names match
+//  2. repo stats by org/repo
+//  3. return an explicit error without falling back to high-permission list APIs
+func ResolveWorkspaceApplication(ctx *command.Context, orgID uint64, orgName, projectName, applicationName string) (projectID uint64, applicationID int64, err error) {
+	if ctx != nil &&
+		ctx.CurrentProject.ProjectID > 0 &&
+		ctx.CurrentApplication.ApplicationID > 0 &&
+		ctx.CurrentProject.Project == projectName &&
+		ctx.CurrentApplication.Application == applicationName {
+		return ctx.CurrentProject.ProjectID, int64(ctx.CurrentApplication.ApplicationID), nil
+	}
+
+	stats, err := resolveWorkspaceRepoStats(ctx, orgID, projectName, applicationName)
+	if err == nil && stats.ProjectID > 0 && stats.ApplicationID > 0 {
+		return stats.ProjectID, stats.ApplicationID, nil
+	}
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to resolve workspace application from local config or repo stats for %s/%s: %w", projectName, applicationName, err)
+	}
+	return 0, 0, fmt.Errorf("failed to resolve workspace application from local config or repo stats for %s/%s", projectName, applicationName)
 }

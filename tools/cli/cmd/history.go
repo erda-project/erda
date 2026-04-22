@@ -67,7 +67,7 @@ func PipelineHistory(ctx *command.Context, branch string, page int, pageSize int
 		return err
 	}
 
-	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
+	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
 	if err != nil {
 		return errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", org.ID, info.Project, info.Application)
 	}

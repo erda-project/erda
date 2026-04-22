@@ -101,7 +101,7 @@ func resolveRuntimeContext(ctx *command.Context, workspace string, runtimeID uin
 		return nil, err
 	}
 
-	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
+	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
 	if err != nil {
 		return nil, errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", org.ID, info.Project, info.Application)
 	}
