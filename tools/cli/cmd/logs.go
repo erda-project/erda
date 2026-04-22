@@ -95,6 +95,7 @@ var (
 	logsStdout          io.Writer = os.Stdout
 	isTTYOutput                   = isTTYWriter
 	sleepForRetry                 = time.Sleep
+	sleepForWatchPoll             = time.Sleep
 )
 
 func PipelineLogs(ctx *command.Context, pipelineID uint64, taskID uint64, taskName string, all bool, failed bool, running bool, watch bool, tail int, stream string, jsonOutput bool, raw bool) error {
@@ -265,6 +266,7 @@ type mergedLogLine struct {
 
 func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions) error {
 	seen := make(map[uint64]map[string]struct{})
+	cursors := make(map[uint64]logCursor)
 	idleRounds := 0
 
 	for {
@@ -290,12 +292,11 @@ func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions)
 		logsByTask := make(map[uint64][]apistructs.DashboardSpotLogLine, len(tasks))
 		newLineCount := 0
 		for _, task := range tasks {
-			lines, err := fetchLogsForTask(ctx, pipeline, task, opts.stream, opts.tail, taskLogFetchMode{
-				ForwardFallback: true,
-			})
+			lines, nextCursor, err := fetchLogsForTaskWatch(ctx, pipeline, task, opts.stream, opts.tail, cursors[task.ID])
 			if err != nil {
 				return err
 			}
+			cursors[task.ID] = nextCursor
 			unseen := filterUnseenLogLines(task.ID, lines, seen)
 			newLineCount += len(unseen)
 			logsByTask[task.ID] = unseen
@@ -314,8 +315,18 @@ func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions)
 			return nil
 		}
 
-		time.Sleep(2 * time.Second)
+		sleepForWatchPoll(2 * time.Second)
 	}
+}
+
+func fetchLogsForTaskWatch(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, cursor logCursor) ([]apistructs.DashboardSpotLogLine, logCursor, error) {
+	return fetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+		return fetchLogsForTask(ctx, pipeline, task, stream, tail, taskLogFetchMode{
+			ForwardFallback: true,
+		})
+	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		return fetchTaskLogPage(ctx, pipeline, task, stream, tail, start, count)
+	})
 }
 
 func fetchLogsForTask(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, mode taskLogFetchMode) ([]apistructs.DashboardSpotLogLine, error) {
@@ -364,6 +375,59 @@ func fetchLogsForTask(ctx *command.Context, pipeline pipelinepb.PipelineDetailDT
 	return lines, nil
 }
 
+func fetchTaskLogPage(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+	pageSize := defaultLogPageSize(tail, count)
+	if stream == "all" {
+		stdoutData, err := fetchTaskLogData(ctx, common.TaskLogRequestOptions{
+			PipelineID:  pipeline.ID,
+			TaskID:      task.ID,
+			OrgName:     pipeline.OrgName,
+			ClusterName: pipeline.ClusterName,
+			Stream:      "stdout",
+			Tail:        tail,
+			Start:       start,
+			Count:       pageSize,
+		})
+		if err != nil {
+			return nil, err
+		}
+		stderrData, err := fetchTaskLogData(ctx, common.TaskLogRequestOptions{
+			PipelineID:  pipeline.ID,
+			TaskID:      task.ID,
+			OrgName:     pipeline.OrgName,
+			ClusterName: pipeline.ClusterName,
+			Stream:      "stderr",
+			Tail:        tail,
+			Start:       start,
+			Count:       pageSize,
+		})
+		if err != nil {
+			return nil, err
+		}
+		lines := append([]apistructs.DashboardSpotLogLine{}, stdoutData.Lines...)
+		lines = append(lines, stderrData.Lines...)
+		sort.SliceStable(lines, func(i, j int) bool {
+			return lines[i].TimeStamp < lines[j].TimeStamp
+		})
+		return lines, nil
+	}
+
+	data, err := fetchTaskLogData(ctx, common.TaskLogRequestOptions{
+		PipelineID:  pipeline.ID,
+		TaskID:      task.ID,
+		OrgName:     pipeline.OrgName,
+		ClusterName: pipeline.ClusterName,
+		Stream:      stream,
+		Tail:        tail,
+		Start:       start,
+		Count:       pageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return data.Lines, nil
+}
+
 func fetchTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions, mode taskLogFetchMode, fallbackStart int64) ([]apistructs.DashboardSpotLogLine, error) {
 	queryOpts := opts
 	for attempt := 0; ; attempt++ {
@@ -384,6 +448,19 @@ func fetchTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions, 
 		}
 		queryOpts = nextOpts
 	}
+}
+
+func fetchIncrementalTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions) ([]apistructs.DashboardSpotLogLine, error) {
+	queryOpts := opts
+	return fetchIncrementalLogLines(opts.Start, defaultLogPageSize(opts.Tail, opts.Count), func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		queryOpts.Start = start
+		queryOpts.Count = count
+		data, err := fetchTaskLogData(ctx, queryOpts)
+		if err != nil {
+			return nil, err
+		}
+		return data.Lines, nil
+	})
 }
 
 func canUseForwardWindowFallback(opts common.TaskLogRequestOptions, fallbackStart int64) bool {

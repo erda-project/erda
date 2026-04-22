@@ -49,11 +49,24 @@ type runtimeLogEntry struct {
 	line     apistructs.DashboardSpotLogLine
 }
 
+type runtimeLogSource struct {
+	key           string
+	service       string
+	instance      string
+	live          bool
+	pod           apistructs.Pod
+	container     apistructs.Container
+	containerName string
+	containerID   string
+}
+
 var (
 	listRuntimeServicePodsForLogs              = common.ListRuntimeServicePods
 	listStoppedRuntimeServiceContainersForLogs = common.ListRuntimeServiceStoppedContainers
 	getRuntimePodLogs                          = common.GetRuntimePodLogs
 	getRuntimeStoppedContainerLogs             = common.GetRuntimeStoppedContainerLogs
+	getRuntimePodLogsWithOptions               = common.GetRuntimePodLogsWithOptions
+	getRuntimeStoppedContainerLogsWithOptions  = common.GetRuntimeStoppedContainerLogsWithOptions
 	runtimeLogsSleep                           = time.Sleep
 	runtimeLogsShouldStop                      = func() bool { return false }
 )
@@ -85,11 +98,13 @@ func RuntimeLogs(ctx *command.Context, workspace string, runtimeID uint64, servi
 
 func watchRuntimeLogs(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, stream string) error {
 	seen := make(map[string]struct{})
+	cursors := make(map[string]logCursor)
 	for {
-		entries, sourceCount, err := fetchRuntimeLogEntries(ctx, resolved, service, instance, tail, stream)
+		entries, sourceCount, nextCursors, err := fetchRuntimeLogEntriesWatch(ctx, resolved, service, instance, tail, stream, cursors)
 		if err != nil {
 			return err
 		}
+		cursors = nextCursors
 		if sourceCount == 0 {
 			return fmt.Errorf("no runtime log source matched for runtime %d", resolved.runtimeID)
 		}
@@ -108,73 +123,27 @@ func watchRuntimeLogs(ctx *command.Context, resolved *resolvedRuntimeContext, se
 	}
 }
 
-func fetchRuntimeLogEntries(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, normalizedStream string) ([]runtimeLogEntry, int, error) {
-	services := []string{service}
-	if service == "" {
-		runtime, err := inspectRuntime(ctx, resolved.orgID, resolved.runtimeID, resolved.applicationID, resolved.workspace)
-		if err != nil {
-			return nil, 0, err
-		}
-		services = services[:0]
-		for name := range runtime.Services {
-			services = append(services, name)
-		}
-		sort.Strings(services)
+func fetchRuntimeLogEntriesWatch(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, normalizedStream string, cursors map[string]logCursor) ([]runtimeLogEntry, int, map[string]logCursor, error) {
+	sources, err := listRuntimeLogSources(ctx, resolved, service, instance)
+	if err != nil {
+		return nil, 0, nil, err
 	}
 
+	nextCursors := make(map[string]logCursor, len(sources))
 	var entries []runtimeLogEntry
-	sourceCount := 0
-	for _, serviceName := range services {
-		matchedRunningSource := false
-		pods, err := listRuntimeServicePodsForLogs(ctx, resolved.orgID, int64(resolved.runtimeID), serviceName)
+	for _, source := range sources {
+		cursor := cursors[source.key]
+		lines, nextCursor, err := fetchRuntimeLogSourceEntriesWatch(ctx, resolved, source, normalizedStream, tail, cursor)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
 		}
-		for _, pod := range pods {
-			if instance != "" && !matchRuntimePodInstance(pod, instance) {
-				continue
-			}
-			containerName, containerID := runtimeLogTargetContainer(pod, serviceName)
-			if containerID == "" {
-				continue
-			}
-			matchedRunningSource = true
-			sourceCount++
-			logData, err := getRuntimePodLogs(ctx, resolved.orgName, resolved.applicationID, pod, containerName, containerID, normalizedStream, tail)
-			if err != nil {
-				return nil, 0, err
-			}
-			for _, line := range logData.Lines {
-				entries = append(entries, runtimeLogEntry{
-					service:  pod.Service,
-					instance: pod.PodName,
-					line:     line,
-				})
-			}
-		}
-		if instance == "" || matchedRunningSource {
-			continue
-		}
-		containers, err := listStoppedRuntimeServiceContainersForLogs(ctx, resolved.orgID, int64(resolved.runtimeID), serviceName)
-		if err != nil {
-			return nil, 0, err
-		}
-		for _, container := range containers {
-			if !matchRuntimeContainerInstance(container, instance) || container.ContainerID == "" {
-				continue
-			}
-			sourceCount++
-			logData, err := getRuntimeStoppedContainerLogs(ctx, resolved.orgName, resolved.applicationID, container, normalizedStream, tail)
-			if err != nil {
-				return nil, 0, err
-			}
-			for _, line := range logData.Lines {
-				entries = append(entries, runtimeLogEntry{
-					service:  container.Service,
-					instance: runtimeInstanceName(container),
-					line:     line,
-				})
-			}
+		nextCursors[source.key] = nextCursor
+		for _, line := range lines {
+			entries = append(entries, runtimeLogEntry{
+				service:  source.service,
+				instance: source.instance,
+				line:     line,
+			})
 		}
 	}
 
@@ -187,7 +156,158 @@ func fetchRuntimeLogEntries(ctx *command.Context, resolved *resolvedRuntimeConte
 		}
 		return entries[i].line.TimeStamp < entries[j].line.TimeStamp
 	})
-	return entries, sourceCount, nil
+	return entries, len(sources), nextCursors, nil
+}
+
+func fetchRuntimeLogEntries(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, normalizedStream string) ([]runtimeLogEntry, int, error) {
+	sources, err := listRuntimeLogSources(ctx, resolved, service, instance)
+	if err != nil {
+		return nil, 0, err
+	}
+	var entries []runtimeLogEntry
+	for _, source := range sources {
+		lines, err := fetchRuntimeLogSourceEntries(ctx, resolved, source, common.RuntimeLogOptions{
+			Stream: normalizedStream,
+			Tail:   tail,
+		})
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, line := range lines {
+			entries = append(entries, runtimeLogEntry{
+				service:  source.service,
+				instance: source.instance,
+				line:     line,
+			})
+		}
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].line.TimeStamp == entries[j].line.TimeStamp {
+			if entries[i].service == entries[j].service {
+				return entries[i].instance < entries[j].instance
+			}
+			return entries[i].service < entries[j].service
+		}
+		return entries[i].line.TimeStamp < entries[j].line.TimeStamp
+	})
+	return entries, len(sources), nil
+}
+
+func listRuntimeLogSources(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string) ([]runtimeLogSource, error) {
+	services := []string{service}
+	if service == "" {
+		runtime, err := inspectRuntime(ctx, resolved.orgID, resolved.runtimeID, resolved.applicationID, resolved.workspace)
+		if err != nil {
+			return nil, err
+		}
+		services = services[:0]
+		for name := range runtime.Services {
+			services = append(services, name)
+		}
+		sort.Strings(services)
+	}
+
+	var sources []runtimeLogSource
+	for _, serviceName := range services {
+		matchedRunningSource := false
+		pods, err := listRuntimeServicePodsForLogs(ctx, resolved.orgID, int64(resolved.runtimeID), serviceName)
+		if err != nil {
+			return nil, err
+		}
+		for _, pod := range pods {
+			if instance != "" && !matchRuntimePodInstance(pod, instance) {
+				continue
+			}
+			containerName, containerID := runtimeLogTargetContainer(pod, serviceName)
+			if containerID == "" {
+				continue
+			}
+			matchedRunningSource = true
+			sources = append(sources, runtimeLogSource{
+				key:           runtimeLogSourceKey(serviceName, pod.PodName, containerID),
+				service:       pod.Service,
+				instance:      pod.PodName,
+				live:          true,
+				pod:           pod,
+				containerName: containerName,
+				containerID:   containerID,
+			})
+		}
+		if instance == "" || matchedRunningSource {
+			continue
+		}
+
+		containers, err := listStoppedRuntimeServiceContainersForLogs(ctx, resolved.orgID, int64(resolved.runtimeID), serviceName)
+		if err != nil {
+			return nil, err
+		}
+		for _, container := range containers {
+			if !matchRuntimeContainerInstance(container, instance) || container.ContainerID == "" {
+				continue
+			}
+			sources = append(sources, runtimeLogSource{
+				key:         runtimeLogSourceKey(serviceName, runtimeInstanceName(container), container.ContainerID),
+				service:     container.Service,
+				instance:    runtimeInstanceName(container),
+				live:        false,
+				container:   container,
+				containerID: container.ContainerID,
+			})
+		}
+	}
+	return sources, nil
+}
+
+func fetchRuntimeLogSourceEntries(ctx *command.Context, resolved *resolvedRuntimeContext, source runtimeLogSource, opts common.RuntimeLogOptions) ([]apistructs.DashboardSpotLogLine, error) {
+	useIncremental := opts.Start > 0 || opts.Count > 0 || opts.End > 0
+	if source.live {
+		if !useIncremental {
+			logData, err := getRuntimePodLogs(ctx, resolved.orgName, resolved.applicationID, source.pod, source.containerName, source.containerID, opts.Stream, opts.Tail)
+			if err != nil {
+				return nil, err
+			}
+			return logData.Lines, nil
+		}
+		logData, err := getRuntimePodLogsWithOptions(ctx, resolved.orgName, resolved.applicationID, source.pod, source.containerName, source.containerID, opts)
+		if err != nil {
+			return nil, err
+		}
+		return logData.Lines, nil
+	}
+
+	if !useIncremental {
+		logData, err := getRuntimeStoppedContainerLogs(ctx, resolved.orgName, resolved.applicationID, source.container, opts.Stream, opts.Tail)
+		if err != nil {
+			return nil, err
+		}
+		return logData.Lines, nil
+	}
+	logData, err := getRuntimeStoppedContainerLogsWithOptions(ctx, resolved.orgName, resolved.applicationID, source.container, opts)
+	if err != nil {
+		return nil, err
+	}
+	return logData.Lines, nil
+}
+
+func fetchRuntimeLogSourceEntriesWatch(ctx *command.Context, resolved *resolvedRuntimeContext, source runtimeLogSource, stream string, tail int, cursor logCursor) ([]apistructs.DashboardSpotLogLine, logCursor, error) {
+	return fetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+		return fetchRuntimeLogSourceEntries(ctx, resolved, source, common.RuntimeLogOptions{
+			Stream: stream,
+			Tail:   tail,
+		})
+	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		return fetchRuntimeLogSourcePage(ctx, resolved, source, stream, tail, start, count)
+	})
+}
+
+func fetchRuntimeLogSourcePage(ctx *command.Context, resolved *resolvedRuntimeContext, source runtimeLogSource, stream string, tail int, start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+	return fetchRuntimeLogSourceEntries(ctx, resolved, source, common.RuntimeLogOptions{
+		Stream: stream,
+		Tail:   tail,
+		Start:  start,
+		Count:  defaultLogPageSize(tail, count),
+	})
 }
 
 func writeRuntimeLogEntries(w interface{ Write([]byte) (int, error) }, entries []runtimeLogEntry, multipleSources bool) error {
@@ -246,4 +366,8 @@ func filterUnseenRuntimeLogEntries(entries []runtimeLogEntry, seen map[string]st
 		filtered = append(filtered, entry)
 	}
 	return filtered
+}
+
+func runtimeLogSourceKey(service, instance, containerID string) string {
+	return fmt.Sprintf("%s|%s|%s", service, instance, containerID)
 }
