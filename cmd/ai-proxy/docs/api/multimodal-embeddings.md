@@ -62,6 +62,22 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
   - `fusion`: default `false`.
 - `options` (optional): advanced knobs, provider specific values go to `options.provider`.
 
+### 4.2 `dimensions` Configurable Values (Documented)
+
+`dimensions` is accepted in canonical request, but the allowed values are model-specific:
+
+| Provider | Model | Supported dimensions | Notes |
+|---|---|---|---|
+| Alibaba Cloud | `qwen3-vl-embedding` | `2560, 2048, 1536, 1024, 768, 512, 256` | Default `2560` |
+| Alibaba Cloud | `multimodal-embedding-v1` | fixed `1024` | `dimension` parameter is not supported |
+| Alibaba Cloud | `tongyi-embedding-vision-plus` | fixed `1152` | `dimension` parameter is not supported in latest multimodal API doc |
+| Alibaba Cloud | `tongyi-embedding-vision-flash` | fixed `768` | `dimension` parameter is not supported in latest multimodal API doc |
+| Volcengine Ark | `doubao-embedding-vision-*` | documented as request `integer`; explicit enum not published in accessible API page | Proxy should pass through and let provider validate; if not set, use provider/model default |
+
+Validation policy in ai-proxy:
+- If model has known allowlist, reject invalid values with `400`.
+- If provider docs do not publish an enum, treat `dimensions` as optional positive integer and rely on upstream validation.
+
 ## 5. Response Schema (Canonical)
 
 ```json
@@ -188,3 +204,4 @@ Proxy SHOULD:
 
 - Alibaba Cloud multimodal embedding API reference: https://www.alibabacloud.com/help/zh/model-studio/multimodal-embedding-api-reference
 - Volcengine Ark vectorization API (Doubao embedding vision): https://www.volcengine.com/docs/82379/1523520?lang=zh
+- Alibaba Cloud (EN, last updated Mar 30, 2026, includes `dimension` constraints): https://www.alibabacloud.com/help/en/model-studio/multimodal-embedding-api-reference
