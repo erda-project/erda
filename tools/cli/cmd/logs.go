@@ -266,7 +266,7 @@ type mergedLogLine struct {
 
 func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions) error {
 	seen := make(map[uint64]map[string]struct{})
-	cursors := make(map[uint64]logCursor)
+	cursors := make(map[uint64]common.LogCursor)
 	idleRounds := 0
 
 	for {
@@ -319,8 +319,8 @@ func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions)
 	}
 }
 
-func fetchLogsForTaskWatch(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, cursor logCursor) ([]apistructs.DashboardSpotLogLine, logCursor, error) {
-	return fetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+func fetchLogsForTaskWatch(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, cursor common.LogCursor) ([]apistructs.DashboardSpotLogLine, common.LogCursor, error) {
+	return common.FetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
 		return fetchLogsForTask(ctx, pipeline, task, stream, tail, taskLogFetchMode{
 			ForwardFallback: true,
 		})
@@ -376,7 +376,7 @@ func fetchLogsForTask(ctx *command.Context, pipeline pipelinepb.PipelineDetailDT
 }
 
 func fetchTaskLogPage(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
-	pageSize := defaultLogPageSize(tail, count)
+	pageSize := common.DefaultLogPageSize(tail, count)
 	if stream == "all" {
 		stdoutData, err := fetchTaskLogData(ctx, common.TaskLogRequestOptions{
 			PipelineID:  pipeline.ID,
@@ -452,7 +452,7 @@ func fetchTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions, 
 
 func fetchIncrementalTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions) ([]apistructs.DashboardSpotLogLine, error) {
 	queryOpts := opts
-	return fetchIncrementalLogLines(opts.Start, defaultLogPageSize(opts.Tail, opts.Count), func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+	return common.FetchIncrementalLogLines(opts.Start, common.DefaultLogPageSize(opts.Tail, opts.Count), func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
 		queryOpts.Start = start
 		queryOpts.Count = count
 		data, err := fetchTaskLogData(ctx, queryOpts)

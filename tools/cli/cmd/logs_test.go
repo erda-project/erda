@@ -241,7 +241,7 @@ func TestFetchWatchLogLinesUsesPageFetcher(t *testing.T) {
 		count int64
 	}
 
-	lines, cursor, err := fetchWatchLogLines(logCursor{}, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
+	lines, cursor, err := common.FetchWatchLogLines(common.LogCursor{}, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
 		initialCalls++
 		return []apistructs.DashboardSpotLogLine{
 			{TimeStamp: "1000", Content: "seed"},
@@ -275,7 +275,7 @@ func TestFetchWatchLogLinesUsesPageFetcher(t *testing.T) {
 		t.Fatalf("initial result = (%d lines, cursor=%d), want 1 line and cursor 1001", len(lines), cursor.Start)
 	}
 
-	lines, cursor, err = fetchWatchLogLines(cursor, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
+	lines, cursor, err = common.FetchWatchLogLines(cursor, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
 		t.Fatal("fetchInitial should not be called after cursor is set")
 		return nil, nil
 	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
@@ -316,18 +316,18 @@ func TestFetchWatchLogLinesUsesPageFetcher(t *testing.T) {
 
 func TestParseLogTimestamp(t *testing.T) {
 	rfcTime := "2026-04-22T10:00:00Z"
-	got, ok := parseLogTimestamp(rfcTime)
+	got, ok := common.ParseLogTimestamp(rfcTime)
 	if !ok || got != time.Date(2026, 4, 22, 10, 0, 0, 0, time.UTC).UnixNano() {
-		t.Fatalf("parseLogTimestamp(%q) = (%d, %v)", rfcTime, got, ok)
+		t.Fatalf("ParseLogTimestamp(%q) = (%d, %v)", rfcTime, got, ok)
 	}
 
-	got, ok = parseLogTimestamp("1776157455467386849")
+	got, ok = common.ParseLogTimestamp("1776157455467386849")
 	if !ok || got != 1776157455467386849 {
-		t.Fatalf("parseLogTimestamp(nanos) = (%d, %v)", got, ok)
+		t.Fatalf("ParseLogTimestamp(nanos) = (%d, %v)", got, ok)
 	}
 
-	if _, ok := parseLogTimestamp("bad"); ok {
-		t.Fatal("parseLogTimestamp(bad) should fail")
+	if _, ok := common.ParseLogTimestamp("bad"); ok {
+		t.Fatal("ParseLogTimestamp(bad) should fail")
 	}
 }
 

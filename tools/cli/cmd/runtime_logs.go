@@ -98,7 +98,7 @@ func RuntimeLogs(ctx *command.Context, workspace string, runtimeID uint64, servi
 
 func watchRuntimeLogs(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, stream string) error {
 	seen := make(map[string]struct{})
-	cursors := make(map[string]logCursor)
+	cursors := make(map[string]common.LogCursor)
 	for {
 		entries, sourceCount, nextCursors, err := fetchRuntimeLogEntriesWatch(ctx, resolved, service, instance, tail, stream, cursors)
 		if err != nil {
@@ -123,13 +123,13 @@ func watchRuntimeLogs(ctx *command.Context, resolved *resolvedRuntimeContext, se
 	}
 }
 
-func fetchRuntimeLogEntriesWatch(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, normalizedStream string, cursors map[string]logCursor) ([]runtimeLogEntry, int, map[string]logCursor, error) {
+func fetchRuntimeLogEntriesWatch(ctx *command.Context, resolved *resolvedRuntimeContext, service string, instance string, tail int, normalizedStream string, cursors map[string]common.LogCursor) ([]runtimeLogEntry, int, map[string]common.LogCursor, error) {
 	sources, err := listRuntimeLogSources(ctx, resolved, service, instance)
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
-	nextCursors := make(map[string]logCursor, len(sources))
+	nextCursors := make(map[string]common.LogCursor, len(sources))
 	var entries []runtimeLogEntry
 	for _, source := range sources {
 		cursor := cursors[source.key]
@@ -290,8 +290,8 @@ func fetchRuntimeLogSourceEntries(ctx *command.Context, resolved *resolvedRuntim
 	return logData.Lines, nil
 }
 
-func fetchRuntimeLogSourceEntriesWatch(ctx *command.Context, resolved *resolvedRuntimeContext, source runtimeLogSource, stream string, tail int, cursor logCursor) ([]apistructs.DashboardSpotLogLine, logCursor, error) {
-	return fetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+func fetchRuntimeLogSourceEntriesWatch(ctx *command.Context, resolved *resolvedRuntimeContext, source runtimeLogSource, stream string, tail int, cursor common.LogCursor) ([]apistructs.DashboardSpotLogLine, common.LogCursor, error) {
+	return common.FetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
 		return fetchRuntimeLogSourceEntries(ctx, resolved, source, common.RuntimeLogOptions{
 			Stream: stream,
 			Tail:   tail,
@@ -306,7 +306,7 @@ func fetchRuntimeLogSourcePage(ctx *command.Context, resolved *resolvedRuntimeCo
 		Stream: stream,
 		Tail:   tail,
 		Start:  start,
-		Count:  defaultLogPageSize(tail, count),
+		Count:  common.DefaultLogPageSize(tail, count),
 	})
 }
 
