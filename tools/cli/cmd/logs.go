@@ -21,7 +21,6 @@ import (
 	"io"
 	"os"
 	"sort"
-	"strconv"
 	"time"
 
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
@@ -44,7 +43,6 @@ const (
 const (
 	emptyLogFetchAttempts = 3
 	emptyLogRetryInterval = time.Second
-	forwardFetchBatchSize = 700
 )
 
 type logOptions struct {
@@ -66,12 +64,6 @@ type taskLogFetchMode struct {
 	ForwardFallback bool
 }
 
-type taskLogCursor struct {
-	Initialized     bool
-	LastTimestamp   int64
-	seenAtTimestamp map[string]struct{}
-}
-
 var LOGS = command.Command{
 	ParentName: "PIPELINE",
 	Name:       "logs",
@@ -88,7 +80,7 @@ var LOGS = command.Command{
 		command.BoolFlag{Short: "", Name: "failed", Doc: "merge failed task logs only", DefaultValue: false},
 		command.BoolFlag{Short: "", Name: "running", Doc: "merge running task logs only", DefaultValue: false},
 		command.BoolFlag{Short: "w", Name: "watch", Doc: "watch for new log lines", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "tail", Doc: "maximum number of latest log lines to return; default is all for non-watch mode", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "tail", Doc: "number of recent log lines to fetch first", DefaultValue: 200},
 		command.StringFlag{Short: "", Name: "stream", Doc: "log stream: stdout, stderr, or all", DefaultValue: ""},
 		command.BoolFlag{Short: "", Name: "json", Doc: "output logs as JSON lines", DefaultValue: false},
 		command.BoolFlag{Short: "", Name: "raw", Doc: "emit raw content only for a single task selection", DefaultValue: false},
@@ -154,17 +146,11 @@ func PipelineLogs(ctx *command.Context, pipelineID uint64, taskID uint64, taskNa
 	}
 
 	logsByTask := make(map[uint64][]apistructs.DashboardSpotLogLine, len(tasks))
-	fullFetch := opts.tail <= 0 || len(tasks) > 1
 	for _, task := range tasks {
-		var (
-			lines []apistructs.DashboardSpotLogLine
-			err   error
-		)
-		if fullFetch {
-			lines, err = fetchLogsForTaskFromStart(ctx, pipeline, task, opts.stream)
-		} else {
-			lines, err = fetchLogsForTaskByTail(ctx, pipeline, task, opts.stream, opts.tail)
-		}
+		lines, err := fetchLogsForTask(ctx, pipeline, task, opts.stream, opts.tail, taskLogFetchMode{
+			RetryEmpty:      true,
+			ForwardFallback: true,
+		})
 		if err != nil {
 			return err
 		}
@@ -173,6 +159,7 @@ func PipelineLogs(ctx *command.Context, pipelineID uint64, taskID uint64, taskNa
 
 	return writeLogOutput(logsStdout, pipelineID, tasks, logsByTask, opts)
 }
+
 func (o logOptions) selectionMode() logSelectionMode {
 	switch {
 	case o.taskID > 0:
@@ -277,7 +264,7 @@ type mergedLogLine struct {
 }
 
 func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions) error {
-	cursors := make(map[uint64]*taskLogCursor)
+	seen := make(map[uint64]map[string]struct{})
 	idleRounds := 0
 
 	for {
@@ -303,17 +290,15 @@ func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions)
 		logsByTask := make(map[uint64][]apistructs.DashboardSpotLogLine, len(tasks))
 		newLineCount := 0
 		for _, task := range tasks {
-			cursor := cursors[task.ID]
-			if cursor == nil {
-				cursor = &taskLogCursor{}
-				cursors[task.ID] = cursor
-			}
-			lines, err := fetchWatchLogsForTask(ctx, pipeline, task, opts.stream, opts.tail, cursor)
+			lines, err := fetchLogsForTask(ctx, pipeline, task, opts.stream, opts.tail, taskLogFetchMode{
+				ForwardFallback: true,
+			})
 			if err != nil {
 				return err
 			}
-			newLineCount += len(lines)
-			logsByTask[task.ID] = lines
+			unseen := filterUnseenLogLines(task.ID, lines, seen)
+			newLineCount += len(unseen)
+			logsByTask[task.ID] = unseen
 		}
 
 		if newLineCount > 0 {
@@ -329,7 +314,7 @@ func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions)
 			return nil
 		}
 
-		sleepForRetry(2 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }
 
@@ -401,198 +386,6 @@ func fetchTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions, 
 	}
 }
 
-func fetchWatchLogsForTask(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, cursor *taskLogCursor) ([]apistructs.DashboardSpotLogLine, error) {
-	if !cursor.Initialized {
-		lines, err := fetchLogsForTask(ctx, pipeline, task, stream, tail, taskLogFetchMode{
-			ForwardFallback: true,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return cursor.filterAndAdvance(lines), nil
-	}
-
-	return fetchTaskLogLinesFromCursor(ctx, pipeline, task, stream, normalizedLogTail(tail), cursor)
-}
-
-func fetchLogsForTaskFromStart(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string) ([]apistructs.DashboardSpotLogLine, error) {
-	if stream == "all" {
-		stdoutLines, err := fetchLogsForTaskFromStart(ctx, pipeline, task, "stdout")
-		if err != nil {
-			return nil, err
-		}
-		stderrLines, err := fetchLogsForTaskFromStart(ctx, pipeline, task, "stderr")
-		if err != nil {
-			return nil, err
-		}
-		lines := append([]apistructs.DashboardSpotLogLine{}, stdoutLines...)
-		lines = append(lines, stderrLines...)
-		sort.SliceStable(lines, func(i, j int) bool {
-			return lines[i].TimeStamp < lines[j].TimeStamp
-		})
-		return lines, nil
-	}
-
-	cursor := &taskLogCursor{}
-	return fetchTaskLogLinesFromCursor(ctx, pipeline, task, stream, forwardFetchBatchSize, cursor)
-}
-
-func fetchLogsForTaskByTail(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, limit int) ([]apistructs.DashboardSpotLogLine, error) {
-	if stream == "all" {
-		stdoutLines, err := fetchLogsForTaskByTail(ctx, pipeline, task, "stdout", limit)
-		if err != nil {
-			return nil, err
-		}
-		stderrLines, err := fetchLogsForTaskByTail(ctx, pipeline, task, "stderr", limit)
-		if err != nil {
-			return nil, err
-		}
-		lines := append([]apistructs.DashboardSpotLogLine{}, stdoutLines...)
-		lines = append(lines, stderrLines...)
-		sort.SliceStable(lines, func(i, j int) bool {
-			return lines[i].TimeStamp < lines[j].TimeStamp
-		})
-		return trimLogLinesToTail(lines, limit), nil
-	}
-
-	pageSize := forwardFetchBatchSize
-	if limit > 0 && limit < pageSize {
-		pageSize = limit
-	}
-
-	var (
-		lines   []apistructs.DashboardSpotLogLine
-		seen    = make(map[string]struct{})
-		end     int64
-		lastEnd int64 = -1
-	)
-	for len(lines) < limit {
-		batch, err := fetchTaskLogLines(ctx, common.TaskLogRequestOptions{
-			PipelineID:  pipeline.ID,
-			TaskID:      task.ID,
-			OrgName:     pipeline.OrgName,
-			ClusterName: pipeline.ClusterName,
-			Stream:      stream,
-			Tail:        pageSize,
-			End:         end,
-			Count:       -int64(pageSize),
-		}, taskLogFetchMode{
-			RetryEmpty:      true,
-			ForwardFallback: true,
-		}, task.TimeBegin)
-		if err != nil {
-			return nil, err
-		}
-		if len(batch) == 0 {
-			break
-		}
-
-		uniqueBefore := len(lines)
-		for _, line := range batch {
-			key := logCursorLineKey(line) + "|" + line.TimeStamp
-			if _, ok := seen[key]; ok {
-				continue
-			}
-			seen[key] = struct{}{}
-			lines = append(lines, line)
-		}
-		if len(lines) >= limit {
-			break
-		}
-
-		oldest, ok := oldestLogTimestamp(batch)
-		if !ok {
-			break
-		}
-		nextEnd := backwardQueryEnd(oldest)
-		if nextEnd == lastEnd && len(lines) == uniqueBefore {
-			break
-		}
-		lastEnd = nextEnd
-		end = nextEnd
-		if len(batch) < pageSize {
-			break
-		}
-	}
-
-	sort.SliceStable(lines, func(i, j int) bool {
-		if lines[i].TimeStamp == lines[j].TimeStamp {
-			return lines[i].Offset < lines[j].Offset
-		}
-		return lines[i].TimeStamp < lines[j].TimeStamp
-	})
-	return trimLogLinesToTail(lines, limit), nil
-}
-
-func fetchTaskLogLinesFromCursor(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, batchSize int, cursor *taskLogCursor) ([]apistructs.DashboardSpotLogLine, error) {
-	var lines []apistructs.DashboardSpotLogLine
-	for {
-		start := int64(0)
-		if cursor.Initialized {
-			start = forwardQueryStart(cursor.LastTimestamp)
-		}
-		batch, err := fetchTaskLogLines(ctx, common.TaskLogRequestOptions{
-			PipelineID:  pipeline.ID,
-			TaskID:      task.ID,
-			OrgName:     pipeline.OrgName,
-			ClusterName: pipeline.ClusterName,
-			Stream:      stream,
-			Tail:        batchSize,
-			Start:       start,
-			Count:       int64(batchSize),
-		}, taskLogFetchMode{}, task.TimeBegin)
-		if err != nil {
-			return nil, err
-		}
-		if len(batch) == 0 {
-			return lines, nil
-		}
-
-		previousTimestamp := cursor.LastTimestamp
-		filtered := cursor.filterAndAdvance(batch)
-		lines = append(lines, filtered...)
-
-		if len(batch) < batchSize {
-			return lines, nil
-		}
-		if cursor.LastTimestamp == previousTimestamp && len(filtered) == 0 {
-			return lines, nil
-		}
-	}
-}
-
-func forwardQueryStart(timestamp int64) int64 {
-	if timestamp <= 0 {
-		return 0
-	}
-	return timestamp - 1
-}
-
-func backwardQueryEnd(timestamp int64) int64 {
-	if timestamp < 0 {
-		return 0
-	}
-	return timestamp + 1
-}
-
-func oldestLogTimestamp(lines []apistructs.DashboardSpotLogLine) (int64, bool) {
-	var (
-		oldest int64
-		ok     bool
-	)
-	for _, line := range lines {
-		ts, parsed := parseLogTimestamp(line.TimeStamp)
-		if !parsed {
-			continue
-		}
-		if !ok || ts < oldest {
-			oldest = ts
-			ok = true
-		}
-	}
-	return oldest, ok
-}
-
 func canUseForwardWindowFallback(opts common.TaskLogRequestOptions, fallbackStart int64) bool {
 	return fallbackStart > 0 && opts.Start == 0 && opts.Count == 0
 }
@@ -612,7 +405,6 @@ func normalizedLogTail(tail int) int {
 
 func writeLogOutput(w io.Writer, pipelineID uint64, tasks []common.PipelineTaskRef, logsByTask map[uint64][]apistructs.DashboardSpotLogLine, opts logOptions) error {
 	lines := mergeLogLines(tasks, logsByTask)
-	lines = trimMergedLogLinesToTail(lines, opts.tail)
 	if opts.jsonOutput {
 		encoder := json.NewEncoder(w)
 		for _, item := range lines {
@@ -646,20 +438,6 @@ func writeLogOutput(w io.Writer, pipelineID uint64, tasks []common.PipelineTaskR
 	return nil
 }
 
-func trimMergedLogLinesToTail(lines []mergedLogLine, tail int) []mergedLogLine {
-	if tail <= 0 || len(lines) <= tail {
-		return lines
-	}
-	return lines[len(lines)-tail:]
-}
-
-func trimLogLinesToTail(lines []apistructs.DashboardSpotLogLine, tail int) []apistructs.DashboardSpotLogLine {
-	if tail <= 0 || len(lines) <= tail {
-		return lines
-	}
-	return lines[len(lines)-tail:]
-}
-
 func mergeLogLines(tasks []common.PipelineTaskRef, logsByTask map[uint64][]apistructs.DashboardSpotLogLine) []mergedLogLine {
 	taskByID := make(map[uint64]common.PipelineTaskRef, len(tasks))
 	for _, task := range tasks {
@@ -683,54 +461,21 @@ func mergeLogLines(tasks []common.PipelineTaskRef, logsByTask map[uint64][]apist
 	return merged
 }
 
-func (c *taskLogCursor) filterAndAdvance(lines []apistructs.DashboardSpotLogLine) []apistructs.DashboardSpotLogLine {
+func filterUnseenLogLines(taskID uint64, lines []apistructs.DashboardSpotLogLine, seen map[uint64]map[string]struct{}) []apistructs.DashboardSpotLogLine {
+	if _, ok := seen[taskID]; !ok {
+		seen[taskID] = make(map[string]struct{})
+	}
+
 	var filtered []apistructs.DashboardSpotLogLine
 	for _, line := range lines {
-		ts, ok := parseLogTimestamp(line.TimeStamp)
-		if !ok {
-			filtered = append(filtered, line)
+		key := fmt.Sprintf("%s|%d|%s|%s", line.TimeStamp, line.Offset, line.Stream, line.Content)
+		if _, ok := seen[taskID][key]; ok {
 			continue
 		}
-
-		key := logCursorLineKey(line)
-		if !c.Initialized || ts > c.LastTimestamp {
-			c.Initialized = true
-			c.LastTimestamp = ts
-			c.seenAtTimestamp = map[string]struct{}{key: {}}
-			filtered = append(filtered, line)
-			continue
-		}
-		if ts < c.LastTimestamp {
-			continue
-		}
-		if c.seenAtTimestamp == nil {
-			c.seenAtTimestamp = make(map[string]struct{})
-		}
-		if _, exists := c.seenAtTimestamp[key]; exists {
-			continue
-		}
-		c.seenAtTimestamp[key] = struct{}{}
+		seen[taskID][key] = struct{}{}
 		filtered = append(filtered, line)
 	}
 	return filtered
-}
-
-func parseLogTimestamp(value string) (int64, bool) {
-	if value == "" {
-		return 0, false
-	}
-	if ts, err := time.Parse(time.RFC3339Nano, value); err == nil {
-		return ts.UnixNano(), true
-	}
-	parsed, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return 0, false
-	}
-	return parsed, true
-}
-
-func logCursorLineKey(line apistructs.DashboardSpotLogLine) string {
-	return fmt.Sprintf("%d|%s|%s", line.Offset, line.Stream, line.Content)
 }
 
 func defaultSelectedTasks(tasks []common.PipelineTaskRef, mode logSelectionMode, interactive bool) []common.PipelineTaskRef {
