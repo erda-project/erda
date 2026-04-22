@@ -902,11 +902,11 @@ func TestRuntimeLogsWatchPagesBeyondTailWindow(t *testing.T) {
 	if len(incrementalCalls) != 2 {
 		t.Fatalf("incremental calls = %d, want 2", len(incrementalCalls))
 	}
-	if incrementalCalls[0].Start != 1001 || incrementalCalls[0].Count != 2 {
-		t.Fatalf("first incremental call = %#v, want start=1001 count=2", incrementalCalls[0])
+	if incrementalCalls[0].Start != 999 || incrementalCalls[0].Count != 2 {
+		t.Fatalf("first incremental call = %#v, want start=999 count=2", incrementalCalls[0])
 	}
-	if incrementalCalls[1].Start != 1003 || incrementalCalls[1].Count != 2 {
-		t.Fatalf("second incremental call = %#v, want start=1003 count=2", incrementalCalls[1])
+	if incrementalCalls[1].Start != 1001 || incrementalCalls[1].Count != 2 {
+		t.Fatalf("second incremental call = %#v, want start=1001 count=2", incrementalCalls[1])
 	}
 	got := out.String()
 	for _, want := range []string{"seed", "line-1", "line-2", "line-3"} {

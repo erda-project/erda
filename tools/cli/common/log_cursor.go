@@ -28,6 +28,8 @@ type LogCursor struct {
 type LogInitialFetcher func() ([]apistructs.DashboardSpotLogLine, error)
 type LogPageFetcher func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error)
 
+const maxLogPageSize = int64(5000)
+
 func FetchWatchLogLines(cursor LogCursor, tail int, fetchInitial LogInitialFetcher, fetchPage LogPageFetcher) ([]apistructs.DashboardSpotLogLine, LogCursor, error) {
 	if cursor.Start <= 0 {
 		lines, err := fetchInitial()
@@ -45,16 +47,31 @@ func FetchWatchLogLines(cursor LogCursor, tail int, fetchInitial LogInitialFetch
 }
 
 func FetchIncrementalLogLines(start int64, pageSize int64, fetchPage LogPageFetcher) ([]apistructs.DashboardSpotLogLine, error) {
-	pageSize = DefaultLogPageSize(0, pageSize)
+	basePageSize := DefaultLogPageSize(0, pageSize)
+	pageSize = basePageSize
 
 	var lines []apistructs.DashboardSpotLogLine
 	for {
-		page, err := fetchPage(start, pageSize)
-		if err != nil {
-			return nil, err
-		}
-		if len(page) == 0 {
-			return lines, nil
+		requestStart := queryLogStart(start)
+		var page []apistructs.DashboardSpotLogLine
+		for {
+			var err error
+			page, err = fetchPage(requestStart, pageSize)
+			if err != nil {
+				return nil, err
+			}
+			if len(page) == 0 {
+				return lines, nil
+			}
+
+			if shouldExpandLogPage(start, page, pageSize) {
+				nextPageSize := expandLogPageSize(pageSize)
+				if nextPageSize > pageSize {
+					pageSize = nextPageSize
+					continue
+				}
+			}
+			break
 		}
 
 		lines = append(lines, page...)
@@ -67,6 +84,7 @@ func FetchIncrementalLogLines(start int64, pageSize int64, fetchPage LogPageFetc
 			return lines, nil
 		}
 		start = nextStart
+		pageSize = basePageSize
 	}
 }
 
@@ -102,7 +120,7 @@ func NextLogStart(currentStart int64, lines []apistructs.DashboardSpotLogLine) i
 	if maxTimestamp == currentStart {
 		return currentStart
 	}
-	return maxTimestamp + 1
+	return maxTimestamp
 }
 
 func ParseLogTimestamp(value string) (int64, bool) {
@@ -118,4 +136,26 @@ func ParseLogTimestamp(value string) (int64, bool) {
 		}
 	}
 	return 0, false
+}
+
+func queryLogStart(cursorStart int64) int64 {
+	if cursorStart <= 0 {
+		return 0
+	}
+	return cursorStart - 1
+}
+
+func shouldExpandLogPage(cursorStart int64, lines []apistructs.DashboardSpotLogLine, pageSize int64) bool {
+	return cursorStart > 0 && int64(len(lines)) >= pageSize && NextLogStart(cursorStart, lines) <= cursorStart
+}
+
+func expandLogPageSize(pageSize int64) int64 {
+	if pageSize >= maxLogPageSize {
+		return pageSize
+	}
+	next := pageSize * 2
+	if next > maxLogPageSize {
+		return maxLogPageSize
+	}
+	return next
 }

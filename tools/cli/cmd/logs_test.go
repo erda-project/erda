@@ -226,11 +226,11 @@ func TestFetchIncrementalTaskLogLinesPagesBeyondTailWindow(t *testing.T) {
 	if len(calls) != 2 {
 		t.Fatalf("fetchIncrementalTaskLogLines() calls = %d, want 2", len(calls))
 	}
-	if calls[0].Start != 1000 || calls[0].Count != 2 {
-		t.Fatalf("first call = %#v, want start 1000 count 2", calls[0])
+	if calls[0].Start != 999 || calls[0].Count != 2 {
+		t.Fatalf("first call = %#v, want start 999 count 2", calls[0])
 	}
-	if calls[1].Start != 1003 || calls[1].Count != 2 {
-		t.Fatalf("second call = %#v, want start 1003 count 2", calls[1])
+	if calls[1].Start != 1001 || calls[1].Count != 2 {
+		t.Fatalf("second call = %#v, want start 1001 count 2", calls[1])
 	}
 }
 
@@ -271,8 +271,8 @@ func TestFetchWatchLogLinesUsesPageFetcher(t *testing.T) {
 	if initialCalls != 1 {
 		t.Fatalf("initial calls = %d, want 1", initialCalls)
 	}
-	if len(lines) != 1 || cursor.Start != 1001 {
-		t.Fatalf("initial result = (%d lines, cursor=%d), want 1 line and cursor 1001", len(lines), cursor.Start)
+	if len(lines) != 1 || cursor.Start != 1000 {
+		t.Fatalf("initial result = (%d lines, cursor=%d), want 1 line and cursor 1000", len(lines), cursor.Start)
 	}
 
 	lines, cursor, err = common.FetchWatchLogLines(cursor, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
@@ -303,14 +303,65 @@ func TestFetchWatchLogLinesUsesPageFetcher(t *testing.T) {
 	if len(pageCalls) != 2 {
 		t.Fatalf("page fetch calls = %d, want 2", len(pageCalls))
 	}
-	if pageCalls[0].start != 1001 || pageCalls[0].count != 2 {
-		t.Fatalf("first page call = %#v, want start 1001 count 2", pageCalls[0])
+	if pageCalls[0].start != 999 || pageCalls[0].count != 2 {
+		t.Fatalf("first page call = %#v, want start 999 count 2", pageCalls[0])
 	}
-	if pageCalls[1].start != 1003 || pageCalls[1].count != 2 {
-		t.Fatalf("second page call = %#v, want start 1003 count 2", pageCalls[1])
+	if pageCalls[1].start != 1001 || pageCalls[1].count != 2 {
+		t.Fatalf("second page call = %#v, want start 1001 count 2", pageCalls[1])
 	}
-	if len(lines) != 3 || cursor.Start != 1004 {
-		t.Fatalf("incremental result = (%d lines, cursor=%d), want 3 lines and cursor 1004", len(lines), cursor.Start)
+	if len(lines) != 3 || cursor.Start != 1003 {
+		t.Fatalf("incremental result = (%d lines, cursor=%d), want 3 lines and cursor 1003", len(lines), cursor.Start)
+	}
+}
+
+func TestFetchWatchLogLinesExpandsPageAtTimestampBoundary(t *testing.T) {
+	var calls []struct {
+		start int64
+		count int64
+	}
+
+	lines, cursor, err := common.FetchWatchLogLines(common.LogCursor{Start: 1000}, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
+		t.Fatal("fetchInitial should not be called when cursor is set")
+		return nil, nil
+	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		calls = append(calls, struct {
+			start int64
+			count int64
+		}{start: start, count: count})
+		switch len(calls) {
+		case 1:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1000", Content: "line-1"},
+				{TimeStamp: "1000", Content: "line-2"},
+			}, nil
+		case 2:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1000", Content: "line-1"},
+				{TimeStamp: "1000", Content: "line-2"},
+				{TimeStamp: "1000", Content: "line-3"},
+				{TimeStamp: "1001", Content: "line-4"},
+			}, nil
+		default:
+			return nil, nil
+		}
+	})
+	if err != nil {
+		t.Fatalf("FetchWatchLogLines() error = %v", err)
+	}
+	if len(calls) != 3 {
+		t.Fatalf("page fetch calls = %d, want 3", len(calls))
+	}
+	if calls[0].start != 999 || calls[0].count != 2 {
+		t.Fatalf("first page call = %#v, want start 999 count 2", calls[0])
+	}
+	if calls[1].start != 999 || calls[1].count != 4 {
+		t.Fatalf("second page call = %#v, want start 999 count 4", calls[1])
+	}
+	if calls[2].start != 1000 || calls[2].count != 2 {
+		t.Fatalf("third page call = %#v, want start 1000 count 2", calls[2])
+	}
+	if len(lines) != 4 || cursor.Start != 1001 {
+		t.Fatalf("result = (%d lines, cursor=%d), want 4 lines and cursor 1001", len(lines), cursor.Start)
 	}
 }
 
