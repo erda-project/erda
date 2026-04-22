@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/utils"
+	wrappedas "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/wrapclient/edas"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	executorutil "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
@@ -82,8 +83,8 @@ func (e *EDAS) createService(ctx context.Context, sg *apistructs.ServiceGroup, s
 
 	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
 
-	//create k8s service
-	if err = e.wrapClientSet.CreateK8sService(appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+	// Align k8s Service state even if a previous async flow already created it.
+	if err = e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 		l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
 		return errors.Wrap(err, "edas create k8s service")
 	}
@@ -98,7 +99,7 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 
 	// Check whether the service exists, if it does not exist, create a new one; otherwise, update it
 	if appID, err := e.wrapEDASClient.GetAppID(appName); err != nil {
-		if err.Error() == notFound {
+		if errors.Is(err, wrappedas.ErrApplicationNotFound) {
 			l.Warningf("app(%s) is not found via edas api, will create it ", appName)
 			if err = e.createService(ctx, sg, s); err != nil {
 				l.Errorf("failed to create service(%s): %v", appName, err)
