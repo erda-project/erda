@@ -72,11 +72,11 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
 | Alibaba Cloud | `multimodal-embedding-v1` | fixed `1024` | `dimension` parameter is not supported |
 | Alibaba Cloud | `tongyi-embedding-vision-plus` | fixed `1152` | `dimension` parameter is not supported in latest multimodal API doc |
 | Alibaba Cloud | `tongyi-embedding-vision-flash` | fixed `768` | `dimension` parameter is not supported in latest multimodal API doc |
-| Volcengine Ark | `doubao-embedding-vision-*` | documented as request `integer`; explicit enum not published in accessible API page | Proxy should pass through and let provider validate; if not set, use provider/model default |
+| Volcengine Ark | `doubao-embedding-vision-*` | `1024, 2048` | Default `2048` |
 
 Validation policy in ai-proxy:
 - If model has known allowlist, reject invalid values with `400`.
-- If provider docs do not publish an enum, treat `dimensions` as optional positive integer and rely on upstream validation.
+- For `doubao-embedding-vision-*`, enforce allowlist `{1024, 2048}` and default to `2048` when omitted.
 
 ## 5. Response Schema (Canonical)
 
