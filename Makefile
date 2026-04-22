@@ -16,9 +16,12 @@ SHELL := /bin/bash
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
 APP_NAME ?= $(shell echo ${BUILD_PATH} | sed 's/^\(.*\)[/]//')
-VERSION ?= $(shell build/scripts/make-version.sh)
+ifndef VERSION
+VERSION := $(shell build/scripts/make-version.sh)
+endif
 # use MAJOR.MINOR as the Erda version to fix broken of buildpack and other unexpceted brokens
 ERDA_VERSION ?= $(shell echo $(VERSION)|sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/g')
+CLI_CHANNEL ?= $(shell if [[ "$(VERSION)" == *-alpha* ]]; then echo alpha; elif [[ "$(VERSION)" == *-beta* ]]; then echo beta; else echo stable; fi)
 # build info
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
@@ -34,11 +37,19 @@ VERSION_OPS := -ldflags "\
         -X '${VERSION_PKG}.CommitID=${COMMIT_ID}' \
         -X '${VERSION_PKG}.GoVersion=${GO_VERSION}' \
 		-X '${VERSION_PKG}.DockerImage=${DOCKER_IMAGE}'"
+CLI_VERSION_OPS := -ldflags "\
+		-s -w \
+		-X '${VERSION_PKG}.Version=${VERSION}' \
+		-X '${VERSION_PKG}.BuildTime=${BUILD_TIME}' \
+        -X '${VERSION_PKG}.CommitID=${COMMIT_ID}' \
+        -X '${VERSION_PKG}.GoVersion=${GO_VERSION}' \
+		-X '${VERSION_PKG}.DockerImage=${DOCKER_IMAGE}'"
 # build env
 # GOPROXY ?= https://goproxy.cn/
 # GOPRIVATE ?= ""
 GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
 GO_BUILD_OPTIONS := -tags dynamic
+CLI_GO_BUILD_OPTIONS := -tags dynamic -trimpath
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
@@ -153,22 +164,29 @@ prepare-cli:
 .PHONY: cli
 cli: prepare-cli
 	cd tools/cli && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli"
+	${GO_BUILD_ENV} go build ${CLI_VERSION_OPS} ${CLI_GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli"
 	echo "build cli tool successfully!"
 .PHONY: cli-linux
 cli-linux: prepare-cli
 	cd tools/cli && \
-	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli-linux"
+	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${CLI_VERSION_OPS} ${CLI_GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli-linux"
 	echo "build cli tool successfully!"
 
 .PHONY: test-cli
 test-cli: prepare-cli
 	${GO_BUILD_ENV} go test ./tools/cli/...
 
-.PHONY: upload-cli
-upload-cli: cli cli-linux
-	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
-	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
+.PHONY: release-cli
+release-cli: cli cli-linux
+	@go run tools/release-cli/main.go publish "${GOOS}" "${GOARCH}" "${VERSION}" "${CLI_CHANNEL}" "${PROJ_PATH}/bin/erda-cli"
+	@go run tools/release-cli/main.go publish "linux" "amd64" "${VERSION}" "${CLI_CHANNEL}" "${PROJ_PATH}/bin/erda-cli-linux"
+
+PRUNE_CHANNELS ?= alpha,beta
+PRUNE_KEEP ?= 10
+
+.PHONY: release-cli-prune
+release-cli-prune:
+	@go run tools/release-cli/main.go prune --apply --channel "$(PRUNE_CHANNELS)" --keep "$(PRUNE_KEEP)"
 
 
 

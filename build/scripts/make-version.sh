@@ -11,25 +11,41 @@
 
 set -o errexit
 
+function normalize_version() {
+  local raw="${1/v/}"
+  if [[ "${raw}" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+    echo "${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0"
+    return
+  fi
+  if [[ "${raw}" =~ ^([0-9]+)\.([0-9]+)-(.+)$ ]]; then
+    echo "${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0-${BASH_REMATCH[3]}"
+    return
+  fi
+  echo "${raw}"
+}
+
 function get_version() {
-  [[ -n "${VERSION}" ]] && echo "${VERSION/v/}" && return
+  [[ -n "${VERSION}" ]] && normalize_version "${VERSION}" && return
   [[ -f VERSION ]] && ver=$(head -n 1 VERSION) || ver=0.0
-  ALPHA=${ver}-alpha
+  BASE=$(normalize_version "${ver}")
+  TS=$(date '+%Y%m%d%H%M%S')
   HEAD_TAG=$(git tag --points-at HEAD |head -n1)
   # remove prefix v when present
-  [[ -n "${HEAD_TAG}" ]] && echo "${HEAD_TAG/v/}" && return
+  [[ -n "${HEAD_TAG}" ]] && normalize_version "${HEAD_TAG}" && return
 
   BRANCH_PREFIX=$(git rev-parse --abbrev-ref HEAD)
 
-  if [[ "${BRANCH_PREFIX}" =~ release/[[:digit:]]+\.* ]]; then
-    VERSION=${BRANCH_PREFIX//release\//}
-    # some case branch already have greek version, like: release/1.0-beta2
-    if ! [[ "${BRANCH_PREFIX}" =~ - ]]; then
-      VERSION="${VERSION}-beta"
+  if [[ "${BRANCH_PREFIX}" =~ ^release/([0-9]+\.[0-9]+)(-beta([0-9]+))?$ ]]; then
+    BASE=$(normalize_version "${BASH_REMATCH[1]}")
+    if [[ -n "${BASH_REMATCH[3]}" ]]; then
+      echo "${BASE}-beta.${BASH_REMATCH[3]}.${TS}"
+    else
+      echo "${BASE}-beta.${TS}"
     fi
+    return
   fi
 
-  echo ${VERSION:-${ALPHA}}
+  echo "${BASE}-alpha.${TS}"
 }
 
 function get_tag() {
@@ -40,9 +56,23 @@ function get_tag() {
   echo "${ver}-$(date '+%Y%m%d%H%M%S')-$(git rev-parse --short HEAD)"
 }
 
+function get_channel() {
+  ver=$(get_version)
+  if [[ "${ver}" =~ -alpha ]]; then
+    echo "alpha"
+  elif [[ "${ver}" =~ -beta ]]; then
+    echo "beta"
+  else
+    echo "stable"
+  fi
+}
+
 case $1 in
 tag)
   get_tag
+  ;;
+channel)
+  get_channel
   ;;
 *)
   get_version
