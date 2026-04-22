@@ -159,9 +159,6 @@ func (e *EDAS) removeService(ctx context.Context, group string, s *apistructs.Se
 func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *apistructs.ServiceGroup) error {
 	l := e.l.WithField("func", "cyclicUpdateService")
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	errChan := make(chan error, 1)
 	group := utils.CombineEDASAppGroup(newRuntime.Type, newRuntime.ID)
 
@@ -179,10 +176,6 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		// 2. The service whose port has been modified
 		svcs := checkoutServicesToDelete(newRuntime, oldRuntime)
 		for _, svc := range *svcs {
-			if ctx.Err() != nil {
-				return
-			}
-
 			appName := utils.CombineEDASAppNameWithGroup(group, svc.Name)
 			l.Warningf("need to delete service(%s) because the user modified name or ports !!!", appName)
 
@@ -193,10 +186,6 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 
 		for _, batch := range flows {
 			for _, newSvc := range batch {
-				if ctx.Err() != nil {
-					return
-				}
-
 				var ok bool
 				var oldSvc *apistructs.Service
 
@@ -207,7 +196,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 					l.Infof("cyclicupdate to create service %s", svcName)
 					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
 						l.Errorf("failed to create service: %s, error: %v", appName, err)
-						reportAsyncError(ctx, errChan, err)
+						trySendErr(errChan, err)
 						return
 					}
 					continue
@@ -217,7 +206,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				// Does not include domain name updates
 				if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
 					l.Errorf("failed to update service: %s, error: %v", appName, err)
-					reportAsyncError(ctx, errChan, err)
+					trySendErr(errChan, err)
 					return
 				}
 			}
@@ -236,12 +225,10 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 	return nil
 }
 
-func reportAsyncError(ctx context.Context, errChan chan<- error, err error) bool {
+func trySendErr(errChan chan<- error, err error) {
 	select {
 	case errChan <- err:
-		return true
-	case <-ctx.Done():
-		return false
+	default:
 	}
 }
 
