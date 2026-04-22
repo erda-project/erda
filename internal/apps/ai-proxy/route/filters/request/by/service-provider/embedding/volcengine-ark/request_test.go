@@ -1,0 +1,125 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package volcengine_ark
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http/httptest"
+	"net/http/httputil"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestOnProxyRequest_DefaultsAndOutputMapping(t *testing.T) {
+	multi := true
+	sparse := true
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "hello multimodal",
+		}},
+		"output": map[string]any{
+			"multi":  multi,
+			"sparse": sparse,
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	require.NoError(t, f.OnProxyRequest(pr))
+	require.Equal(t, arkMultimodalEmbeddingPath, pr.Out.URL.Path)
+
+	var got map[string]any
+	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
+	require.Equal(t, "doubao-embedding-vision-251215", got["model"])
+	require.Equal(t, defaultInstructions, got["instructions"])
+	require.EqualValues(t, defaultDimensions, got["dimensions"])
+	require.Equal(t, defaultEncodingFormat, got["encoding_format"])
+
+	multiEmbedding, ok := got["multi_embedding"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "enabled", multiEmbedding["type"])
+
+	sparseEmbedding, ok := got["sparse_embedding"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "enabled", sparseEmbedding["type"])
+}
+
+func TestOnProxyRequest_DimensionsPassThrough(t *testing.T) {
+	in := map[string]any{
+		"model":       "doubao-embedding-vision-251215",
+		"dimensions":  1024,
+		"instruction": "compress",
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "test",
+		}},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	require.NoError(t, f.OnProxyRequest(pr))
+
+	var got map[string]any
+	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
+	require.EqualValues(t, 1024, got["dimensions"])
+	require.Equal(t, "compress", got["instructions"])
+}
+
+func TestOnProxyRequest_InvalidImageInput(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type": "image",
+		}},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	err := f.OnProxyRequest(pr)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "image_url is required")
+}
+
+func TestOnProxyRequest_InvalidDimensions(t *testing.T) {
+	in := map[string]any{
+		"model":      "doubao-embedding-vision-251215",
+		"dimensions": 1536,
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "test",
+		}},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	err := f.OnProxyRequest(pr)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "dimensions must be one of [1024, 2048]")
+}
+
+func buildProxyRequest(t *testing.T, payload map[string]any) *httputil.ProxyRequest {
+	t.Helper()
+	b, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	inReq := httptest.NewRequest("POST", "http://ai-proxy.local/v1/multimodal/embeddings", bytes.NewReader(b))
+	outReq := httptest.NewRequest("POST", "https://ark.cn-beijing.volces.com/v1/multimodal/embeddings", bytes.NewReader(b))
+
+	return &httputil.ProxyRequest{In: inReq, Out: outReq}
+}
