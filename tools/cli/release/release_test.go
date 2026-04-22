@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -217,5 +218,15 @@ func TestFetchManifestReturnsTypedNotFoundErrorOn404(t *testing.T) {
 	}
 	if !IsManifestNotFound(err) {
 		t.Fatalf("expected typed not found error, got %v", err)
+	}
+}
+
+func TestFetchManifestRejectsInvalidURL(t *testing.T) {
+	_, err := FetchManifest("file:///tmp/stable.json")
+	if err == nil {
+		t.Fatal("expected invalid url error")
+	}
+	if !strings.Contains(err.Error(), "invalid fetch url") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

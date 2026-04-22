@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"regexp"
 	"sort"
@@ -137,7 +138,7 @@ func VersionManifestURL(baseURL, goos, goarch, version string) string {
 }
 
 func FetchManifest(url string) (*Manifest, error) {
-	resp, err := http.Get(url)
+	resp, err := fetchURL(url)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +164,7 @@ func IsManifestNotFound(err error) bool {
 }
 
 func FetchVersionIndex(url string) (*VersionIndex, error) {
-	resp, err := http.Get(url)
+	resp, err := fetchURL(url)
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +187,30 @@ func FetchVersionIndex(url string) (*VersionIndex, error) {
 
 func IsVersionIndexNotFound(err error) bool {
 	return errors.Is(err, ErrVersionIndexNotFound)
+}
+
+func fetchURL(rawURL string) (*http.Response, error) {
+	parsedURL, err := validateFetchURL(rawURL)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return http.DefaultClient.Do(req)
+}
+
+func validateFetchURL(rawURL string) (*url.URL, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid fetch url %q: %w", rawURL, err)
+	}
+	if parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return nil, fmt.Errorf("invalid fetch url %q", rawURL)
+	}
+	return parsedURL, nil
 }
 
 func UpdateVersionIndex(index *VersionIndex, manifest Manifest, maxEntries int) *VersionIndex {
