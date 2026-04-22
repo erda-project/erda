@@ -22,4 +22,7 @@ const (
 	RequestPathPrefixV1Embeddings        = "/v1/embeddings"
 	RequestPathPrefixV1Responses         = "/v1/responses"
 	RequestPathPrefixV1Files             = "/v1/files"
+	RequestPathPrefixV1Batches           = "/v1/batches"
+	RequestPathPrefixV1BatchesByID       = "/v1/batches/{batch_id}"
+	RequestPathPrefixV1BatchesCancel     = "/v1/batches/{batch_id}/cancel"
 )
