@@ -22,7 +22,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -32,6 +31,7 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/spf13/cobra"
 
 	"github.com/erda-project/erda/tools/cli/release"
 )
@@ -43,9 +43,29 @@ const (
 )
 
 var (
-	defaultOSList   = []string{"darwin", "linux", "windows"}
-	defaultArchList = []string{"amd64", "arm64"}
+	defaultOSList           = []string{"darwin", "linux", "windows"}
+	defaultArchList         = []string{"amd64", "arm64"}
+	defaultReleaseArtifacts = []releaseArtifact{
+		{goos: "darwin", goarch: "arm64", fileName: "erda-cli"},
+		{goos: "linux", goarch: "amd64", fileName: "erda-cli-linux"},
+	}
 )
+
+type releaseArtifact struct {
+	goos     string
+	goarch   string
+	fileName string
+}
+
+type publishArgs struct {
+	keyID      string
+	keySecret  string
+	endpoint   string
+	bucketName string
+	version    string
+	channel    string
+	dir        string
+}
 
 type releaseArgs struct {
 	keyID      string
@@ -85,136 +105,90 @@ func main() {
 }
 
 func run(rawArgs []string, getenv func(string) string, stdout, stderr io.Writer) error {
-	if len(rawArgs) == 0 {
-		printUsage(stderr)
-		return errors.New("missing subcommand")
-	}
-
-	switch rawArgs[0] {
-	case "publish":
-		args, err := parseReleaseArgs(rawArgs[1:], getenv)
-		if err != nil {
-			return err
-		}
-		bucket, err := newBucket(args.endpoint, args.bucketName, args.keyID, args.keySecret)
-		if err != nil {
-			return err
-		}
-		if err := publishRelease(bucket, args); err != nil {
-			return err
-		}
-		fmt.Fprintln(stdout, "Release publish success!")
-		return nil
-	case "prune":
-		args, err := parsePruneArgs(rawArgs[1:], getenv)
-		if err != nil {
-			return err
-		}
-		bucket, err := newBucket(args.endpoint, args.bucketName, args.keyID, args.keySecret)
-		if err != nil {
-			return err
-		}
-		return pruneReleases(bucket, args, stdout)
-	case "-h", "--help", "help":
-		printUsage(stdout)
-		return nil
-	default:
-		// Backward-compatible publish invocation:
-		// release-cli <os> <arch> <version> <channel> <file>
-		args, err := parseReleaseArgs(rawArgs, getenv)
-		if err != nil {
-			return err
-		}
-		bucket, err := newBucket(args.endpoint, args.bucketName, args.keyID, args.keySecret)
-		if err != nil {
-			return err
-		}
-		if err := publishRelease(bucket, args); err != nil {
-			return err
-		}
-		fmt.Fprintln(stdout, "Release publish success!")
-		return nil
-	}
+	cmd := newRootCmd(getenv, stdout, stderr)
+	cmd.SetArgs(rawArgs)
+	return cmd.Execute()
 }
 
-func printUsage(w io.Writer) {
-	fmt.Fprintln(w, `Usage:
-  release-cli publish <os> <arch> <version> <channel> <file>
-  release-cli prune [--apply] [--keep N] [--channel alpha,beta]
-
-Examples:
-  release-cli publish darwin arm64 2.4.0-alpha.20260422093000 alpha ./bin/erda-cli
-  release-cli prune
-  release-cli prune --channel alpha --keep 10
-  release-cli prune --apply
-
-Environment:
-  ACCESS_KEY_ID         Required. OSS access key id.
-  ACCESS_KEY_SECRET     Required. OSS access key secret.
-  OSS_ENDPOINT          Optional. Default: oss-cn-hangzhou.aliyuncs.com
-  OSS_BUCKET_NAME       Optional. Default: erda-release`)
+func newRootCmd(getenv func(string) string, stdout, stderr io.Writer) *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:           "release-cli",
+		Short:         "Publish and prune Erda CLI release artifacts",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Help(); err != nil {
+				return err
+			}
+			return errors.New("missing subcommand")
+		},
+	}
+	rootCmd.SetOut(stdout)
+	rootCmd.SetErr(stderr)
+	rootCmd.AddCommand(newPublishCmd(getenv, stdout), newPruneCmd(getenv, stdout))
+	return rootCmd
 }
 
-func parseReleaseArgs(rawArgs []string, getenv func(string) string) (releaseArgs, error) {
-	if len(rawArgs) == 7 {
-		return releaseArgs{}, errors.New("credentials must be provided via environment variables ACCESS_KEY_ID and ACCESS_KEY_SECRET, not command-line arguments")
-	}
-	if len(rawArgs) != 5 {
-		return releaseArgs{}, errors.New("usage: ACCESS_KEY_ID=<id> ACCESS_KEY_SECRET=<secret> release-cli publish <os> <arch> <version> <channel> <file>")
-	}
-	if getenv == nil {
-		getenv = func(string) string { return "" }
-	}
-
-	args := releaseArgs{
-		keyID:      getenv("ACCESS_KEY_ID"),
-		keySecret:  getenv("ACCESS_KEY_SECRET"),
-		endpoint:   firstNonEmpty(strings.TrimSpace(getenv("OSS_ENDPOINT")), defaultOSSEndpoint),
-		bucketName: firstNonEmpty(strings.TrimSpace(getenv("OSS_BUCKET_NAME")), defaultOSSBucketName),
-		goos:       rawArgs[0],
-		goarch:     rawArgs[1],
-		version:    rawArgs[2],
-		channel:    rawArgs[3],
-		file:       rawArgs[4],
-	}
-
-	var missing []string
-	if strings.TrimSpace(args.keyID) == "" {
-		missing = append(missing, "ACCESS_KEY_ID")
-	}
-	if strings.TrimSpace(args.keySecret) == "" {
-		missing = append(missing, "ACCESS_KEY_SECRET")
-	}
-	if strings.TrimSpace(args.goos) == "" {
-		missing = append(missing, "os")
-	}
-	if strings.TrimSpace(args.goarch) == "" {
-		missing = append(missing, "arch")
+func completePublishArgs(args *publishArgs) error {
+	if strings.TrimSpace(args.keyID) == "" || strings.TrimSpace(args.keySecret) == "" {
+		var missing []string
+		if strings.TrimSpace(args.keyID) == "" {
+			missing = append(missing, "ACCESS_KEY_ID")
+		}
+		if strings.TrimSpace(args.keySecret) == "" {
+			missing = append(missing, "ACCESS_KEY_SECRET")
+		}
+		return fmt.Errorf("missing required argument(s): %s", strings.Join(missing, ", "))
 	}
 	if strings.TrimSpace(args.version) == "" {
-		missing = append(missing, "version")
+		return errors.New("missing required argument(s): version")
 	}
-	if strings.TrimSpace(args.channel) == "" {
-		missing = append(missing, "channel")
-	}
-	if strings.TrimSpace(args.file) == "" {
-		missing = append(missing, "file")
-	}
-	if len(missing) > 0 {
-		return releaseArgs{}, fmt.Errorf("missing required argument(s): %s", strings.Join(missing, ", "))
-	}
-	if err := release.ValidateChannel(args.channel); err != nil {
-		return releaseArgs{}, err
+	if strings.TrimSpace(args.dir) == "" {
+		return errors.New("missing required argument(s): dir")
 	}
 	detectedChannel, err := release.DetectChannel(args.version)
 	if err != nil {
-		return releaseArgs{}, err
+		return err
+	}
+	if args.channel == "" {
+		args.channel = detectedChannel
+	}
+	if err := release.ValidateChannel(args.channel); err != nil {
+		return err
 	}
 	if args.channel != detectedChannel {
-		return releaseArgs{}, fmt.Errorf("channel %q does not match version %q (detected %q)", args.channel, args.version, detectedChannel)
+		return fmt.Errorf("channel %q does not match version %q (detected %q)", args.channel, args.version, detectedChannel)
 	}
+	return nil
+}
 
-	return args, nil
+func resolvePublishReleases(args publishArgs) ([]releaseArgs, error) {
+	var releases []releaseArgs
+	for _, artifact := range defaultReleaseArtifacts {
+		file := filepath.Join(args.dir, artifact.fileName)
+		info, err := os.Stat(file)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil, fmt.Errorf("release artifact not found: %s", file)
+			}
+			return nil, err
+		}
+		if info.IsDir() {
+			return nil, fmt.Errorf("release artifact is a directory: %s", file)
+		}
+		releases = append(releases, releaseArgs{
+			keyID:      args.keyID,
+			keySecret:  args.keySecret,
+			endpoint:   args.endpoint,
+			bucketName: args.bucketName,
+			goos:       artifact.goos,
+			goarch:     artifact.goarch,
+			version:    args.version,
+			channel:    args.channel,
+			file:       file,
+		})
+	}
+	return releases, nil
 }
 
 func parsePruneArgs(rawArgs []string, getenv func(string) string) (pruneArgs, error) {
@@ -222,48 +196,131 @@ func parsePruneArgs(rawArgs []string, getenv func(string) string) (pruneArgs, er
 		getenv = func(string) string { return "" }
 	}
 
-	fs := flag.NewFlagSet("prune", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-
-	var channelCSV string
 	args := pruneArgs{
 		keyID:      strings.TrimSpace(getenv("ACCESS_KEY_ID")),
 		keySecret:  strings.TrimSpace(getenv("ACCESS_KEY_SECRET")),
 		endpoint:   firstNonEmpty(strings.TrimSpace(getenv("OSS_ENDPOINT")), defaultOSSEndpoint),
 		bucketName: firstNonEmpty(strings.TrimSpace(getenv("OSS_BUCKET_NAME")), defaultOSSBucketName),
+		keep:       10,
 	}
-	fs.IntVar(&args.keep, "keep", 10, "keep most recent N versions per os/arch/channel")
-	fs.BoolVar(&args.apply, "apply", false, "apply deletion and index update")
-	fs.StringVar(&channelCSV, "channel", "alpha,beta", "comma-separated channels to prune")
+	channelCSV := "alpha,beta"
+	for i := 0; i < len(rawArgs); i++ {
+		switch rawArgs[i] {
+		case "--apply":
+			args.apply = true
+		case "--keep":
+			if i+1 >= len(rawArgs) {
+				return pruneArgs{}, errors.New("flag needs an argument: --keep")
+			}
+			i++
+			var keep int
+			if _, err := fmt.Sscanf(rawArgs[i], "%d", &keep); err != nil {
+				return pruneArgs{}, fmt.Errorf("invalid value %q for --keep", rawArgs[i])
+			}
+			args.keep = keep
+		case "--channel":
+			if i+1 >= len(rawArgs) {
+				return pruneArgs{}, errors.New("flag needs an argument: --channel")
+			}
+			i++
+			channelCSV = rawArgs[i]
+		default:
+			return pruneArgs{}, fmt.Errorf("unexpected argument(s): %s", strings.Join(rawArgs[i:], ", "))
+		}
+	}
+	return args, completePruneArgs(&args, channelCSV)
+}
 
-	if err := fs.Parse(rawArgs); err != nil {
-		return pruneArgs{}, err
-	}
-	if fs.NArg() != 0 {
-		return pruneArgs{}, fmt.Errorf("unexpected argument(s): %s", strings.Join(fs.Args(), ", "))
-	}
+func completePruneArgs(args *pruneArgs, channelCSV string) error {
 	if args.keyID == "" || args.keySecret == "" {
-		return pruneArgs{}, errors.New("ACCESS_KEY_ID and ACCESS_KEY_SECRET are required")
+		return errors.New("ACCESS_KEY_ID and ACCESS_KEY_SECRET are required")
 	}
 	if args.keep < 1 {
-		return pruneArgs{}, errors.New("--keep must be a positive integer")
+		return errors.New("--keep must be a positive integer")
 	}
 
+	args.channels = args.channels[:0]
 	for _, channel := range strings.Split(channelCSV, ",") {
 		channel = strings.TrimSpace(channel)
 		if channel == "" {
 			continue
 		}
 		if err := release.ValidateChannel(channel); err != nil {
-			return pruneArgs{}, err
+			return err
 		}
 		args.channels = append(args.channels, channel)
 	}
 	if len(args.channels) == 0 {
-		return pruneArgs{}, errors.New("at least one channel is required")
+		return errors.New("at least one channel is required")
 	}
 
-	return args, nil
+	return nil
+}
+
+func newPublishCmd(getenv func(string) string, stdout io.Writer) *cobra.Command {
+	var args publishArgs
+
+	cmd := &cobra.Command{
+		Use:   "publish",
+		Short: "Publish all supported CLI release artifacts from a build directory",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, rawArgs []string) error {
+			if getenv == nil {
+				getenv = func(string) string { return "" }
+			}
+			args.keyID = strings.TrimSpace(getenv("ACCESS_KEY_ID"))
+			args.keySecret = strings.TrimSpace(getenv("ACCESS_KEY_SECRET"))
+			args.endpoint = firstNonEmpty(strings.TrimSpace(getenv("OSS_ENDPOINT")), defaultOSSEndpoint)
+			args.bucketName = firstNonEmpty(strings.TrimSpace(getenv("OSS_BUCKET_NAME")), defaultOSSBucketName)
+			if err := completePublishArgs(&args); err != nil {
+				return err
+			}
+			bucket, err := newBucket(args.endpoint, args.bucketName, args.keyID, args.keySecret)
+			if err != nil {
+				return err
+			}
+			if err := publishReleases(bucket, args, stdout); err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&args.version, "version", "", "release version to publish")
+	cmd.Flags().StringVar(&args.channel, "channel", "", "release channel, defaults to the channel detected from --version")
+	cmd.Flags().StringVar(&args.dir, "dir", "", "directory containing built CLI artifacts")
+	return cmd
+}
+
+func newPruneCmd(getenv func(string) string, stdout io.Writer) *cobra.Command {
+	var args pruneArgs
+	var channelCSV string
+
+	cmd := &cobra.Command{
+		Use:   "prune",
+		Short: "Prune old CLI release artifacts and rebuild version indexes",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, rawArgs []string) error {
+			if getenv == nil {
+				getenv = func(string) string { return "" }
+			}
+			args.keyID = strings.TrimSpace(getenv("ACCESS_KEY_ID"))
+			args.keySecret = strings.TrimSpace(getenv("ACCESS_KEY_SECRET"))
+			args.endpoint = firstNonEmpty(strings.TrimSpace(getenv("OSS_ENDPOINT")), defaultOSSEndpoint)
+			args.bucketName = firstNonEmpty(strings.TrimSpace(getenv("OSS_BUCKET_NAME")), defaultOSSBucketName)
+			if err := completePruneArgs(&args, channelCSV); err != nil {
+				return err
+			}
+			bucket, err := newBucket(args.endpoint, args.bucketName, args.keyID, args.keySecret)
+			if err != nil {
+				return err
+			}
+			return pruneReleases(bucket, args, stdout)
+		},
+	}
+	cmd.Flags().IntVar(&args.keep, "keep", 10, "keep most recent N versions per os/arch/channel")
+	cmd.Flags().BoolVar(&args.apply, "apply", false, "apply deletion and index update")
+	cmd.Flags().StringVar(&channelCSV, "channel", "alpha,beta", "comma-separated channels to prune")
+	return cmd
 }
 
 func firstNonEmpty(values ...string) string {
@@ -316,6 +373,20 @@ func publishRelease(bucket *oss.Bucket, args releaseArgs) error {
 		return err
 	}
 
+	return nil
+}
+
+func publishReleases(bucket *oss.Bucket, args publishArgs, stdout io.Writer) error {
+	releases, err := resolvePublishReleases(args)
+	if err != nil {
+		return err
+	}
+	for _, releaseArgs := range releases {
+		if err := publishRelease(bucket, releaseArgs); err != nil {
+			return err
+		}
+		fmt.Fprintf(stdout, "Published %s/%s from %s\n", releaseArgs.goos, releaseArgs.goarch, releaseArgs.file)
+	}
 	return nil
 }
 

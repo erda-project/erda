@@ -21,7 +21,6 @@ VERSION := $(shell build/scripts/make-version.sh)
 endif
 # use MAJOR.MINOR as the Erda version to fix broken of buildpack and other unexpceted brokens
 ERDA_VERSION ?= $(shell echo $(VERSION)|sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/g')
-CLI_CHANNEL ?= $(shell if [[ "$(VERSION)" == *-alpha* ]]; then echo alpha; elif [[ "$(VERSION)" == *-beta* ]]; then echo beta; else echo stable; fi)
 # build info
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
@@ -50,6 +49,12 @@ CLI_VERSION_OPS := -ldflags "\
 GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
 GO_BUILD_OPTIONS := -tags dynamic
 CLI_GO_BUILD_OPTIONS := -tags dynamic -trimpath
+
+define build_cli_binary
+	cd tools/cli && \
+	GOOS=$(1) GOARCH=$(2) ${GO_BUILD_ENV} go build ${CLI_VERSION_OPS} ${CLI_GO_BUILD_OPTIONS} -o "$(3)"
+	echo "build cli tool successfully!"
+endef
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
@@ -163,30 +168,36 @@ prepare-cli:
 	cd tools/cli/command/generate && go generate
 .PHONY: cli
 cli: prepare-cli
-	cd tools/cli && \
-	${GO_BUILD_ENV} go build ${CLI_VERSION_OPS} ${CLI_GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli"
-	echo "build cli tool successfully!"
+	$(call build_cli_binary,${GOOS},${GOARCH},${PROJ_PATH}/bin/erda-cli)
 .PHONY: cli-linux
 cli-linux: prepare-cli
-	cd tools/cli && \
-	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${CLI_VERSION_OPS} ${CLI_GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli-linux"
-	echo "build cli tool successfully!"
+	$(call build_cli_binary,linux,amd64,${PROJ_PATH}/bin/erda-cli-linux)
 
 .PHONY: test-cli
 test-cli: prepare-cli
 	${GO_BUILD_ENV} go test ./tools/cli/...
 
+.PHONY: cli-release-build
+cli-release-build: prepare-cli
+	$(call build_cli_binary,darwin,arm64,${PROJ_PATH}/bin/erda-cli)
+	$(call build_cli_binary,linux,amd64,${PROJ_PATH}/bin/erda-cli-linux)
+
+.PHONY: cli-release-publish
+cli-release-publish: cli-release-build
+	@go run tools/release-cli/main.go publish --version "${VERSION}" --dir "${PROJ_PATH}/bin"
+
 .PHONY: release-cli
-release-cli: cli cli-linux
-	@go run tools/release-cli/main.go publish "${GOOS}" "${GOARCH}" "${VERSION}" "${CLI_CHANNEL}" "${PROJ_PATH}/bin/erda-cli"
-	@go run tools/release-cli/main.go publish "linux" "amd64" "${VERSION}" "${CLI_CHANNEL}" "${PROJ_PATH}/bin/erda-cli-linux"
+release-cli: cli-release-publish
 
 PRUNE_CHANNELS ?= alpha,beta
 PRUNE_KEEP ?= 10
 
-.PHONY: release-cli-prune
-release-cli-prune:
+.PHONY: cli-release-prune
+cli-release-prune:
 	@go run tools/release-cli/main.go prune --apply --channel "$(PRUNE_CHANNELS)" --keep "$(PRUNE_KEEP)"
+
+.PHONY: release-cli-prune
+release-cli-prune: cli-release-prune
 
 
 

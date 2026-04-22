@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,25 +24,14 @@ import (
 	"github.com/erda-project/erda/tools/cli/release"
 )
 
-func TestParseReleaseArgsRejectsCredentialArgumentsOnCLI(t *testing.T) {
-	_, err := parseReleaseArgs([]string{"id", "secret", "linux", "amd64", "2.4.0", "stable", "/tmp/erda-cli"}, nil)
-	if err == nil {
-		t.Fatal("expected credential arguments to be rejected")
-	}
-
-	for _, want := range []string{"environment variables", "ACCESS_KEY_ID", "ACCESS_KEY_SECRET"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("expected error to mention %s, got %q", want, err.Error())
-		}
-	}
-}
-
-func TestParseReleaseArgsRejectsMissingCredentialsInEnvironment(t *testing.T) {
-	_, err := parseReleaseArgs([]string{"linux", "amd64", "2.4.0", "stable", "/tmp/erda-cli"}, func(string) string { return "" })
+func TestCompletePublishArgsRejectsMissingCredentials(t *testing.T) {
+	err := completePublishArgs(&publishArgs{
+		version: "2.4.0",
+		dir:     "/tmp/bin",
+	})
 	if err == nil {
 		t.Fatal("expected missing credential error")
 	}
-
 	for _, want := range []string{"ACCESS_KEY_ID", "ACCESS_KEY_SECRET"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("expected error to mention %s, got %q", want, err.Error())
@@ -49,26 +39,71 @@ func TestParseReleaseArgsRejectsMissingCredentialsInEnvironment(t *testing.T) {
 	}
 }
 
-func TestParseReleaseArgsAcceptsRequiredArguments(t *testing.T) {
-	args, err := parseReleaseArgs([]string{"linux", "amd64", "2.4.0", "stable", "/tmp/erda-cli"}, func(key string) string {
-		switch key {
-		case "ACCESS_KEY_ID":
-			return "id"
-		case "ACCESS_KEY_SECRET":
-			return "secret"
-		default:
-			return ""
-		}
-	})
-	if err != nil {
-		t.Fatalf("expected arguments to parse: %v", err)
+func TestCompletePublishArgsDerivesChannelFromVersion(t *testing.T) {
+	args := publishArgs{
+		keyID:      "id",
+		keySecret:  "secret",
+		version:    "2.4.0-alpha.20260421112000",
+		dir:        "/tmp/bin",
+		endpoint:   defaultOSSEndpoint,
+		bucketName: defaultOSSBucketName,
 	}
 
-	if args.keyID != "id" || args.keySecret != "secret" {
-		t.Fatalf("unexpected credentials: %+v", args)
+	if err := completePublishArgs(&args); err != nil {
+		t.Fatalf("expected publish args to complete: %v", err)
 	}
-	if args.goos != "linux" || args.goarch != "amd64" || args.version != "2.4.0" || args.channel != release.ChannelStable || args.file != "/tmp/erda-cli" {
-		t.Fatalf("unexpected parsed args: %+v", args)
+	if args.channel != release.ChannelAlpha {
+		t.Fatalf("channel = %q, want %q", args.channel, release.ChannelAlpha)
+	}
+}
+
+func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, artifact := range defaultReleaseArtifacts {
+		path := filepath.Join(tmpDir, artifact.fileName)
+		if err := os.WriteFile(path, []byte("cli-binary"), 0o755); err != nil {
+			t.Fatalf("WriteFile(%q) error = %v", path, err)
+		}
+	}
+
+	releases, err := resolvePublishReleases(publishArgs{
+		keyID:      "id",
+		keySecret:  "secret",
+		version:    "2.4.0",
+		channel:    release.ChannelStable,
+		dir:        tmpDir,
+		endpoint:   defaultOSSEndpoint,
+		bucketName: defaultOSSBucketName,
+	})
+	if err != nil {
+		t.Fatalf("expected embedded artifact resolution to succeed: %v", err)
+	}
+	if len(releases) != len(defaultReleaseArtifacts) {
+		t.Fatalf("resolved %d releases, want %d", len(releases), len(defaultReleaseArtifacts))
+	}
+	if releases[0].goos != "darwin" || releases[0].goarch != "arm64" {
+		t.Fatalf("unexpected first release target: %+v", releases[0])
+	}
+	if releases[1].goos != "linux" || releases[1].goarch != "amd64" {
+		t.Fatalf("unexpected second release target: %+v", releases[1])
+	}
+}
+
+func TestResolvePublishReleasesRejectsMissingArtifactFile(t *testing.T) {
+	_, err := resolvePublishReleases(publishArgs{
+		keyID:      "id",
+		keySecret:  "secret",
+		version:    "2.4.0",
+		channel:    release.ChannelStable,
+		dir:        t.TempDir(),
+		endpoint:   defaultOSSEndpoint,
+		bucketName: defaultOSSBucketName,
+	})
+	if err == nil {
+		t.Fatal("expected missing artifact file error")
+	}
+	if !strings.Contains(err.Error(), "erda-cli") {
+		t.Fatalf("expected missing artifact file in error, got %q", err.Error())
 	}
 }
 
@@ -127,16 +162,15 @@ func TestParsePruneArgsRejectsInvalidKeep(t *testing.T) {
 	}
 }
 
-func TestParseReleaseArgsRejectsChannelVersionMismatch(t *testing.T) {
-	_, err := parseReleaseArgs([]string{"linux", "amd64", "2.4.0-alpha.20260421112000", "stable", "/tmp/erda-cli"}, func(key string) string {
-		switch key {
-		case "ACCESS_KEY_ID":
-			return "id"
-		case "ACCESS_KEY_SECRET":
-			return "secret"
-		default:
-			return ""
-		}
+func TestCompletePublishArgsRejectsChannelVersionMismatch(t *testing.T) {
+	err := completePublishArgs(&publishArgs{
+		keyID:      "id",
+		keySecret:  "secret",
+		version:    "2.4.0-alpha.20260421112000",
+		channel:    release.ChannelStable,
+		dir:        "/tmp/bin",
+		endpoint:   defaultOSSEndpoint,
+		bucketName: defaultOSSBucketName,
 	})
 	if err == nil {
 		t.Fatal("expected channel/version mismatch to fail")
@@ -178,5 +212,45 @@ func TestBuildManifestUsesArchivedArtifactURL(t *testing.T) {
 	}
 	if manifest.SHA256 == "" {
 		t.Fatal("manifest.SHA256 should not be empty")
+	}
+}
+
+func TestRunRejectsLegacyPublishInvocation(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	err := run([]string{"linux", "amd64", "2.4.0", "stable", "/tmp/erda-cli"}, func(string) string {
+		return ""
+	}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected legacy positional invocation to fail")
+	}
+	if !strings.Contains(err.Error(), "unknown command") {
+		t.Fatalf("expected unknown command error, got %q", err.Error())
+	}
+}
+
+func TestRunAcceptsPublishAndPruneHelpSubcommands(t *testing.T) {
+	testcases := []struct {
+		name string
+		args []string
+	}{
+		{name: "publish help", args: []string{"publish", "--help"}},
+		{name: "prune help", args: []string{"prune", "--help"}},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			err := run(tc.args, func(string) string { return "" }, &stdout, &stderr)
+			if err != nil {
+				t.Fatalf("expected help to succeed: %v", err)
+			}
+			if stdout.Len() == 0 {
+				t.Fatal("expected help output")
+			}
+		})
 	}
 }
