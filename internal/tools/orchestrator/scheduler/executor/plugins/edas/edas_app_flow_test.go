@@ -15,8 +15,10 @@
 package edas
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -139,4 +141,34 @@ func TestSetLabels_JSONMarshaling(t *testing.T) {
 	err = json.Unmarshal([]byte(expectedJSON), &expectedLabels)
 	require.NoError(t, err)
 	assert.Equal(t, expectedLabels, labels)
+}
+
+func TestReportAsyncErrorSendsWhenReceiverIsAvailable(t *testing.T) {
+	errChan := make(chan error, 1)
+	expectedErr := assert.AnError
+
+	sent := reportAsyncError(context.Background(), errChan, expectedErr)
+
+	require.True(t, sent)
+	require.ErrorIs(t, <-errChan, expectedErr)
+}
+
+func TestReportAsyncErrorReturnsWhenContextCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	errChan := make(chan error, 1)
+	errChan <- assert.AnError
+	cancel()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		sent := reportAsyncError(ctx, errChan, assert.AnError)
+		assert.False(t, sent)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("reportAsyncError blocked after context cancellation")
+	}
 }
