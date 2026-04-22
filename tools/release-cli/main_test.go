@@ -25,7 +25,7 @@ import (
 )
 
 func TestCompletePublishArgsRejectsMissingCredentials(t *testing.T) {
-	err := completePublishArgs(&publishArgs{
+	err := completePublishOptions(&publishOptions{
 		version: "2.4.0",
 		dir:     "/tmp/bin",
 	})
@@ -40,7 +40,7 @@ func TestCompletePublishArgsRejectsMissingCredentials(t *testing.T) {
 }
 
 func TestCompletePublishArgsDerivesChannelFromVersion(t *testing.T) {
-	args := publishArgs{
+	args := publishOptions{
 		keyID:      "id",
 		keySecret:  "secret",
 		version:    "2.4.0-alpha.20260421112000",
@@ -49,7 +49,7 @@ func TestCompletePublishArgsDerivesChannelFromVersion(t *testing.T) {
 		bucketName: defaultOSSBucketName,
 	}
 
-	if err := completePublishArgs(&args); err != nil {
+	if err := completePublishOptions(&args); err != nil {
 		t.Fatalf("expected publish args to complete: %v", err)
 	}
 	if args.channel != release.ChannelAlpha {
@@ -59,14 +59,14 @@ func TestCompletePublishArgsDerivesChannelFromVersion(t *testing.T) {
 
 func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 	tmpDir := t.TempDir()
-	for _, artifact := range defaultReleaseArtifacts {
+	for _, artifact := range releaseTargets {
 		path := filepath.Join(tmpDir, artifact.fileName)
 		if err := os.WriteFile(path, []byte("cli-binary"), 0o755); err != nil {
 			t.Fatalf("WriteFile(%q) error = %v", path, err)
 		}
 	}
 
-	releases, err := resolvePublishReleases(publishArgs{
+	releases, err := resolvePublishTargets(publishOptions{
 		keyID:      "id",
 		keySecret:  "secret",
 		version:    "2.4.0",
@@ -78,8 +78,8 @@ func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected embedded artifact resolution to succeed: %v", err)
 	}
-	if len(releases) != len(defaultReleaseArtifacts) {
-		t.Fatalf("resolved %d releases, want %d", len(releases), len(defaultReleaseArtifacts))
+	if len(releases) != len(releaseTargets) {
+		t.Fatalf("resolved %d releases, want %d", len(releases), len(releaseTargets))
 	}
 	if releases[0].goos != "darwin" || releases[0].goarch != "arm64" {
 		t.Fatalf("unexpected first release target: %+v", releases[0])
@@ -90,7 +90,7 @@ func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 }
 
 func TestResolvePublishReleasesRejectsMissingArtifactFile(t *testing.T) {
-	_, err := resolvePublishReleases(publishArgs{
+	_, err := resolvePublishTargets(publishOptions{
 		keyID:      "id",
 		keySecret:  "secret",
 		version:    "2.4.0",
@@ -108,16 +108,17 @@ func TestResolvePublishReleasesRejectsMissingArtifactFile(t *testing.T) {
 }
 
 func TestParsePruneArgsAcceptsDefaults(t *testing.T) {
-	args, err := parsePruneArgs(nil, func(key string) string {
-		switch key {
-		case "ACCESS_KEY_ID":
+	args := pruneOptions{keep: 10}
+	fillPruneCredentials(&args, func(key string) string {
+		if key == "ACCESS_KEY_ID" {
 			return "id"
-		case "ACCESS_KEY_SECRET":
-			return "secret"
-		default:
-			return ""
 		}
+		if key == "ACCESS_KEY_SECRET" {
+			return "secret"
+		}
+		return ""
 	})
+	err := completePruneOptions(&args, "alpha,beta")
 	if err != nil {
 		t.Fatalf("expected prune args to parse: %v", err)
 	}
@@ -134,7 +135,9 @@ func TestParsePruneArgsAcceptsDefaults(t *testing.T) {
 }
 
 func TestParsePruneArgsRejectsMissingCredentials(t *testing.T) {
-	_, err := parsePruneArgs(nil, func(string) string { return "" })
+	args := pruneOptions{keep: 10}
+	fillPruneCredentials(&args, func(string) string { return "" })
+	err := completePruneOptions(&args, "alpha,beta")
 	if err == nil {
 		t.Fatal("expected missing credential error")
 	}
@@ -144,16 +147,17 @@ func TestParsePruneArgsRejectsMissingCredentials(t *testing.T) {
 }
 
 func TestParsePruneArgsRejectsInvalidKeep(t *testing.T) {
-	_, err := parsePruneArgs([]string{"--keep", "0"}, func(key string) string {
-		switch key {
-		case "ACCESS_KEY_ID":
+	args := pruneOptions{keep: 0}
+	fillPruneCredentials(&args, func(key string) string {
+		if key == "ACCESS_KEY_ID" {
 			return "id"
-		case "ACCESS_KEY_SECRET":
-			return "secret"
-		default:
-			return ""
 		}
+		if key == "ACCESS_KEY_SECRET" {
+			return "secret"
+		}
+		return ""
 	})
+	err := completePruneOptions(&args, "alpha,beta")
 	if err == nil {
 		t.Fatal("expected invalid keep error")
 	}
@@ -163,7 +167,7 @@ func TestParsePruneArgsRejectsInvalidKeep(t *testing.T) {
 }
 
 func TestCompletePublishArgsRejectsChannelVersionMismatch(t *testing.T) {
-	err := completePublishArgs(&publishArgs{
+	err := completePublishOptions(&publishOptions{
 		keyID:      "id",
 		keySecret:  "secret",
 		version:    "2.4.0-alpha.20260421112000",
@@ -187,7 +191,7 @@ func TestBuildManifestUsesArchivedArtifactURL(t *testing.T) {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
-	args := releaseArgs{
+	args := publishTarget{
 		goos:    "linux",
 		goarch:  "amd64",
 		version: "2.4.0",

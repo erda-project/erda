@@ -15,20 +15,27 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"io"
-	"os"
+
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	if err := run(os.Args[1:], os.Getenv, os.Stdout, os.Stderr); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(2)
+func newRootCmd(getenv func(string) string, stdout, stderr io.Writer) *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:           "release-cli",
+		Short:         "Publish and prune Erda CLI release artifacts",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Help(); err != nil {
+				return err
+			}
+			return errors.New("missing subcommand")
+		},
 	}
-}
-
-func run(rawArgs []string, getenv func(string) string, stdout, stderr io.Writer) error {
-	cmd := newRootCmd(getenv, stdout, stderr)
-	cmd.SetArgs(rawArgs)
-	return cmd.Execute()
+	rootCmd.SetOut(stdout)
+	rootCmd.SetErr(stderr)
+	rootCmd.AddCommand(newPublishCmd(getenv, stdout), newPruneCmd(getenv, stdout))
+	return rootCmd
 }

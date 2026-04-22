@@ -16,9 +16,7 @@ SHELL := /bin/bash
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
 APP_NAME ?= $(shell echo ${BUILD_PATH} | sed 's/^\(.*\)[/]//')
-ifndef VERSION
-VERSION := $(shell build/scripts/make-version.sh)
-endif
+VERSION ?= $(shell build/scripts/make-version.sh)
 # use MAJOR.MINOR as the Erda version to fix broken of buildpack and other unexpceted brokens
 ERDA_VERSION ?= $(shell echo $(VERSION)|sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/g')
 # build info
@@ -177,27 +175,21 @@ cli-linux: prepare-cli
 test-cli: prepare-cli
 	${GO_BUILD_ENV} go test ./tools/cli/...
 
-.PHONY: cli-release-build
-cli-release-build: prepare-cli
+.PHONY: release-cli-build
+release-cli-build: prepare-cli
 	$(call build_cli_binary,darwin,arm64,${PROJ_PATH}/bin/erda-cli)
 	$(call build_cli_binary,linux,amd64,${PROJ_PATH}/bin/erda-cli-linux)
 
-.PHONY: cli-release-publish
-cli-release-publish: cli-release-build
+.PHONY: release-cli-publish
+release-cli-publish: release-cli-build
 	@go run tools/release-cli/main.go publish --version "${VERSION}" --dir "${PROJ_PATH}/bin"
 
 .PHONY: release-cli
-release-cli: cli-release-publish
-
-PRUNE_CHANNELS ?= alpha,beta
-PRUNE_KEEP ?= 10
-
-.PHONY: cli-release-prune
-cli-release-prune:
-	@go run tools/release-cli/main.go prune --apply --channel "$(PRUNE_CHANNELS)" --keep "$(PRUNE_KEEP)"
+release-cli: release-cli-publish
 
 .PHONY: release-cli-prune
-release-cli-prune: cli-release-prune
+release-cli-prune:
+	@go run tools/release-cli/main.go prune --apply
 
 
 
