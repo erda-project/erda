@@ -38,6 +38,8 @@ type Config struct {
 	ImageModels      []string
 	ResponsesModels  []string
 	ThinkingModels   []string
+	BatchModels      []string
+	BatchWindow      string
 }
 
 var globalConfig *Config
@@ -52,6 +54,7 @@ func Load() *Config {
 		Host:    "http://localhost:8081",
 		Token:   "",
 		Timeout: 2 * time.Minute, // 2 minutes, consistent with production gateway timeout
+		BatchWindow: "24h",
 	}
 
 	// Load configuration from .env file
@@ -131,6 +134,12 @@ func setConfigValue(config *Config, key, value string) {
 		config.ResponsesModels = parseModelList(value)
 	case "THINKING_MODELS":
 		config.ThinkingModels = parseModelList(value)
+	case "BATCH_MODELS":
+		config.BatchModels = parseModelList(value)
+	case "BATCH_COMPLETION_WINDOW":
+		if value != "" {
+			config.BatchWindow = value
+		}
 	}
 }
 
@@ -159,5 +168,6 @@ func (c *Config) GetAllModels() []string {
 	allModels = append(allModels, c.AudioTTSModels...)
 	allModels = append(allModels, c.ImageModels...)
 	allModels = append(allModels, c.ResponsesModels...)
+	allModels = append(allModels, c.BatchModels...)
 	return allModels
 }
