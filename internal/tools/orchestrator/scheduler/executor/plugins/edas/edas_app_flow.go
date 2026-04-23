@@ -21,6 +21,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -237,30 +238,49 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		}
 
 		for _, batch := range flows {
-			for _, newSvc := range batch {
-				var ok bool
-				var oldSvc *apistructs.Service
+			var wg sync.WaitGroup
+			var batchErr error
+			var batchErrMu sync.Mutex
 
-				svcName := newSvc.Name
-				appName := utils.CombineEDASAppNameWithGroup(group, svcName)
-				// add service
-				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
-					l.Infof("cyclicupdate to create service %s", svcName)
-					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
-						l.Errorf("failed to create service: %s, error: %v", appName, err)
-						trySendErr(errChan, err)
-						return
+			for _, svc := range batch {
+				newSvc := svc
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+
+					var runErr error
+					svcName := newSvc.Name
+					appName := utils.CombineEDASAppNameWithGroup(group, svcName)
+
+					if ok, oldSvc := isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
+						l.Infof("cyclicupdate to create service %s", svcName)
+						runErr = e.createService(ctx, newRuntime, newSvc)
+						if runErr != nil {
+							l.Errorf("failed to create service: %s, error: %v", appName, runErr)
+						}
+					} else {
+						// update service
+						// Does not include domain name updates
+						runErr = e.updateService(ctx, newRuntime, newSvc)
+						if runErr != nil {
+							l.Errorf("failed to update service: %s, error: %v", appName, runErr)
+						}
 					}
-					continue
-				}
 
-				// update service
-				// Does not include domain name updates
-				if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
-					l.Errorf("failed to update service: %s, error: %v", appName, err)
-					trySendErr(errChan, err)
-					return
-				}
+					if runErr != nil {
+						batchErrMu.Lock()
+						if batchErr == nil {
+							batchErr = runErr
+						}
+						batchErrMu.Unlock()
+					}
+				}()
+			}
+
+			wg.Wait()
+			if batchErr != nil {
+				trySendErr(errChan, batchErr)
+				return
 			}
 		}
 	}()
