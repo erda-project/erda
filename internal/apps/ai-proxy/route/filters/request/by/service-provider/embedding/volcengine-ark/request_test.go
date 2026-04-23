@@ -25,8 +25,6 @@ import (
 )
 
 func TestOnProxyRequest_DefaultsAndOutputMapping(t *testing.T) {
-	multi := true
-	sparse := true
 	in := map[string]any{
 		"model": "doubao-embedding-vision-251215",
 		"input": []map[string]any{{
@@ -34,8 +32,8 @@ func TestOnProxyRequest_DefaultsAndOutputMapping(t *testing.T) {
 			"text": "hello multimodal",
 		}},
 		"output": map[string]any{
-			"multi":  multi,
-			"sparse": sparse,
+			"primary":    "dense",
+			"additional": []string{"multi", "sparse"},
 		},
 	}
 	pr := buildProxyRequest(t, in)
@@ -60,11 +58,35 @@ func TestOnProxyRequest_DefaultsAndOutputMapping(t *testing.T) {
 	require.Equal(t, "enabled", sparseEmbedding["type"])
 }
 
+func TestOnProxyRequest_DefaultOutputIsDenseOnly(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "hello multimodal",
+		}},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	require.NoError(t, f.OnProxyRequest(pr))
+
+	var got map[string]any
+	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
+	_, hasMulti := got["multi_embedding"]
+	_, hasSparse := got["sparse_embedding"]
+	require.False(t, hasMulti)
+	require.False(t, hasSparse)
+}
+
 func TestOnProxyRequest_DimensionsPassThrough(t *testing.T) {
 	in := map[string]any{
 		"model":       "doubao-embedding-vision-251215",
 		"dimensions":  1024,
 		"instruction": "compress",
+		"options": map[string]any{
+			"encoding_format": "float",
+		},
 		"input": []map[string]any{{
 			"type": "text",
 			"text": "test",
@@ -79,6 +101,7 @@ func TestOnProxyRequest_DimensionsPassThrough(t *testing.T) {
 	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
 	require.EqualValues(t, 1024, got["dimensions"])
 	require.Equal(t, "compress", got["instructions"])
+	require.Equal(t, "float", got["encoding_format"])
 }
 
 func TestOnProxyRequest_InvalidImageInput(t *testing.T) {
@@ -111,6 +134,45 @@ func TestOnProxyRequest_InvalidDimensions(t *testing.T) {
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "dimensions must be one of [1024, 2048]")
+}
+
+func TestOnProxyRequest_FusionUnsupported(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "test",
+		}},
+		"output": map[string]any{
+			"primary": "fusion",
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	err := f.OnProxyRequest(pr)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "output.primary=fusion is not supported")
+}
+
+func TestOnProxyRequest_SparseWithImageRejected(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type":      "image",
+			"image_url": "https://example.com/a.png",
+		}},
+		"output": map[string]any{
+			"primary":    "dense",
+			"additional": []string{"sparse"},
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	err := f.OnProxyRequest(pr)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "output.additional=sparse is only supported for text input")
 }
 
 func buildProxyRequest(t *testing.T, payload map[string]any) *httputil.ProxyRequest {

@@ -45,7 +45,8 @@ func TestMultimodalEmbeddings(t *testing.T) {
 				}},
 				"dimensions": 1024,
 				"output": map[string]any{
-					"multi": true,
+					"primary":    "dense",
+					"additional": []string{"multi"},
 				},
 			}
 

@@ -54,6 +54,7 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
   - `additional` can be combined with `primary=dense`.
   - `primary=fusion` MUST NOT be combined with `additional` (reject with `400`).
   - unsupported `primary/additional` combinations for a given model MUST return `400` with clear `param` and message.
+  - when `output` is omitted, ai-proxy should request provider default dense embedding only.
 - `options` (optional): advanced key/value parameters. ai-proxy maps keys by model/provider capabilities (for example `fps`, `encoding_format`).
 
 ### 4.2 `output` Compatibility Matrix (Current)
@@ -171,6 +172,7 @@ Canonical -> Doubao mapping:
 - `instruction` -> `instructions`
 - `input[]` -> `input[]` with provider item schema
 - `dimensions` passthrough
+- `output` omitted -> keep provider default dense output
 - `output.additional` contains `multi` -> `multi_embedding.type=enabled`
 - `output.additional` contains `sparse` -> `sparse_embedding.type=enabled`
 - `options.encoding_format` -> `encoding_format`
