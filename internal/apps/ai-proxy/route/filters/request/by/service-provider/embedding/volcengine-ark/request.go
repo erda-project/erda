@@ -17,10 +17,12 @@ package volcengine_ark
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httputil"
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
+	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 )
 
 const (
@@ -69,17 +71,18 @@ type VolcengineEmbeddingSwitch struct {
 func (f *VolcengineMultimodalEmbeddingConverter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	var req CanonicalMultimodalEmbeddingRequest
 	if err := json.NewDecoder(pr.Out.Body).Decode(&req); err != nil {
-		return fmt.Errorf("failed to decode multimodal embedding request: %w", err)
+		return newValidationError(pr, "body", fmt.Sprintf("failed to decode multimodal embedding request: %v", err))
 	}
 	if len(req.Input) == 0 {
-		return fmt.Errorf("input is required")
+		return newValidationError(pr, "input", "input is required")
 	}
 
 	items := make([]map[string]any, 0, len(req.Input))
 	for i, item := range req.Input {
 		converted, err := convertInputItem(item)
 		if err != nil {
-			return fmt.Errorf("input[%d]: %w", i, err)
+			param := fmt.Sprintf("input[%d].%s", i, validationParamFromError(err))
+			return newValidationError(pr, param, fmt.Sprintf("input[%d]: %v", i, err))
 		}
 		items = append(items, converted)
 	}
@@ -93,7 +96,7 @@ func (f *VolcengineMultimodalEmbeddingConverter) OnProxyRequest(pr *httputil.Pro
 	}
 	if req.Dimensions != nil {
 		if !isSupportedDimension(*req.Dimensions) {
-			return fmt.Errorf("dimensions must be one of [1024, 2048]")
+			return newValidationError(pr, "dimensions", "dimensions must be one of [1024, 2048]")
 		}
 		arkReq.Dimensions = *req.Dimensions
 	}
@@ -105,7 +108,7 @@ func (f *VolcengineMultimodalEmbeddingConverter) OnProxyRequest(pr *httputil.Pro
 	}
 
 	if err := applyOutputConfig(req.Output, req.Input, req.Options, arkReq); err != nil {
-		return err
+		return newValidationError(pr, validationParamFromError(err), err.Error())
 	}
 
 	pr.Out.URL.Path = arkMultimodalEmbeddingPath
@@ -222,6 +225,39 @@ func applyOutputConfig(output *CanonicalMultimodalOutputConfig, input []Canonica
 
 func isSupportedDimension(v int) bool {
 	return v == dimension1024 || v == defaultDimensions
+}
+
+func newValidationError(pr *httputil.ProxyRequest, param string, message string) error {
+	return httperror.NewHTTPErrorWithCtx(pr.In.Context(), http.StatusBadRequest, message, map[string]any{
+		"code":    "invalid_request_error",
+		"message": message,
+		"param":   param,
+		"type":    "validation_error",
+	})
+}
+
+func validationParamFromError(err error) string {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "text is required"):
+		return "text"
+	case strings.Contains(msg, "image_url is required"):
+		return "image_url"
+	case strings.Contains(msg, "video_url is required"):
+		return "video_url"
+	case strings.Contains(msg, "unsupported type"):
+		return "type"
+	case strings.Contains(msg, "output.primary"):
+		return "output.primary"
+	case strings.Contains(msg, "output.additional"):
+		return "output.additional"
+	case strings.Contains(msg, "options.sparse_embedding.type"):
+		return "options.sparse_embedding.type"
+	case strings.Contains(msg, "options.sparse_embedding"):
+		return "options.sparse_embedding"
+	default:
+		return "body"
+	}
 }
 
 func buildDefaultInstructions(input []CanonicalMultimodalInputItem) string {

@@ -136,7 +136,7 @@ Validation policy in ai-proxy:
 {
   "error": {
     "code": "invalid_request_error",
-    "message": "input[1].video_url is required when type=video",
+    "message": "input[1]: video_url is required when type=video",
     "param": "input[1].video_url",
     "type": "validation_error"
   }
