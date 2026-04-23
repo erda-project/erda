@@ -25,6 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
@@ -77,14 +79,16 @@ func (e *EDAS) createService(ctx context.Context, sg *apistructs.ServiceGroup, s
 	}
 
 	// Create application
-	if _, err = e.wrapEDASClient.InsertK8sApp(serviceSpec); err != nil {
+	appID, err := e.wrapEDASClient.InsertK8sApp(serviceSpec)
+	if err != nil {
 		return errors.Wrap(err, "edas create app")
 	}
 
 	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
+	selector := e.resolveServiceSelector(appName, appID, sg.ID, s.Name)
 
 	// Align k8s Service state even if a previous async flow already created it.
-	if err = e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+	if err = e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, selector, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 		l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
 		return errors.Wrap(err, "edas create k8s service")
 	}
@@ -126,13 +130,101 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 			return err
 		}
 
-		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+		selector := e.resolveServiceSelector(appName, appID, sg.ID, s.Name)
+		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, selector, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 			l.Errorf("failed to update k8s service, appName: %s, error: %v", appName, err)
 			return errors.Wrap(err, "edas update k8s service")
 		}
 	}
 
 	return nil
+}
+
+func (e *EDAS) resolveServiceSelector(appName, appID, sgID, serviceName string) map[string]string {
+	var deployment *appsv1.Deployment
+	if currentDeployment, err := e.wrapEDASClient.GetAppDeployment(appName); err == nil {
+		deployment = currentDeployment
+	}
+
+	var currentSvc *corev1.Service
+	if currentSvc, err := e.wrapClientSet.GetK8sService(appName); err == nil {
+		return resolveServiceSelectorFromResources(deployment, currentSvc, appID, sgID, serviceName)
+	}
+
+	return resolveServiceSelectorFromResources(deployment, currentSvc, appID, sgID, serviceName)
+}
+
+func selectorFromDeployment(deployment *appsv1.Deployment) map[string]string {
+	if deployment == nil || deployment.Spec.Selector == nil {
+		return nil
+	}
+	return preferredServiceSelector(deployment.Spec.Selector.MatchLabels)
+}
+
+func resolveServiceSelectorFromResources(deployment *appsv1.Deployment, currentSvc *corev1.Service, appID, sgID, serviceName string) map[string]string {
+	if selector := selectorFromDeployment(deployment); len(selector) > 0 {
+		return selector
+	}
+
+	if currentSvc != nil {
+		if selector := preferredServiceSelector(currentSvc.Spec.Selector); len(selector) > 0 {
+			return selector
+		}
+	}
+
+	if appID != "" {
+		return map[string]string{types.LabelEDASAppID: appID}
+	}
+
+	return defaultServiceSelector(sgID, serviceName)
+}
+
+func preferredServiceSelector(selector map[string]string) map[string]string {
+	if len(selector) == 0 {
+		return nil
+	}
+
+	if serviceSelector := serviceIdentitySelector(selector); len(serviceSelector) > 0 {
+		return serviceSelector
+	}
+
+	if appID, ok := selector[types.LabelEDASAppID]; ok && appID != "" {
+		return map[string]string{types.LabelEDASAppID: appID}
+	}
+
+	return cloneStringMap(selector)
+}
+
+func serviceIdentitySelector(selector map[string]string) map[string]string {
+	serviceName, hasServiceName := selector[types.LabelServiceName]
+	serviceGroupID, hasServiceGroupID := selector[types.LabelServiceGroupID]
+	if !hasServiceName || !hasServiceGroupID || serviceName == "" || serviceGroupID == "" {
+		return nil
+	}
+
+	return map[string]string{
+		types.LabelServiceName:    serviceName,
+		types.LabelServiceGroupID: serviceGroupID,
+	}
+}
+
+func defaultServiceSelector(sgID, serviceName string) map[string]string {
+	return map[string]string{
+		types.LabelServiceName:    serviceName,
+		types.LabelServiceGroupID: sgID,
+	}
+}
+
+func cloneStringMap(src map[string]string) map[string]string {
+	if len(src) == 0 {
+		return nil
+	}
+
+	cloned := make(map[string]string, len(src))
+	for k, v := range src {
+		cloned[k] = v
+	}
+	return cloned
 }
 
 // TODO: how to handle the error

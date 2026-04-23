@@ -36,20 +36,17 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 	}
 
 	appName := "test-app"
-	sgID := "test-sg-id"
-	serviceName := "test-service"
+	selectors := map[string]string{"app": "test-app"}
 	ports := []int{80, 8080}
 
 	args := struct {
-		appName     string
-		sgID        string
-		serviceName string
-		ports       []int
+		appName   string
+		selectors map[string]string
+		ports     []int
 	}{
-		appName:     appName,
-		sgID:        sgID,
-		serviceName: serviceName,
-		ports:       ports,
+		appName:   appName,
+		selectors: selectors,
+		ports:     ports,
 	}
 
 	tests := []struct {
@@ -72,10 +69,10 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if test.existingSvc {
-				_ = kubernetesWrapper.CreateK8sService(appName, sgID, serviceName, ports)
+				_ = kubernetesWrapper.CreateK8sService(appName, selectors, ports)
 			}
 
-			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.sgID, args.serviceName, args.ports)
+			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.selectors, args.ports)
 
 			if test.expectedError && err == nil {
 				t.Error("Expected an error, but got nil.")
@@ -90,8 +87,10 @@ func TestCombineK8sService(t *testing.T) {
 	wrapCs := wrapKubernetes{}
 	// Test case 1
 	appName := "my-app"
-	sgID := "123"
-	serviceName := "test-service"
+	selectors := map[string]string{
+		"core.erda.cloud/service-name":    "test-service",
+		"core.erda.cloud/servicegroup-id": "123",
+	}
 	ports := []int{8080, 9090}
 
 	expectedService := &corev1.Service{
@@ -100,10 +99,7 @@ func TestCombineK8sService(t *testing.T) {
 			Labels: make(map[string]string),
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"core.erda.cloud/service-name":    serviceName,
-				"core.erda.cloud/servicegroup-id": sgID,
-			},
+			Selector: selectors,
 			Ports: []corev1.ServicePort{
 				{
 					Name:       "tcp-0",
@@ -119,7 +115,7 @@ func TestCombineK8sService(t *testing.T) {
 		},
 	}
 
-	service := wrapCs.combineK8sService(appName, sgID, serviceName, ports)
+	service := wrapCs.combineK8sService(appName, selectors, ports)
 
 	// Compare the expected service with the actual service
 	if !reflect.DeepEqual(service, expectedService) {

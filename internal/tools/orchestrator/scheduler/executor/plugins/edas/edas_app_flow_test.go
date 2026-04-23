@@ -20,6 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 )
@@ -155,4 +158,75 @@ func TestTrySendErrDoesNotBlockWhenChannelIsFull(t *testing.T) {
 
 	trySendErr(errChan, assert.AnError)
 	require.ErrorIs(t, <-errChan, assert.AnError)
+}
+
+func TestSelectorFromDeployment(t *testing.T) {
+	deployment := &appsv1.Deployment{
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					types.LabelServiceName:    "svc",
+					types.LabelServiceGroupID: "sg",
+					types.LabelEDASAppID:      "123",
+					"custom":                  "ignored",
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, map[string]string{
+		types.LabelServiceName:    "svc",
+		types.LabelServiceGroupID: "sg",
+	}, selectorFromDeployment(deployment))
+	assert.Nil(t, selectorFromDeployment(nil))
+}
+
+func TestDefaultServiceSelector(t *testing.T) {
+	assert.Equal(t, map[string]string{
+		types.LabelServiceName:    "test-service",
+		types.LabelServiceGroupID: "test-sg",
+	}, defaultServiceSelector("test-sg", "test-service"))
+}
+
+func TestResolveServiceSelectorFromResources(t *testing.T) {
+	deployment := &appsv1.Deployment{
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					types.LabelServiceName:    "deploy-service",
+					types.LabelServiceGroupID: "deploy-group",
+					types.LabelEDASAppID:      "deploy-app-id",
+				},
+			},
+		},
+	}
+	currentSvc := &corev1.Service{
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				types.LabelServiceName:    "service-service",
+				types.LabelServiceGroupID: "service-group",
+				types.LabelEDASAppID:      "service-app-id",
+			},
+		},
+	}
+
+	assert.Equal(t, map[string]string{
+		types.LabelServiceName:    "deploy-service",
+		types.LabelServiceGroupID: "deploy-group",
+	},
+		resolveServiceSelectorFromResources(deployment, currentSvc, "fallback-app-id", "test-sg", "test-service"))
+
+	assert.Equal(t, map[string]string{
+		types.LabelServiceName:    "service-service",
+		types.LabelServiceGroupID: "service-group",
+	},
+		resolveServiceSelectorFromResources(nil, currentSvc, "fallback-app-id", "test-sg", "test-service"))
+
+	assert.Equal(t, map[string]string{types.LabelEDASAppID: "fallback-app-id"},
+		resolveServiceSelectorFromResources(nil, nil, "fallback-app-id", "test-sg", "test-service"))
+
+	assert.Equal(t, map[string]string{
+		types.LabelServiceName:    "test-service",
+		types.LabelServiceGroupID: "test-sg",
+	}, resolveServiceSelectorFromResources(nil, nil, "", "test-sg", "test-service"))
 }
