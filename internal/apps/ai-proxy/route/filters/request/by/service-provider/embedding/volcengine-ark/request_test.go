@@ -17,10 +17,12 @@ package volcengine_ark
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http/httptest"
 	"net/http/httputil"
 	"testing"
 
+	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/stretchr/testify/require"
 )
 
@@ -165,7 +167,7 @@ func TestOnProxyRequest_InvalidImageInput(t *testing.T) {
 	f := &VolcengineMultimodalEmbeddingConverter{}
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "image_url is required")
+	requireValidationError(t, err, "input[0].image_url", "input[0]: image_url is required when type=image")
 }
 
 func TestOnProxyRequest_InvalidDimensions(t *testing.T) {
@@ -182,7 +184,7 @@ func TestOnProxyRequest_InvalidDimensions(t *testing.T) {
 	f := &VolcengineMultimodalEmbeddingConverter{}
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "dimensions must be one of [1024, 2048]")
+	requireValidationError(t, err, "dimensions", "dimensions must be one of [1024, 2048]")
 }
 
 func TestOnProxyRequest_FusionUnsupported(t *testing.T) {
@@ -201,7 +203,7 @@ func TestOnProxyRequest_FusionUnsupported(t *testing.T) {
 	f := &VolcengineMultimodalEmbeddingConverter{}
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "output.primary=fusion is not supported")
+	requireValidationError(t, err, "output.primary", "output.primary=fusion is not supported by volcengine-ark multimodal embedding")
 }
 
 func TestOnProxyRequest_SparseWithImageRejected(t *testing.T) {
@@ -221,7 +223,7 @@ func TestOnProxyRequest_SparseWithImageRejected(t *testing.T) {
 	f := &VolcengineMultimodalEmbeddingConverter{}
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "output.additional=sparse is only supported for text input")
+	requireValidationError(t, err, "output.additional", "output.additional=sparse is only supported for text input")
 }
 
 func TestOnProxyRequest_SparseDisabledByOptions(t *testing.T) {
@@ -271,7 +273,19 @@ func TestOnProxyRequest_SparseConflictWithOutputAdditional(t *testing.T) {
 	f := &VolcengineMultimodalEmbeddingConverter{}
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "output.additional contains sparse")
+	requireValidationError(t, err, "output.additional", "output.additional contains sparse but options.sparse_embedding.type=disabled")
+}
+
+func requireValidationError(t *testing.T, err error, param string, message string) {
+	t.Helper()
+	var httpErr *httperror.HTTPError
+	require.True(t, errors.As(err, &httpErr), "expected HTTPError, got %T", err)
+	require.Equal(t, 400, httpErr.StatusCode)
+	require.Equal(t, message, httpErr.Message)
+	require.Equal(t, "invalid_request_error", httpErr.ErrorCtx["code"])
+	require.Equal(t, message, httpErr.ErrorCtx["message"])
+	require.Equal(t, param, httpErr.ErrorCtx["param"])
+	require.Equal(t, "validation_error", httpErr.ErrorCtx["type"])
 }
 
 func buildProxyRequest(t *testing.T, payload map[string]any) *httputil.ProxyRequest {
