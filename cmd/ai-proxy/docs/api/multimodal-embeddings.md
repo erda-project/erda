@@ -48,6 +48,7 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
 - `input[].video_url` required when type=`video`.
 - `dimensions` (optional): requested output dimension. If model does not support dimension override, proxy may ignore and return model default.
 - `instruction` (optional): task hint (maps to provider-specific `instruct`/`instructions`).
+  - for Doubao, when omitted, proxy generates a default instruction from input modalities.
 - `output` (optional): controls output vector families using explicit mode semantics.
   - `primary`: optional enum, `dense | fusion`, default `dense`.
   - `additional`: optional enum array, allowed values `multi | sparse`.
@@ -56,6 +57,7 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
   - unsupported `primary/additional` combinations for a given model MUST return `400` with clear `param` and message.
   - when `output` is omitted, ai-proxy should request provider default dense embedding only.
 - `options` (optional): advanced key/value parameters. ai-proxy maps keys by model/provider capabilities (for example `fps`, `encoding_format`).
+  - Doubao examples: `options.encoding_format`, `options.sparse_embedding`.
 
 ### 4.2 `output` Compatibility Matrix (Current)
 
@@ -170,11 +172,14 @@ Qwen response -> Canonical:
 Canonical -> Doubao mapping:
 - Path: `/api/v3/embeddings/multimodal`
 - `instruction` -> `instructions`
-- `input[]` -> `input[]` with provider item schema
+- `input[].type=text` -> `{type:"text",text:"..."}`
+- `input[].type=image` -> `{type:"image_url",image_url:{url:"..."}}`
+- `input[].type=video` -> `{type:"video_url",video_url:{url:"..."}}`
 - `dimensions` passthrough
 - `output` omitted -> keep provider default dense output
 - `output.additional` contains `multi` -> `multi_embedding.type=enabled`
 - `output.additional` contains `sparse` -> `sparse_embedding.type=enabled`
+- `options.sparse_embedding.type=disabled` -> `sparse_embedding.type=disabled`
 - `options.encoding_format` -> `encoding_format`
 
 Doubao response -> Canonical:

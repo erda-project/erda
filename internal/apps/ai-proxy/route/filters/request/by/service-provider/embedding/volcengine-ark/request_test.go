@@ -45,9 +45,17 @@ func TestOnProxyRequest_DefaultsAndOutputMapping(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
 	require.Equal(t, "doubao-embedding-vision-251215", got["model"])
-	require.Equal(t, defaultInstructions, got["instructions"])
+	require.Equal(t, "Target_modality: text.\nInstruction:Compress the text into one word.\nQuery:", got["instructions"])
 	require.EqualValues(t, defaultDimensions, got["dimensions"])
 	require.Equal(t, defaultEncodingFormat, got["encoding_format"])
+
+	input, ok := got["input"].([]any)
+	require.True(t, ok)
+	require.Len(t, input, 1)
+	inputItem, ok := input[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "text", inputItem["type"])
+	require.Equal(t, "hello multimodal", inputItem["text"])
 
 	multiEmbedding, ok := got["multi_embedding"].(map[string]any)
 	require.True(t, ok)
@@ -77,6 +85,47 @@ func TestOnProxyRequest_DefaultOutputIsDenseOnly(t *testing.T) {
 	_, hasSparse := got["sparse_embedding"]
 	require.False(t, hasMulti)
 	require.False(t, hasSparse)
+}
+
+func TestOnProxyRequest_DefaultInstructionsByModality(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{
+			{
+				"type":      "image",
+				"image_url": "https://example.com/a.png",
+			},
+			{
+				"type":      "video",
+				"video_url": "https://example.com/v.mp4",
+			},
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	require.NoError(t, f.OnProxyRequest(pr))
+
+	var got map[string]any
+	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
+	require.Equal(t, "Target_modality: image and video.\nInstruction:Compress the image/video into one word.\nQuery:", got["instructions"])
+
+	input, ok := got["input"].([]any)
+	require.True(t, ok)
+	require.Len(t, input, 2)
+	imageItem, ok := input[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "image_url", imageItem["type"])
+	imageURL, ok := imageItem["image_url"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "https://example.com/a.png", imageURL["url"])
+
+	videoItem, ok := input[1].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "video_url", videoItem["type"])
+	videoURL, ok := videoItem["video_url"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "https://example.com/v.mp4", videoURL["url"])
 }
 
 func TestOnProxyRequest_DimensionsPassThrough(t *testing.T) {
@@ -173,6 +222,56 @@ func TestOnProxyRequest_SparseWithImageRejected(t *testing.T) {
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "output.additional=sparse is only supported for text input")
+}
+
+func TestOnProxyRequest_SparseDisabledByOptions(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "test",
+		}},
+		"options": map[string]any{
+			"sparse_embedding": map[string]any{
+				"type": "disabled",
+			},
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	require.NoError(t, f.OnProxyRequest(pr))
+
+	var got map[string]any
+	require.NoError(t, json.NewDecoder(pr.Out.Body).Decode(&got))
+	sparseEmbedding, ok := got["sparse_embedding"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "disabled", sparseEmbedding["type"])
+}
+
+func TestOnProxyRequest_SparseConflictWithOutputAdditional(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type": "text",
+			"text": "test",
+		}},
+		"output": map[string]any{
+			"primary":    "dense",
+			"additional": []string{"sparse"},
+		},
+		"options": map[string]any{
+			"sparse_embedding": map[string]any{
+				"type": "disabled",
+			},
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	err := f.OnProxyRequest(pr)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "output.additional contains sparse")
 }
 
 func buildProxyRequest(t *testing.T, payload map[string]any) *httputil.ProxyRequest {
