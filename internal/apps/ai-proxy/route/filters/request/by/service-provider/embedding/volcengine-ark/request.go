@@ -36,8 +36,9 @@ type CanonicalMultimodalEmbeddingRequest struct {
 	Input          []CanonicalMultimodalInputItem   `json:"input"`
 	Dimensions     *int                             `json:"dimensions,omitempty"`
 	Instruction    string                           `json:"instruction,omitempty"`
-	EncodingFormat string                           `json:"encoding_format,omitempty"`
+	EncodingFormat string                           `json:"encoding_format,omitempty"` // legacy compatibility
 	Output         *CanonicalMultimodalOutputConfig `json:"output,omitempty"`
+	Options        map[string]any                   `json:"options,omitempty"`
 }
 
 type CanonicalMultimodalInputItem struct {
@@ -48,10 +49,8 @@ type CanonicalMultimodalInputItem struct {
 }
 
 type CanonicalMultimodalOutputConfig struct {
-	Dense  *bool `json:"dense,omitempty"`
-	Multi  *bool `json:"multi,omitempty"`
-	Sparse *bool `json:"sparse,omitempty"`
-	Fusion *bool `json:"fusion,omitempty"`
+	Primary    string   `json:"primary,omitempty"`
+	Additional []string `json:"additional,omitempty"`
 }
 
 type VolcengineMultimodalEmbeddingRequest struct {
@@ -91,7 +90,7 @@ func (f *VolcengineMultimodalEmbeddingConverter) OnProxyRequest(pr *httputil.Pro
 		Instructions:   strings.TrimSpace(req.Instruction),
 		Input:          items,
 		Dimensions:     defaultDimensions,
-		EncodingFormat: req.EncodingFormat,
+		EncodingFormat: resolveEncodingFormat(req),
 	}
 	if req.Dimensions != nil {
 		if !isSupportedDimension(*req.Dimensions) {
@@ -106,13 +105,8 @@ func (f *VolcengineMultimodalEmbeddingConverter) OnProxyRequest(pr *httputil.Pro
 		arkReq.EncodingFormat = defaultEncodingFormat
 	}
 
-	if req.Output != nil {
-		if isTrue(req.Output.Multi) {
-			arkReq.MultiEmbedding = &VolcengineEmbeddingSwitch{Type: "enabled"}
-		}
-		if isTrue(req.Output.Sparse) {
-			arkReq.SparseEmbedding = &VolcengineEmbeddingSwitch{Type: "enabled"}
-		}
+	if err := applyOutputConfig(req.Output, req.Input, arkReq); err != nil {
+		return err
 	}
 
 	pr.Out.URL.Path = arkMultimodalEmbeddingPath
@@ -142,8 +136,63 @@ func convertInputItem(item CanonicalMultimodalInputItem) (map[string]any, error)
 	}
 }
 
-func isTrue(v *bool) bool {
-	return v != nil && *v
+func resolveEncodingFormat(req CanonicalMultimodalEmbeddingRequest) string {
+	legacy := strings.TrimSpace(req.EncodingFormat)
+	if req.Options == nil {
+		return legacy
+	}
+	if v, ok := req.Options["encoding_format"]; ok {
+		if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+			return strings.TrimSpace(s)
+		}
+	}
+	return legacy
+}
+
+func applyOutputConfig(output *CanonicalMultimodalOutputConfig, input []CanonicalMultimodalInputItem, arkReq *VolcengineMultimodalEmbeddingRequest) error {
+	// Optional output defaults to dense only, and dense is always present in Ark response.
+	if output == nil {
+		return nil
+	}
+
+	primary := strings.ToLower(strings.TrimSpace(output.Primary))
+	if primary == "" {
+		primary = "dense"
+	}
+	if primary != "dense" && primary != "fusion" {
+		return fmt.Errorf("output.primary must be one of [dense, fusion]")
+	}
+	if primary == "fusion" {
+		if len(output.Additional) > 0 {
+			return fmt.Errorf("output.additional must be empty when output.primary=fusion")
+		}
+		return fmt.Errorf("output.primary=fusion is not supported by volcengine-ark multimodal embedding")
+	}
+
+	additional := map[string]bool{}
+	for _, v := range output.Additional {
+		key := strings.ToLower(strings.TrimSpace(v))
+		if key == "" {
+			continue
+		}
+		if key != "multi" && key != "sparse" {
+			return fmt.Errorf("output.additional must contain only [multi, sparse]")
+		}
+		additional[key] = true
+	}
+
+	if additional["multi"] {
+		arkReq.MultiEmbedding = &VolcengineEmbeddingSwitch{Type: "enabled"}
+	}
+	if additional["sparse"] {
+		for _, item := range input {
+			if strings.ToLower(strings.TrimSpace(item.Type)) != "text" {
+				return fmt.Errorf("output.additional=sparse is only supported for text input")
+			}
+		}
+		arkReq.SparseEmbedding = &VolcengineEmbeddingSwitch{Type: "enabled"}
+	}
+	return nil
 }
 
 func isSupportedDimension(v int) bool {
