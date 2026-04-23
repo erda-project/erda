@@ -48,7 +48,6 @@ const (
 	kind = "EDAS"
 	// edas k8s service namespace
 	defaultNamespace = metav1.NamespaceDefault
-	notFound         = "not found"
 )
 
 // EDAS plugin's configure
