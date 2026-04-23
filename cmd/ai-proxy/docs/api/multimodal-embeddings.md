@@ -127,7 +127,7 @@ Validation policy in ai-proxy:
 - `data[]` is always an array in canonical response.
 - `index` should be sequential (`0..n-1`) by output item order.
 - `embedding` is the canonical dense vector output for each item.
-- `type` reflects source modality (`text | image | video`).
+- `type` reflects source modality (`text | image | video`) when it can be unambiguously inferred from request input.
 - `output_tokens` is optional for embedding models; using `0` is acceptable when upstream does not provide it.
 
 ## 6. Error Schema

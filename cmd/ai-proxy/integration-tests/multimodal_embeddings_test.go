@@ -77,6 +77,16 @@ func TestMultimodalEmbeddings(t *testing.T) {
 			if _, ok := item["embedding"].([]any); !ok {
 				t.Fatalf("missing or invalid embedding field: %#v", item["embedding"])
 			}
+			if _, ok := out["request_id"].(string); !ok {
+				t.Fatalf("missing or invalid request_id field: %#v", out["request_id"])
+			}
+			usage, ok := out["usage"].(map[string]any)
+			if !ok {
+				t.Fatalf("missing or invalid usage field: %#v", out["usage"])
+			}
+			if _, ok := usage["input_tokens"]; !ok {
+				t.Fatalf("missing input_tokens field: %#v", usage)
+			}
 
 			t.Logf("model %s multimodal embedding success, elapsed=%v", model, elapsed)
 		})
