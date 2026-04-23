@@ -28,7 +28,6 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
       "video_url": "string"
     }
   ],
-  "encoding_format": "float | base64",
   "dimensions": 1024,
   "instruction": "string",
   "output": {
@@ -37,10 +36,7 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
     "sparse": false,
     "fusion": false
   },
-  "options": {
-    "fps": 1.0,
-    "provider": {}
-  }
+  "options": {}
 }
 ```
 
@@ -52,7 +48,6 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
 - `input[].text` required when type=`text`.
 - `input[].image_url` required when type=`image`.
 - `input[].video_url` required when type=`video`.
-- `encoding_format` (optional): default `float`.
 - `dimensions` (optional): requested output dimension. If model does not support dimension override, proxy may ignore and return model default.
 - `instruction` (optional): task hint (maps to provider-specific `instruct`/`instructions`).
 - `output` (optional): controls output vector families.
@@ -60,7 +55,7 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
   - `multi`: default `false`.
   - `sparse`: default `false`.
   - `fusion`: default `false`.
-- `options` (optional): advanced knobs, provider specific values go to `options.provider`.
+- `options` (optional): advanced key/value parameters. ai-proxy maps keys by model/provider capabilities (for example `fps`, `encoding_format`).
 
 ### 4.2 `dimensions` Configurable Values (Documented)
 
@@ -82,45 +77,46 @@ Validation policy in ai-proxy:
 
 ```json
 {
-  "object": "list",
   "model": "string",
   "created": 1776838589,
   "data": [
     {
-      "object": "embedding",
       "index": 0,
       "type": "text",
-      "embedding": [0.1, 0.2],
-      "multi_embedding": [[0.1, 0.2]],
-      "sparse_embedding": [{"index": 12, "value": 0.34}]
+      "embedding": [0.1, 0.2]
+    },
+    {
+      "index": 1,
+      "type": "image",
+      "embedding": [0.1, 0.2]
+    },
+    {
+      "index": 2,
+      "type": "video",
+      "embedding": [0.1, 0.2]
     }
   ],
   "usage": {
-    "prompt_tokens": 54,
     "total_tokens": 54,
     "input_tokens": 54,
-    "image_tokens": 0,
-    "video_tokens": 0,
+    "output_tokens": 0,
     "input_tokens_details": {
       "text_tokens": 54,
-      "image_tokens": 0
+      "image_tokens": 0,
+      "video_tokens": 0
     }
   },
-  "id": "request-id",
-  "provider_response": {
-    "request_id": "provider-request-id"
-  }
+  "request_id": "request-id"
 }
 ```
 
 ### 5.1 Field Rules
 
 - `data[]` is always an array in canonical response.
-- `embedding` is the default dense vector.
-- `multi_embedding` appears only when requested and provider supports it.
-- `sparse_embedding` appears only when requested and provider supports it.
-- `type` reflects source modality for independent outputs. If provider returns fused output, type may be `vl`.
-- `provider_response` carries non-standard trace fields to avoid data loss.
+- `index` should be sequential (`0..n-1`) by output item order.
+- `embedding` is the canonical dense vector output for each item.
+- `type` reflects source modality (`text | image | video`).
+- `output_tokens` is optional for embedding models; using `0` is acceptable when upstream does not provide it.
 
 ## 6. Error Schema
 
@@ -157,7 +153,7 @@ Canonical -> Qwen mapping:
 Qwen response -> Canonical:
 - `output.embeddings[]` -> `data[]`
 - `usage` passthrough with field normalization
-- `request_id` -> `provider_response.request_id`
+- `request_id` -> `request_id`
 
 ### 7.2 Doubao (Volcengine Ark)
 
@@ -168,13 +164,11 @@ Canonical -> Doubao mapping:
 - `dimensions` passthrough
 - `output.multi=true` -> `multi_embedding.type=enabled`
 - `output.sparse=true` -> `sparse_embedding.type=enabled`
-- `encoding_format` passthrough
+- `options.encoding_format` -> `encoding_format`
 
 Doubao response -> Canonical:
-- `data.embedding` -> `data[0].embedding`
-- `data.multi_embedding` -> `data[0].multi_embedding`
-- `data.sparse_embedding` -> `data[0].sparse_embedding`
-- top-level `usage/id/model/created` passthrough
+- `data.embedding` -> canonical `data[].embedding` (adapter expands/normalizes to array contract)
+- top-level `usage/id/model/created` mapped to canonical fields (`request_id` etc.)
 
 ## 8. Compatibility Strategy
 
