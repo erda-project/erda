@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
@@ -146,69 +145,29 @@ func (e *EDAS) resolveServiceSelector(appName, appID, sgID, serviceName string) 
 		deployment = currentDeployment
 	}
 
-	var currentSvc *corev1.Service
-	if currentSvc, err := e.wrapClientSet.GetK8sService(appName); err == nil {
-		return resolveServiceSelectorFromResources(deployment, currentSvc, appID, sgID, serviceName)
-	}
-
-	return resolveServiceSelectorFromResources(deployment, currentSvc, appID, sgID, serviceName)
+	return resolveServiceSelectorFromDeployment(deployment, sgID, serviceName)
 }
 
-func selectorFromDeployment(deployment *appsv1.Deployment) map[string]string {
-	if deployment == nil || deployment.Spec.Selector == nil {
-		return nil
-	}
-	return preferredServiceSelector(deployment.Spec.Selector.MatchLabels)
-}
-
-func resolveServiceSelectorFromResources(deployment *appsv1.Deployment, currentSvc *corev1.Service, appID, sgID, serviceName string) map[string]string {
-	if selector := selectorFromDeployment(deployment); len(selector) > 0 {
-		return selector
-	}
-
-	if currentSvc != nil {
-		if selector := preferredServiceSelector(currentSvc.Spec.Selector); len(selector) > 0 {
-			return selector
+func resolveServiceSelectorFromDeployment(deployment *appsv1.Deployment, sgID, serviceName string) map[string]string {
+	if deployment != nil {
+		if labels := deployment.Spec.Template.Labels; len(labels) > 0 {
+			if labelServiceName, ok := labels[types.LabelServiceName]; ok && labelServiceName != "" {
+				if labelServiceGroupID, ok := labels[types.LabelServiceGroupID]; ok && labelServiceGroupID != "" {
+					return map[string]string{
+						types.LabelServiceName:    labelServiceName,
+						types.LabelServiceGroupID: labelServiceGroupID,
+					}
+				}
+			}
+			if labelEDASAppID, ok := labels[types.LabelEDASAppID]; ok && labelEDASAppID != "" {
+				return map[string]string{types.LabelEDASAppID: labelEDASAppID}
+			}
+		}
+		if deployment.Spec.Selector != nil && len(deployment.Spec.Selector.MatchLabels) > 0 {
+			return cloneStringMap(deployment.Spec.Selector.MatchLabels)
 		}
 	}
 
-	if appID != "" {
-		return map[string]string{types.LabelEDASAppID: appID}
-	}
-
-	return defaultServiceSelector(sgID, serviceName)
-}
-
-func preferredServiceSelector(selector map[string]string) map[string]string {
-	if len(selector) == 0 {
-		return nil
-	}
-
-	if serviceSelector := serviceIdentitySelector(selector); len(serviceSelector) > 0 {
-		return serviceSelector
-	}
-
-	if appID, ok := selector[types.LabelEDASAppID]; ok && appID != "" {
-		return map[string]string{types.LabelEDASAppID: appID}
-	}
-
-	return cloneStringMap(selector)
-}
-
-func serviceIdentitySelector(selector map[string]string) map[string]string {
-	serviceName, hasServiceName := selector[types.LabelServiceName]
-	serviceGroupID, hasServiceGroupID := selector[types.LabelServiceGroupID]
-	if !hasServiceName || !hasServiceGroupID || serviceName == "" || serviceGroupID == "" {
-		return nil
-	}
-
-	return map[string]string{
-		types.LabelServiceName:    serviceName,
-		types.LabelServiceGroupID: serviceGroupID,
-	}
-}
-
-func defaultServiceSelector(sgID, serviceName string) map[string]string {
 	return map[string]string{
 		types.LabelServiceName:    serviceName,
 		types.LabelServiceGroupID: sgID,

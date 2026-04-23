@@ -160,52 +160,22 @@ func TestTrySendErrDoesNotBlockWhenChannelIsFull(t *testing.T) {
 	require.ErrorIs(t, <-errChan, assert.AnError)
 }
 
-func TestSelectorFromDeployment(t *testing.T) {
+func TestResolveServiceSelectorFromDeployment(t *testing.T) {
 	deployment := &appsv1.Deployment{
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					types.LabelServiceName:    "svc",
-					types.LabelServiceGroupID: "sg",
-					types.LabelEDASAppID:      "123",
-					"custom":                  "ignored",
+					"match": "deploy",
 				},
 			},
-		},
-	}
-
-	assert.Equal(t, map[string]string{
-		types.LabelServiceName:    "svc",
-		types.LabelServiceGroupID: "sg",
-	}, selectorFromDeployment(deployment))
-	assert.Nil(t, selectorFromDeployment(nil))
-}
-
-func TestDefaultServiceSelector(t *testing.T) {
-	assert.Equal(t, map[string]string{
-		types.LabelServiceName:    "test-service",
-		types.LabelServiceGroupID: "test-sg",
-	}, defaultServiceSelector("test-sg", "test-service"))
-}
-
-func TestResolveServiceSelectorFromResources(t *testing.T) {
-	deployment := &appsv1.Deployment{
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					types.LabelServiceName:    "deploy-service",
-					types.LabelServiceGroupID: "deploy-group",
-					types.LabelEDASAppID:      "deploy-app-id",
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						types.LabelServiceName:    "deploy-service",
+						types.LabelServiceGroupID: "deploy-group",
+						types.LabelEDASAppID:      "deploy-app-id",
+					},
 				},
-			},
-		},
-	}
-	currentSvc := &corev1.Service{
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				types.LabelServiceName:    "service-service",
-				types.LabelServiceGroupID: "service-group",
-				types.LabelEDASAppID:      "service-app-id",
 			},
 		},
 	}
@@ -214,19 +184,27 @@ func TestResolveServiceSelectorFromResources(t *testing.T) {
 		types.LabelServiceName:    "deploy-service",
 		types.LabelServiceGroupID: "deploy-group",
 	},
-		resolveServiceSelectorFromResources(deployment, currentSvc, "fallback-app-id", "test-sg", "test-service"))
-
-	assert.Equal(t, map[string]string{
-		types.LabelServiceName:    "service-service",
-		types.LabelServiceGroupID: "service-group",
-	},
-		resolveServiceSelectorFromResources(nil, currentSvc, "fallback-app-id", "test-sg", "test-service"))
-
-	assert.Equal(t, map[string]string{types.LabelEDASAppID: "fallback-app-id"},
-		resolveServiceSelectorFromResources(nil, nil, "fallback-app-id", "test-sg", "test-service"))
+		resolveServiceSelectorFromDeployment(deployment, "test-sg", "test-service"))
 
 	assert.Equal(t, map[string]string{
 		types.LabelServiceName:    "test-service",
 		types.LabelServiceGroupID: "test-sg",
-	}, resolveServiceSelectorFromResources(nil, nil, "", "test-sg", "test-service"))
+	}, resolveServiceSelectorFromDeployment(nil, "test-sg", "test-service"))
+
+	deployment.Spec.Template.Labels = map[string]string{
+		types.LabelEDASAppID: "deploy-app-id",
+	}
+	assert.Equal(t, map[string]string{
+		types.LabelEDASAppID: "deploy-app-id",
+	}, resolveServiceSelectorFromDeployment(deployment, "test-sg", "test-service"))
+
+	deployment.Spec.Template.Labels = map[string]string{
+		"custom": "deploy-value",
+	}
+	deployment.Spec.Selector.MatchLabels = map[string]string{
+		"match": "deploy",
+	}
+	assert.Equal(t, map[string]string{
+		"match": "deploy",
+	}, resolveServiceSelectorFromDeployment(deployment, "test-sg", "test-service"))
 }
