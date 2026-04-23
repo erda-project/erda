@@ -31,10 +31,8 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
   "dimensions": 1024,
   "instruction": "string",
   "output": {
-    "dense": true,
-    "multi": false,
-    "sparse": false,
-    "fusion": false
+    "primary": "dense",
+    "additional": ["multi"]
   },
   "options": {}
 }
@@ -50,14 +48,25 @@ Define a unified, provider-agnostic API for multimodal embeddings (text/image/vi
 - `input[].video_url` required when type=`video`.
 - `dimensions` (optional): requested output dimension. If model does not support dimension override, proxy may ignore and return model default.
 - `instruction` (optional): task hint (maps to provider-specific `instruct`/`instructions`).
-- `output` (optional): controls output vector families.
-  - `dense`: default `true`.
-  - `multi`: default `false`.
-  - `sparse`: default `false`.
-  - `fusion`: default `false`.
+- `output` (optional): controls output vector families using explicit mode semantics.
+  - `primary`: optional enum, `dense | fusion`, default `dense`.
+  - `additional`: optional enum array, allowed values `multi | sparse`.
+  - `additional` can be combined with `primary=dense`.
+  - `primary=fusion` MUST NOT be combined with `additional` (reject with `400`).
+  - unsupported `primary/additional` combinations for a given model MUST return `400` with clear `param` and message.
 - `options` (optional): advanced key/value parameters. ai-proxy maps keys by model/provider capabilities (for example `fps`, `encoding_format`).
 
-### 4.2 `dimensions` Configurable Values (Documented)
+### 4.2 `output` Compatibility Matrix (Current)
+
+| Output Request | Canonical Meaning | Typical Provider Support |
+|---|---|---|
+| `primary=dense` | return dense embedding | Qwen + Doubao |
+| `primary=dense, additional=[multi]` | return dense + multi embedding | Doubao |
+| `primary=dense, additional=[sparse]` | return dense + sparse embedding | Doubao (text-only constraint by model/provider) |
+| `primary=dense, additional=[multi,sparse]` | return dense + multi + sparse | Doubao (text-only constraint for sparse) |
+| `primary=fusion` | return fused multimodal embedding | Qwen models that support fusion |
+
+### 4.3 `dimensions` Configurable Values (Documented)
 
 `dimensions` is accepted in canonical request, but the allowed values are model-specific:
 
@@ -147,7 +156,7 @@ Canonical -> Qwen mapping:
 - `input` -> `input.contents`
 - `instruction` -> `parameters.instruct`
 - `dimensions` -> `parameters.dimension` (only for models that support it)
-- `output.fusion` -> `parameters.enable_fusion`
+- `output.primary=fusion` -> `parameters.enable_fusion=true`
 - `options.fps` -> `parameters.fps`
 
 Qwen response -> Canonical:
@@ -162,8 +171,8 @@ Canonical -> Doubao mapping:
 - `instruction` -> `instructions`
 - `input[]` -> `input[]` with provider item schema
 - `dimensions` passthrough
-- `output.multi=true` -> `multi_embedding.type=enabled`
-- `output.sparse=true` -> `sparse_embedding.type=enabled`
+- `output.additional` contains `multi` -> `multi_embedding.type=enabled`
+- `output.additional` contains `sparse` -> `sparse_embedding.type=enabled`
 - `options.encoding_format` -> `encoding_format`
 
 Doubao response -> Canonical:
@@ -181,7 +190,7 @@ Doubao response -> Canonical:
 Proxy MUST validate:
 - required fields (`model`, `input`, per-item modality fields)
 - supported modality type
-- `output` booleans
+- `output.primary/output.additional` enum constraints and combination constraints
 - reject impossible combinations early when known (for example provider/model does not support sparse + image/video)
 
 Proxy SHOULD:
