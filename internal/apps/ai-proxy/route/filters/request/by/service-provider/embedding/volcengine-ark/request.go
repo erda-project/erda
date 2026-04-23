@@ -28,7 +28,6 @@ const (
 	dimension1024              = 1024
 	defaultDimensions          = 2048
 	defaultEncodingFormat      = "float"
-	defaultInstructions        = "Target_modality: text and video.\nInstruction:Compress the text/video into one word.\nQuery:"
 )
 
 type CanonicalMultimodalEmbeddingRequest struct {
@@ -99,13 +98,13 @@ func (f *VolcengineMultimodalEmbeddingConverter) OnProxyRequest(pr *httputil.Pro
 		arkReq.Dimensions = *req.Dimensions
 	}
 	if strings.TrimSpace(arkReq.Instructions) == "" {
-		arkReq.Instructions = defaultInstructions
+		arkReq.Instructions = buildDefaultInstructions(req.Input)
 	}
 	if strings.TrimSpace(arkReq.EncodingFormat) == "" {
 		arkReq.EncodingFormat = defaultEncodingFormat
 	}
 
-	if err := applyOutputConfig(req.Output, req.Input, arkReq); err != nil {
+	if err := applyOutputConfig(req.Output, req.Input, req.Options, arkReq); err != nil {
 		return err
 	}
 
@@ -121,16 +120,26 @@ func convertInputItem(item CanonicalMultimodalInputItem) (map[string]any, error)
 			return nil, fmt.Errorf("text is required when type=text")
 		}
 		return map[string]any{"type": "text", "text": item.Text}, nil
-	case "image":
+	case "image", "image_url":
 		if strings.TrimSpace(item.ImageURL) == "" {
 			return nil, fmt.Errorf("image_url is required when type=image")
 		}
-		return map[string]any{"type": "image", "image_url": item.ImageURL}, nil
-	case "video":
+		return map[string]any{
+			"type": "image_url",
+			"image_url": map[string]any{
+				"url": item.ImageURL,
+			},
+		}, nil
+	case "video", "video_url":
 		if strings.TrimSpace(item.VideoURL) == "" {
 			return nil, fmt.Errorf("video_url is required when type=video")
 		}
-		return map[string]any{"type": "video", "video_url": item.VideoURL}, nil
+		return map[string]any{
+			"type": "video_url",
+			"video_url": map[string]any{
+				"url": item.VideoURL,
+			},
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported type %q", item.Type)
 	}
@@ -149,28 +158,36 @@ func resolveEncodingFormat(req CanonicalMultimodalEmbeddingRequest) string {
 	return legacy
 }
 
-func applyOutputConfig(output *CanonicalMultimodalOutputConfig, input []CanonicalMultimodalInputItem, arkReq *VolcengineMultimodalEmbeddingRequest) error {
+func applyOutputConfig(output *CanonicalMultimodalOutputConfig, input []CanonicalMultimodalInputItem, options map[string]any, arkReq *VolcengineMultimodalEmbeddingRequest) error {
 	// Optional output defaults to dense only, and dense is always present in Ark response.
-	if output == nil {
-		return nil
+	var primary string
+	var additionalItems []string
+
+	if output != nil {
+		primary = strings.ToLower(strings.TrimSpace(output.Primary))
+		additionalItems = output.Additional
+	}
+	sparseOption, hasSparseOption, err := resolveSparseEmbeddingOption(options)
+	if err != nil {
+		return err
 	}
 
-	primary := strings.ToLower(strings.TrimSpace(output.Primary))
 	if primary == "" {
 		primary = "dense"
 	}
+
 	if primary != "dense" && primary != "fusion" {
 		return fmt.Errorf("output.primary must be one of [dense, fusion]")
 	}
 	if primary == "fusion" {
-		if len(output.Additional) > 0 {
+		if len(additionalItems) > 0 {
 			return fmt.Errorf("output.additional must be empty when output.primary=fusion")
 		}
 		return fmt.Errorf("output.primary=fusion is not supported by volcengine-ark multimodal embedding")
 	}
 
-	additional := map[string]bool{}
-	for _, v := range output.Additional {
+	additionalSet := map[string]bool{}
+	for _, v := range additionalItems {
 		key := strings.ToLower(strings.TrimSpace(v))
 		if key == "" {
 			continue
@@ -178,23 +195,94 @@ func applyOutputConfig(output *CanonicalMultimodalOutputConfig, input []Canonica
 		if key != "multi" && key != "sparse" {
 			return fmt.Errorf("output.additional must contain only [multi, sparse]")
 		}
-		additional[key] = true
+		additionalSet[key] = true
 	}
 
-	if additional["multi"] {
+	if additionalSet["multi"] {
 		arkReq.MultiEmbedding = &VolcengineEmbeddingSwitch{Type: "enabled"}
 	}
-	if additional["sparse"] {
+
+	if hasSparseOption && sparseOption == "disabled" && additionalSet["sparse"] {
+		return fmt.Errorf("output.additional contains sparse but options.sparse_embedding.type=disabled")
+	}
+
+	enableSparse := additionalSet["sparse"] || (hasSparseOption && sparseOption == "enabled")
+	if enableSparse {
 		for _, item := range input {
-			if strings.ToLower(strings.TrimSpace(item.Type)) != "text" {
+			if normalizeInputModality(item.Type) != "text" {
 				return fmt.Errorf("output.additional=sparse is only supported for text input")
 			}
 		}
 		arkReq.SparseEmbedding = &VolcengineEmbeddingSwitch{Type: "enabled"}
+	} else if hasSparseOption && sparseOption == "disabled" {
+		arkReq.SparseEmbedding = &VolcengineEmbeddingSwitch{Type: "disabled"}
 	}
 	return nil
 }
 
 func isSupportedDimension(v int) bool {
 	return v == dimension1024 || v == defaultDimensions
+}
+
+func buildDefaultInstructions(input []CanonicalMultimodalInputItem) string {
+	modalities := make([]string, 0, 3)
+	seen := map[string]bool{}
+	for _, item := range input {
+		modality := normalizeInputModality(item.Type)
+		if modality == "" || seen[modality] {
+			continue
+		}
+		seen[modality] = true
+		modalities = append(modalities, modality)
+	}
+	if len(modalities) == 0 {
+		modalities = []string{"text"}
+	}
+
+	target := strings.Join(modalities, " and ")
+	compact := strings.Join(modalities, "/")
+	return fmt.Sprintf(
+		"Target_modality: %s.\nInstruction:Compress the %s into one word.\nQuery:",
+		target, compact,
+	)
+}
+
+func normalizeInputModality(inputType string) string {
+	switch strings.ToLower(strings.TrimSpace(inputType)) {
+	case "text":
+		return "text"
+	case "image", "image_url":
+		return "image"
+	case "video", "video_url":
+		return "video"
+	default:
+		return ""
+	}
+}
+
+func resolveSparseEmbeddingOption(options map[string]any) (string, bool, error) {
+	if options == nil {
+		return "", false, nil
+	}
+	raw, ok := options["sparse_embedding"]
+	if !ok {
+		return "", false, nil
+	}
+	switch v := raw.(type) {
+	case string:
+		t := strings.ToLower(strings.TrimSpace(v))
+		if t != "enabled" && t != "disabled" {
+			return "", false, fmt.Errorf("options.sparse_embedding must be one of [enabled, disabled]")
+		}
+		return t, true, nil
+	case map[string]any:
+		typeValue, _ := v["type"].(string)
+		t := strings.ToLower(strings.TrimSpace(typeValue))
+		if t != "enabled" && t != "disabled" {
+			return "", false, fmt.Errorf("options.sparse_embedding.type must be one of [enabled, disabled]")
+		}
+		return t, true, nil
+	default:
+		return "", false, fmt.Errorf("options.sparse_embedding must be string or object")
+	}
 }
