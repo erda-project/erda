@@ -127,3 +127,58 @@ func TestCombineK8sService(t *testing.T) {
 	}
 
 }
+
+func TestApplyMutableServiceFieldsPreservesClusterIP(t *testing.T) {
+	currentSvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "test-app",
+			Labels: map[string]string{"old": "label"},
+		},
+		Spec: corev1.ServiceSpec{
+			ClusterIP: "10.0.0.1",
+			Selector:  map[string]string{"old": "selector"},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "tcp-0",
+					Port:       80,
+					TargetPort: intstr.FromInt32(80),
+				},
+			},
+		},
+	}
+
+	newSvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "test-app",
+			Labels: map[string]string{"new": "label"},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{"new": "selector"},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "tcp-0",
+					Port:       8080,
+					TargetPort: intstr.FromInt32(8080),
+				},
+			},
+		},
+	}
+
+	applyMutableServiceFields(currentSvc, newSvc)
+
+	if currentSvc.Spec.ClusterIP != "10.0.0.1" {
+		t.Fatalf("expected clusterIP to be preserved, got %q", currentSvc.Spec.ClusterIP)
+	}
+
+	if !reflect.DeepEqual(currentSvc.Spec.Selector, newSvc.Spec.Selector) {
+		t.Fatalf("expected selector to be updated, got %+v", currentSvc.Spec.Selector)
+	}
+
+	if !reflect.DeepEqual(currentSvc.Spec.Ports, newSvc.Spec.Ports) {
+		t.Fatalf("expected ports to be updated, got %+v", currentSvc.Spec.Ports)
+	}
+
+	if !reflect.DeepEqual(currentSvc.Labels, newSvc.Labels) {
+		t.Fatalf("expected labels to be updated, got %+v", currentSvc.Labels)
+	}
+}

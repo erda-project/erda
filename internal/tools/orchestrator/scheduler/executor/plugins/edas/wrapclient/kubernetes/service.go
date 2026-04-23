@@ -90,8 +90,7 @@ func (e *wrapKubernetes) CreateOrUpdateK8sService(ctx context.Context, appName, 
 	l.Infof("start to update k8s svc, appname: %s", appName)
 	newSvc := e.combineK8sService(appName, sgID, serviceName, ports)
 
-	currentSvc.Spec = newSvc.Spec
-	currentSvc.Labels = newSvc.Labels
+	applyMutableServiceFields(currentSvc, newSvc)
 
 	if _, err := e.cs.CoreV1().Services(e.namespace).
 		Update(ctx, currentSvc, metav1.UpdateOptions{}); err != nil {
@@ -143,4 +142,10 @@ func (e *wrapKubernetes) combineK8sService(appName, sgID, serviceName string, po
 			Ports: servicePorts,
 		},
 	}
+}
+
+func applyMutableServiceFields(currentSvc, newSvc *corev1.Service) {
+	currentSvc.Spec.Selector = newSvc.Spec.Selector
+	currentSvc.Spec.Ports = newSvc.Spec.Ports
+	currentSvc.Labels = newSvc.Labels
 }
