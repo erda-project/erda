@@ -24,6 +24,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/labstack/echo"
 
@@ -34,9 +35,12 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/logutil"
+	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
+
+const maxXRequestIDLength = 64
 
 var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.FilterWithName[filter_define.ProxyRequestRewriter]) func(*httputil.ProxyRequest) {
 	return func(pr *httputil.ProxyRequest) {
@@ -103,7 +107,10 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 		dumplog.DumpRequestIn(pr.In)
 
 		// handle ai-proxy request header
-		handleAIProxyRequestHeader(pr)
+		if err := handleAIProxyRequestHeader(pr); err != nil {
+			brokenInErr = err
+			return
+		}
 
 		for _, filter := range requestFilters {
 			currentFilterName = filter.Name
@@ -137,7 +144,10 @@ var MyRewrite = func(w http.ResponseWriter, requestFilters []filter_define.Filte
 	}
 }
 
-func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
+func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) error {
+	if err := validateRequestIDLength(pr); err != nil {
+		return err
+	}
 	if isInternalTrustedHealthProbe(pr.In) {
 		ctxhelper.PutTrustedHealthProbe(pr.In.Context(), true)
 		audithelper.Note(pr.In.Context(), "model_health.trusted_probe", true)
@@ -148,6 +158,30 @@ func handleAIProxyRequestHeader(pr *httputil.ProxyRequest) {
 	applyForwardResponseTimeoutOverride(pr)
 
 	stripAIProxyHeaders(pr)
+	return nil
+}
+
+func validateRequestIDLength(pr *httputil.ProxyRequest) error {
+	if pr == nil || pr.In == nil {
+		return nil
+	}
+	reqID, _ := ctxhelper.GetRequestID(pr.In.Context())
+	if reqID == "" {
+		reqID = strings.TrimSpace(pr.In.Header.Get(vars.XRequestId))
+	}
+	if reqID == "" {
+		return nil
+	}
+	if utf8.RuneCountInString(reqID) <= maxXRequestIDLength {
+		return nil
+	}
+	msg := fmt.Sprintf("x_request_id is too long: max length is %d", maxXRequestIDLength)
+	return httperror.NewHTTPErrorWithCtx(pr.In.Context(), http.StatusBadRequest, msg, map[string]any{
+		"code":    "invalid_request_error",
+		"message": msg,
+		"param":   "x_request_id",
+		"type":    "validation_error",
+	})
 }
 
 func setRequestTraceHeaders(pr *httputil.ProxyRequest) {

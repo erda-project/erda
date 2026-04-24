@@ -1,6 +1,6 @@
 # AI Proxy Integration Tests Makefile
 
-.PHONY: help test test-chat test-embeddings test-audio test-audio-stt test-audio-tts test-images test-responses test-verbose test-concurrent test-quick clean setup test-template-list test-batches
+.PHONY: help test test-chat test-embeddings test-multimodal-embeddings test-audio test-audio-stt test-audio-tts test-images test-responses test-verbose test-concurrent test-quick clean setup test-template-list test-batches
 
 # Default target
 .DEFAULT_GOAL := help
@@ -27,6 +27,7 @@ help:
 	@echo "  test-audio             - Run all audio tests (STT + TTS)"
 	@echo "  test-images            - Run image generation tests"
 	@echo "  test-embeddings        - Run embeddings tests"
+	@echo "  test-multimodal-embeddings - Run multimodal embeddings tests"
 	@echo "  test-responses         - Run responses API tests (non-stream + stream)"
 	@echo "  test-responses-nonstream - Run responses non-stream tests"
 	@echo "  test-responses-stream  - Run responses stream tests"
@@ -56,19 +57,19 @@ setup:
 	fi
 
 ## Run all tests
-test: test-chat-completions test-audio-stt test-audio-tts test-images test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
+test: test-chat-completions test-audio-stt test-audio-tts test-images test-embeddings test-multimodal-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
 	@echo "✓ All tests completed!"
 
 ## Run all tests except image generation (faster execution)
-test-except-images: test-chat-completions test-audio-stt test-audio-tts test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
+test-except-images: test-chat-completions test-audio-stt test-audio-tts test-embeddings test-multimodal-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
 	@echo "✓ All tests completed (excluding image generation)!"
 
 ## Run all tests except audio (STT + TTS)
-test-except-audio: test-chat-completions test-images test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
+test-except-audio: test-chat-completions test-images test-embeddings test-multimodal-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
 	@echo "✓ All tests completed (excluding audio)!"
 
 ## Run all tests except images and audio
-test-except-image-audio: test-chat-completions test-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
+test-except-image-audio: test-chat-completions test-embeddings test-multimodal-embeddings test-responses test-openai-v1-models test-template-list test-rich-client test-thinking-curl test-batches
 	@echo "✓ All tests completed (excluding images and audio)!"
 
 
@@ -116,6 +117,12 @@ test-embeddings: setup mod-init
 	@echo "Running Embeddings tests..."
 	go test -v -count=1 -timeout 300s -failfast -run "^TestEmbeddings" ./...
 	@echo "✓ All embeddings tests completed!"
+
+## Run multimodal embeddings tests
+test-multimodal-embeddings: setup mod-init
+	@echo "Running Multimodal Embeddings tests..."
+	go test -v -count=1 -timeout 300s -failfast -run "^TestMultimodalEmbeddings" ./...
+	@echo "✓ All multimodal embeddings tests completed!"
 
 ## Run responses non-stream tests
 test-responses-nonstream: setup mod-init
