@@ -20,11 +20,12 @@ import (
 	"strings"
 	"testing"
 
-	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
-	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/common_types"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"google.golang.org/protobuf/types/known/structpb"
+	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
+	serviceproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/service_provider/pb"
 )
 
 func TestSignerOnProxyRequest_MetadataAKSK(t *testing.T) {

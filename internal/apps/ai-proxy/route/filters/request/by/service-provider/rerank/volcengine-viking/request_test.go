@@ -131,6 +131,16 @@ func TestConverter_OnProxyRequest_ValidateFailures(t *testing.T) {
 			body: `{"model":"doubao-seed-rerank","query":"q","documents":[]}`,
 			want: "documents is required",
 		},
+		{
+			name: "invalid document type",
+			body: `{"model":"doubao-seed-rerank","query":"q","documents":[123,{"content":"ok"}]}`,
+			want: "documents[0] is invalid",
+		},
+		{
+			name: "empty string document",
+			body: `{"model":"doubao-seed-rerank","query":"q","documents":[" ",{"content":"ok"}]}`,
+			want: "documents[0] is invalid",
+		},
 	}
 
 	for _, tt := range tests {

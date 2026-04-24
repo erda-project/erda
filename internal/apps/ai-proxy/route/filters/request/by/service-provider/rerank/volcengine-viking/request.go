@@ -66,10 +66,10 @@ func (f *Converter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	globalQuery, _ := normalizeQuery(in.Query)
 	datas := make([]vikingData, 0, len(in.Documents))
 	hasContentOrImage := false
-	for _, doc := range in.Documents {
+	for i, doc := range in.Documents {
 		item, ok := toVikingData(doc)
 		if !ok {
-			continue
+			return fmt.Errorf("documents[%d] is invalid", i)
 		}
 
 		query, ok := normalizeQuery(item.Query)
@@ -77,7 +77,7 @@ func (f *Converter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 			query = globalQuery
 		}
 		if _, ok := normalizeQuery(query); !ok {
-			return fmt.Errorf("query is required for rerank")
+			return fmt.Errorf("documents[%d].query is required for rerank", i)
 		}
 		item.Query = query
 
