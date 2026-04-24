@@ -23,8 +23,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/stretchr/testify/require"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
 func TestOnBodyChunk_ConvertFromArkToCanonical(t *testing.T) {

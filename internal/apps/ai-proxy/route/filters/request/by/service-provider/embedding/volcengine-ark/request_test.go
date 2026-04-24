@@ -22,8 +22,9 @@ import (
 	"net/http/httputil"
 	"testing"
 
-	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/stretchr/testify/require"
+
+	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 )
 
 func TestOnProxyRequest_DefaultsAndOutputMapping(t *testing.T) {
@@ -224,6 +225,27 @@ func TestOnProxyRequest_SparseWithImageRejected(t *testing.T) {
 	err := f.OnProxyRequest(pr)
 	require.Error(t, err)
 	requireValidationError(t, err, "output.additional", "output.additional=sparse is only supported for text input")
+}
+
+func TestOnProxyRequest_SparseEnabledByOptionsWithImageRejected(t *testing.T) {
+	in := map[string]any{
+		"model": "doubao-embedding-vision-251215",
+		"input": []map[string]any{{
+			"type":      "image",
+			"image_url": "https://example.com/a.png",
+		}},
+		"options": map[string]any{
+			"sparse_embedding": map[string]any{
+				"type": "enabled",
+			},
+		},
+	}
+	pr := buildProxyRequest(t, in)
+
+	f := &VolcengineMultimodalEmbeddingConverter{}
+	err := f.OnProxyRequest(pr)
+	require.Error(t, err)
+	requireValidationError(t, err, "options.sparse_embedding", "options.sparse_embedding=enabled is only supported for text input")
 }
 
 func TestOnProxyRequest_SparseDisabledByOptions(t *testing.T) {

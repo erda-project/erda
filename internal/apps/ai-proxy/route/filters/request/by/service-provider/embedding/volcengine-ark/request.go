@@ -209,10 +209,15 @@ func applyOutputConfig(output *CanonicalMultimodalOutputConfig, input []Canonica
 		return fmt.Errorf("output.additional contains sparse but options.sparse_embedding.type=disabled")
 	}
 
-	enableSparse := additionalSet["sparse"] || (hasSparseOption && sparseOption == "enabled")
+	sparseFromOutputAdditional := additionalSet["sparse"]
+	sparseFromOptionEnabled := hasSparseOption && sparseOption == "enabled"
+	enableSparse := sparseFromOutputAdditional || sparseFromOptionEnabled
 	if enableSparse {
 		for _, item := range input {
 			if normalizeInputModality(item.Type) != "text" {
+				if sparseFromOptionEnabled && !sparseFromOutputAdditional {
+					return fmt.Errorf("options.sparse_embedding=enabled is only supported for text input")
+				}
 				return fmt.Errorf("output.additional=sparse is only supported for text input")
 			}
 		}
