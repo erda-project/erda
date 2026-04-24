@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"strings"
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
@@ -38,7 +39,9 @@ func TestHandleAIProxyRequestHeaderSetsTrustedHealthProbeForLoopback(t *testing.
 	out := req.Clone(ctx)
 	pr := &httputil.ProxyRequest{In: req, Out: out}
 
-	handleAIProxyRequestHeader(pr)
+	if err := handleAIProxyRequestHeader(pr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	trusted, ok := ctxhelper.GetTrustedHealthProbe(ctx)
 	if !ok || !trusted {
@@ -62,7 +65,9 @@ func TestHandleAIProxyRequestHeaderDoesNotSetTrustedHealthProbeForNonLoopback(t 
 	out := req.Clone(ctx)
 	pr := &httputil.ProxyRequest{In: req, Out: out}
 
-	handleAIProxyRequestHeader(pr)
+	if err := handleAIProxyRequestHeader(pr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if trusted, ok := ctxhelper.GetTrustedHealthProbe(ctx); ok && trusted {
 		t.Fatal("did not expect trusted health probe for non-loopback request")
@@ -71,6 +76,22 @@ func TestHandleAIProxyRequestHeaderDoesNotSetTrustedHealthProbeForNonLoopback(t 
 	sink, _ := ctxhelper.GetAuditSink(ctx)
 	if _, ok := sink.Snapshot()["model_health.trusted_probe"]; ok {
 		t.Fatal("did not expect trusted probe audit note for non-loopback request")
+	}
+}
+
+func TestHandleAIProxyRequestHeader_RejectsTooLongRequestID(t *testing.T) {
+	ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+	longID := strings.Repeat("a", maxXRequestIDLength+1)
+	ctxhelper.PutRequestID(ctx, longID)
+	ctxhelper.PutGeneratedCallID(ctx, "call-1")
+	ctxhelper.PutAuditSink(ctx, audittypes.New("aid-1", logrusx.New()))
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8081/v1/chat/completions", nil).WithContext(ctx)
+	out := req.Clone(ctx)
+	pr := &httputil.ProxyRequest{In: req, Out: out}
+
+	err := handleAIProxyRequestHeader(pr)
+	if err == nil {
+		t.Fatal("expected validation error for long x_request_id")
 	}
 }
 

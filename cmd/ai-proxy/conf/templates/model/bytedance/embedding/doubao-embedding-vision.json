@@ -35,29 +35,6 @@
               "text"
             ]
           },
-          "api": {
-            "apiStyleConfigs": {
-              "POST:/v1/embeddings": {
-                "path": [
-                  "set",
-                  "/api/v3/embeddings/multimodal"
-                ],
-                "body": {
-                  "default": {
-                    "instructions": "Target_modality: text and video.\nInstruction:Compress the text/video into one word.\nQuery:",
-                    "dimensions": 1024,
-                    "multi_embedding": {
-                      "type": "enabled"
-                    },
-                    "sparse_embedding": {
-                      "type": "enabled"
-                    },
-                    "encoding_format": "float"
-                  }
-                }
-              }
-            }
-          },
           "context": {
             "context_length": 128000,
             "max_completion_tokens": null,
