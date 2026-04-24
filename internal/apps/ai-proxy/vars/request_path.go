@@ -20,6 +20,7 @@ const (
 	RequestPathPrefixV1ImagesEdits       = "/v1/images/edits"
 	RequestPathPrefixV1Audio             = "/v1/audio"
 	RequestPathPrefixV1Embeddings        = "/v1/embeddings"
+	RequestPathPrefixV1Reranks           = "/v1/reranks"
 	RequestPathPrefixV1Responses         = "/v1/responses"
 	RequestPathPrefixV1Files             = "/v1/files"
 	RequestPathPrefixV1Batches           = "/v1/batches"

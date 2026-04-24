@@ -1,0 +1,58 @@
+{
+  "qwen3-rerank": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://help.aliyun.com/zh/model-studio/text-rerank-api"
+    },
+    "desc": "Qwen3 Rerank model for semantic reranking.",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "rerank",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "rerank"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

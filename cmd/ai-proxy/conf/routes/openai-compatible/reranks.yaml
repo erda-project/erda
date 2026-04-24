@@ -1,0 +1,14 @@
+routes:
+  - path: /v1/reranks
+    method: POST
+    request_filters:
+      - name: rate-limit
+      - name: auth
+      - name: context
+      - name: context-rerank
+      - name: openai-compatible-director
+      - name: volcengine-viking-rerank-converter
+      - name: volcengine-viking-rerank-signer
+      - name: set-response-chunk-splitter
+    response_filters:
+      - name: volcengine-viking-rerank-response-converter
