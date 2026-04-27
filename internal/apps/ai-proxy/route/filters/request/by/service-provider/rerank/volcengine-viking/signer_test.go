@@ -69,21 +69,12 @@ func TestSignerOnProxyRequest_MetadataAKSK(t *testing.T) {
 	}
 }
 
-func TestParseVikingSigningConfig_FromAPIKey(t *testing.T) {
+func TestParseVikingSigningConfig_MissingAKSK(t *testing.T) {
 	sp := &serviceproviderpb.ServiceProvider{
 		ApiKey: strings.Join([]string{"ak-inline", "sk-inline"}, ":"),
 	}
-	cfg, ok := parseVikingSigningConfig(sp)
-	if !ok {
-		t.Fatalf("expected inline apiKey ak:sk to be parsed")
-	}
-	if cfg.ak != "ak-inline" || cfg.sk != "sk-inline" {
-		t.Fatalf("unexpected parsed credentials: %#v", cfg)
-	}
-	if cfg.region != defaultSignRegion {
-		t.Fatalf("unexpected default region: %s", cfg.region)
-	}
-	if cfg.service != defaultSignService {
-		t.Fatalf("unexpected default service: %s", cfg.service)
+	_, err := parseVikingSigningConfig(sp)
+	if err == nil {
+		t.Fatalf("expected error when metadata AK/SK is missing")
 	}
 }
