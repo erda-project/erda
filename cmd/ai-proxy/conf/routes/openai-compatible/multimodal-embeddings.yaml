@@ -1,0 +1,13 @@
+routes:
+  - path: /v1/multimodal/embeddings
+    method: POST
+    request_filters:
+      - name: rate-limit
+      - name: auth
+      - name: context
+      - name: context-embedding
+      - name: openai-compatible-director
+      - name: volcengine-ark-multimodal-embedding-converter
+      - name: set-response-chunk-splitter
+    response_filters:
+      - name: volcengine-ark-multimodal-embedding-response-converter

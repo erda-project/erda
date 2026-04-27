@@ -31,15 +31,16 @@ type Config struct {
 	Timeout time.Duration
 
 	// Test models categorized by API type
-	ChatModels       []string
-	EmbeddingsModels []string
-	AudioSTTModels   []string
-	AudioTTSModels   []string
-	ImageModels      []string
-	ResponsesModels  []string
-	ThinkingModels   []string
-	BatchModels      []string
-	BatchWindow      string
+	ChatModels                []string
+	EmbeddingsModels          []string
+	AudioSTTModels            []string
+	AudioTTSModels            []string
+	ImageModels               []string
+	ResponsesModels           []string
+	ThinkingModels            []string
+	BatchModels               []string
+	BatchWindow               string
+	MultimodalEmbeddingModels []string
 }
 
 var globalConfig *Config
@@ -51,9 +52,9 @@ func Load() *Config {
 	}
 
 	config := &Config{
-		Host:    "http://localhost:8081",
-		Token:   "",
-		Timeout: 2 * time.Minute, // 2 minutes, consistent with production gateway timeout
+		Host:        "http://localhost:8081",
+		Token:       "",
+		Timeout:     2 * time.Minute, // 2 minutes, consistent with production gateway timeout
 		BatchWindow: "24h",
 	}
 
@@ -140,6 +141,8 @@ func setConfigValue(config *Config, key, value string) {
 		if value != "" {
 			config.BatchWindow = value
 		}
+	case "MULTIMODAL_EMBEDDING_MODELS":
+		config.MultimodalEmbeddingModels = parseModelList(value)
 	}
 }
 
@@ -169,5 +172,6 @@ func (c *Config) GetAllModels() []string {
 	allModels = append(allModels, c.ImageModels...)
 	allModels = append(allModels, c.ResponsesModels...)
 	allModels = append(allModels, c.BatchModels...)
+	allModels = append(allModels, c.MultimodalEmbeddingModels...)
 	return allModels
 }

@@ -43,10 +43,32 @@ func (he *HTTPError) WriteJSONHTTPError(w http.ResponseWriter) {
 	var body bytes.Buffer
 	encoder := json.NewEncoder(&body)
 	encoder.SetEscapeHTML(false)
-	_ = encoder.Encode(&he)
+	_ = encoder.Encode(he.toResponseBody())
 	_, _ = w.Write(body.Bytes())
 	audithelper.Note(he.Ctx, "status", he.StatusCode)
 	audithelper.Note(he.Ctx, "response_body", body.String())
+}
+
+func (he *HTTPError) toResponseBody() any {
+	if isOpenAIStyleError(he.ErrorCtx) {
+		return map[string]any{
+			"error": he.ErrorCtx,
+		}
+	}
+	return he
+}
+
+func isOpenAIStyleError(errCtx map[string]any) bool {
+	if errCtx == nil {
+		return false
+	}
+	code, codeOK := errCtx["code"].(string)
+	message, messageOK := errCtx["message"].(string)
+	typ, typeOK := errCtx["type"].(string)
+	if !codeOK || !messageOK || !typeOK {
+		return false
+	}
+	return code != "" && message != "" && typ != ""
 }
 
 func NewHTTPError(ctx context.Context, statusCode int, message string) *HTTPError {
