@@ -1,0 +1,58 @@
+{
+  "doubao-seed-rerank": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "volcengine-viking"
+      ],
+      "website": "https://www.volcengine.com/docs/84313/1254474"
+    },
+    "desc": "Doubao Seed rerank model for Viking knowledge-base retrieval reranking.",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "rerank",
+      "publisher": "bytedance",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "rerank"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": null,
+            "max_completion_tokens": null,
+            "max_prompt_tokens": null
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "pricing": {
+            "completion": "0",
+            "image": "0",
+            "input_cache_read": "0",
+            "input_cache_write": "0",
+            "internal_reasoning": "0",
+            "prompt": "0",
+            "request": "0",
+            "unit": "CNY",
+            "web_search": "0"
+          }
+        },
+        "secret": {}
+      }
+    }
+  }
+}

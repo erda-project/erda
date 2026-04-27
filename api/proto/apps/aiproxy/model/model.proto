@@ -92,6 +92,7 @@ enum ModelType {
     text_moderation = 5;
     multimodal = 6;
     assistant = 7;
+    rerank = 8;
 }
 
 message ModelCreateRequest {

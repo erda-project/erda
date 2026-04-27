@@ -21,6 +21,7 @@ const (
 	ServiceProviderTypeAzureAIFoundry   ServiceProviderType = "azure-ai-foundry"
 	ServiceProviderTypeAliyunBailian    ServiceProviderType = "aliyun-bailian"
 	ServiceProviderTypeVolcengineArk    ServiceProviderType = "volcengine-ark"
+	ServiceProviderTypeVolcengineViking ServiceProviderType = "volcengine-viking"
 	ServiceProviderTypeAWSBedrock       ServiceProviderType = "aws-bedrock"
 	ServiceProviderTypeOpenAICompatible ServiceProviderType = "openai-compatible"
 	ServiceProviderTypeGoogleVertexAI   ServiceProviderType = "google-vertex-ai"
@@ -33,6 +34,7 @@ func (m ServiceProviderType) IsValid() bool {
 	case ServiceProviderTypeAzureAIFoundry,
 		ServiceProviderTypeAliyunBailian,
 		ServiceProviderTypeVolcengineArk,
+		ServiceProviderTypeVolcengineViking,
 		ServiceProviderTypeAWSBedrock,
 		ServiceProviderTypeOpenAICompatible,
 		ServiceProviderTypeGoogleVertexAI:
