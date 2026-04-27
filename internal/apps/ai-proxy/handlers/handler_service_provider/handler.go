@@ -41,7 +41,6 @@ const (
 	volcengineVikingTemplateID      = "volcengine-viking"
 	volcengineVikingAKTemplateParam = "access-key-id"
 	volcengineVikingSKTemplateParam = "secret-access-key"
-	volcengineVikingAPIKeyParam     = "api-key"
 )
 
 type ServiceProviderHandler struct {
@@ -206,9 +205,6 @@ func desensitizeProvider(ctx context.Context, item *pb.ServiceProvider) {
 func validateVolcengineVikingTemplateParams(templateID string, params map[string]string) error {
 	if templateID != volcengineVikingTemplateID {
 		return nil
-	}
-	if strings.TrimSpace(params[volcengineVikingAPIKeyParam]) != "" {
-		return fmt.Errorf("template_params.api-key is not supported for volcengine-viking, use access-key-id/secret-access-key")
 	}
 	if strings.TrimSpace(params[volcengineVikingAKTemplateParam]) == "" {
 		return fmt.Errorf("template_params.access-key-id is required for volcengine-viking")

@@ -57,16 +57,6 @@ func TestValidateVolcengineVikingTemplateParams(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:       "api-key is rejected",
-			templateID: volcengineVikingTemplateID,
-			params: map[string]string{
-				volcengineVikingAKTemplateParam: "ak",
-				volcengineVikingSKTemplateParam: "sk",
-				volcengineVikingAPIKeyParam:     "legacy-bearer",
-			},
-			wantErr: true,
-		},
-		{
 			name:       "valid aksk",
 			templateID: volcengineVikingTemplateID,
 			params: map[string]string{
