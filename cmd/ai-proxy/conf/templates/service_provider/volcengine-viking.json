@@ -1,0 +1,85 @@
+{
+  "volcengine-viking": {
+    "placeholders": [
+      {
+        "name": "access-key-id",
+        "type": "string",
+        "required": false,
+        "default": ""
+      },
+      {
+        "name": "secret-access-key",
+        "type": "string",
+        "required": false,
+        "default": ""
+      },
+      {
+        "name": "service",
+        "type": "string",
+        "required": false,
+        "default": "air"
+      },
+      {
+        "name": "region",
+        "type": "string",
+        "required": false,
+        "default": "cn-north-1"
+      },
+      {
+        "name": "tenant-id",
+        "type": "string",
+        "required": false,
+        "default": ""
+      },
+      {
+        "name": "api-key",
+        "type": "string",
+        "required": false,
+        "default": ""
+      },
+      {
+        "name": "host",
+        "type": "string",
+        "required": false,
+        "default": "api-knowledgebase.mlp.cn-beijing.volces.com"
+      }
+    ],
+    "desc": "Volcengine Viking",
+    "config": {
+      "type": "${@template.name}",
+      "desc": "${@template.desc}",
+      "apiKey": "${@template.placeholders.api-key}",
+      "metadata": {
+        "public": {
+          "api": {
+            "apiStyle": "openai-compatible",
+            "apiStyleConfigs": {
+              "*:/v1/reranks": {
+                "headers": {
+                  "Authorization": [
+                    "Set",
+                    "Bearer ${@provider.apiKey}"
+                  ]
+                },
+                "host": "${@template.placeholders.host}",
+                "path": [
+                  "set",
+                  "/api/knowledge/service/rerank"
+                ],
+                "scheme": "https"
+              }
+            }
+          },
+          "location": "cn"
+        },
+        "secret": {
+          "access_key_id": "${@template.placeholders.access-key-id}",
+          "secret_access_key": "${@template.placeholders.secret-access-key}",
+          "service": "${@template.placeholders.service}",
+          "region": "${@template.placeholders.region}",
+          "tenant_id": "${@template.placeholders.tenant-id}"
+        }
+      }
+    }
+  }
+}

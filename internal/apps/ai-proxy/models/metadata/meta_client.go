@@ -34,6 +34,7 @@ type (
 		DefaultModelIdOfTextModeration string `json:"default_model_id_of_text_moderation,omitempty"`
 		DefaultModelIdOfMultimodal     string `json:"default_model_id_of_multimodal,omitempty"`
 		DefaultModelIdOfAssistant      string `json:"default_model_id_of_assistant,omitempty"`
+		DefaultModelIdOfRerank         string `json:"default_model_id_of_rerank,omitempty"`
 	}
 	ClientMetaSecret struct {
 	}
