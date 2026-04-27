@@ -69,6 +69,10 @@ func (f *Signer) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	pr.Out.Header.Del("X-Date")
 	pr.Out.Header.Del("X-Content-Sha256")
 	pr.Out.Header.Del("X-Security-Token")
+	// Volcengine signer signs all X-* headers by default.
+	// Remove unstable proxy headers (for example X-Forwarded-For, X-Request-Id)
+	// to avoid signature mismatch after gateway rewriting.
+	sanitizeVolcSignHeaders(pr, signingCfg.tenantHeader)
 
 	cred := volcbase.Credentials{
 		AccessKeyID:     signingCfg.ak,
@@ -79,6 +83,25 @@ func (f *Signer) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	}
 	cred.Sign(pr.Out)
 	return nil
+}
+
+func sanitizeVolcSignHeaders(pr *httputil.ProxyRequest, tenantHeader string) {
+	if pr == nil || pr.Out == nil {
+		return
+	}
+	tenantHeader = strings.TrimSpace(tenantHeader)
+	for k := range pr.Out.Header {
+		if !strings.HasPrefix(strings.ToLower(k), "x-") {
+			continue
+		}
+		if strings.EqualFold(k, "X-Security-Token") {
+			continue
+		}
+		if tenantHeader != "" && strings.EqualFold(k, tenantHeader) {
+			continue
+		}
+		pr.Out.Header.Del(k)
+	}
 }
 
 type vikingSigningConfig struct {

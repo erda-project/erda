@@ -44,6 +44,9 @@ func TestSignerOnProxyRequest_MetadataAKSK(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "https://api-knowledgebase.mlp.cn-beijing.volces.com/api/knowledge/service/rerank", strings.NewReader(`{"query":"x"}`))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Request-Id", "trace-1")
+	req.Header.Set("X-Forwarded-For", "1.1.1.1")
+	req.Header.Set("X-Custom-Debug", "should-be-removed")
 	ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
 	ctxhelper.PutServiceProvider(ctx, sp)
 	req = req.WithContext(ctx)
@@ -66,6 +69,15 @@ func TestSignerOnProxyRequest_MetadataAKSK(t *testing.T) {
 	}
 	if pr.Out.Header.Get("X-Tenant-Id") != "tenant-a" {
 		t.Fatalf("tenant header should be set, got: %s", pr.Out.Header.Get("X-Tenant-Id"))
+	}
+	if pr.Out.Header.Get("X-Request-Id") != "" {
+		t.Fatalf("X-Request-Id should be removed before signing")
+	}
+	if pr.Out.Header.Get("X-Forwarded-For") != "" {
+		t.Fatalf("X-Forwarded-For should be removed before signing")
+	}
+	if pr.Out.Header.Get("X-Custom-Debug") != "" {
+		t.Fatalf("custom X-* headers should be removed before signing")
 	}
 }
 
