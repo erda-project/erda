@@ -51,12 +51,14 @@ var (
 )
 
 var (
-	getEnv           = os.Getenv
-	getGlobalConfig  = GetGlobalConfig
-	getSessionInfos  = status.GetSessionInfos
-	storeSessionInfo = status.StoreSessionInfo
-	inputNormal      = utils.InputNormal
-	inputPassword    = utils.InputPWD
+	getEnv            = os.Getenv
+	getGlobalConfig   = GetGlobalConfig
+	getSessionInfos   = status.GetSessionInfos
+	storeSessionInfo  = status.StoreSessionInfo
+	deleteSessionInfo = status.DeleteSessionInfo
+	parseContext      = parseCtx
+	inputNormal       = utils.InputNormal
+	inputPassword     = utils.InputPWD
 )
 
 var loginAndStoreSession = loginAndStoreSessionWithPassword
@@ -191,7 +193,7 @@ func PrepareCtx(cmd *cobra.Command, args []string) error {
 	}
 
 	// parse and use context according to host param or config file
-	if err := parseCtx(); err != nil {
+	if err := parseContext(); err != nil {
 		err = fmt.Errorf("%s", color_str.Red("✗ ")+err.Error())
 		return err
 	}
@@ -302,7 +304,7 @@ func printLoginPrompt(host string, sessionExpired bool) {
 }
 
 func LoadAuthState() error {
-	if err := parseCtx(); err != nil {
+	if err := parseContext(); err != nil {
 		return err
 	}
 	sessionInfos, err := ensureSessionInfos()
@@ -318,7 +320,7 @@ func LoadAuthState() error {
 }
 
 func Login() error {
-	if err := parseCtx(); err != nil {
+	if err := parseContext(); err != nil {
 		return err
 	}
 	sessionInfos, err := ensureSessionInfos()
@@ -330,13 +332,22 @@ func Login() error {
 }
 
 func Logout() error {
-	if err := LoadAuthState(); err != nil {
+	if err := parseContext(); err != nil {
 		return err
 	}
+	sessionInfos, err := getSessionInfos()
+	if err != nil {
+		if err == utils.NotExist {
+			ctx.Sessions = map[string]status.StatusInfo{}
+			return errors.New("not login yet, please login first")
+		}
+		return err
+	}
+	ctx.Sessions = sessionInfos
 	if _, ok := ctx.CurrentAuthInfo(); !ok {
 		return errors.New("not login yet, please login first")
 	}
-	if err := status.DeleteSessionInfo(ctx.CurrentHost); err != nil {
+	if err := deleteSessionInfo(ctx.CurrentHost); err != nil {
 		return err
 	}
 	ctx.Sessions = map[string]status.StatusInfo{}
