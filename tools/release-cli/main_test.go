@@ -59,9 +59,10 @@ func TestCompletePublishArgsDerivesChannelFromVersion(t *testing.T) {
 
 func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 	tmpDir := t.TempDir()
+	version := "2.4.0"
 	for _, artifact := range releaseTargets {
 		path := filepath.Join(tmpDir, artifact.fileName)
-		if err := os.WriteFile(path, []byte("cli-binary"), 0o755); err != nil {
+		if err := os.WriteFile(path, []byte("cli-binary-"+version), 0o755); err != nil {
 			t.Fatalf("WriteFile(%q) error = %v", path, err)
 		}
 	}
@@ -69,7 +70,7 @@ func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 	releases, err := resolvePublishTargets(publishOptions{
 		keyID:      "id",
 		keySecret:  "secret",
-		version:    "2.4.0",
+		version:    version,
 		channel:    release.ChannelStable,
 		dir:        tmpDir,
 		endpoint:   defaultOSSEndpoint,
@@ -86,6 +87,32 @@ func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 	}
 	if releases[1].goos != "linux" || releases[1].goarch != "amd64" {
 		t.Fatalf("unexpected second release target: %+v", releases[1])
+	}
+}
+
+func TestResolvePublishReleasesRejectsVersionMismatchedArtifact(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, artifact := range releaseTargets {
+		path := filepath.Join(tmpDir, artifact.fileName)
+		if err := os.WriteFile(path, []byte("cli-binary-2.4.0-alpha.20260428153026"), 0o755); err != nil {
+			t.Fatalf("WriteFile(%q) error = %v", path, err)
+		}
+	}
+
+	_, err := resolvePublishTargets(publishOptions{
+		keyID:      "id",
+		keySecret:  "secret",
+		version:    "2.4.0-alpha.20260428153040",
+		channel:    release.ChannelAlpha,
+		dir:        tmpDir,
+		endpoint:   defaultOSSEndpoint,
+		bucketName: defaultOSSBucketName,
+	})
+	if err == nil {
+		t.Fatal("expected version mismatch artifact error")
+	}
+	if !strings.Contains(err.Error(), "does not contain expected version") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

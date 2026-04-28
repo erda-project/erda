@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -115,6 +116,9 @@ func resolvePublishTargets(opts publishOptions) ([]publishTarget, error) {
 		if info.IsDir() {
 			return nil, fmt.Errorf("release artifact is a directory: %s", file)
 		}
+		if err := validateArtifactVersion(file, opts.version); err != nil {
+			return nil, err
+		}
 
 		targets = append(targets, publishTarget{
 			keyID:      opts.keyID,
@@ -129,6 +133,17 @@ func resolvePublishTargets(opts publishOptions) ([]publishTarget, error) {
 		})
 	}
 	return targets, nil
+}
+
+func validateArtifactVersion(filePath, expectedVersion string) error {
+	payload, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	if !bytes.Contains(payload, []byte(expectedVersion)) {
+		return fmt.Errorf("release artifact %s does not contain expected version %q; rebuild binaries before publishing", filePath, expectedVersion)
+	}
+	return nil
 }
 
 func publishAll(bucket *oss.Bucket, opts publishOptions, stdout io.Writer) error {

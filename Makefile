@@ -17,6 +17,7 @@ PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
 APP_NAME ?= $(shell echo ${BUILD_PATH} | sed 's/^\(.*\)[/]//')
 VERSION ?= $(shell build/scripts/make-version.sh)
+VERSION := $(VERSION)
 # use MAJOR.MINOR as the Erda version to fix broken of buildpack and other unexpceted brokens
 ERDA_VERSION ?= $(shell echo $(VERSION)|sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/g')
 # build info
@@ -182,14 +183,14 @@ release-cli-build: prepare-cli
 
 .PHONY: release-cli-publish
 release-cli-publish: release-cli-build
-	@go run tools/release-cli/main.go publish --version "${VERSION}" --dir "${PROJ_PATH}/bin"
+	@go run ./tools/release-cli publish --version "${VERSION}" --dir "${PROJ_PATH}/bin"
 
 .PHONY: release-cli
 release-cli: release-cli-publish
 
 .PHONY: release-cli-prune
 release-cli-prune:
-	@go run tools/release-cli/main.go prune --apply
+	@go run ./tools/release-cli prune --apply
 
 
 
