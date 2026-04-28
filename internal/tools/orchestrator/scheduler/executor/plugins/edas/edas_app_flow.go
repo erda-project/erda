@@ -79,13 +79,12 @@ func (e *EDAS) createService(ctx context.Context, sg *apistructs.ServiceGroup, s
 	}
 
 	// Create application
-	appID, err := e.wrapEDASClient.InsertK8sApp(serviceSpec)
-	if err != nil {
+	if _, err = e.wrapEDASClient.InsertK8sApp(serviceSpec); err != nil {
 		return errors.Wrap(err, "edas create app")
 	}
 
 	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
-	selector := e.resolveServiceSelector(appName, appID, sg.ID, s.Name)
+	selector := e.resolveServiceSelector(appName, sg.ID, s.Name)
 
 	// Align k8s Service state even if a previous async flow already created it.
 	if err = e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, selector, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
@@ -130,7 +129,7 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 			return err
 		}
 
-		selector := e.resolveServiceSelector(appName, appID, sg.ID, s.Name)
+		selector := e.resolveServiceSelector(appName, sg.ID, s.Name)
 		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, selector, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 			l.Errorf("failed to update k8s service, appName: %s, error: %v", appName, err)
 			return errors.Wrap(err, "edas update k8s service")
@@ -140,7 +139,7 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 	return nil
 }
 
-func (e *EDAS) resolveServiceSelector(appName, appID, sgID, serviceName string) map[string]string {
+func (e *EDAS) resolveServiceSelector(appName, sgID, serviceName string) map[string]string {
 	var deployment *appsv1.Deployment
 	if currentDeployment, err := e.wrapEDASClient.GetAppDeployment(appName); err == nil {
 		deployment = currentDeployment
