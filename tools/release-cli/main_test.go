@@ -219,6 +219,7 @@ func TestBuildManifestUsesArchivedArtifactURL(t *testing.T) {
 	}
 
 	args := publishTarget{
+		baseURL: "https://oss.example.com/custom-bucket",
 		goos:    "linux",
 		goarch:  "amd64",
 		version: "2.4.0",
@@ -237,13 +238,49 @@ func TestBuildManifestUsesArchivedArtifactURL(t *testing.T) {
 		t.Fatalf("buildManifest() error = %v", err)
 	}
 
-	wantURL := release.DefaultBaseURL + "/cli/linux/amd64/erda-cli-2.4.0.tar.gz"
+	wantURL := "https://oss.example.com/custom-bucket/cli/linux/amd64/erda-cli-2.4.0.tar.gz"
 	if manifest.URL != wantURL {
 		t.Fatalf("manifest.URL = %q, want %q", manifest.URL, wantURL)
 	}
 	if manifest.SHA256 == "" {
 		t.Fatal("manifest.SHA256 should not be empty")
 	}
+}
+
+func TestFillPublishCredentialsBaseURLPriority(t *testing.T) {
+	t.Run("flag overrides env", func(t *testing.T) {
+		opts := publishOptions{baseURL: "https://flag.example.com/release"}
+		fillPublishCredentials(&opts, func(key string) string {
+			if key == "OSS_BASE_URL" {
+				return "https://env.example.com/release"
+			}
+			return ""
+		})
+		if opts.baseURL != "https://flag.example.com/release" {
+			t.Fatalf("baseURL = %q, want flag value", opts.baseURL)
+		}
+	})
+
+	t.Run("env overrides default", func(t *testing.T) {
+		opts := publishOptions{}
+		fillPublishCredentials(&opts, func(key string) string {
+			if key == "OSS_BASE_URL" {
+				return "https://env.example.com/release"
+			}
+			return ""
+		})
+		if opts.baseURL != "https://env.example.com/release" {
+			t.Fatalf("baseURL = %q, want env value", opts.baseURL)
+		}
+	})
+
+	t.Run("default fallback", func(t *testing.T) {
+		opts := publishOptions{}
+		fillPublishCredentials(&opts, func(string) string { return "" })
+		if opts.baseURL != release.DefaultBaseURL {
+			t.Fatalf("baseURL = %q, want default %q", opts.baseURL, release.DefaultBaseURL)
+		}
+	})
 }
 
 func TestRunRejectsLegacyPublishInvocation(t *testing.T) {

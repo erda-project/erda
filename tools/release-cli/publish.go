@@ -55,6 +55,7 @@ func newPublishCmd(getenv func(string) string, stdout io.Writer) *cobra.Command 
 	cmd.Flags().StringVar(&opts.version, "version", "", "release version to publish")
 	cmd.Flags().StringVar(&opts.channel, "channel", "", "release channel, defaults to the channel detected from --version")
 	cmd.Flags().StringVar(&opts.dir, "dir", "", "directory containing built CLI artifacts")
+	cmd.Flags().StringVar(&opts.baseURL, "base-url", "", "public base URL for manifest artifact links (defaults to OSS_BASE_URL or release.DefaultBaseURL)")
 	return cmd
 }
 
@@ -66,6 +67,7 @@ func fillPublishCredentials(opts *publishOptions, getenv func(string) string) {
 	opts.keySecret = strings.TrimSpace(getenv("ACCESS_KEY_SECRET"))
 	opts.endpoint = firstNonEmpty(strings.TrimSpace(getenv("OSS_ENDPOINT")), defaultOSSEndpoint)
 	opts.bucketName = firstNonEmpty(strings.TrimSpace(getenv("OSS_BUCKET_NAME")), defaultOSSBucketName)
+	opts.baseURL = firstNonEmpty(strings.TrimSpace(opts.baseURL), strings.TrimSpace(getenv("OSS_BASE_URL")), release.DefaultBaseURL)
 }
 
 func completePublishOptions(opts *publishOptions) error {
@@ -125,6 +127,7 @@ func resolvePublishTargets(opts publishOptions) ([]publishTarget, error) {
 			keySecret:  opts.keySecret,
 			endpoint:   opts.endpoint,
 			bucketName: opts.bucketName,
+			baseURL:    opts.baseURL,
 			goos:       target.goos,
 			goarch:     target.goarch,
 			version:    opts.version,
@@ -210,7 +213,7 @@ func buildManifest(target publishTarget, artifactPath string) (*release.Manifest
 		Channel:     target.channel,
 		OS:          target.goos,
 		Arch:        target.goarch,
-		URL:         release.DefaultBaseURL + "/" + release.ArtifactObjectName(target.goos, target.goarch, target.version),
+		URL:         strings.TrimRight(target.baseURL, "/") + "/" + release.ArtifactObjectName(target.goos, target.goarch, target.version),
 		SHA256:      fmt.Sprintf("%x", sum.Sum(nil)),
 		BuildTime:   os.Getenv("BUILD_TIME"),
 		CommitID:    os.Getenv("COMMIT_ID"),

@@ -46,6 +46,7 @@ type publishOptions struct {
 	keySecret  string
 	endpoint   string
 	bucketName string
+	baseURL    string
 	version    string
 	channel    string
 	dir        string
@@ -56,6 +57,7 @@ type publishTarget struct {
 	keySecret  string
 	endpoint   string
 	bucketName string
+	baseURL    string
 	goos       string
 	goarch     string
 	version    string
