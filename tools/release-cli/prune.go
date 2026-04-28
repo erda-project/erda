@@ -107,6 +107,7 @@ func pruneReleases(bucket *oss.Bucket, opts pruneOptions, stdout io.Writer) erro
 	}
 
 	totalDeletes := 0
+	totalManifestUpdates := 0
 	totalIndexes := 0
 	fmt.Fprintf(stdout, "Mode: %s\n", map[bool]string{true: "apply", false: "dry-run"}[opts.apply])
 	fmt.Fprintf(stdout, "Bucket: %s\n", opts.bucketName)
@@ -116,6 +117,7 @@ func pruneReleases(bucket *oss.Bucket, opts pruneOptions, stdout io.Writer) erro
 
 	for _, plan := range plans {
 		totalDeletes += len(plan.deleteObjects)
+		totalManifestUpdates++
 		totalIndexes++
 		if len(plan.deleteObjects) == 0 {
 			fmt.Fprintf(stdout, "[KEEP] %s/%s/%s: total=%d, keep=%d, delete=0\n", plan.goos, plan.goarch, plan.channel, len(plan.retained), opts.keep)
@@ -125,24 +127,27 @@ func pruneReleases(bucket *oss.Bucket, opts pruneOptions, stdout io.Writer) erro
 				fmt.Fprintf(stdout, "  - oss://%s/%s\n", opts.bucketName, objectName)
 			}
 		}
+		fmt.Fprintf(stdout, "  - update oss://%s/%s to version %s\n", opts.bucketName, release.ChannelManifestObjectName(plan.goos, plan.goarch, plan.channel), plan.retained[0].Version)
 		fmt.Fprintf(stdout, "  - rebuild oss://%s/%s with %d version(s)\n", opts.bucketName, release.ChannelVersionsObjectName(plan.goos, plan.goarch, plan.channel), len(plan.retained))
 	}
 
 	fmt.Fprintf(stdout, "\nPlanned delete objects: %d\n", totalDeletes)
+	fmt.Fprintf(stdout, "Planned channel manifest updates: %d\n", totalManifestUpdates)
 	fmt.Fprintf(stdout, "Planned index updates: %d\n", totalIndexes)
 	if !opts.apply {
-		fmt.Fprintln(stdout, "Dry-run only. Re-run with --apply to delete objects and upload rebuilt version indexes.")
+		fmt.Fprintln(stdout, "Dry-run only. Re-run with --apply to update channel manifests, upload rebuilt version indexes, and delete old objects.")
 		return nil
 	}
 
 	objectACL := oss.ObjectACL(oss.ACLPublicRead)
 	for _, plan := range plans {
-		for _, objectName := range plan.deleteObjects {
-			fmt.Fprintf(stdout, "[DELETE] oss://%s/%s\n", opts.bucketName, objectName)
-			if err := bucket.DeleteObject(objectName); err != nil {
-				return err
-			}
+		channelManifestObjectName := release.ChannelManifestObjectName(plan.goos, plan.goarch, plan.channel)
+		channelManifest := plan.retained[0]
+		fmt.Fprintf(stdout, "[UPLOAD] oss://%s/%s (version %s)\n", opts.bucketName, channelManifestObjectName, channelManifest.Version)
+		if err := putManifest(bucket, channelManifestObjectName, &channelManifest, objectACL); err != nil {
+			return err
 		}
+
 		index := &release.VersionIndex{
 			Channel:  plan.channel,
 			OS:       plan.goos,
@@ -153,6 +158,12 @@ func pruneReleases(bucket *oss.Bucket, opts pruneOptions, stdout io.Writer) erro
 		fmt.Fprintf(stdout, "[UPLOAD] oss://%s/%s (%d version(s))\n", opts.bucketName, indexObjectName, len(plan.retained))
 		if err := putVersionIndex(bucket, indexObjectName, index, objectACL); err != nil {
 			return err
+		}
+		for _, objectName := range plan.deleteObjects {
+			fmt.Fprintf(stdout, "[DELETE] oss://%s/%s\n", opts.bucketName, objectName)
+			if err := bucket.DeleteObject(objectName); err != nil {
+				return err
+			}
 		}
 	}
 
