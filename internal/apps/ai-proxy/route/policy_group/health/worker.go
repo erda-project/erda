@@ -114,7 +114,7 @@ func (m *Manager) probeWorker(clientID, instanceID string, worker *workerState) 
 			}).Warnf("unsupported api_type for probe, release unhealthy instance immediately, err: %v", err)
 			return
 		}
-		m.writeUnhealthyState(context.Background(), clientID, instanceID, apiType, err.Error())
+		m.refreshUnhealthyStateOnProbeFailure(context.Background(), clientID, instanceID, apiType, err.Error())
 		logrus.WithFields(logrus.Fields{
 			"client_id":   clientID,
 			"instance_id": instanceID,
@@ -172,6 +172,15 @@ func (m *Manager) probeOnce(instanceID string, apiType APIType, headers http.Hea
 
 func (m *Manager) writeUnhealthyState(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string) {
 	m.writeUnhealthyStateAt(ctx, clientID, instanceID, apiType, lastErr, time.Now())
+}
+
+func (m *Manager) refreshUnhealthyStateOnProbeFailure(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string) {
+	updatedAt := time.Now()
+	state, ok, err := m.GetState(ctx, clientID, instanceID)
+	if err == nil && ok && state != nil && !state.UpdatedAt.IsZero() {
+		updatedAt = state.UpdatedAt
+	}
+	m.writeUnhealthyStateAt(ctx, clientID, instanceID, apiType, lastErr, updatedAt)
 }
 
 func (m *Manager) writeUnhealthyStateAt(ctx context.Context, clientID, instanceID string, apiType APIType, lastErr string, now time.Time) {

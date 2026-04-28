@@ -4,13 +4,13 @@
       {
         "name": "access-key-id",
         "type": "string",
-        "required": false,
+        "required": true,
         "default": ""
       },
       {
         "name": "secret-access-key",
         "type": "string",
-        "required": false,
+        "required": true,
         "default": ""
       },
       {
@@ -32,12 +32,6 @@
         "default": ""
       },
       {
-        "name": "api-key",
-        "type": "string",
-        "required": false,
-        "default": ""
-      },
-      {
         "name": "host",
         "type": "string",
         "required": false,
@@ -48,19 +42,12 @@
     "config": {
       "type": "${@template.name}",
       "desc": "${@template.desc}",
-      "apiKey": "${@template.placeholders.api-key}",
       "metadata": {
         "public": {
           "api": {
             "apiStyle": "openai-compatible",
             "apiStyleConfigs": {
               "*:/v1/reranks": {
-                "headers": {
-                  "Authorization": [
-                    "Set",
-                    "Bearer ${@provider.apiKey}"
-                  ]
-                },
                 "host": "${@template.placeholders.host}",
                 "path": [
                   "set",

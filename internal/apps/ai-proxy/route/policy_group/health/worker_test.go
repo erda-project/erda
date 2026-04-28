@@ -152,6 +152,59 @@ func TestUnhealthyTTLRefreshedOnProbeFailure(t *testing.T) {
 	}
 }
 
+func TestProbeFailureKeepsOriginalUpdatedAt(t *testing.T) {
+	t.Parallel()
+	clientID := "client-a"
+	instanceID := "i-preserve-time"
+
+	store := state_store.NewMemoryStateStore()
+	manager := NewManager(store, Config{
+		Enabled: true,
+		Probe: ProbeConfig{
+			BaseURL:      "http://127.0.0.1:1",
+			UnhealthyTTL: 500 * time.Millisecond,
+			Timeout:      20 * time.Millisecond,
+		},
+		Rescue: RescueConfig{
+			InitialBackoff: 10 * time.Millisecond,
+			MaxBackoff:     10 * time.Millisecond,
+		},
+	})
+
+	markedAt := time.Now().Add(-2 * time.Minute).UTC().Truncate(time.Millisecond)
+	stateBytes, err := json.Marshal(&ModelHealthState{
+		State:     stateUnhealthy,
+		APIType:   APITypeChatCompletions,
+		LastError: "network timeout",
+		UpdatedAt: markedAt,
+	})
+	if err != nil {
+		t.Fatalf("marshal unhealthy state failed: %v", err)
+	}
+	if err := store.SetBinding(context.Background(), modelHealthBindingKey, makeModelHealthBindingID(clientID, instanceID), string(stateBytes), 50*time.Millisecond); err != nil {
+		t.Fatalf("set unhealthy state failed: %v", err)
+	}
+
+	filtered := manager.FilterHealthyInstances(policygroup.RouteRequest{ClientID: clientID}, []*policygroup.RoutingModelInstance{
+		testRoutingInstance(instanceID),
+	})
+	if len(filtered) != 0 {
+		t.Fatalf("expected unhealthy instance filtered, got %v", collectIDs(filtered))
+	}
+
+	time.Sleep(180 * time.Millisecond)
+	state, ok, err := manager.GetState(context.Background(), clientID, instanceID)
+	if err != nil {
+		t.Fatalf("get state failed: %v", err)
+	}
+	if !ok || state == nil {
+		t.Fatal("expected unhealthy state to remain after probe failure")
+	}
+	if !state.UpdatedAt.Equal(markedAt) {
+		t.Fatalf("expected updated_at preserved as %s, got %s", markedAt.Format(time.RFC3339Nano), state.UpdatedAt.Format(time.RFC3339Nano))
+	}
+}
+
 func TestFilterUnhealthyRearmWorkerAfterRestart(t *testing.T) {
 	t.Parallel()
 	clientID := "client-a"

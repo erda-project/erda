@@ -27,6 +27,58 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
+func TestValidateVolcengineVikingTemplateParams(t *testing.T) {
+	tests := []struct {
+		name       string
+		templateID string
+		params     map[string]string
+		wantErr    bool
+	}{
+		{
+			name:       "non-viking template skip validation",
+			templateID: "volcengine-ark",
+			params:     map[string]string{},
+			wantErr:    false,
+		},
+		{
+			name:       "missing ak",
+			templateID: volcengineVikingTemplateID,
+			params: map[string]string{
+				volcengineVikingSKTemplateParam: "sk",
+			},
+			wantErr: true,
+		},
+		{
+			name:       "missing sk",
+			templateID: volcengineVikingTemplateID,
+			params: map[string]string{
+				volcengineVikingAKTemplateParam: "ak",
+			},
+			wantErr: true,
+		},
+		{
+			name:       "valid aksk",
+			templateID: volcengineVikingTemplateID,
+			params: map[string]string{
+				volcengineVikingAKTemplateParam: "ak",
+				volcengineVikingSKTemplateParam: "sk",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateVolcengineVikingTemplateParams(tt.templateID, tt.params)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestDesensitizeProvider(t *testing.T) {
 	type want struct {
 		apiKey      string
