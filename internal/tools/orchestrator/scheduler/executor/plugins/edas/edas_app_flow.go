@@ -21,11 +21,11 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/utils/pointer"
 
@@ -237,48 +237,29 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		}
 
 		for _, batch := range flows {
-			var wg sync.WaitGroup
-			var batchErr error
-			var batchErrMu sync.Mutex
+			if err := runServiceBatch(ctx, batch, func(batchCtx context.Context, newSvc *apistructs.Service) error {
+				var runErr error
+				svcName := newSvc.Name
+				appName := utils.CombineEDASAppNameWithGroup(group, svcName)
 
-			for _, svc := range batch {
-				newSvc := svc
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-
-					var runErr error
-					svcName := newSvc.Name
-					appName := utils.CombineEDASAppNameWithGroup(group, svcName)
-
-					if ok, oldSvc := isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
-						l.Infof("cyclicupdate to create service %s", svcName)
-						runErr = e.createService(ctx, newRuntime, newSvc)
-						if runErr != nil {
-							l.Errorf("failed to create service: %s, error: %v", appName, runErr)
-						}
-					} else {
-						// update service
-						// Does not include domain name updates
-						runErr = e.updateService(ctx, newRuntime, newSvc)
-						if runErr != nil {
-							l.Errorf("failed to update service: %s, error: %v", appName, runErr)
-						}
-					}
-
+				if ok, oldSvc := isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
+					l.Infof("cyclicupdate to create service %s", svcName)
+					runErr = e.createService(batchCtx, newRuntime, newSvc)
 					if runErr != nil {
-						batchErrMu.Lock()
-						if batchErr == nil {
-							batchErr = runErr
-						}
-						batchErrMu.Unlock()
+						l.Errorf("failed to create service: %s, error: %v", appName, runErr)
 					}
-				}()
-			}
+				} else {
+					// update service
+					// Does not include domain name updates
+					runErr = e.updateService(batchCtx, newRuntime, newSvc)
+					if runErr != nil {
+						l.Errorf("failed to update service: %s, error: %v", appName, runErr)
+					}
+				}
 
-			wg.Wait()
-			if batchErr != nil {
-				trySendErr(errChan, batchErr)
+				return runErr
+			}); err != nil {
+				trySendErr(errChan, err)
 				return
 			}
 		}
@@ -294,6 +275,31 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 	}
 
 	return nil
+}
+
+func runServiceBatch(ctx context.Context, batch []*apistructs.Service, run func(context.Context, *apistructs.Service) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	g, batchCtx := errgroup.WithContext(ctx)
+	for _, svc := range batch {
+		svc := svc
+		g.Go(func() error {
+			select {
+			case <-batchCtx.Done():
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				return nil
+			default:
+			}
+
+			return run(batchCtx, svc)
+		})
+	}
+
+	return g.Wait()
 }
 
 func trySendErr(errChan chan<- error, err error) {

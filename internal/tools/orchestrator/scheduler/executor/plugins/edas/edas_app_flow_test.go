@@ -15,8 +15,10 @@
 package edas
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 )
 
@@ -158,6 +161,51 @@ func TestTrySendErrDoesNotBlockWhenChannelIsFull(t *testing.T) {
 
 	trySendErr(errChan, assert.AnError)
 	require.ErrorIs(t, <-errChan, assert.AnError)
+}
+
+func TestRunServiceBatchCancelsOnFirstError(t *testing.T) {
+	cancelableStarted := make(chan struct{})
+	cancelObserved := make(chan struct{})
+	batch := []*apistructs.Service{
+		{Name: "failed"},
+		{Name: "cancelable"},
+	}
+
+	err := runServiceBatch(context.Background(), batch, func(ctx context.Context, svc *apistructs.Service) error {
+		switch svc.Name {
+		case "failed":
+			<-cancelableStarted
+			return assert.AnError
+		case "cancelable":
+			close(cancelableStarted)
+			<-ctx.Done()
+			close(cancelObserved)
+			return nil
+		default:
+			return nil
+		}
+	})
+
+	require.ErrorIs(t, err, assert.AnError)
+	select {
+	case <-cancelObserved:
+	case <-time.After(time.Second):
+		t.Fatal("cancelable service did not observe cancellation")
+	}
+}
+
+func TestRunServiceBatchReturnsParentContextErrorWhenCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	called := false
+	err := runServiceBatch(ctx, []*apistructs.Service{{Name: "svc"}}, func(ctx context.Context, svc *apistructs.Service) error {
+		called = true
+		return nil
+	})
+
+	require.ErrorIs(t, err, context.Canceled)
+	require.False(t, called, "run should not be called when parent context is already canceled")
 }
 
 func TestResolveServiceSelectorFromDeployment(t *testing.T) {
