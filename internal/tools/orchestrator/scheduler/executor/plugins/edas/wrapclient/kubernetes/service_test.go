@@ -36,20 +36,17 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 	}
 
 	appName := "test-app"
-	sgID := "test-sg-id"
-	serviceName := "test-service"
+	selectors := map[string]string{"app": "test-app"}
 	ports := []int{80, 8080}
 
 	args := struct {
-		appName     string
-		sgID        string
-		serviceName string
-		ports       []int
+		appName   string
+		selectors map[string]string
+		ports     []int
 	}{
-		appName:     appName,
-		sgID:        sgID,
-		serviceName: serviceName,
-		ports:       ports,
+		appName:   appName,
+		selectors: selectors,
+		ports:     ports,
 	}
 
 	tests := []struct {
@@ -72,10 +69,10 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if test.existingSvc {
-				_ = kubernetesWrapper.CreateK8sService(appName, sgID, serviceName, ports)
+				_ = kubernetesWrapper.CreateK8sService(appName, selectors, ports)
 			}
 
-			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.sgID, args.serviceName, args.ports)
+			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.selectors, args.ports)
 
 			if test.expectedError && err == nil {
 				t.Error("Expected an error, but got nil.")
@@ -90,8 +87,10 @@ func TestCombineK8sService(t *testing.T) {
 	wrapCs := wrapKubernetes{}
 	// Test case 1
 	appName := "my-app"
-	sgID := "123"
-	serviceName := "test-service"
+	selectors := map[string]string{
+		"core.erda.cloud/service-name":    "test-service",
+		"core.erda.cloud/servicegroup-id": "123",
+	}
 	ports := []int{8080, 9090}
 
 	expectedService := &corev1.Service{
@@ -100,10 +99,7 @@ func TestCombineK8sService(t *testing.T) {
 			Labels: make(map[string]string),
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"core.erda.cloud/service-name":    serviceName,
-				"core.erda.cloud/servicegroup-id": sgID,
-			},
+			Selector: selectors,
 			Ports: []corev1.ServicePort{
 				{
 					Name:       "tcp-0",
@@ -119,11 +115,66 @@ func TestCombineK8sService(t *testing.T) {
 		},
 	}
 
-	service := wrapCs.combineK8sService(appName, sgID, serviceName, ports)
+	service := wrapCs.combineK8sService(appName, selectors, ports)
 
 	// Compare the expected service with the actual service
 	if !reflect.DeepEqual(service, expectedService) {
 		t.Errorf("CombineK8sService() = %v, want %v", service, expectedService)
 	}
 
+}
+
+func TestApplyMutableServiceFieldsPreservesClusterIP(t *testing.T) {
+	currentSvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "test-app",
+			Labels: map[string]string{"old": "label"},
+		},
+		Spec: corev1.ServiceSpec{
+			ClusterIP: "10.0.0.1",
+			Selector:  map[string]string{"old": "selector"},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "tcp-0",
+					Port:       80,
+					TargetPort: intstr.FromInt32(80),
+				},
+			},
+		},
+	}
+
+	newSvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "test-app",
+			Labels: map[string]string{"new": "label"},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{"new": "selector"},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "tcp-0",
+					Port:       8080,
+					TargetPort: intstr.FromInt32(8080),
+				},
+			},
+		},
+	}
+
+	applyMutableServiceFields(currentSvc, newSvc)
+
+	if currentSvc.Spec.ClusterIP != "10.0.0.1" {
+		t.Fatalf("expected clusterIP to be preserved, got %q", currentSvc.Spec.ClusterIP)
+	}
+
+	if !reflect.DeepEqual(currentSvc.Spec.Selector, newSvc.Spec.Selector) {
+		t.Fatalf("expected selector to be updated, got %+v", currentSvc.Spec.Selector)
+	}
+
+	if !reflect.DeepEqual(currentSvc.Spec.Ports, newSvc.Spec.Ports) {
+		t.Fatalf("expected ports to be updated, got %+v", currentSvc.Spec.Ports)
+	}
+
+	if !reflect.DeepEqual(currentSvc.Labels, newSvc.Labels) {
+		t.Fatalf("expected labels to be updated, got %+v", currentSvc.Labels)
+	}
 }

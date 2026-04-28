@@ -48,7 +48,6 @@ const (
 	kind = "EDAS"
 	// edas k8s service namespace
 	defaultNamespace = metav1.NamespaceDefault
-	notFound         = "not found"
 )
 
 // EDAS plugin's configure
@@ -205,7 +204,6 @@ func (e *EDAS) Create(ctx context.Context, specObj interface{}) (interface{}, er
 
 	select {
 	case err := <-errChan:
-		close(errChan)
 		return nil, err
 	case <-ctx.Done():
 	case <-time.After(5 * time.Second):

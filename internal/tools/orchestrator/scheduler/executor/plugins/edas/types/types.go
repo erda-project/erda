@@ -30,6 +30,7 @@ const (
 )
 
 const (
+	LabelEDASAppID      = "edas.appid"
 	LabelServiceName    = "core.erda.cloud/service-name"
 	LabelServiceGroupID = "core.erda.cloud/servicegroup-id"
 )

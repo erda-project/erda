@@ -25,11 +25,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/utils"
+	wrappedas "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/wrapclient/edas"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	executorutil "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
@@ -81,9 +84,10 @@ func (e *EDAS) createService(ctx context.Context, sg *apistructs.ServiceGroup, s
 	}
 
 	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
+	selector := e.resolveServiceSelector(appName, sg.ID, s.Name)
 
-	//create k8s service
-	if err = e.wrapClientSet.CreateK8sService(appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+	// Align k8s Service state even if a previous async flow already created it.
+	if err = e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, selector, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 		l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
 		return errors.Wrap(err, "edas create k8s service")
 	}
@@ -98,7 +102,7 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 
 	// Check whether the service exists, if it does not exist, create a new one; otherwise, update it
 	if appID, err := e.wrapEDASClient.GetAppID(appName); err != nil {
-		if err.Error() == notFound {
+		if errors.Is(err, wrappedas.ErrApplicationNotFound) {
 			l.Warningf("app(%s) is not found via edas api, will create it ", appName)
 			if err = e.createService(ctx, sg, s); err != nil {
 				l.Errorf("failed to create service(%s): %v", appName, err)
@@ -125,13 +129,61 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 			return err
 		}
 
-		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+		selector := e.resolveServiceSelector(appName, sg.ID, s.Name)
+		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, selector, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 			l.Errorf("failed to update k8s service, appName: %s, error: %v", appName, err)
 			return errors.Wrap(err, "edas update k8s service")
 		}
 	}
 
 	return nil
+}
+
+func (e *EDAS) resolveServiceSelector(appName, sgID, serviceName string) map[string]string {
+	var deployment *appsv1.Deployment
+	if currentDeployment, err := e.wrapEDASClient.GetAppDeployment(appName); err == nil {
+		deployment = currentDeployment
+	}
+
+	return resolveServiceSelectorFromDeployment(deployment, sgID, serviceName)
+}
+
+func resolveServiceSelectorFromDeployment(deployment *appsv1.Deployment, sgID, serviceName string) map[string]string {
+	if deployment != nil {
+		if labels := deployment.Spec.Template.Labels; len(labels) > 0 {
+			if labelServiceName, ok := labels[types.LabelServiceName]; ok && labelServiceName != "" {
+				if labelServiceGroupID, ok := labels[types.LabelServiceGroupID]; ok && labelServiceGroupID != "" {
+					return map[string]string{
+						types.LabelServiceName:    labelServiceName,
+						types.LabelServiceGroupID: labelServiceGroupID,
+					}
+				}
+			}
+			if labelEDASAppID, ok := labels[types.LabelEDASAppID]; ok && labelEDASAppID != "" {
+				return map[string]string{types.LabelEDASAppID: labelEDASAppID}
+			}
+		}
+		if deployment.Spec.Selector != nil && len(deployment.Spec.Selector.MatchLabels) > 0 {
+			return cloneStringMap(deployment.Spec.Selector.MatchLabels)
+		}
+	}
+
+	return map[string]string{
+		types.LabelServiceName:    serviceName,
+		types.LabelServiceGroupID: sgID,
+	}
+}
+
+func cloneStringMap(src map[string]string) map[string]string {
+	if len(src) == 0 {
+		return nil
+	}
+
+	cloned := make(map[string]string, len(src))
+	for k, v := range src {
+		cloned[k] = v
+	}
+	return cloned
 }
 
 // TODO: how to handle the error
@@ -185,30 +237,30 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		}
 
 		for _, batch := range flows {
-			for _, newSvc := range batch {
-				var ok bool
-				var oldSvc *apistructs.Service
-
+			if err := runServiceBatch(ctx, batch, func(batchCtx context.Context, newSvc *apistructs.Service) error {
+				var runErr error
 				svcName := newSvc.Name
 				appName := utils.CombineEDASAppNameWithGroup(group, svcName)
-				// add service
-				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
+
+				if ok, oldSvc := isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
 					l.Infof("cyclicupdate to create service %s", svcName)
-					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
-						l.Errorf("failed to create service: %s, error: %v", appName, err)
-						errChan <- err
-						return
+					runErr = e.createService(batchCtx, newRuntime, newSvc)
+					if runErr != nil {
+						l.Errorf("failed to create service: %s, error: %v", appName, runErr)
 					}
-					continue
+				} else {
+					// update service
+					// Does not include domain name updates
+					runErr = e.updateService(batchCtx, newRuntime, newSvc)
+					if runErr != nil {
+						l.Errorf("failed to update service: %s, error: %v", appName, runErr)
+					}
 				}
 
-				// update service
-				// Does not include domain name updates
-				if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
-					l.Errorf("failed to update service: %s, error: %v", appName, err)
-					errChan <- err
-					return
-				}
+				return runErr
+			}); err != nil {
+				trySendErr(errChan, err)
+				return
 			}
 		}
 	}()
@@ -217,13 +269,44 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 	// Prevent the upper layer from querying the status when the asynchronous has not been executed.
 	select {
 	case err := <-errChan:
-		close(errChan)
 		return err
 	case <-ctx.Done():
 	case <-time.After(5 * time.Second):
 	}
 
 	return nil
+}
+
+func runServiceBatch(ctx context.Context, batch []*apistructs.Service, run func(context.Context, *apistructs.Service) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	g, batchCtx := errgroup.WithContext(ctx)
+	for _, svc := range batch {
+		svc := svc
+		g.Go(func() error {
+			select {
+			case <-batchCtx.Done():
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				return nil
+			default:
+			}
+
+			return run(batchCtx, svc)
+		})
+	}
+
+	return g.Wait()
+}
+
+func trySendErr(errChan chan<- error, err error) {
+	select {
+	case errChan <- err:
+	default:
+	}
 }
 
 // FIXME: Is 20 times reasonable?

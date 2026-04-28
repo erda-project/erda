@@ -59,7 +59,8 @@ func (c *wrapEDAS) GetAppID(appName string) (string, error) {
 	}
 
 	for _, app := range resp.ApplicationList.Application {
-		if app.Name == appName && app.ClusterId == c.clusterID {
+		if normalize(app.Name) == normalize(appName) &&
+			normalize(app.ClusterId) == normalize(c.clusterID) {
 			l.Infof("successfully to get app id: %s, name: %s", app.AppId, appName)
 			return app.AppId, nil
 		}
@@ -468,4 +469,8 @@ func (c *wrapEDAS) GetAppDeployment(appName string) (*appsv1.Deployment, error) 
 	l.Infof("app %s get deployment, name: %s, namespace: %s", appName, deployment.Name, deployment.Namespace)
 
 	return &deployment, nil
+}
+
+func normalize(s string) string {
+	return strings.ReplaceAll(strings.TrimSpace(s), " ", "")
 }
