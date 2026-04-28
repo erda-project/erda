@@ -16,6 +16,7 @@ package volcengine_viking
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http/httputil"
 	"strings"
 
@@ -49,10 +50,9 @@ func (f *Signer) Enable(pr *httputil.ProxyRequest) bool {
 
 func (f *Signer) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	sp := ctxhelper.MustGetServiceProvider(pr.In.Context())
-	signingCfg, ok := parseVikingSigningConfig(sp)
-	// Backward compatibility: if only bearer api_key is configured, keep the old behavior.
-	if !ok {
-		return nil
+	signingCfg, err := parseVikingSigningConfig(sp)
+	if err != nil {
+		return err
 	}
 
 	if signingCfg.tenantID != "" {
@@ -69,6 +69,10 @@ func (f *Signer) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	pr.Out.Header.Del("X-Date")
 	pr.Out.Header.Del("X-Content-Sha256")
 	pr.Out.Header.Del("X-Security-Token")
+	// Volcengine signer signs all X-* headers by default.
+	// Remove unstable proxy headers (for example X-Forwarded-For, X-Request-Id)
+	// to avoid signature mismatch after gateway rewriting.
+	sanitizeVolcSignHeaders(pr, signingCfg.tenantHeader)
 
 	cred := volcbase.Credentials{
 		AccessKeyID:     signingCfg.ak,
@@ -81,6 +85,25 @@ func (f *Signer) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	return nil
 }
 
+func sanitizeVolcSignHeaders(pr *httputil.ProxyRequest, tenantHeader string) {
+	if pr == nil || pr.Out == nil {
+		return
+	}
+	tenantHeader = strings.TrimSpace(tenantHeader)
+	for k := range pr.Out.Header {
+		if !strings.HasPrefix(strings.ToLower(k), "x-") {
+			continue
+		}
+		if strings.EqualFold(k, "X-Security-Token") {
+			continue
+		}
+		if tenantHeader != "" && strings.EqualFold(k, tenantHeader) {
+			continue
+		}
+		pr.Out.Header.Del(k)
+	}
+}
+
 type vikingSigningConfig struct {
 	ak           string
 	sk           string
@@ -91,7 +114,7 @@ type vikingSigningConfig struct {
 	tenantHeader string
 }
 
-func parseVikingSigningConfig(sp *serviceproviderpb.ServiceProvider) (vikingSigningConfig, bool) {
+func parseVikingSigningConfig(sp *serviceproviderpb.ServiceProvider) (vikingSigningConfig, error) {
 	m := metadata.FromProtobuf(sp.Metadata)
 
 	get := func(keys ...string) string {
@@ -112,24 +135,8 @@ func parseVikingSigningConfig(sp *serviceproviderpb.ServiceProvider) (vikingSign
 		tenantID:     get("tenant_id", "tenant"),
 		tenantHeader: get("tenant_header", "tenant_header_key"),
 	}
-
-	// fallback: parse apiKey as "ak:sk[:region[:service]]"
 	if cfg.ak == "" || cfg.sk == "" {
-		parts := strings.Split(sp.ApiKey, ":")
-		if len(parts) >= 2 {
-			if cfg.ak == "" {
-				cfg.ak = strings.TrimSpace(parts[0])
-			}
-			if cfg.sk == "" {
-				cfg.sk = strings.TrimSpace(parts[1])
-			}
-			if len(parts) >= 3 && cfg.region == "" {
-				cfg.region = strings.TrimSpace(parts[2])
-			}
-			if len(parts) >= 4 && cfg.service == "" {
-				cfg.service = strings.TrimSpace(parts[3])
-			}
-		}
+		return vikingSigningConfig{}, fmt.Errorf("volcengine-viking requires metadata.secret.access_key_id and metadata.secret.secret_access_key")
 	}
 
 	if cfg.region == "" {
@@ -142,5 +149,5 @@ func parseVikingSigningConfig(sp *serviceproviderpb.ServiceProvider) (vikingSign
 		cfg.tenantHeader = defaultTenantHeaderName
 	}
 
-	return cfg, cfg.ak != "" && cfg.sk != ""
+	return cfg, nil
 }

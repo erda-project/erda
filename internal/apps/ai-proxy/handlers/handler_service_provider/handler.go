@@ -17,6 +17,7 @@ package handler_service_provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mohae/deepcopy"
 
@@ -36,11 +37,21 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	volcengineVikingTemplateID      = "volcengine-viking"
+	volcengineVikingAKTemplateParam = "access-key-id"
+	volcengineVikingSKTemplateParam = "secret-access-key"
+)
+
 type ServiceProviderHandler struct {
 	DAO dao.DAO
 }
 
 func (h *ServiceProviderHandler) Create(ctx context.Context, req *pb.ServiceProviderCreateRequest) (*pb.ServiceProvider, error) {
+	if err := validateVolcengineVikingTemplateParams(req.TemplateId, req.TemplateParams); err != nil {
+		return nil, err
+	}
+
 	// check template
 	tpl, err := cachehelpers.GetAndCheckTemplateByTypeName(ctx, templatetypes.TemplateTypeServiceProvider, req.TemplateId, req.TemplateParams)
 	if err != nil {
@@ -126,13 +137,22 @@ func (h *ServiceProviderHandler) Update(ctx context.Context, req *pb.ServiceProv
 	if err != nil {
 		return nil, err
 	}
+
+	finalTemplateParams := current.TemplateParams
+	if req.TemplateParams != nil {
+		finalTemplateParams = req.TemplateParams
+	}
+	if err := validateVolcengineVikingTemplateParams(current.TemplateId, finalTemplateParams); err != nil {
+		return nil, err
+	}
+
 	u := pb.ServiceProvider{
 		Id:             req.Id,
 		Name:           req.Name,
 		Desc:           req.Desc,
 		Metadata:       req.Metadata,
 		ClientId:       req.ClientId,
-		TemplateParams: req.TemplateParams,
+		TemplateParams: finalTemplateParams,
 	}
 	if req.IsEnabled == nil {
 		u.IsEnabled = current.IsEnabled
@@ -180,4 +200,17 @@ func desensitizeProvider(ctx context.Context, item *pb.ServiceProvider) {
 	item.ApiKey = ""
 	item.Metadata.Secret = nil
 	item.TemplateParams = nil
+}
+
+func validateVolcengineVikingTemplateParams(templateID string, params map[string]string) error {
+	if templateID != volcengineVikingTemplateID {
+		return nil
+	}
+	if strings.TrimSpace(params[volcengineVikingAKTemplateParam]) == "" {
+		return fmt.Errorf("template_params.access-key-id is required for volcengine-viking")
+	}
+	if strings.TrimSpace(params[volcengineVikingSKTemplateParam]) == "" {
+		return fmt.Errorf("template_params.secret-access-key is required for volcengine-viking")
+	}
+	return nil
 }
