@@ -313,6 +313,76 @@ func TestEnsureSessionInfosReturnsPromptErrorWhenInteractivePasswordMissing(t *t
 	require.Contains(t, out.String(), "Session expired for https://openapi.erda.cloud, please log in again")
 }
 
+func TestLogoutDeletesExpiredSessionWithoutRefreshing(t *testing.T) {
+	expiredAt := time.Now().Add(-time.Hour)
+	host := "https://openapi.erda.cloud"
+
+	origCtx := ctx
+	origGetSessionInfos := getSessionInfos
+	origDeleteSessionInfo := deleteSessionInfo
+	origParseContext := parseContext
+	t.Cleanup(func() {
+		ctx = origCtx
+		getSessionInfos = origGetSessionInfos
+		deleteSessionInfo = origDeleteSessionInfo
+		parseContext = origParseContext
+	})
+
+	ctx = Context{CurrentHost: host}
+	parseContext = func() error { return nil }
+	getSessionInfos = func() (map[string]status.StatusInfo, error) {
+		return map[string]status.StatusInfo{
+			host: {
+				Token:     "Bearer expired-token",
+				ExpiredAt: &expiredAt,
+			},
+		}, nil
+	}
+
+	var deletedHost string
+	deleteSessionInfo = func(host string) error {
+		deletedHost = host
+		return nil
+	}
+
+	err := Logout()
+	require.NoError(t, err)
+	require.Equal(t, host, deletedHost)
+	require.Empty(t, ctx.Sessions)
+}
+
+func TestLogoutReturnsNotLoginWhenSessionFileMissing(t *testing.T) {
+	host := "https://openapi.erda.cloud"
+
+	origCtx := ctx
+	origGetSessionInfos := getSessionInfos
+	origDeleteSessionInfo := deleteSessionInfo
+	origParseContext := parseContext
+	t.Cleanup(func() {
+		ctx = origCtx
+		getSessionInfos = origGetSessionInfos
+		deleteSessionInfo = origDeleteSessionInfo
+		parseContext = origParseContext
+	})
+
+	ctx = Context{CurrentHost: host}
+	parseContext = func() error { return nil }
+	getSessionInfos = func() (map[string]status.StatusInfo, error) {
+		return nil, utils.NotExist
+	}
+
+	deleteCalled := false
+	deleteSessionInfo = func(string) error {
+		deleteCalled = true
+		return nil
+	}
+
+	err := Logout()
+	require.EqualError(t, err, "not login yet, please login first")
+	require.False(t, deleteCalled)
+	require.Empty(t, ctx.Sessions)
+}
+
 func parseURLForTest(rawURL string) (*url.URL, error) {
 	return url.Parse(rawURL)
 }
