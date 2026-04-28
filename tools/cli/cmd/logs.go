@@ -264,9 +264,15 @@ type mergedLogLine struct {
 	line apistructs.DashboardSpotLogLine
 }
 
+type taskLogWatchCursor struct {
+	merged common.LogCursor
+	stdout common.LogCursor
+	stderr common.LogCursor
+}
+
 func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions) error {
 	seen := make(map[uint64]map[string]struct{})
-	cursors := make(map[uint64]common.LogCursor)
+	cursors := make(map[uint64]taskLogWatchCursor)
 	idleRounds := 0
 
 	for {
@@ -319,14 +325,56 @@ func watchPipelineLogs(ctx *command.Context, pipelineID uint64, opts logOptions)
 	}
 }
 
-func fetchLogsForTaskWatch(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, cursor common.LogCursor) ([]apistructs.DashboardSpotLogLine, common.LogCursor, error) {
-	return common.FetchWatchLogLines(cursor, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+func fetchLogsForTaskWatch(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, cursor taskLogWatchCursor) ([]apistructs.DashboardSpotLogLine, taskLogWatchCursor, error) {
+	if stream == "all" {
+		stdoutLines, stdoutCursor, err := common.FetchWatchLogLines(cursor.stdout, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+			return fetchLogsForTask(ctx, pipeline, task, "stdout", tail, taskLogFetchMode{
+				ForwardFallback: true,
+			})
+		}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+			return fetchTaskLogPage(ctx, pipeline, task, "stdout", tail, start, count)
+		})
+		if err != nil {
+			return nil, cursor, err
+		}
+
+		stderrLines, stderrCursor, err := common.FetchWatchLogLines(cursor.stderr, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
+			return fetchLogsForTask(ctx, pipeline, task, "stderr", tail, taskLogFetchMode{
+				ForwardFallback: true,
+			})
+		}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+			return fetchTaskLogPage(ctx, pipeline, task, "stderr", tail, start, count)
+		})
+		if err != nil {
+			return nil, cursor, err
+		}
+
+		cursor.stdout = stdoutCursor
+		cursor.stderr = stderrCursor
+		return mergeAndSortTaskLogLines(stdoutLines, stderrLines), cursor, nil
+	}
+
+	lines, nextCursor, err := common.FetchWatchLogLines(cursor.merged, tail, func() ([]apistructs.DashboardSpotLogLine, error) {
 		return fetchLogsForTask(ctx, pipeline, task, stream, tail, taskLogFetchMode{
 			ForwardFallback: true,
 		})
 	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
 		return fetchTaskLogPage(ctx, pipeline, task, stream, tail, start, count)
 	})
+	if err != nil {
+		return nil, cursor, err
+	}
+	cursor.merged = nextCursor
+	return lines, cursor, nil
+}
+
+func mergeAndSortTaskLogLines(left []apistructs.DashboardSpotLogLine, right []apistructs.DashboardSpotLogLine) []apistructs.DashboardSpotLogLine {
+	lines := append([]apistructs.DashboardSpotLogLine{}, left...)
+	lines = append(lines, right...)
+	sort.SliceStable(lines, func(i, j int) bool {
+		return lines[i].TimeStamp < lines[j].TimeStamp
+	})
+	return lines
 }
 
 func fetchLogsForTask(ctx *command.Context, pipeline pipelinepb.PipelineDetailDTO, task common.PipelineTaskRef, stream string, tail int, mode taskLogFetchMode) ([]apistructs.DashboardSpotLogLine, error) {
@@ -353,12 +401,7 @@ func fetchLogsForTask(ctx *command.Context, pipeline pipelinepb.PipelineDetailDT
 		if err != nil {
 			return nil, err
 		}
-		lines := append([]apistructs.DashboardSpotLogLine{}, stdoutLines...)
-		lines = append(lines, stderrLines...)
-		sort.SliceStable(lines, func(i, j int) bool {
-			return lines[i].TimeStamp < lines[j].TimeStamp
-		})
-		return lines, nil
+		return mergeAndSortTaskLogLines(stdoutLines, stderrLines), nil
 	}
 
 	lines, err := fetchTaskLogLines(ctx, common.TaskLogRequestOptions{
@@ -404,12 +447,7 @@ func fetchTaskLogPage(ctx *command.Context, pipeline pipelinepb.PipelineDetailDT
 		if err != nil {
 			return nil, err
 		}
-		lines := append([]apistructs.DashboardSpotLogLine{}, stdoutData.Lines...)
-		lines = append(lines, stderrData.Lines...)
-		sort.SliceStable(lines, func(i, j int) bool {
-			return lines[i].TimeStamp < lines[j].TimeStamp
-		})
-		return lines, nil
+		return mergeAndSortTaskLogLines(stdoutData.Lines, stderrData.Lines), nil
 	}
 
 	data, err := fetchTaskLogData(ctx, common.TaskLogRequestOptions{
@@ -448,19 +486,6 @@ func fetchTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions, 
 		}
 		queryOpts = nextOpts
 	}
-}
-
-func fetchIncrementalTaskLogLines(ctx *command.Context, opts common.TaskLogRequestOptions) ([]apistructs.DashboardSpotLogLine, error) {
-	queryOpts := opts
-	return common.FetchIncrementalLogLines(opts.Start, common.DefaultLogPageSize(opts.Tail, opts.Count), func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
-		queryOpts.Start = start
-		queryOpts.Count = count
-		data, err := fetchTaskLogData(ctx, queryOpts)
-		if err != nil {
-			return nil, err
-		}
-		return data.Lines, nil
-	})
 }
 
 func canUseForwardWindowFallback(opts common.TaskLogRequestOptions, fallbackStart int64) bool {
