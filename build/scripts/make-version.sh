@@ -12,7 +12,12 @@
 set -o errexit
 
 function normalize_version() {
-  local raw="${1/v/}"
+  local raw="$1"
+  # Strip only a leading v/V prefix; do not remove 'v' anywhere else.
+  # Example: 1.2-preview.1 must stay as preview.1 (internal 'v' is valid).
+  if [[ "${raw}" == v* || "${raw}" == V* ]]; then
+    raw="${raw:1}"
+  fi
   if [[ "${raw}" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
     echo "${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0"
     return
