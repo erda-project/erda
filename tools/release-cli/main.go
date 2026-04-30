@@ -16,36 +16,19 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
-
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func main() {
-	keyID := os.Args[1]
-	keySecret := os.Args[2]
-	objName := os.Args[3]
-	file := os.Args[4]
-	// Create an OSSClient instance.
-	client, err := oss.New("oss-cn-hangzhou.aliyuncs.com", keyID, keySecret)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(-1)
+	if err := run(os.Args[1:], os.Getenv, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(2)
 	}
+}
 
-	bucket, err := client.Bucket("erda-release")
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(-1)
-	}
-
-	// Set the ACL and upload the object.
-	objectAcl := oss.ObjectACL(oss.ACLPublicRead)
-	err = bucket.PutObjectFromFile(objName, file, objectAcl)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(-1)
-	}
-
-	fmt.Println("Upload success!")
+func run(rawArgs []string, getenv func(string) string, stdout, stderr io.Writer) error {
+	cmd := newRootCmd(getenv, stdout, stderr)
+	cmd.SetArgs(rawArgs)
+	return cmd.Execute()
 }
