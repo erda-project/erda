@@ -51,16 +51,16 @@ var (
 )
 
 var (
-	getEnv             = os.Getenv
-	getGlobalConfig    = GetGlobalConfig
-	getSessionInfos    = status.GetSessionInfos
-	storeSessionInfo   = status.StoreSessionInfo
-	deleteSessionInfo  = status.DeleteSessionInfo
-	parseContext       = parseCtx
-	inputNormal        = utils.InputNormal
-	inputPassword      = utils.InputPWD
-	statPath           = os.Stat
-	getWorkspaceInfo   = utils.GetWorkspaceInfo
+	getEnv            = os.Getenv
+	getGlobalConfig   = GetGlobalConfig
+	getSessionInfos   = status.GetSessionInfos
+	storeSessionInfo  = status.StoreSessionInfo
+	deleteSessionInfo = status.DeleteSessionInfo
+	parseContext      = parseCtx
+	inputNormal       = utils.InputNormal
+	inputPassword     = utils.InputPWD
+	statPath          = os.Stat
+	getWorkspaceInfo  = utils.GetWorkspaceInfo
 )
 
 var loginAndStoreSession = loginAndStoreSessionWithPassword
