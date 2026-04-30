@@ -51,7 +51,7 @@ func GetWorkspaceRepoStats(ctx *command.Context, orgID uint64, projectName, appl
 //  1. current project config/context IDs when names match
 //  2. repo stats by org/repo
 //  3. return an explicit error without falling back to high-permission list APIs
-func ResolveWorkspaceApplication(ctx *command.Context, orgID uint64, orgName, projectName, applicationName string) (projectID uint64, applicationID int64, err error) {
+func ResolveWorkspaceApplication(ctx *command.Context, orgID uint64, projectName, applicationName string) (projectID uint64, applicationID int64, err error) {
 	if ctx != nil &&
 		ctx.CurrentProject.ProjectID > 0 &&
 		ctx.CurrentApplication.ApplicationID > 0 &&

@@ -538,7 +538,7 @@ func TestResolvePipelineIDForLogsUsesLatestWorkspacePipeline(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	getLatestPipelineID = func(*command.Context, uint64, string) (uint64, error) {
@@ -602,7 +602,7 @@ func TestPipelineLogsResolvesMissingPipelineID(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	getLatestPipelineID = func(*command.Context, uint64, string) (uint64, error) {

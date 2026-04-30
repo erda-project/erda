@@ -238,7 +238,7 @@ func resolvePipelineIDForLogs(ctx *command.Context, pipelineID uint64) (uint64, 
 	if err != nil {
 		return 0, err
 	}
-	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
+	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return 0, err
 	}

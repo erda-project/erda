@@ -68,7 +68,7 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64, watc
 		return err
 	}
 
-	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
+	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", org.ID, info.Project, info.Application)
 	}

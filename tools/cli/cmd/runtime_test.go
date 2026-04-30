@@ -118,7 +118,7 @@ func TestRuntimeListUsesResolvedWorkspace(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	getCurrentBranchWorkspace = func(*command.Context, uint64, string) (string, error) {
@@ -209,7 +209,7 @@ func TestRuntimeStatusResolvesLatestRuntimeInWorkspace(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	getCurrentBranchWorkspace = func(*command.Context, uint64, string) (string, error) {
@@ -295,7 +295,7 @@ func TestRuntimeInstanceListUsesRuntimeServices(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	inspectRuntime = func(_ *command.Context, orgID uint64, runtimeID uint64, applicationID uint64, workspace string) (apistructs.RuntimeInspectDTO, error) {
@@ -379,7 +379,7 @@ func TestRuntimeInstanceListAllIncludesStoppedInstances(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	inspectRuntime = func(_ *command.Context, orgID uint64, runtimeID uint64, applicationID uint64, workspace string) (apistructs.RuntimeInspectDTO, error) {
@@ -476,7 +476,7 @@ func TestRuntimeLogsFiltersByServiceAndInstance(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	listRuntimeServicePodsForLogs = func(_ *command.Context, orgID uint64, runtimeID int64, service string) (apistructs.Pods, error) {
@@ -563,7 +563,7 @@ func TestRuntimeLogsFallsBackToStoppedInstance(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	listRuntimeServicePodsForLogs = func(_ *command.Context, orgID uint64, runtimeID int64, service string) (apistructs.Pods, error) {
@@ -665,7 +665,7 @@ func TestRuntimeLogsWatchPrintsOnlyUnseenLines(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	listRuntimeServicePodsForLogs = func(_ *command.Context, orgID uint64, runtimeID int64, service string) (apistructs.Pods, error) {
@@ -763,7 +763,7 @@ func TestRuntimeLogsWatchStopsCleanlyWhenRequested(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	listRuntimeServicePodsForLogs = func(_ *command.Context, orgID uint64, runtimeID int64, service string) (apistructs.Pods, error) {
@@ -836,7 +836,7 @@ func TestRuntimeLogsWatchPagesBeyondTailWindow(t *testing.T) {
 	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
 		return apistructs.OrgDTO{ID: 1001}, nil
 	}
-	resolveWorkspaceApplication = func(*command.Context, uint64, string, string, string) (uint64, int64, error) {
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
 		return 2001, 3001, nil
 	}
 	listRuntimeServicePodsForLogs = func(_ *command.Context, orgID uint64, runtimeID int64, service string) (apistructs.Pods, error) {

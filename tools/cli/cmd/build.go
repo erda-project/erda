@@ -140,7 +140,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return err
 	}
 
-	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
+	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}
