@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
@@ -638,6 +639,7 @@ func TestRuntimeLogsWatchPrintsOnlyUnseenLines(t *testing.T) {
 	origResolveWorkspaceApplication := resolveWorkspaceApplication
 	origListRuntimeServicePodsForLogs := listRuntimeServicePodsForLogs
 	origGetRuntimePodLogs := getRuntimePodLogs
+	origGetRuntimePodLogsWithOptions := getRuntimePodLogsWithOptions
 	origRuntimeStdout := runtimeStdout
 	origRuntimeLogsSleep := runtimeLogsSleep
 	origRuntimeLogsShouldStop := runtimeLogsShouldStop
@@ -647,6 +649,7 @@ func TestRuntimeLogsWatchPrintsOnlyUnseenLines(t *testing.T) {
 		resolveWorkspaceApplication = origResolveWorkspaceApplication
 		listRuntimeServicePodsForLogs = origListRuntimeServicePodsForLogs
 		getRuntimePodLogs = origGetRuntimePodLogs
+		getRuntimePodLogsWithOptions = origGetRuntimePodLogsWithOptions
 		runtimeStdout = origRuntimeStdout
 		runtimeLogsSleep = origRuntimeLogsSleep
 		runtimeLogsShouldStop = origRuntimeLogsShouldStop
@@ -698,6 +701,15 @@ func TestRuntimeLogsWatchPrintsOnlyUnseenLines(t *testing.T) {
 			}, nil
 		}
 	}
+	getRuntimePodLogsWithOptions = func(_ *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, opts common.RuntimeLogOptions) (*apistructs.DashboardSpotLogData, error) {
+		calls++
+		return &apistructs.DashboardSpotLogData{
+			Lines: []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "2026-04-15T12:00:00Z", Content: "first"},
+				{TimeStamp: "2026-04-15T12:00:01Z", Content: "second"},
+			},
+		}, nil
+	}
 
 	var out bytes.Buffer
 	runtimeStdout = &out
@@ -725,6 +737,7 @@ func TestRuntimeLogsWatchStopsCleanlyWhenRequested(t *testing.T) {
 	origResolveWorkspaceApplication := resolveWorkspaceApplication
 	origListRuntimeServicePodsForLogs := listRuntimeServicePodsForLogs
 	origGetRuntimePodLogs := getRuntimePodLogs
+	origGetRuntimePodLogsWithOptions := getRuntimePodLogsWithOptions
 	origRuntimeStdout := runtimeStdout
 	origRuntimeLogsSleep := runtimeLogsSleep
 	origRuntimeLogsShouldStop := runtimeLogsShouldStop
@@ -734,6 +747,7 @@ func TestRuntimeLogsWatchStopsCleanlyWhenRequested(t *testing.T) {
 		resolveWorkspaceApplication = origResolveWorkspaceApplication
 		listRuntimeServicePodsForLogs = origListRuntimeServicePodsForLogs
 		getRuntimePodLogs = origGetRuntimePodLogs
+		getRuntimePodLogsWithOptions = origGetRuntimePodLogsWithOptions
 		runtimeStdout = origRuntimeStdout
 		runtimeLogsSleep = origRuntimeLogsSleep
 		runtimeLogsShouldStop = origRuntimeLogsShouldStop
@@ -768,6 +782,9 @@ func TestRuntimeLogsWatchStopsCleanlyWhenRequested(t *testing.T) {
 	getRuntimePodLogs = func(_ *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, stream string, tail int) (*apistructs.DashboardSpotLogData, error) {
 		return &apistructs.DashboardSpotLogData{Lines: nil}, nil
 	}
+	getRuntimePodLogsWithOptions = func(_ *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, opts common.RuntimeLogOptions) (*apistructs.DashboardSpotLogData, error) {
+		return &apistructs.DashboardSpotLogData{Lines: nil}, nil
+	}
 
 	var out bytes.Buffer
 	runtimeStdout = &out
@@ -784,5 +801,117 @@ func TestRuntimeLogsWatchStopsCleanlyWhenRequested(t *testing.T) {
 	}
 	if out.Len() != 0 {
 		t.Fatalf("RuntimeLogs() watch output = %q, want no output", out.String())
+	}
+}
+
+func TestRuntimeLogsWatchPagesBeyondTailWindow(t *testing.T) {
+	origGetWorkspaceInfo := getWorkspaceInfo
+	origGetOrgDetail := getOrgDetail
+	origResolveWorkspaceApplication := resolveWorkspaceApplication
+	origListRuntimeServicePodsForLogs := listRuntimeServicePodsForLogs
+	origGetRuntimePodLogs := getRuntimePodLogs
+	origGetRuntimePodLogsWithOptions := getRuntimePodLogsWithOptions
+	origRuntimeStdout := runtimeStdout
+	origRuntimeLogsSleep := runtimeLogsSleep
+	origRuntimeLogsShouldStop := runtimeLogsShouldStop
+	t.Cleanup(func() {
+		getWorkspaceInfo = origGetWorkspaceInfo
+		getOrgDetail = origGetOrgDetail
+		resolveWorkspaceApplication = origResolveWorkspaceApplication
+		listRuntimeServicePodsForLogs = origListRuntimeServicePodsForLogs
+		getRuntimePodLogs = origGetRuntimePodLogs
+		getRuntimePodLogsWithOptions = origGetRuntimePodLogsWithOptions
+		runtimeStdout = origRuntimeStdout
+		runtimeLogsSleep = origRuntimeLogsSleep
+		runtimeLogsShouldStop = origRuntimeLogsShouldStop
+	})
+
+	getWorkspaceInfo = func(string, string) (utils.GitterURLInfo, error) {
+		return utils.GitterURLInfo{
+			OrganizationURLInfo: utils.OrganizationURLInfo{Org: "erda"},
+			Project:             "demo-project",
+			Application:         "demo-app",
+		}, nil
+	}
+	getOrgDetail = func(*command.Context, string) (apistructs.OrgDTO, error) {
+		return apistructs.OrgDTO{ID: 1001}, nil
+	}
+	resolveWorkspaceApplication = func(*command.Context, uint64, string, string) (uint64, int64, error) {
+		return 2001, 3001, nil
+	}
+	listRuntimeServicePodsForLogs = func(_ *command.Context, orgID uint64, runtimeID int64, service string) (apistructs.Pods, error) {
+		return apistructs.Pods{
+			{
+				Service:      service,
+				ClusterName:  "erda-cloud",
+				PodName:      "web-0",
+				K8sNamespace: "project-387-prod",
+				PodContainers: []apistructs.PodContainer{
+					{ContainerName: service, ContainerID: "matched"},
+				},
+			},
+		}, nil
+	}
+
+	initialCalls := 0
+	getRuntimePodLogs = func(_ *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, stream string, tail int) (*apistructs.DashboardSpotLogData, error) {
+		initialCalls++
+		return &apistructs.DashboardSpotLogData{
+			Lines: []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1000", Content: "seed"},
+			},
+		}, nil
+	}
+
+	var incrementalCalls []common.RuntimeLogOptions
+	getRuntimePodLogsWithOptions = func(_ *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, opts common.RuntimeLogOptions) (*apistructs.DashboardSpotLogData, error) {
+		incrementalCalls = append(incrementalCalls, opts)
+		switch len(incrementalCalls) {
+		case 1:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{TimeStamp: "1001", Content: "line-1"},
+					{TimeStamp: "1002", Content: "line-2"},
+				},
+			}, nil
+		case 2:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{TimeStamp: "1003", Content: "line-3"},
+				},
+			}, nil
+		default:
+			return &apistructs.DashboardSpotLogData{Lines: nil}, nil
+		}
+	}
+
+	var out bytes.Buffer
+	runtimeStdout = &out
+	runtimeLogsSleep = func(time.Duration) {}
+	runtimeLogsShouldStop = func() bool {
+		return len(incrementalCalls) >= 2
+	}
+
+	if err := RuntimeLogs(&command.Context{}, "TEST", 2001, "web", "web-0", 2, "stdout", true); err != nil {
+		t.Fatalf("RuntimeLogs() watch error = %v", err)
+	}
+
+	if initialCalls != 1 {
+		t.Fatalf("initial tail calls = %d, want 1", initialCalls)
+	}
+	if len(incrementalCalls) != 2 {
+		t.Fatalf("incremental calls = %d, want 2", len(incrementalCalls))
+	}
+	if incrementalCalls[0].Start != 999 || incrementalCalls[0].Count != 2 {
+		t.Fatalf("first incremental call = %#v, want start=999 count=2", incrementalCalls[0])
+	}
+	if incrementalCalls[1].Start != 1001 || incrementalCalls[1].Count != 2 {
+		t.Fatalf("second incremental call = %#v, want start=1001 count=2", incrementalCalls[1])
+	}
+	got := out.String()
+	for _, want := range []string{"seed", "line-1", "line-2", "line-3"} {
+		if !bytes.Contains([]byte(got), []byte(want)) {
+			t.Fatalf("RuntimeLogs() watch output = %q, want %q", got, want)
+		}
 	}
 }
