@@ -28,6 +28,7 @@ import (
 	"runtime"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	infraVersion "github.com/erda-project/erda-infra/base/version"
 
@@ -58,6 +59,7 @@ var (
 	getUpdateGlobalConfig                 = command.GetGlobalConfig
 	setUpdateGlobalConfig                 = command.SetGlobalConfig
 	findUpdateGlobalConfig                = utils.FindGlobalConfig
+	updateHTTPClient                      = &http.Client{Timeout: 60 * time.Second}
 	updateStdout                io.Writer = os.Stdout
 )
 
@@ -156,7 +158,7 @@ func defaultApplyReleaseUpdate(manifest *release.Manifest) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := updateHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
