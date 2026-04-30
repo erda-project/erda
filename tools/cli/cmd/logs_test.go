@@ -180,6 +180,294 @@ func TestFetchLogsForTaskSkipsRetryWhenDisabled(t *testing.T) {
 	}
 }
 
+func TestFetchIncrementalLogLinesPagesBeyondTailWindow(t *testing.T) {
+	origFetchTaskLogData := fetchTaskLogData
+	t.Cleanup(func() {
+		fetchTaskLogData = origFetchTaskLogData
+	})
+
+	var calls []common.TaskLogRequestOptions
+	fetchTaskLogData = func(_ *command.Context, opts common.TaskLogRequestOptions) (*apistructs.DashboardSpotLogData, error) {
+		calls = append(calls, opts)
+		switch len(calls) {
+		case 1:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Content: "line-1", Stream: "stdout", TimeStamp: "1001"},
+					{Content: "line-2", Stream: "stdout", TimeStamp: "1002"},
+				},
+			}, nil
+		case 2:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Content: "line-3", Stream: "stdout", TimeStamp: "1003"},
+				},
+			}, nil
+		default:
+			return &apistructs.DashboardSpotLogData{}, nil
+		}
+	}
+
+	queryOpts := common.TaskLogRequestOptions{
+		PipelineID: 1000,
+		TaskID:     101,
+		OrgName:    "erda",
+		Stream:     "stdout",
+		Start:      1000,
+		Count:      2,
+		Tail:       2,
+	}
+	lines, err := common.FetchIncrementalLogLines(queryOpts.Start, common.DefaultLogPageSize(queryOpts.Tail, queryOpts.Count), func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		queryOpts.Start = start
+		queryOpts.Count = count
+		data, err := fetchTaskLogData(&command.Context{}, queryOpts)
+		if err != nil {
+			return nil, err
+		}
+		return data.Lines, nil
+	})
+	if err != nil {
+		t.Fatalf("fetchIncrementalTaskLogLines() error = %v", err)
+	}
+	if len(lines) != 3 {
+		t.Fatalf("fetchIncrementalTaskLogLines() len = %d, want 3", len(lines))
+	}
+	if len(calls) != 2 {
+		t.Fatalf("fetchIncrementalTaskLogLines() calls = %d, want 2", len(calls))
+	}
+	if calls[0].Start != 999 || calls[0].Count != 2 {
+		t.Fatalf("first call = %#v, want start 999 count 2", calls[0])
+	}
+	if calls[1].Start != 1001 || calls[1].Count != 2 {
+		t.Fatalf("second call = %#v, want start 1001 count 2", calls[1])
+	}
+}
+
+func TestFetchWatchLogLinesUsesPageFetcher(t *testing.T) {
+	initialCalls := 0
+	var pageCalls []struct {
+		start int64
+		count int64
+	}
+
+	lines, cursor, err := common.FetchWatchLogLines(common.LogCursor{}, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
+		initialCalls++
+		return []apistructs.DashboardSpotLogLine{
+			{TimeStamp: "1000", Content: "seed"},
+		}, nil
+	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		pageCalls = append(pageCalls, struct {
+			start int64
+			count int64
+		}{start: start, count: count})
+		switch len(pageCalls) {
+		case 1:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1001", Content: "line-1"},
+				{TimeStamp: "1002", Content: "line-2"},
+			}, nil
+		case 2:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1003", Content: "line-3"},
+			}, nil
+		default:
+			return nil, nil
+		}
+	})
+	if err != nil {
+		t.Fatalf("fetchWatchLogLines(initial) error = %v", err)
+	}
+	if initialCalls != 1 {
+		t.Fatalf("initial calls = %d, want 1", initialCalls)
+	}
+	if len(lines) != 1 || cursor.Start != 1000 {
+		t.Fatalf("initial result = (%d lines, cursor=%d), want 1 line and cursor 1000", len(lines), cursor.Start)
+	}
+
+	lines, cursor, err = common.FetchWatchLogLines(cursor, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
+		t.Fatal("fetchInitial should not be called after cursor is set")
+		return nil, nil
+	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		pageCalls = append(pageCalls, struct {
+			start int64
+			count int64
+		}{start: start, count: count})
+		switch len(pageCalls) {
+		case 1:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1001", Content: "line-1"},
+				{TimeStamp: "1002", Content: "line-2"},
+			}, nil
+		case 2:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1003", Content: "line-3"},
+			}, nil
+		default:
+			return nil, nil
+		}
+	})
+	if err != nil {
+		t.Fatalf("fetchWatchLogLines(incremental) error = %v", err)
+	}
+	if len(pageCalls) != 2 {
+		t.Fatalf("page fetch calls = %d, want 2", len(pageCalls))
+	}
+	if pageCalls[0].start != 999 || pageCalls[0].count != 2 {
+		t.Fatalf("first page call = %#v, want start 999 count 2", pageCalls[0])
+	}
+	if pageCalls[1].start != 1001 || pageCalls[1].count != 2 {
+		t.Fatalf("second page call = %#v, want start 1001 count 2", pageCalls[1])
+	}
+	if len(lines) != 3 || cursor.Start != 1003 {
+		t.Fatalf("incremental result = (%d lines, cursor=%d), want 3 lines and cursor 1003", len(lines), cursor.Start)
+	}
+}
+
+func TestFetchWatchLogLinesExpandsPageAtTimestampBoundary(t *testing.T) {
+	var calls []struct {
+		start int64
+		count int64
+	}
+
+	lines, cursor, err := common.FetchWatchLogLines(common.LogCursor{Start: 1000}, 2, func() ([]apistructs.DashboardSpotLogLine, error) {
+		t.Fatal("fetchInitial should not be called when cursor is set")
+		return nil, nil
+	}, func(start int64, count int64) ([]apistructs.DashboardSpotLogLine, error) {
+		calls = append(calls, struct {
+			start int64
+			count int64
+		}{start: start, count: count})
+		switch len(calls) {
+		case 1:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1000", Content: "line-1"},
+				{TimeStamp: "1000", Content: "line-2"},
+			}, nil
+		case 2:
+			return []apistructs.DashboardSpotLogLine{
+				{TimeStamp: "1000", Content: "line-1"},
+				{TimeStamp: "1000", Content: "line-2"},
+				{TimeStamp: "1000", Content: "line-3"},
+				{TimeStamp: "1001", Content: "line-4"},
+			}, nil
+		default:
+			return nil, nil
+		}
+	})
+	if err != nil {
+		t.Fatalf("FetchWatchLogLines() error = %v", err)
+	}
+	if len(calls) != 3 {
+		t.Fatalf("page fetch calls = %d, want 3", len(calls))
+	}
+	if calls[0].start != 999 || calls[0].count != 2 {
+		t.Fatalf("first page call = %#v, want start 999 count 2", calls[0])
+	}
+	if calls[1].start != 999 || calls[1].count != 4 {
+		t.Fatalf("second page call = %#v, want start 999 count 4", calls[1])
+	}
+	if calls[2].start != 1000 || calls[2].count != 2 {
+		t.Fatalf("third page call = %#v, want start 1000 count 2", calls[2])
+	}
+	if len(lines) != 4 || cursor.Start != 1001 {
+		t.Fatalf("result = (%d lines, cursor=%d), want 4 lines and cursor 1001", len(lines), cursor.Start)
+	}
+}
+
+func TestFetchLogsForTaskWatchAllUsesIndependentStreamCursors(t *testing.T) {
+	origFetchTaskLogData := fetchTaskLogData
+	t.Cleanup(func() {
+		fetchTaskLogData = origFetchTaskLogData
+	})
+
+	var calls []common.TaskLogRequestOptions
+	fetchTaskLogData = func(_ *command.Context, opts common.TaskLogRequestOptions) (*apistructs.DashboardSpotLogData, error) {
+		calls = append(calls, opts)
+
+		if opts.Stream == "stdout" && opts.Start == 1199 {
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Stream: "stdout", TimeStamp: "1300", Content: "stdout-1300"},
+					{Stream: "stdout", TimeStamp: "1400", Content: "stdout-1400"},
+				},
+			}, nil
+		}
+		if opts.Stream == "stdout" && opts.Start == 1399 {
+			return &apistructs.DashboardSpotLogData{}, nil
+		}
+		if opts.Stream == "stderr" && opts.Start == 1999 {
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Stream: "stderr", TimeStamp: "2100", Content: "stderr-2100"},
+				},
+			}, nil
+		}
+
+		return &apistructs.DashboardSpotLogData{}, nil
+	}
+
+	lines, cursor, err := fetchLogsForTaskWatch(&command.Context{}, pipelinepb.PipelineDetailDTO{
+		ID:          1000,
+		OrgName:     "erda",
+		ClusterName: "erda-cloud",
+	}, common.PipelineTaskRef{ID: 101, Name: "build"}, "all", 2, taskLogWatchCursor{
+		stdout: common.LogCursor{Start: 1200},
+		stderr: common.LogCursor{Start: 2000},
+	})
+	if err != nil {
+		t.Fatalf("fetchLogsForTaskWatch() error = %v", err)
+	}
+
+	if len(lines) != 3 {
+		t.Fatalf("fetchLogsForTaskWatch() lines len = %d, want 3", len(lines))
+	}
+	if lines[0].TimeStamp != "1300" || lines[1].TimeStamp != "1400" || lines[2].TimeStamp != "2100" {
+		t.Fatalf("fetchLogsForTaskWatch() lines = %#v, want sorted merged stdout/stderr lines", lines)
+	}
+	if cursor.stdout.Start != 1400 {
+		t.Fatalf("stdout cursor = %d, want 1400", cursor.stdout.Start)
+	}
+	if cursor.stderr.Start != 2100 {
+		t.Fatalf("stderr cursor = %d, want 2100", cursor.stderr.Start)
+	}
+	if cursor.merged.Start != 0 {
+		t.Fatalf("merged cursor = %d, want 0 in all-stream mode", cursor.merged.Start)
+	}
+
+	var stdoutFirstCall, stderrFirstCall common.TaskLogRequestOptions
+	for _, call := range calls {
+		if call.Stream == "stdout" && call.Start == 1199 {
+			stdoutFirstCall = call
+		}
+		if call.Stream == "stderr" && call.Start == 1999 {
+			stderrFirstCall = call
+		}
+	}
+	if stdoutFirstCall.Start == 0 {
+		t.Fatalf("stdout incremental call not found in %#v", calls)
+	}
+	if stderrFirstCall.Start == 0 {
+		t.Fatalf("stderr incremental call not found in %#v", calls)
+	}
+}
+
+func TestParseLogTimestamp(t *testing.T) {
+	rfcTime := "2026-04-22T10:00:00Z"
+	got, ok := common.ParseLogTimestamp(rfcTime)
+	if !ok || got != time.Date(2026, 4, 22, 10, 0, 0, 0, time.UTC).UnixNano() {
+		t.Fatalf("ParseLogTimestamp(%q) = (%d, %v)", rfcTime, got, ok)
+	}
+
+	got, ok = common.ParseLogTimestamp("1776157455467386849")
+	if !ok || got != 1776157455467386849 {
+		t.Fatalf("ParseLogTimestamp(nanos) = (%d, %v)", got, ok)
+	}
+
+	if _, ok := common.ParseLogTimestamp("bad"); ok {
+		t.Fatal("ParseLogTimestamp(bad) should fail")
+	}
+}
+
 func TestValidateLogOptions(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -335,6 +623,115 @@ func TestPipelineLogsResolvesMissingPipelineID(t *testing.T) {
 	}
 	if calledWith != 4001 {
 		t.Fatalf("PipelineLogs() loaded pipelineID = %d, want 4001", calledWith)
+	}
+}
+
+func TestWatchPipelineLogsAllUsesIndependentStreamCursorsAcrossPolls(t *testing.T) {
+	origLoadPipelineDetail := loadPipelineDetail
+	origSelectPipelineTasks := selectPipelineTasks
+	origFetchTaskLogData := fetchTaskLogData
+	origSleepForWatchPoll := sleepForWatchPoll
+	origLogsStdout := logsStdout
+	origIsTTYOutput := isTTYOutput
+	t.Cleanup(func() {
+		loadPipelineDetail = origLoadPipelineDetail
+		selectPipelineTasks = origSelectPipelineTasks
+		fetchTaskLogData = origFetchTaskLogData
+		sleepForWatchPoll = origSleepForWatchPoll
+		logsStdout = origLogsStdout
+		isTTYOutput = origIsTTYOutput
+	})
+
+	task := common.PipelineTaskRef{ID: 101, Name: "build", TimeBegin: 1000}
+	round := 0
+	loadPipelineDetail = func(_ *command.Context, pipelineID uint64) (pipelinepb.PipelineDetailDTO, error) {
+		round++
+		status := apistructs.PipelineStatusRunning.String()
+		if round >= 2 {
+			status = apistructs.PipelineStatusSuccess.String()
+		}
+		return pipelinepb.PipelineDetailDTO{
+			ID:          pipelineID,
+			OrgName:     "erda",
+			ClusterName: "erda-cloud",
+			Status:      status,
+		}, nil
+	}
+	selectPipelineTasks = func(_ pipelinepb.PipelineDetailDTO, _ common.SelectTasksOptions) ([]common.PipelineTaskRef, error) {
+		return []common.PipelineTaskRef{task}, nil
+	}
+
+	type fetchKey struct {
+		stream string
+		start  int64
+	}
+	callsByKey := map[fetchKey]int{}
+	fetchTaskLogData = func(_ *command.Context, opts common.TaskLogRequestOptions) (*apistructs.DashboardSpotLogData, error) {
+		key := fetchKey{stream: opts.Stream, start: opts.Start}
+		callsByKey[key]++
+
+		switch {
+		case opts.Stream == "stdout" && opts.Start == 0:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Stream: "stdout", TimeStamp: "1200", Content: "stdout-1200"},
+				},
+			}, nil
+		case opts.Stream == "stderr" && opts.Start == 0:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Stream: "stderr", TimeStamp: "2000", Content: "stderr-2000"},
+				},
+			}, nil
+		case opts.Stream == "stdout" && opts.Start == 1199:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Stream: "stdout", TimeStamp: "1300", Content: "stdout-1300"},
+				},
+			}, nil
+		case opts.Stream == "stderr" && opts.Start == 1999:
+			return &apistructs.DashboardSpotLogData{
+				Lines: []apistructs.DashboardSpotLogLine{
+					{Stream: "stderr", TimeStamp: "2100", Content: "stderr-2100"},
+				},
+			}, nil
+		default:
+			return &apistructs.DashboardSpotLogData{}, nil
+		}
+	}
+
+	sleepCalls := 0
+	sleepForWatchPoll = func(time.Duration) {
+		sleepCalls++
+	}
+
+	var out bytes.Buffer
+	logsStdout = &out
+	isTTYOutput = func(io.Writer) bool { return false }
+
+	err := watchPipelineLogs(&command.Context{}, 1000, logOptions{
+		watch:  true,
+		all:    true,
+		stream: "all",
+		tail:   1,
+	})
+	if err != nil {
+		t.Fatalf("watchPipelineLogs() error = %v", err)
+	}
+
+	got := out.String()
+	want := "stdout-1200\nstderr-2000\nstdout-1300\nstderr-2100\n"
+	if got != want {
+		t.Fatalf("watchPipelineLogs() output = %q, want %q", got, want)
+	}
+	if sleepCalls != 3 {
+		t.Fatalf("watch poll sleeps = %d, want 3 with two idle rounds before exit", sleepCalls)
+	}
+	if callsByKey[fetchKey{stream: "stdout", start: 1199}] == 0 {
+		t.Fatalf("stdout incremental call missing; calls = %#v", callsByKey)
+	}
+	if callsByKey[fetchKey{stream: "stderr", start: 1999}] == 0 {
+		t.Fatalf("stderr incremental call missing; calls = %#v", callsByKey)
 	}
 }
 

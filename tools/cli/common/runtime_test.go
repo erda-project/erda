@@ -260,6 +260,50 @@ func TestGetRuntimeStoppedContainerLogsUsesLiveFalse(t *testing.T) {
 	}
 }
 
+func TestGetRuntimePodLogsWithOptionsUsesIncrementalQuery(t *testing.T) {
+	client := httpclient.New()
+	client.BackendClient().Transport = runtimeRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if got := r.URL.Path; got != "/api/runtime/logs" {
+			t.Fatalf("request path = %q, want /api/runtime/logs", got)
+		}
+		if got := r.URL.Query().Get("start"); got != "1000" {
+			t.Fatalf("start = %q, want 1000", got)
+		}
+		if got := r.URL.Query().Get("count"); got != "50" {
+			t.Fatalf("count = %q, want 50", got)
+		}
+		if got := r.URL.Query().Get("stream"); got != "stdout" {
+			t.Fatalf("stream = %q, want stdout", got)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       io.NopCloser(strings.NewReader(`{"success":true,"data":{"lines":[]},"err":{"code":"","msg":"","ctx":null}}`)),
+		}, nil
+	})
+
+	ctx := &command.Context{
+		CurrentHost: "http://127.0.0.1:12345",
+		Sessions:    map[string]status.StatusInfo{},
+		HttpClient:  client,
+	}
+
+	pod := apistructs.Pod{
+		ClusterName:  "erda-cloud",
+		PodName:      "web-0",
+		K8sNamespace: "project-387-prod",
+	}
+	if _, err := GetRuntimePodLogsWithOptions(ctx, "erda", 1003418, pod, "web", "container-1", RuntimeLogOptions{
+		Stream: "stdout",
+		Start:  1000,
+		Count:  50,
+		Tail:   200,
+	}); err != nil {
+		t.Fatalf("GetRuntimePodLogsWithOptions() error = %v", err)
+	}
+}
+
 type runtimeRoundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f runtimeRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {

@@ -156,6 +156,13 @@ func ListRuntimeServiceContainers(ctx *command.Context, runtimeID int64, service
 }
 
 func GetRuntimePodLogs(ctx *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, stream string, tail int) (*apistructs.DashboardSpotLogData, error) {
+	return GetRuntimePodLogsWithOptions(ctx, orgName, applicationID, pod, containerName, containerID, RuntimeLogOptions{
+		Stream: stream,
+		Tail:   tail,
+	})
+}
+
+func GetRuntimePodLogsWithOptions(ctx *command.Context, orgName string, applicationID uint64, pod apistructs.Pod, containerName string, containerID string, opts RuntimeLogOptions) (*apistructs.DashboardSpotLogData, error) {
 	return getRuntimeContainerLogs(ctx, runtimeContainerLogRequest{
 		orgName:       orgName,
 		applicationID: applicationID,
@@ -165,12 +172,18 @@ func GetRuntimePodLogs(ctx *command.Context, orgName string, applicationID uint6
 		containerName: containerName,
 		containerID:   containerID,
 		live:          true,
-		stream:        stream,
-		tail:          tail,
+		options:       opts,
 	})
 }
 
 func GetRuntimeStoppedContainerLogs(ctx *command.Context, orgName string, applicationID uint64, container apistructs.Container, stream string, tail int) (*apistructs.DashboardSpotLogData, error) {
+	return GetRuntimeStoppedContainerLogsWithOptions(ctx, orgName, applicationID, container, RuntimeLogOptions{
+		Stream: stream,
+		Tail:   tail,
+	})
+}
+
+func GetRuntimeStoppedContainerLogsWithOptions(ctx *command.Context, orgName string, applicationID uint64, container apistructs.Container, opts RuntimeLogOptions) (*apistructs.DashboardSpotLogData, error) {
 	return getRuntimeContainerLogs(ctx, runtimeContainerLogRequest{
 		orgName:       orgName,
 		applicationID: applicationID,
@@ -180,9 +193,16 @@ func GetRuntimeStoppedContainerLogs(ctx *command.Context, orgName string, applic
 		containerName: container.Service,
 		containerID:   container.ContainerID,
 		live:          false,
-		stream:        stream,
-		tail:          tail,
+		options:       opts,
 	})
+}
+
+type RuntimeLogOptions struct {
+	Stream string
+	Tail   int
+	Start  int64
+	End    int64
+	Count  int64
 }
 
 type runtimeContainerLogRequest struct {
@@ -194,14 +214,20 @@ type runtimeContainerLogRequest struct {
 	containerName string
 	containerID   string
 	live          bool
-	stream        string
-	tail          int
+	options       RuntimeLogOptions
 }
 
 func getRuntimeContainerLogs(ctx *command.Context, opts runtimeContainerLogRequest) (*apistructs.DashboardSpotLogData, error) {
 	count := int64(-200)
-	if opts.tail > 0 {
-		count = int64(-opts.tail)
+	if opts.options.Tail > 0 {
+		count = int64(-opts.options.Tail)
+	}
+	if opts.options.Count != 0 {
+		count = opts.options.Count
+	}
+	end := time.Now().UnixNano()
+	if opts.options.End > 0 {
+		end = opts.options.End
 	}
 
 	var resp apistructs.DashboardSpotLogResponse
@@ -210,10 +236,10 @@ func getRuntimeContainerLogs(ctx *command.Context, opts runtimeContainerLogReque
 		Param("applicationId", strconv.FormatUint(opts.applicationID, 10)).
 		Param("id", opts.containerID).
 		Param("source", string(apistructs.DashboardSpotLogSourceContainer)).
-		Param("stream", opts.stream).
+		Param("stream", opts.options.Stream).
 		Param("count", strconv.FormatInt(count, 10)).
-		Param("start", "0").
-		Param("end", strconv.FormatInt(time.Now().UnixNano(), 10)).
+		Param("start", strconv.FormatInt(opts.options.Start, 10)).
+		Param("end", strconv.FormatInt(end, 10)).
 		Param("clusterName", opts.clusterName).
 		Param("podName", opts.podName).
 		Param("podNamespace", opts.podNamespace).
