@@ -227,7 +227,18 @@ fi
 
 echo "Installing erda-cli ${VERSION} from $URL"
 
-ARCHIVE_PATH="${TMP_DIR}/erda-cli.tar.gz"
+case "$URL" in
+  *.tar.gz)
+    ARCHIVE_PATH="${TMP_DIR}/erda-cli.tar.gz"
+    ;;
+  *.zip)
+    ARCHIVE_PATH="${TMP_DIR}/erda-cli.zip"
+    ;;
+  *)
+    echoerr "Unsupported archive format: $URL"
+    exit 1
+    ;;
+esac
 EXTRACTED_PATH="${TMP_DIR}/erda-cli"
 
 fetch_to_file "$URL" "$ARCHIVE_PATH" "package"
@@ -243,7 +254,18 @@ if [[ -n "$SHA256" ]]; then
   fi
 fi
 
-tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
+case "$URL" in
+  *.tar.gz)
+    tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
+    ;;
+  *.zip)
+    if ! command -v unzip >/dev/null 2>&1; then
+      echoerr "This installer needs 'unzip' command to extract zip archives"
+      exit 1
+    fi
+    unzip -q "$ARCHIVE_PATH" -d "$TMP_DIR"
+    ;;
+esac
 if [[ ! -f "$EXTRACTED_PATH" ]]; then
   echoerr "CLI archive does not contain erda-cli"
   exit 1

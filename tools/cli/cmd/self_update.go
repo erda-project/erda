@@ -243,31 +243,34 @@ func stageReplacementExecutable(srcPath, targetPath string, mode os.FileMode) (s
 		return "", err
 	}
 
+	keep := false
+	defer func() {
+		if !keep {
+			os.Remove(stagedPath)
+		}
+	}()
+
 	src, err := os.Open(srcPath)
 	if err != nil {
-		os.Remove(stagedPath)
 		return "", err
 	}
 	defer src.Close()
 
 	dst, err := os.OpenFile(stagedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
 	if err != nil {
-		os.Remove(stagedPath)
 		return "", updateReplaceError(targetPath, err)
 	}
 	if _, err := io.Copy(dst, src); err != nil {
 		dst.Close()
-		os.Remove(stagedPath)
 		return "", err
 	}
 	if err := dst.Close(); err != nil {
-		os.Remove(stagedPath)
 		return "", err
 	}
 	if err := os.Chmod(stagedPath, mode); err != nil {
-		os.Remove(stagedPath)
 		return "", err
 	}
+	keep = true
 	return stagedPath, nil
 }
 
@@ -315,15 +318,7 @@ func extractTarGzExecutable(goos, archivePath, dstPath string) error {
 		if filepath.Base(header.Name) != wantName {
 			continue
 		}
-		out, err := os.OpenFile(dstPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
-		if err != nil {
-			return err
-		}
-		if _, err := io.Copy(out, tr); err != nil {
-			out.Close()
-			return err
-		}
-		return out.Close()
+		return writeExecutableFromReader(tr, dstPath)
 	}
 	return fmt.Errorf("executable %s not found in archive", wantName)
 }
@@ -344,23 +339,29 @@ func extractZipExecutable(goos, archivePath, dstPath string) error {
 		if err != nil {
 			return err
 		}
-		out, err := os.OpenFile(dstPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
-		if err != nil {
-			rc.Close()
-			return err
-		}
-		if _, err := io.Copy(out, rc); err != nil {
-			out.Close()
-			rc.Close()
-			return err
-		}
-		if err := rc.Close(); err != nil {
-			out.Close()
-			return err
-		}
-		return out.Close()
+		defer rc.Close()
+		return writeExecutableFromReader(rc, dstPath)
 	}
 	return fmt.Errorf("executable %s not found in archive", wantName)
+}
+
+func writeExecutableFromReader(r io.Reader, dstPath string) error {
+	out, err := os.OpenFile(dstPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
+	if err != nil {
+		return err
+	}
+	closed := false
+	defer func() {
+		if !closed {
+			out.Close()
+			os.Remove(dstPath)
+		}
+	}()
+	if _, err := io.Copy(out, r); err != nil {
+		return err
+	}
+	closed = true
+	return out.Close()
 }
 
 func currentPlatform() (string, string) {
@@ -442,9 +443,6 @@ func UpdateSetDefault(ctx *command.Context, channel string) error {
 		if err != nil && err != utils.NotExist {
 			return err
 		}
-		globalConfig = &command.GlobalConfig{Version: command.ConfigVersion}
-	}
-	if globalConfig == nil {
 		globalConfig = &command.GlobalConfig{Version: command.ConfigVersion}
 	}
 	if globalConfig.Version == "" {

@@ -423,6 +423,12 @@ func resolveBaseHost() (string, error) {
 	return resolveGlobalHost()
 }
 
+// commandPrefersWorkspaceHost returns true when the command should resolve the
+// API host from the git remote URL rather than the global config. This ensures
+// that workspace commands (pipeline, runtime, build, whoami) talk to the same
+// Erda instance that owns the repository, even when the global config points
+// elsewhere. Non-workspace commands (login, update, project list, etc.) fall
+// through to the global config host first.
 func commandPrefersWorkspaceHost(fullUse string) bool {
 	switch {
 	case fullUse == "whoami":

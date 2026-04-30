@@ -32,6 +32,30 @@ import (
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
+// saveUpdateDeps saves the package-level function variables used by the update
+// commands and restores them when the test finishes.
+func saveUpdateDeps(t *testing.T) {
+	t.Helper()
+	origFetchLatest := fetchLatestReleaseManifest
+	origFetchVersion := fetchVersionReleaseManifest
+	origVersion := currentCLIVersion
+	origApply := applyReleaseUpdate
+	origGetConfig := getUpdateGlobalConfig
+	origSetConfig := setUpdateGlobalConfig
+	origFetchIndex := fetchReleaseVersionIndex
+	origStdout := updateStdout
+	t.Cleanup(func() {
+		fetchLatestReleaseManifest = origFetchLatest
+		fetchVersionReleaseManifest = origFetchVersion
+		currentCLIVersion = origVersion
+		applyReleaseUpdate = origApply
+		getUpdateGlobalConfig = origGetConfig
+		setUpdateGlobalConfig = origSetConfig
+		fetchReleaseVersionIndex = origFetchIndex
+		updateStdout = origStdout
+	})
+}
+
 func TestUpdateCommandShape(t *testing.T) {
 	if UPDATE.Name != "update" {
 		t.Fatalf("update command name = %q, want update", UPDATE.Name)
@@ -54,18 +78,7 @@ func TestUpdateCommandShape(t *testing.T) {
 }
 
 func TestUpdateDefaultsToStableChannel(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origFetchVersionReleaseManifest := fetchVersionReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	origGetUpdateGlobalConfig := getUpdateGlobalConfig
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		fetchVersionReleaseManifest = origFetchVersionReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-		getUpdateGlobalConfig = origGetUpdateGlobalConfig
-	})
+	saveUpdateDeps(t)
 
 	var gotChannel string
 	fetchLatestReleaseManifest = func(channel string) (*release.Manifest, error) {
@@ -91,18 +104,7 @@ func TestUpdateDefaultsToStableChannel(t *testing.T) {
 }
 
 func TestUpdateUsesConfiguredDefaultChannel(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origFetchVersionReleaseManifest := fetchVersionReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	origGetUpdateGlobalConfig := getUpdateGlobalConfig
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		fetchVersionReleaseManifest = origFetchVersionReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-		getUpdateGlobalConfig = origGetUpdateGlobalConfig
-	})
+	saveUpdateDeps(t)
 
 	var gotChannel string
 	fetchLatestReleaseManifest = func(channel string) (*release.Manifest, error) {
@@ -128,16 +130,7 @@ func TestUpdateUsesConfiguredDefaultChannel(t *testing.T) {
 }
 
 func TestUpdateSupportsExplicitVersion(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origFetchVersionReleaseManifest := fetchVersionReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		fetchVersionReleaseManifest = origFetchVersionReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-	})
+	saveUpdateDeps(t)
 
 	var gotVersion string
 	fetchLatestReleaseManifest = func(string) (*release.Manifest, error) {
@@ -160,16 +153,7 @@ func TestUpdateSupportsExplicitVersion(t *testing.T) {
 }
 
 func TestUpdateSupportsExplicitOlderVersion(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origFetchVersionReleaseManifest := fetchVersionReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		fetchVersionReleaseManifest = origFetchVersionReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-	})
+	saveUpdateDeps(t)
 
 	fetchLatestReleaseManifest = func(string) (*release.Manifest, error) {
 		t.Fatal("latest manifest lookup should not be used when --version is set")
@@ -195,14 +179,7 @@ func TestUpdateSupportsExplicitOlderVersion(t *testing.T) {
 }
 
 func TestUpdateSkipsWhenAlreadyOnLatestVersion(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-	})
+	saveUpdateDeps(t)
 
 	fetchLatestReleaseManifest = func(channel string) (*release.Manifest, error) {
 		return &release.Manifest{Version: "2.4.0", Channel: channel}, nil
@@ -219,14 +196,7 @@ func TestUpdateSkipsWhenAlreadyOnLatestVersion(t *testing.T) {
 }
 
 func TestUpdateAllowsLegacyEmbeddedVersionComparison(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-	})
+	saveUpdateDeps(t)
 
 	fetchLatestReleaseManifest = func(channel string) (*release.Manifest, error) {
 		return &release.Manifest{Version: "2.4.1", Channel: channel}, nil
@@ -258,14 +228,7 @@ func TestUpdateCurrentVersionDefaultsToEmbeddedVersion(t *testing.T) {
 }
 
 func TestUpdateListDefaultsToStableChannel(t *testing.T) {
-	origFetchReleaseVersionIndex := fetchReleaseVersionIndex
-	origUpdateStdout := updateStdout
-	origGetUpdateGlobalConfig := getUpdateGlobalConfig
-	t.Cleanup(func() {
-		fetchReleaseVersionIndex = origFetchReleaseVersionIndex
-		updateStdout = origUpdateStdout
-		getUpdateGlobalConfig = origGetUpdateGlobalConfig
-	})
+	saveUpdateDeps(t)
 
 	var gotChannel string
 	fetchReleaseVersionIndex = func(channel string) (*release.VersionIndex, error) {
@@ -298,12 +261,7 @@ func TestUpdateListDefaultsToStableChannel(t *testing.T) {
 }
 
 func TestUpdateSetDefaultWritesGlobalConfig(t *testing.T) {
-	origGetUpdateGlobalConfig := getUpdateGlobalConfig
-	origSetUpdateGlobalConfig := setUpdateGlobalConfig
-	t.Cleanup(func() {
-		getUpdateGlobalConfig = origGetUpdateGlobalConfig
-		setUpdateGlobalConfig = origSetUpdateGlobalConfig
-	})
+	saveUpdateDeps(t)
 
 	getUpdateGlobalConfig = func() (string, *command.GlobalConfig, error) {
 		return "/tmp/config", &command.GlobalConfig{Version: command.ConfigVersion, Host: "https://erda.cloud"}, nil
@@ -342,10 +300,7 @@ func TestUpdateSetDefaultRequiresChannel(t *testing.T) {
 }
 
 func TestUpdateListReturnsFriendlyMessageWhenVersionIndexMissing(t *testing.T) {
-	origFetchReleaseVersionIndex := fetchReleaseVersionIndex
-	t.Cleanup(func() {
-		fetchReleaseVersionIndex = origFetchReleaseVersionIndex
-	})
+	saveUpdateDeps(t)
 
 	fetchReleaseVersionIndex = func(channel string) (*release.VersionIndex, error) {
 		return nil, fmt.Errorf("%w: %s", release.ErrVersionIndexNotFound, "https://example.com/stable-versions.json")
@@ -364,14 +319,7 @@ func TestUpdateListReturnsFriendlyMessageWhenVersionIndexMissing(t *testing.T) {
 }
 
 func TestUpdateCheckDoesNotApplyUpdate(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origCurrentCLIVersion := currentCLIVersion
-	origApplyReleaseUpdate := applyReleaseUpdate
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		currentCLIVersion = origCurrentCLIVersion
-		applyReleaseUpdate = origApplyReleaseUpdate
-	})
+	saveUpdateDeps(t)
 
 	fetchLatestReleaseManifest = func(channel string) (*release.Manifest, error) {
 		return &release.Manifest{Version: "2.4.1", Channel: channel}, nil
@@ -388,12 +336,7 @@ func TestUpdateCheckDoesNotApplyUpdate(t *testing.T) {
 }
 
 func TestUpdateReturnsFriendlyMessageWhenChannelManifestMissing(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origFetchVersionReleaseManifest := fetchVersionReleaseManifest
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		fetchVersionReleaseManifest = origFetchVersionReleaseManifest
-	})
+	saveUpdateDeps(t)
 
 	fetchLatestReleaseManifest = func(channel string) (*release.Manifest, error) {
 		return nil, fmt.Errorf("%w: %s", release.ErrManifestNotFound, "https://example.com/stable.json")
@@ -416,12 +359,7 @@ func TestUpdateReturnsFriendlyMessageWhenChannelManifestMissing(t *testing.T) {
 }
 
 func TestUpdateReturnsFriendlyMessageWhenVersionManifestMissing(t *testing.T) {
-	origFetchLatestReleaseManifest := fetchLatestReleaseManifest
-	origFetchVersionReleaseManifest := fetchVersionReleaseManifest
-	t.Cleanup(func() {
-		fetchLatestReleaseManifest = origFetchLatestReleaseManifest
-		fetchVersionReleaseManifest = origFetchVersionReleaseManifest
-	})
+	saveUpdateDeps(t)
 
 	fetchLatestReleaseManifest = func(string) (*release.Manifest, error) {
 		t.Fatal("latest manifest lookup should not be used")
