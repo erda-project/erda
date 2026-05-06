@@ -1,224 +1,309 @@
-#!/bin/bash
-{
-    set -e
-    SUDO=''
-    if [ "$(id -u)" != "0" ]; then
-      SUDO='sudo'
-      echo "This script requires superuser permissions."
-      echo "You will be prompted for password by sudo."
-      # clear any previous sudo permission
-      sudo -k
-    fi
+#!/usr/bin/env bash
 
-    $SUDO bash -s -- "$@" <<'SCRIPT'
-  set -e
+set -euo pipefail
 
-  echoerr() { echo "$@" 1>&2; }
+echoerr() { echo "$@" 1>&2; }
 
-  if [[ ! ":$PATH:" == *":/usr/local/bin:"* ]]; then
-    echoerr '$PATH does not contain /usr/local/bin, which need by this installer.'
+usage() {
+  cat <<EOF
+Usage:
+  install.sh [--system] [stable|beta|alpha|<version>]
+
+Examples:
+  install.sh
+  install.sh alpha
+  install.sh 2.4.0-alpha.20260421142059
+  install.sh --system stable
+
+Environment:
+  ERDA_CLI_BASE_URL      Release base URL. Default: https://erda-release.oss-cn-hangzhou.aliyuncs.com
+  ERDA_CLI_INSTALL_DIR   User install directory. Default: \$HOME/.erda/bin
+EOF
+}
+
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echoerr "This installer needs '$1' command"
     exit 1
   fi
+}
 
-  if ! command -v jq >/dev/null 2>&1; then
-    echoerr "This installer needs 'jq' command"
-    exit 1
-  fi
-  if ! command -v curl >/dev/null 2>&1; then
-    echoerr "This installer needs 'curl' command"
-    exit 1
-  fi
-
-  baseURL="${ERDA_CLI_BASE_URL:-https://erda-release.oss-cn-hangzhou.aliyuncs.com}"
-
-  # Map runtime platform into the Go-style identifiers used by manifest paths.
-  if [[ "$(uname)" == "Darwin" ]]; then
-    goos="darwin"
-  elif [[ "$(expr substr "$(uname -s)" 1 5)" == "Linux" ]]; then
-    goos="linux"
-  else
-    echoerr "This installer is only supported on Linux and MacOS"
-    exit 1
-  fi
-
-  case "$(uname -m)" in
-    x86_64|amd64) goarch="amd64" ;;
-    arm64|aarch64) goarch="arm64" ;;
+detect_os() {
+  case "$(uname)" in
+    Darwin)
+      echo darwin
+      ;;
+    Linux*)
+      echo linux
+      ;;
     *)
-      echoerr "Unsupported CPU architecture: $(uname -m)"
+      echoerr "This installer is only supported on Linux and MacOS"
       exit 1
       ;;
   esac
+}
 
-  installFromArchive() {
-    local archive_url="$1"
-    local expected_sha256="$2"
+detect_arch() {
+  case "$(uname -m)" in
+    x86_64|amd64)
+      echo amd64
+      ;;
+    arm64|aarch64)
+      echo arm64
+      ;;
+    *)
+      echoerr "Unsupported architecture: $(uname -m)"
+      exit 1
+      ;;
+  esac
+}
 
-    archive_tmp="$(mktemp)"
-    extract_tmp="$(mktemp -d)"
-
-    cleanup() {
-      rm -f "$archive_tmp"
-      rm -rf "$extract_tmp"
-    }
-    trap cleanup RETURN
-
-    echo "Installing CLI from $archive_url"
-    curl -f -sS -L -o "$archive_tmp" "$archive_url"
-
-    if [[ -n "$expected_sha256" && "$expected_sha256" != "null" ]]; then
-      if command -v sha256sum >/dev/null 2>&1; then
-        echo "${expected_sha256}  ${archive_tmp}" | sha256sum -c - >/dev/null
-      else
-        actual_sha256="$(shasum -a 256 "$archive_tmp" | awk '{print $1}')"
-        if [[ "$actual_sha256" != "$expected_sha256" ]]; then
-          echoerr "sha256 mismatch for downloaded archive"
-          return 1
-        fi
-      fi
-    fi
-
-    case "$archive_url" in
-      *.tar.gz)
-        if ! command -v tar >/dev/null 2>&1; then
-          echoerr "This installer needs 'tar' to extract tar.gz archives"
-          return 1
-        fi
-        tar -xzf "$archive_tmp" -C "$extract_tmp"
-        ;;
-      *.zip)
-        if ! command -v unzip >/dev/null 2>&1; then
-          echoerr "This installer needs 'unzip' to extract zip archives"
-          return 1
-        fi
-        unzip -q "$archive_tmp" -d "$extract_tmp"
-        ;;
-      *)
-        echoerr "Unknown archive type: $archive_url"
-        return 1
-        ;;
-    esac
-
-    exe_path=""
-    if [[ -f "$extract_tmp/erda-cli" ]]; then
-      exe_path="$extract_tmp/erda-cli"
-    elif [[ -f "$extract_tmp/erda-cli.exe" ]]; then
-      exe_path="$extract_tmp/erda-cli.exe"
-    fi
-
-    if [[ -z "$exe_path" ]]; then
-      echoerr "Archive does not contain erda-cli executable"
-      return 1
-    fi
-
-    cp "$exe_path" /usr/local/bin/erda-cli
-    chmod +x /usr/local/bin/erda-cli
-    return 0
-  }
-
-  fetchLatestManifestForChannel() {
-    local channel="$1"
-    versions_url="${baseURL}/cli/${goos}/${goarch}/${channel}-versions.json"
-    versions_tmp="$(mktemp)"
-
-    cleanup() {
-      rm -f "$versions_tmp"
-    }
-    trap cleanup RETURN
-
-    http_code="$(curl -sS -o "$versions_tmp" -w "%{http_code}" "$versions_url" || echo "000")"
-    if [[ "$http_code" != "200" ]]; then
-      return 1
-    fi
-
-    archive_url="$(jq -r '.versions[0].url' "$versions_tmp")"
-    expected_sha256="$(jq -r '.versions[0].sha256' "$versions_tmp")"
-    if [[ -z "$archive_url" || "$archive_url" == "null" ]]; then
-      return 1
-    fi
-
-    return 0
-  }
-
-  fetchManifestByVersion() {
-    local ver="$1"
-    manifest_url="${baseURL}/cli/${goos}/${goarch}/erda-cli-${ver}.json"
-    manifest_tmp="$(mktemp)"
-
-    cleanup() {
-      rm -f "$manifest_tmp"
-    }
-    trap cleanup RETURN
-
-    http_code="$(curl -sS -o "$manifest_tmp" -w "%{http_code}" "$manifest_url" || echo "000")"
-    if [[ "$http_code" != "200" ]]; then
-      return 1
-    fi
-
-    archive_url="$(jq -r .url "$manifest_tmp")"
-    expected_sha256="$(jq -r .sha256 "$manifest_tmp")"
-    if [[ -z "$archive_url" || "$archive_url" == "null" ]]; then
-      return 1
-    fi
-
-    return 0
-  }
-
-  mode="latest"
-  channel=""
-  Version=""
-
-  if [[ $# -gt 0 ]]; then
-    case "$1" in
-      alpha) mode="latest"; channel="alpha" ;;
-      beta) mode="latest"; channel="beta" ;;
-      stable) mode="latest"; channel="stable" ;;
-      *)
-        mode="byVersion"
-        Version="$1"
-        Version="${Version#v}" # Accept versions like v2.4.0.
-        ;;
-    esac
+checksum_sha256() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    return 1
   fi
+}
 
-  # Everything is resolved from OSS manifests.
-  if [[ "$mode" == "latest" ]]; then
-    # When no channel is specified, try channels in order.
-    channels_try=()
-    if [[ -z "$channel" ]]; then
-      channels_try=("stable" "beta" "alpha")
+path_export_line() {
+  local dir_expr=$INSTALL_DIR
+  if [[ "$INSTALL_DIR" == "$HOME/"* ]]; then
+    dir_expr="\$HOME/${INSTALL_DIR#"$HOME/"}"
+  fi
+  echo "export PATH=\"${dir_expr}:\$PATH\""
+}
+
+profile_append_command() {
+  local profile_display=$1
+  local export_line
+  export_line=$(path_export_line)
+  printf "grep -qxF '%s' %s 2>/dev/null || printf '%%s\\n' '' '# erda-cli' '%s' '' >> %s" "$export_line" "$profile_display" "$export_line" "$profile_display"
+}
+
+profile_path() {
+  case "$(basename "${SHELL:-}")" in
+  zsh)
+    echo "$HOME/.zshrc"
+    ;;
+  bash)
+    if [[ "$OS" == "darwin" ]]; then
+      echo "$HOME/.bash_profile"
     else
-      channels_try=("$channel")
+      echo "$HOME/.bashrc"
     fi
+    ;;
+  esac
+}
 
-    for ch in "${channels_try[@]}"; do
-      if fetchLatestManifestForChannel "$ch"; then
-        installFromArchive "$archive_url" "$expected_sha256"
-        exit 0
-      fi
-    done
+display_path() {
+  local file=$1
+  if [[ "$file" == "$HOME/"* ]]; then
+    echo "~/${file#"$HOME/"}"
+  else
+    echo "$file"
+  fi
+}
 
-    if [[ -z "$channel" ]]; then
-      echoerr "Failed to resolve latest CLI manifest for channels stable/beta/alpha"
-    else
-      echoerr "Failed to resolve latest CLI manifest for channel '$channel'"
-    fi
+json_field() {
+  local field=$1
+  sed -nE "/\"${field}\"[[:space:]]*:/ { s/.*\"${field}\"[[:space:]]*:[[:space:]]*\"([^\"]*)\".*/\1/p; q; }"
+}
+
+fetch_to_file() {
+  local url=$1
+  local output=$2
+  local label=$3
+  local status
+
+  if ! status=$(curl -sSL -w "%{http_code}" -o "$output" "$url"); then
+    echoerr "Failed to fetch ${label}: ${url}"
     exit 1
   fi
 
-  if [[ "$mode" == "byVersion" ]]; then
-    if fetchManifestByVersion "$Version"; then
-      installFromArchive "$archive_url" "$expected_sha256"
+  case "$status" in
+    2*)
+      return 0
+      ;;
+    404)
+      if [[ "$label" == "manifest" ]]; then
+        if [[ -n "$TARGET_VERSION" ]]; then
+          echoerr "No remote release found for version \"${TARGET_VERSION}\" on ${OS}/${ARCH} yet."
+        else
+          echoerr "No remote release found for channel \"${CHANNEL}\" on ${OS}/${ARCH} yet."
+        fi
+      else
+        echoerr "Download package not found: ${url}"
+      fi
+      exit 1
+      ;;
+    *)
+      echoerr "Failed to fetch ${label}: ${url} (status ${status})"
+      exit 1
+      ;;
+  esac
+}
+
+SYSTEM_INSTALL=false
+CHANNEL=stable
+TARGET_VERSION=
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --system)
+      SYSTEM_INSTALL=true
+      shift
+      ;;
+    -h|--help)
+      usage
       exit 0
+      ;;
+    stable|beta|alpha)
+      CHANNEL="$1"
+      shift
+      ;;
+    *)
+      if [[ -n "$TARGET_VERSION" ]]; then
+        echoerr "Unexpected argument: $1"
+        usage
+        exit 1
+      fi
+      TARGET_VERSION="$1"
+      shift
+      ;;
+  esac
+done
+
+require_cmd curl
+require_cmd tar
+
+OS=$(detect_os)
+ARCH=$(detect_arch)
+BASE_URL=${ERDA_CLI_BASE_URL:-https://erda-release.oss-cn-hangzhou.aliyuncs.com}
+
+if [[ -n "$TARGET_VERSION" ]]; then
+  MANIFEST_URL="${BASE_URL}/cli/${OS}/${ARCH}/erda-cli-${TARGET_VERSION}.json"
+else
+  MANIFEST_URL="${BASE_URL}/cli/${OS}/${ARCH}/${CHANNEL}.json"
+fi
+
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+MANIFEST_PATH="${TMP_DIR}/manifest.json"
+fetch_to_file "$MANIFEST_URL" "$MANIFEST_PATH" "manifest"
+
+URL=$(json_field url <"$MANIFEST_PATH")
+SHA256=$(json_field sha256 <"$MANIFEST_PATH")
+VERSION=$(json_field version <"$MANIFEST_PATH")
+
+if [[ -z "$URL" ]]; then
+  echoerr "Manifest does not contain download url: $MANIFEST_URL"
+  exit 1
+fi
+
+if [[ -z "$VERSION" ]]; then
+  echoerr "Manifest does not contain version: $MANIFEST_URL"
+  exit 1
+fi
+
+if [[ "$SYSTEM_INSTALL" == "true" ]]; then
+  INSTALL_DIR=/usr/local/bin
+  INSTALL_PATH="${INSTALL_DIR}/erda-cli"
+  SUDO=
+  if [[ "$(id -u)" != "0" ]]; then
+    require_cmd sudo
+    SUDO=sudo
+    echo "System install requires superuser permissions."
+    sudo -k
+  fi
+else
+  INSTALL_DIR="${ERDA_CLI_INSTALL_DIR:-${HOME}/.erda/bin}"
+  INSTALL_PATH="${INSTALL_DIR}/erda-cli"
+  SUDO=
+fi
+
+echo "Installing erda-cli ${VERSION} from $URL"
+
+case "$URL" in
+  *.tar.gz)
+    ARCHIVE_PATH="${TMP_DIR}/erda-cli.tar.gz"
+    ;;
+  *.zip)
+    ARCHIVE_PATH="${TMP_DIR}/erda-cli.zip"
+    ;;
+  *)
+    echoerr "Unsupported archive format: $URL"
+    exit 1
+    ;;
+esac
+EXTRACTED_PATH="${TMP_DIR}/erda-cli"
+
+fetch_to_file "$URL" "$ARCHIVE_PATH" "package"
+
+if [[ -n "$SHA256" ]]; then
+  if ! ACTUAL_SHA256=$(checksum_sha256 "$ARCHIVE_PATH"); then
+    echoerr "This installer needs 'shasum' or 'sha256sum' command to verify checksum"
+    exit 1
+  fi
+  if [[ "$ACTUAL_SHA256" != "$SHA256" ]]; then
+    echoerr "Checksum mismatch for downloaded CLI"
+    exit 1
+  fi
+fi
+
+case "$URL" in
+  *.tar.gz)
+    tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
+    ;;
+  *.zip)
+    if ! command -v unzip >/dev/null 2>&1; then
+      echoerr "This installer needs 'unzip' command to extract zip archives"
+      exit 1
     fi
+    unzip -q "$ARCHIVE_PATH" -d "$TMP_DIR"
+    ;;
+esac
+if [[ ! -f "$EXTRACTED_PATH" ]]; then
+  echoerr "CLI archive does not contain erda-cli"
+  exit 1
+fi
+
+$SUDO mkdir -p "$INSTALL_DIR"
+$SUDO mv "$EXTRACTED_PATH" "$INSTALL_PATH"
+$SUDO chmod +x "$INSTALL_PATH"
+
+echo "erda-cli installed to $INSTALL_PATH"
+echo "Installed version:"
+"$INSTALL_PATH" version
+
+ACTIVE_PATH=$(command -v erda-cli 2>/dev/null || true)
+echo
+echo "Next step:"
+if [[ "$ACTIVE_PATH" == "$INSTALL_PATH" ]]; then
+  echo "  erda-cli is ready to use in this shell."
+  echo "  Current erda-cli: $ACTIVE_PATH"
+else
+  if [[ -n "$ACTIVE_PATH" ]]; then
+    echo "  Your shell currently resolves 'erda-cli' to $ACTIVE_PATH."
+    echo "  Put $INSTALL_DIR before $(dirname "$ACTIVE_PATH") in PATH to use this installation."
+  else
+    echo "  Your shell cannot find 'erda-cli' yet."
   fi
 
-  echoerr "Failed to install CLI"
-  exit 1
+  EXPORT_LINE=$(path_export_line)
+  echo
+  echo "For the current shell, run:"
+  echo "  $EXPORT_LINE"
 
-SCRIPT
-  # test the installed CLI
-  LOCATION=$(command -v erda-cli)
-  echo "erda-cli installed to $LOCATION"
-  erda-cli version
-}
+  PROFILE=$(profile_path)
+  if [[ -n "$PROFILE" ]]; then
+    PROFILE_DISPLAY=$(display_path "$PROFILE")
+    echo
+    echo "To make it persistent, run:"
+    echo "  $(profile_append_command "$PROFILE_DISPLAY")"
+    echo "  source $PROFILE_DISPLAY"
+  fi
+fi

@@ -31,9 +31,10 @@ type OrgInfo struct {
 }
 
 type GlobalConfig struct {
-	Version string `yaml:"version"`
-	Host    string `yaml:"host,omitempty"`
-	Server  string `yaml:"server,omitempty"`
+	Version       string `yaml:"version"`
+	Host          string `yaml:"host,omitempty"`
+	Server        string `yaml:"server,omitempty"`
+	UpdateChannel string `yaml:"update_channel,omitempty"`
 }
 
 type ProjectInfo struct {

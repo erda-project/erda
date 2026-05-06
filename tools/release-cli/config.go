@@ -30,8 +30,10 @@ var (
 	defaultOSList   = []string{"darwin", "linux", "windows"}
 	defaultArchList = []string{"amd64", "arm64"}
 	releaseTargets  = []releaseTarget{
-		{goos: "darwin", goarch: "arm64", fileName: "erda-cli"},
-		{goos: "linux", goarch: "amd64", fileName: "erda-cli-linux"},
+		{goos: "darwin", goarch: "arm64", fileName: "erda-cli-darwin-arm64"},
+		{goos: "darwin", goarch: "amd64", fileName: "erda-cli-darwin-amd64"},
+		{goos: "linux", goarch: "amd64", fileName: "erda-cli-linux-amd64"},
+		{goos: "linux", goarch: "arm64", fileName: "erda-cli-linux-arm64"},
 	}
 )
 

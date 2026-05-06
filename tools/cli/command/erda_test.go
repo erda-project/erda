@@ -31,8 +31,9 @@ func TestGlobalConfigResolvedHost(t *testing.T) {
 func TestSetAndGetGlobalConfigFromFile(t *testing.T) {
 	configFile := filepath.Join(t.TempDir(), "config")
 	expected := &GlobalConfig{
-		Version: ConfigVersion,
-		Host:    "https://host.example.com",
+		Version:       ConfigVersion,
+		Host:          "https://host.example.com",
+		UpdateChannel: "alpha",
 	}
 
 	err := SetGlobalConfig(configFile, expected)
@@ -42,6 +43,7 @@ func TestSetAndGetGlobalConfigFromFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expected.Host, actual.Host)
 	require.Equal(t, expected.Version, actual.Version)
+	require.Equal(t, expected.UpdateChannel, actual.UpdateChannel)
 }
 
 func TestGetGlobalConfigFromSupportsLegacyServerField(t *testing.T) {
