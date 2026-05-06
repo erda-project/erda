@@ -178,8 +178,10 @@ test-cli: prepare-cli
 
 .PHONY: release-cli-build
 release-cli-build: prepare-cli
-	$(call build_cli_binary,darwin,arm64,${PROJ_PATH}/bin/erda-cli)
-	$(call build_cli_binary,linux,amd64,${PROJ_PATH}/bin/erda-cli-linux)
+	$(call build_cli_binary,darwin,arm64,${PROJ_PATH}/bin/erda-cli-darwin-arm64)
+	$(call build_cli_binary,darwin,amd64,${PROJ_PATH}/bin/erda-cli-darwin-amd64)
+	$(call build_cli_binary,linux,amd64,${PROJ_PATH}/bin/erda-cli-linux-amd64)
+	$(call build_cli_binary,linux,arm64,${PROJ_PATH}/bin/erda-cli-linux-arm64)
 
 .PHONY: release-cli-publish
 release-cli-publish: release-cli-build

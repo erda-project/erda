@@ -34,6 +34,9 @@ $ ERDA_HOST=https://erda.cloud erda-cli whoami
 }
 
 func RunWhoami(ctx *command.Context) error {
+	command.SetPreferWorkspaceHost(true)
+	defer command.SetPreferWorkspaceHost(false)
+
 	if err := command.LoadAuthState(); err != nil {
 		return err
 	}

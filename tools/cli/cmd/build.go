@@ -26,7 +26,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
-	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
@@ -131,17 +130,17 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 	}
 
 	// fetch appID
-	info, err := utils.GetWorkspaceInfo(".", command.Remote)
+	info, err := getWorkspaceInfo(".", command.Remote)
 	if err != nil {
 		return err
 	}
 
-	org, err := common.GetOrgDetail(ctx, info.Org)
+	org, err := getOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
-	_, applicationID, err := common.ResolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
+	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}
