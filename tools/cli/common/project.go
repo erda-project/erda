@@ -51,10 +51,7 @@ func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs
 	}
 
 	if !response.IsOK() {
-		return apistructs.ProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get project detail",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.ProjectDTO{}, formatHTTPFailureFromResponse("get project detail", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -97,10 +94,7 @@ func CreateProject(ctx *command.Context, orgID uint64, name, desc string,
 	}
 
 	if !resp.IsOK() {
-		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
-
+		return response.Data, formatHTTPFailureFromResponse("create", resp, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
@@ -141,10 +135,7 @@ func CreateMSPProject(ctx *command.Context, projectID uint64, name string) (*pb.
 	}
 
 	if !resp.IsOK() {
-		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("create",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
-
+		return response.Data, formatHTTPFailureFromResponse("create", resp, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
@@ -186,10 +177,7 @@ func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (u
 	}
 
 	if !resp.IsOK() {
-		return response.Data, fmt.Errorf("%s", utils.FormatErrMsg("import",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
-
+		return response.Data, formatHTTPFailureFromResponse("import", resp, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
@@ -219,10 +207,7 @@ func ListMyProjectInOrg(ctx *command.Context, orgId string, projectName string) 
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf("%s", utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return nil, formatHTTPFailureFromResponse("list", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -298,8 +283,8 @@ func GetProjectID(ctx *command.Context, orgID uint64, project string) (string, u
 		projectID = pId
 	}
 
-	if project == "" && ctx.CurrentProject.Project == "" {
-		return project, projectID, errors.New("Invalid project name")
+	if project == "" && ctx.CurrentProject.Project == "" && ctx.CurrentProject.ProjectID <= 0 {
+		return project, projectID, errors.New("invalid project context, please provide --project or --project-id")
 	}
 
 	if project == "" && ctx.CurrentProject.Project != "" {
@@ -387,10 +372,7 @@ func GetPagingProjects(ctx *command.Context, orgId uint64, pageNo, pageSize int)
 	}
 
 	if !response.IsOK() {
-		return apistructs.PagingProjectDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.PagingProjectDTO{}, formatHTTPFailureFromResponse("list", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {

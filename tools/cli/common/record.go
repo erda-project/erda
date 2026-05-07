@@ -40,10 +40,7 @@ func GetRecord(ctx *command.Context, orgID, id uint64) (apistructs.TestFileRecor
 	}
 
 	if !response.IsOK() {
-		return apistructs.TestFileRecord{}, fmt.Errorf("%s", utils.FormatErrMsg("get record",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.TestFileRecord{}, formatHTTPFailureFromResponse("get record", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {

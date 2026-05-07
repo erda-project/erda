@@ -25,16 +25,18 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
 var PIPELINERUN = command.Command{
-	ParentName: "PIPELINE",
-	Name:       "run",
-	ShortHelp:  "create a pipeline and run it",
-	LongHelp:   `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log.`,
-	Example:    "$ erda-cli pipeline run <path-to/pipeline.yml>\n$ erda-cli -V pipeline run <path-to/pipeline.yml>",
+	ParentName:          "PIPELINE",
+	Name:                "run",
+	ShortHelp:           "create a pipeline and run it",
+	PreferWorkspaceHost: true,
+	LongHelp:            `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log.`,
+	Example:             "$ erda-cli pipeline run <path-to/pipeline.yml>\n$ erda-cli -V pipeline run <path-to/pipeline.yml>",
 	Args: []command.Arg{
 		command.StringArg{}.Name("filename"),
 	},
@@ -130,7 +132,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 	}
 
 	// fetch appID
-	info, err := getWorkspaceInfo(".", command.Remote)
+	info, err := getScopedWorkspaceInfo()
 	if err != nil {
 		return err
 	}
@@ -140,7 +142,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return err
 	}
 
-	_, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
+	_, applicationID, err := common.ResolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
 	if err != nil {
 		return err
 	}

@@ -24,6 +24,8 @@ type Command struct {
 	// dont show up in list of cmds
 	Hidden         bool
 	DontHideCursor bool
+	// If true, host resolution prefers workspace git remote host.
+	PreferWorkspaceHost bool
 	/* args:
 	        []Arg {
 		       IPArg{},

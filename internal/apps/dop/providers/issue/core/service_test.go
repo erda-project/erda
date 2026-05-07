@@ -15,11 +15,14 @@
 package core
 
 import (
+	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -131,4 +134,75 @@ func TestIssueService_DBClient(t *testing.T) {
 	db := &dao.DBClient{}
 	i := IssueService{db: db}
 	assert.Equal(t, db, i.DBClient())
+}
+
+func TestIssueService_validateIssueCreateRequest_TimeOrder(t *testing.T) {
+	svc := &IssueService{}
+	start := time.Date(2026, 4, 29, 10, 0, 0, 0, time.UTC)
+	finish := time.Date(2026, 4, 29, 9, 0, 0, 0, time.UTC)
+
+	err := svc.validateIssueCreateRequest(&pb.IssueCreateRequest{
+		ProjectID:   2,
+		IterationID: -1,
+	}, &start, &finish)
+	if err == nil {
+		t.Fatal("expected validation error when planStartedAt > planFinishedAt")
+	}
+}
+
+func TestIssueService_validateIssueCreateRequest_IterationNotFound(t *testing.T) {
+	var db *dao.DBClient
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIteration",
+		func(_ *dao.DBClient, _ uint64) (*dao.Iteration, error) {
+			return nil, gorm.ErrRecordNotFound
+		},
+	)
+	defer patch.Unpatch()
+
+	svc := &IssueService{db: db}
+	err := svc.validateIssueCreateRequest(&pb.IssueCreateRequest{
+		ProjectID:   2,
+		IterationID: 999999,
+	}, nil, nil)
+	if err == nil {
+		t.Fatal("expected validation error for non-existing iteration")
+	}
+}
+
+func TestIssueService_validateIssueCreateRequest_IterationProjectMismatch(t *testing.T) {
+	var db *dao.DBClient
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIteration",
+		func(_ *dao.DBClient, _ uint64) (*dao.Iteration, error) {
+			return &dao.Iteration{ProjectID: 3}, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	svc := &IssueService{db: db}
+	err := svc.validateIssueCreateRequest(&pb.IssueCreateRequest{
+		ProjectID:   2,
+		IterationID: 3,
+	}, nil, nil)
+	if err == nil {
+		t.Fatal("expected validation error for mismatched project iteration")
+	}
+}
+
+func TestIssueService_validateIssueCreateRequest_IterationDBError(t *testing.T) {
+	var db *dao.DBClient
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIteration",
+		func(_ *dao.DBClient, _ uint64) (*dao.Iteration, error) {
+			return nil, errors.New("db unavailable")
+		},
+	)
+	defer patch.Unpatch()
+
+	svc := &IssueService{db: db}
+	err := svc.validateIssueCreateRequest(&pb.IssueCreateRequest{
+		ProjectID:   2,
+		IterationID: 3,
+	}, nil, nil)
+	if err == nil {
+		t.Fatal("expected internal error when iteration query fails")
+	}
 }
