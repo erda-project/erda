@@ -103,10 +103,7 @@ func UpdateProjectWorkspaceConfigs(ctx *command.Context, feature, org, project, 
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf("%s", utils.FormatErrMsg("config update",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
-
+		return formatHTTPFailureFromResponse("config update", response, response.Body())
 	}
 
 	if !resp.Success {
@@ -144,10 +141,7 @@ func GetProjectWorkspaceConfigs(ctx *command.Context, org, project, workspace st
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf("%s", utils.FormatErrMsg("config get",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return formatHTTPFailureFromResponse("config get", response, b.Bytes())
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -196,10 +190,7 @@ func DelelteProjectWorkspaceConfigs(ctx *command.Context, org, project, workspac
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf("%s", utils.FormatErrMsg("config delete",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return formatHTTPFailureFromResponse("config delete", response, b.Bytes())
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {

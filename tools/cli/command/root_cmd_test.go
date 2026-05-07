@@ -489,15 +489,23 @@ func TestResolveBaseHostReturnsEmptyWithoutConfiguredSources(t *testing.T) {
 	require.Empty(t, resolved)
 }
 
-func TestCommandPrefersWorkspaceHost(t *testing.T) {
-	require.True(t, commandPrefersWorkspaceHost("whoami"))
-	require.True(t, commandPrefersWorkspaceHost("pipeline history"))
-	require.True(t, commandPrefersWorkspaceHost("runtime logs"))
-	require.True(t, commandPrefersWorkspaceHost("build list"))
+func TestLookupPreferWorkspaceHost(t *testing.T) {
+	root := &cobra.Command{Use: "erda-cli"}
+	pipeline := &cobra.Command{
+		Use: "pipeline",
+		Annotations: map[string]string{
+			PreferWorkspaceHostAnnotationKey: "true",
+		},
+	}
+	history := &cobra.Command{Use: "history"}
+	login := &cobra.Command{Use: "login"}
+	root.AddCommand(pipeline)
+	pipeline.AddCommand(history)
+	root.AddCommand(login)
 
-	require.False(t, commandPrefersWorkspaceHost("login"))
-	require.False(t, commandPrefersWorkspaceHost("update check"))
-	require.False(t, commandPrefersWorkspaceHost("project list"))
+	require.True(t, lookupPreferWorkspaceHost(pipeline))
+	require.True(t, lookupPreferWorkspaceHost(history))
+	require.False(t, lookupPreferWorkspaceHost(login))
 }
 
 func TestResolveHostFromFlagOrEnvPrefersFlag(t *testing.T) {
@@ -600,6 +608,63 @@ func TestExecuteRootCommandDoesNotDuplicateReportedError(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, 1, strings.Count(output.String(), "already printed"))
 	require.NotContains(t, output.String(), "boom")
+}
+
+func TestExecuteRootCommandRewritesUnexpectedArgumentError(t *testing.T) {
+	origOutput := commandErrorOutput
+	origPrinted := commandErrorPrinted
+	t.Cleanup(func() {
+		commandErrorOutput = origOutput
+		commandErrorPrinted = origPrinted
+	})
+
+	var output bytes.Buffer
+	commandErrorOutput = &output
+	commandErrorPrinted = false
+
+	root := &cobra.Command{Use: "erda-cli", SilenceUsage: true}
+	issue := &cobra.Command{
+		Use:   "issue",
+		Short: "issue command",
+		RunE: func(_ *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return errors.New("accepts between 0 and 0 arg(s), received 1")
+			}
+			return nil
+		},
+	}
+	root.AddCommand(issue)
+	root.SetArgs([]string{"issue", "iteration"})
+
+	err := executeRootCommand(root)
+	require.Error(t, err)
+	require.Contains(t, output.String(), "unknown subcommand or unexpected argument")
+	require.NotContains(t, output.String(), "accepts between 0 and 0 arg(s)")
+}
+
+func TestExecuteExitsNonZeroWhenRootCommandFails(t *testing.T) {
+	origRoot := RootCmd
+	origExit := exitWithCode
+	t.Cleanup(func() {
+		RootCmd = origRoot
+		exitWithCode = origExit
+	})
+
+	RootCmd = &cobra.Command{
+		Use: "erda-cli",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return errors.New("boom")
+		},
+	}
+	RootCmd.SetArgs([]string{})
+
+	exitCode := 0
+	exitWithCode = func(code int) {
+		exitCode = code
+	}
+
+	Execute()
+	require.Equal(t, 1, exitCode)
 }
 
 func TestHandleInterruptSignalsExits(t *testing.T) {

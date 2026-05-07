@@ -32,9 +32,10 @@ import (
 )
 
 var RUNTIME = command.Command{
-	Name:      "runtime",
-	ShortHelp: "Runtime operations",
-	Example:   `erda-cli runtime status`,
+	Name:                "runtime",
+	ShortHelp:           "Runtime operations",
+	PreferWorkspaceHost: true,
+	Example:             `erda-cli runtime status`,
 }
 
 type resolvedRuntimeContext struct {
@@ -91,7 +92,7 @@ func RuntimeStatus(ctx *command.Context, workspace string, runtimeID uint64) err
 }
 
 func resolveRuntimeContext(ctx *command.Context, workspace string, runtimeID uint64, requireRuntimeID bool) (*resolvedRuntimeContext, error) {
-	info, err := getWorkspaceInfo(".", command.Remote)
+	info, err := getScopedWorkspaceInfo()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get workspace info")
 	}
@@ -101,7 +102,7 @@ func resolveRuntimeContext(ctx *command.Context, workspace string, runtimeID uin
 		return nil, err
 	}
 
-	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Project, info.Application)
+	projectID, applicationID, err := resolveWorkspaceApplication(ctx, org.ID, info.Org, info.Project, info.Application)
 	if err != nil {
 		return nil, errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", org.ID, info.Project, info.Application)
 	}

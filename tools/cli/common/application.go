@@ -46,10 +46,7 @@ func GetApplicationDetail(ctx *command.Context, orgID, projectID, applicationID 
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get application detail",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.ApplicationDTO{}, formatHTTPFailureFromResponse("get application detail", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -132,10 +129,7 @@ func GetPagingApplications(ctx *command.Context, orgID, projectID uint64, pageNo
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.ApplicationListResponseData{}, formatHTTPFailureFromResponse("list", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -171,10 +165,7 @@ func GetPagingMyApplications(ctx *command.Context, orgID, projectID uint64, page
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationListResponseData{}, fmt.Errorf("%s", utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.ApplicationListResponseData{}, formatHTTPFailureFromResponse("list", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -207,10 +198,7 @@ func DeleteApplication(ctx *command.Context, applicationID uint64) error {
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf("%s", utils.FormatErrMsg("delete",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return formatHTTPFailureFromResponse("delete", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -256,10 +244,7 @@ func CreateApplication(ctx *command.Context, orgID, projectID uint64, applicatio
 	}
 
 	if !resp.IsOK() {
-		return apistructs.ApplicationDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("create",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.ApplicationDTO{}, formatHTTPFailureFromResponse("create", resp, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &response); err != nil {

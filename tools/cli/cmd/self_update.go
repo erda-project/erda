@@ -445,6 +445,9 @@ func UpdateSetDefault(ctx *command.Context, channel string) error {
 		}
 		globalConfig = &command.GlobalConfig{Version: command.ConfigVersion}
 	}
+	if globalConfig == nil {
+		globalConfig = &command.GlobalConfig{Version: command.ConfigVersion}
+	}
 	if globalConfig.Version == "" {
 		globalConfig.Version = command.ConfigVersion
 	}

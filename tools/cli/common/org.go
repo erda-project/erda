@@ -44,10 +44,7 @@ func GetOrgDetail(ctx *command.Context, orgIDorName string) (apistructs.OrgDTO, 
 	}
 
 	if !response.IsOK() {
-		return apistructs.OrgDTO{}, fmt.Errorf("%s", utils.FormatErrMsg("get organization detail",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-
+		return apistructs.OrgDTO{}, formatHTTPFailureFromResponse("get organization detail", response, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
@@ -76,8 +73,8 @@ func GetOrgID(ctx *command.Context, org string) (string, uint64, error) {
 		orgID = o.ID
 	}
 
-	if org == "" && ctx.CurrentOrg.Name == "" {
-		return org, orgID, errors.New("Invalid organization name. You may clone a project first.")
+	if org == "" && ctx.CurrentOrg.Name == "" && ctx.CurrentOrg.ID <= 0 {
+		return org, orgID, errors.New("invalid organization context, please provide --org or --org-id")
 	}
 
 	if org == "" && ctx.CurrentOrg.Name != "" {
