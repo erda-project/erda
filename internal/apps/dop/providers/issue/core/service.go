@@ -16,6 +16,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -193,6 +194,16 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 		Creator:   create.Creator,
 	}); err != nil {
 		return nil, err
+	}
+
+	u := &query.IssueUpdated{
+		Id:             create.ID,
+		IterationID:    req.IterationID,
+		PlanStartedAt:  planStartedAt,
+		PlanFinishedAt: planFinishedAt,
+	}
+	if err := i.query.AfterIssueUpdate(u); err != nil {
+		return nil, fmt.Errorf("after issue update failed when issue id: %v create, err: %w", issueID, err)
 	}
 
 	go func() {
