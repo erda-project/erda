@@ -45,9 +45,9 @@ var ITERATIONLIST = command.Command{
 }
 
 var (
-	getIterationListOrgID     = common.GetOrgID
-	getIterationListProjectID = common.GetProjectID
-	listProjectIterations     = queryProjectIterations
+	getIterationListOrgID               = common.GetOrgID
+	getIterationListProjectID           = common.GetProjectID
+	listProjectIterations               = queryProjectIterations
 	iterationListStdout       io.Writer = os.Stdout
 )
 

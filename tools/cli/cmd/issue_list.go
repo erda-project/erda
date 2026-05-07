@@ -55,13 +55,13 @@ var ISSUELIST = command.Command{
 }
 
 var (
-	getIssueListOrgID               = common.GetOrgID
-	getIssueListProjectID           = common.GetProjectID
-	listIssueResponse               = common.ListMyIssueResponse
-	getIssueListStates              = common.ListState
-	getIssueListUsersByIDs          = queryIssueListUsersByIDs
-	getIssueListIterationByID       = queryIssueListIterationByID
-	issueListStdout       io.Writer = os.Stdout
+	getIssueListOrgID                   = common.GetOrgID
+	getIssueListProjectID               = common.GetProjectID
+	listIssueResponse                   = common.ListMyIssueResponse
+	getIssueListStates                  = common.ListState
+	getIssueListUsersByIDs              = queryIssueListUsersByIDs
+	getIssueListIterationByID           = queryIssueListIterationByID
+	issueListStdout           io.Writer = os.Stdout
 )
 
 type issueListOutput struct {
@@ -167,7 +167,7 @@ func resolveIssueListDisplayNames(ctx *command.Context, orgID uint64, list []api
 			}
 		}
 		if needLookup {
-		if users, err := getIssueListUsersByIDs(ctx, userIDs); err == nil {
+			if users, err := getIssueListUsersByIDs(ctx, userIDs); err == nil {
 				for id, name := range users {
 					if strings.TrimSpace(name) != "" {
 						userNames[id] = name
