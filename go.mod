@@ -1,6 +1,6 @@
 module github.com/erda-project/erda
 
-go 1.24.0
+go 1.25
 
 godebug x509negativeserial=1
 
@@ -30,7 +30,7 @@ require (
 	github.com/andrianbdn/iospng v0.0.0-20180730113000-dccef1992541
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220314183648-97c793e446ba
 	github.com/antonmedv/expr v1.9.0
-	github.com/apache/thrift v0.16.0
+	github.com/apache/thrift v0.23.0
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/bluele/gcache v0.0.2
@@ -53,7 +53,6 @@ require (
 	github.com/erda-project/erda-infra v1.0.10-0.20250818092705-c6933a1cdf22
 	github.com/erda-project/erda-infra/tools v0.0.0-20240613021434-6a57addb81b3
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
-	github.com/erda-project/erda-proto-go v1.4.0
 	github.com/erda-project/erda-sourcecov v0.1.0
 	github.com/fatih/color v1.16.0
 	github.com/fntlnz/mountinfo v0.0.0-20171106231217-40cb42681fad
@@ -292,7 +291,6 @@ require (
 	github.com/elastic/go-ucfg v0.8.6 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
@@ -518,7 +516,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
-require github.com/volcengine/volc-sdk-golang v1.0.242 // indirect
+require (
+	github.com/iancoleman/strcase v0.3.0 // indirect
+	github.com/volcengine/volc-sdk-golang v1.0.242
+)
 
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
