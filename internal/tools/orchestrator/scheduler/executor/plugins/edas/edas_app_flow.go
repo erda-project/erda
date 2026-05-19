@@ -115,7 +115,7 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 	} else {
 		//查询最新一次的发布单，如果存在运行中则终止
 		orderList, _ := e.wrapEDASClient.ListRecentChangeOrderInfo(appID)
-		if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
+		if orderList != nil && len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
 			e.wrapEDASClient.AbortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
 		}
 
@@ -140,12 +140,27 @@ func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s
 }
 
 func (e *EDAS) resolveServiceSelector(appName, sgID, serviceName string) map[string]string {
-	var deployment *appsv1.Deployment
-	if currentDeployment, err := e.wrapEDASClient.GetAppDeployment(appName); err == nil {
-		deployment = currentDeployment
+	l := e.l.WithField("func", "resolveServiceSelector")
+
+	for i := 0; i < 3; i++ {
+		if dep, err := e.wrapEDASClient.GetAppDeployment(appName); err == nil && dep != nil {
+			selector := resolveServiceSelectorFromDeployment(dep, sgID, serviceName)
+			l.Infof("resolved selector from edas api, appName: %s, selector: %v", appName, selector)
+			return selector
+		} else if err != nil {
+			l.Warnf("failed to get deployment from edas api, appName: %s, attempt: %d, err: %v", appName, i+1, err)
+		}
+
+		if i < 2 {
+			time.Sleep(5 * time.Second)
+		}
 	}
 
-	return resolveServiceSelectorFromDeployment(deployment, sgID, serviceName)
+	l.Errorf("failed to resolve selector after retries, appName: %s, using default selector", appName)
+	return map[string]string{
+		types.LabelServiceName:    serviceName,
+		types.LabelServiceGroupID: sgID,
+	}
 }
 
 func resolveServiceSelectorFromDeployment(deployment *appsv1.Deployment, sgID, serviceName string) map[string]string {
