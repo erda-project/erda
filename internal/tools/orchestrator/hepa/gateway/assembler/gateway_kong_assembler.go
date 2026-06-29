@@ -16,6 +16,7 @@ package assembler
 
 import (
 	"encoding/json"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -37,6 +38,12 @@ func (GatewayKongAssemblerImpl) BuildKongServiceReq(serviceId string, dto *gw.Ap
 	}
 	req := &providerDto.ServiceReqDto{}
 	req.Url = dto.RedirectAddr
+	if u, err := url.Parse(dto.RedirectAddr); err == nil && u.Host != "" {
+		u.Path = ""
+		u.RawQuery = ""
+		u.Fragment = ""
+		req.Url = u.String()
+	}
 	req.ConnectTimeout = 5000
 	req.ReadTimeout = 600000
 	req.WriteTimeout = 600000
