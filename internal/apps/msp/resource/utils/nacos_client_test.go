@@ -76,6 +76,112 @@ func TestExtractToken(t *testing.T) {
 	}
 }
 
+func TestLoginReturnsErrorWhenV1CompatibilityFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case loginPath:
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"message":"Handle API Compatibility failed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewNacosClient("", server.URL, "user", "pass")
+	if _, err := client.Login(); err == nil {
+		t.Fatalf("expected Login error, got nil")
+	}
+}
+
+func TestGetNamespaceIdReturnsErrorWhenV1Deprecated(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case loginPath:
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"accessToken": "v1-token"})
+		case namespacesPath:
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write([]byte(`{"message":"Current API will be deprecated"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewNacosClient("", server.URL, "user", "pass")
+	if _, err := client.GetNamespaceId("test-ns"); err == nil {
+		t.Fatalf("expected GetNamespaceId error, got nil")
+	}
+}
+
+func TestGetNamespaceIdReturnsErrorOnAuthError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case loginPath:
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"accessToken": "v1-token"})
+		case namespacesPath:
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"message":"forbidden"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewNacosClient("", server.URL, "user", "pass")
+	_, err := client.GetNamespaceId("test-ns")
+	if err == nil {
+		t.Fatalf("expected GetNamespaceId error, got nil")
+	}
+}
+
+func TestCreateNamespaceReturnsErrorWhenV1Deprecated(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case loginPath:
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"accessToken": "v1-token"})
+		case namespacesPath:
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write([]byte(`{"message":"Current API will be deprecated"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewNacosClient("", server.URL, "user", "pass")
+	if _, err := client.CreateNamespace("new-ns"); err == nil {
+		t.Fatalf("expected CreateNamespace error, got nil")
+	}
+}
+
+func TestSaveAndDeleteConfigReturnErrorWhenV1Deprecated(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case loginPath:
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"accessToken": "v1-token"})
+		case configsPath:
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write([]byte(`{"message":"Current API will be deprecated"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewNacosClient("", server.URL, "user", "pass")
+	if err := client.SaveConfig("tenant-a", "group-a", "application.yml", "content"); err == nil {
+		t.Fatalf("expected SaveConfig error, got nil")
+	}
+	if err := client.DeleteConfig("tenant-a", "group-a"); err == nil {
+		t.Fatalf("expected DeleteConfig error, got nil")
+	}
+}
+
 func TestEnsureTokenUsesCache(t *testing.T) {
 	c := &NacosClient{bearerToken: "cached"}
 	got, err := c.ensureToken()
