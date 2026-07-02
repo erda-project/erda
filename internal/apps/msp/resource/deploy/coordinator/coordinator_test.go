@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func Test_isNeedDeployGatewayDependedAddon(t *testing.T) {
@@ -60,5 +61,42 @@ func Test_isNeedDeployGatewayDependedAddon(t *testing.T) {
 				t.Errorf("isNeedDeployGatewayDependedAddon() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_hasRealDeployment(t *testing.T) {
+	info := &handlers.ResourceInfo{
+		Dice: &diceyml.Object{
+			AddOns: diceyml.AddOns{
+				handlers.ResourceMysql: {
+					Plan: "mysql:basic",
+				},
+			},
+		},
+	}
+
+	if hasRealDeployment(info, true, true) {
+		t.Fatalf("expected custom resource not to require real deployment")
+	}
+	if !hasRealDeployment(info, true, false) {
+		t.Fatalf("expected resource with addons to require real deployment")
+	}
+	if hasRealDeployment(info, false, false) {
+		t.Fatalf("expected resource without instance deployment not to require real deployment")
+	}
+}
+
+func Test_shouldResolveDependencyResources(t *testing.T) {
+	if shouldResolveDependencyResources(true, true, true) {
+		t.Fatalf("expected custom resource dependencies not to be resolved")
+	}
+	if !shouldResolveDependencyResources(true, false, false) {
+		t.Fatalf("expected tenant resources to resolve dependencies")
+	}
+	if !shouldResolveDependencyResources(false, true, false) {
+		t.Fatalf("expected new instance resources to resolve dependencies")
+	}
+	if shouldResolveDependencyResources(false, false, false) {
+		t.Fatalf("expected resources without tenant or instance work not to resolve dependencies")
 	}
 }
