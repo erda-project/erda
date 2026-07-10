@@ -31,12 +31,12 @@ func (p *provider) IsMatch(tmc *db.Tmc) bool {
 
 func (p *provider) CheckIfHasCustomConfig(clusterConfig map[string]string) (map[string]string, bool) {
 	// try find if aliyun mse instance exists, reuse it if any
-	nacosHost, ok := clusterConfig["MS_NACOS_HOST"]
+	nacosHost, ok := clusterConfig[handlers.MseNacosHost]
 	if !ok {
 		return nil, false
 	}
 
-	nacosPort, ok := clusterConfig["MS_NACOS_PORT"]
+	nacosPort, ok := clusterConfig[handlers.MseNacosPort]
 	if !ok {
 		return nil, false
 	}
