@@ -24,6 +24,15 @@ import (
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
+const redactedHeaderValue = "[REDACTED]"
+
+var sensitiveRequestHeaders = []string{
+	"Authorization",
+	"Proxy-Authorization",
+	"Cookie",
+	"OPENAPI-CSRF-TOKEN",
+}
+
 // +provider
 type provider struct {
 	Cfg *interceptors.Config
@@ -47,7 +56,16 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		i18n.SetGoroutineBindLang(localeName)
 		// clear all global context
 		defer goroutine_context.ClearContext()
+		defer redactSensitiveRequestHeaders(r.Header)
 		h(rw, r)
+	}
+}
+
+func redactSensitiveRequestHeaders(header http.Header) {
+	for _, key := range sensitiveRequestHeaders {
+		if header.Get(key) != "" {
+			header.Set(key, redactedHeaderValue)
+		}
 	}
 }
 
