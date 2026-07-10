@@ -59,12 +59,32 @@ func (p *provider) CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bo
 	if err != nil {
 		return false, err
 	}
+	if !needDeployInstance {
+		return false, nil
+	}
+
+	clusterConfig, err := handler.GetClusterConfig(req.Az)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to GetClusterConfig(%s)", req.Az)
+	}
+	_, hasCustom := handler.CheckIfHasCustomConfig(clusterConfig)
+
+	return hasRealDeployment(resourceInfo, needDeployInstance, hasCustom), nil
+}
+
+func hasRealDeployment(resourceInfo *handlers.ResourceInfo, needDeployInstance bool, hasCustom bool) bool {
+	if !needDeployInstance || hasCustom {
+		return false
+	}
 
 	// if addon has no services or depend addons, no real deploy will perform
 	hasServices := resourceInfo.Dice != nil && resourceInfo.Dice.Services != nil && len(resourceInfo.Dice.Services) > 0
 	hasAddons := resourceInfo.Dice != nil && resourceInfo.Dice.AddOns != nil && len(resourceInfo.Dice.AddOns) > 0
+	return hasServices || hasAddons
+}
 
-	return needDeployInstance && (hasServices || hasAddons), err
+func shouldResolveDependencyResources(needApplyTenant bool, needDeployInstance bool, hasCustom bool) bool {
+	return (needApplyTenant || needDeployInstance) && !hasCustom
 }
 
 func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
@@ -115,10 +135,11 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to GetClusterConfig(%s)", req.Az)
 	}
+	customConfig, hasCustom := handler.CheckIfHasCustomConfig(clusterConfig)
 
 	var subResults []*handlers.ResourceDeployResult
 	// resolve dependency resources
-	if needApplyTenant || needDeployInstance {
+	if shouldResolveDependencyResources(needApplyTenant, needDeployInstance, hasCustom) {
 		// for some resource like monitor, do not has dice.yml definition
 		if resourceInfo.Dice != nil && resourceInfo.Dice.AddOns != nil {
 			defer func() {
@@ -175,7 +196,6 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		}()
 
 		// if is custom resource, do not real deploy, just update config and simply mark status as RUNNING
-		customConfig, hasCustom := handler.CheckIfHasCustomConfig(clusterConfig)
 		if hasCustom {
 			handler.UpdateTmcInstanceOnCustom(tmcInstance, customConfig)
 		} else {
