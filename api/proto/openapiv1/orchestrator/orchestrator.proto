@@ -881,10 +881,10 @@ service orchestrator {
         option (erda.common.openapi) = {
             path: "/api/deployments/{deploymentId}/actions/cancel",
             auth: {
-                no_check: true,
-                check_login: false,
+                no_check: false,
+                check_login: true,
                 try_check_login: false,
-                check_token: false,
+                check_token: true,
                 check_basic_auth: false,
             },
             doc: "取消部署",

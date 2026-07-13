@@ -48,11 +48,18 @@ func (e *Endpoints) CancelDeployment(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrCancelDeployment.InvalidParameter(strutil.Concat("runtimeID: ", req.RuntimeID.String())).
 			ToResp(), nil
 	}
-	// TODO: 需要等 pipeline action 调用走内网后，再从 header 中取 User-ID (operator)
-	if err := e.deployment.CancelLastDeploy(uint64(runtimeID), req.Operator, true); err != nil {
+	operator := deploymentCancelOperator(r, req.Operator)
+	if err := e.deployment.CancelLastDeploy(uint64(runtimeID), operator, true); err != nil {
 		return errorresp.ErrResp(err)
 	}
 	return httpserver.OkResp(nil)
+}
+
+func deploymentCancelOperator(r *http.Request, fallback string) string {
+	if userID, err := user.GetUserID(r); err == nil {
+		return userID.String()
+	}
+	return fallback
 }
 
 // ListLaunchedApprovedDeployments 列出'user-id'用户发起审批的 deployments

@@ -14,20 +14,13 @@
 
 package orchestrator
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
-)
+import "testing"
 
-var ORCHESTRATOR_DEPLOYMENT_CANCEL = apis.ApiSpec{
-	Path:         "/api/deployments/<deploymentId>/actions/cancel",
-	BackendPath:  "/api/deployments/<deploymentId>/actions/cancel",
-	Host:         "orchestrator.marathon.l4lb.thisdcos.directory:8081",
-	Scheme:       "http",
-	Method:       "POST",
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.DeploymentCancelRequest{},
-	ResponseType: apistructs.DeploymentCancelResponse{},
-	Doc:          `取消部署`,
+func TestDeploymentCancelRequiresLoginOrToken(t *testing.T) {
+	if !ORCHESTRATOR_DEPLOYMENT_CANCEL.CheckLogin {
+		t.Fatal("deployment cancel must accept authenticated browser sessions")
+	}
+	if !ORCHESTRATOR_DEPLOYMENT_CANCEL.CheckToken {
+		t.Fatal("deployment cancel must continue accepting authorization tokens")
+	}
 }
