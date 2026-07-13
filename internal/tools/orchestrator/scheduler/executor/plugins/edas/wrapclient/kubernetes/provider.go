@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -30,6 +31,7 @@ import (
 type Interface interface {
 	GetK8sService(name string) (*corev1.Service, error)
 	GetK8sDeployList(group string, services *[]apistructs.Service) error
+	GetDeployment(ctx context.Context, name string) (*appsv1.Deployment, error)
 	CreateK8sService(appName string, selectors map[string]string, ports []int) error
 	CreateOrUpdateK8sService(ctx context.Context, appName string, selectors map[string]string, ports []int) error
 	DeleteK8sService(appName string) error

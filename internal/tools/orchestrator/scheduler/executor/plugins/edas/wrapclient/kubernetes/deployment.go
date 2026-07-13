@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -89,4 +90,19 @@ func (e *wrapKubernetes) GetK8sDeployList(group string, services *[]apistructs.S
 
 	l.Debugf("old service list : %+v", services)
 	return nil
+}
+
+// GetDeployment get deployment by name via k8s API.
+// EDAS may alter the deployment name in k8s, so use list + contains match.
+func (e *wrapKubernetes) GetDeployment(ctx context.Context, name string) (*appsv1.Deployment, error) {
+	deployList, err := e.cs.AppsV1().Deployments(e.namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for i := range deployList.Items {
+		if strings.Contains(deployList.Items[i].Name, name) {
+			return &deployList.Items[i], nil
+		}
+	}
+	return nil, errors.Errorf("deployment contains %q not found", name)
 }
