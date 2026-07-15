@@ -97,6 +97,7 @@ func genTemplateArg(cmd command.Command, cmdname string) templateArg {
 		Example:                    cmd.Example,
 		Hidden:                     cmd.Hidden,
 		DontHideCursor:             cmd.DontHideCursor,
+		PreferWorkspaceHost:        cmd.PreferWorkspaceHost,
 		Args:                       cmd.Args,
 		ArgsNumMin:                 argmin,
 		ArgsNumMax:                 argmax,
@@ -188,6 +189,7 @@ type templateArg struct {
 	Usage                      string
 	Hidden                     bool
 	DontHideCursor             bool
+	PreferWorkspaceHost        bool
 	ShortHelp                  string
 	LongHelp                   string
 	Example                    string
@@ -241,6 +243,11 @@ var {{.Name}}Cmd = &cobra.Command{
 	Long: ` + "`{{.LongHelp}}`" + `,
 	{{- end}}
 	Example: ` + "`{{.Example}}`" + `,
+	{{- if .PreferWorkspaceHost}}
+	Annotations: map[string]string{
+		command.PreferWorkspaceHostAnnotationKey: "true",
+	},
+	{{- end}}
 	{{- if .RunCMD}}
 	Args:  cobra.RangeArgs({{$.ArgsNumMin}}, {{$.ArgsNumMax}}),
 	Hidden: {{.Hidden}},

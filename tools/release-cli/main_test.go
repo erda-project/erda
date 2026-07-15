@@ -85,8 +85,11 @@ func TestResolvePublishReleasesUsesEmbeddedArtifacts(t *testing.T) {
 	if releases[0].goos != "darwin" || releases[0].goarch != "arm64" {
 		t.Fatalf("unexpected first release target: %+v", releases[0])
 	}
-	if releases[1].goos != "linux" || releases[1].goarch != "amd64" {
+	if releases[1].goos != "darwin" || releases[1].goarch != "amd64" {
 		t.Fatalf("unexpected second release target: %+v", releases[1])
+	}
+	if releases[2].goos != "linux" || releases[2].goarch != "amd64" {
+		t.Fatalf("unexpected third release target: %+v", releases[2])
 	}
 }
 

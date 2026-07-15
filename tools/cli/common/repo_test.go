@@ -45,7 +45,7 @@ func TestResolveWorkspaceApplicationPrefersContextIDs(t *testing.T) {
 		},
 	}
 
-	projectID, applicationID, err := ResolveWorkspaceApplication(ctx, 1001, "demo-project", "demo-app")
+	projectID, applicationID, err := ResolveWorkspaceApplication(ctx, 1001, "demo-org", "demo-project", "demo-app")
 	if err != nil {
 		t.Fatalf("ResolveWorkspaceApplication() error = %v", err)
 	}
@@ -70,7 +70,7 @@ func TestResolveWorkspaceApplicationFallsBackToRepoStatsWhenContextMissingIDs(t 
 		}, nil
 	}
 
-	projectID, applicationID, err := ResolveWorkspaceApplication(&command.Context{}, 1001, "demo-project", "demo-app")
+	projectID, applicationID, err := ResolveWorkspaceApplication(&command.Context{}, 1001, "demo-org", "demo-project", "demo-app")
 	if err != nil {
 		t.Fatalf("ResolveWorkspaceApplication() error = %v", err)
 	}
@@ -106,7 +106,7 @@ func TestResolveWorkspaceApplicationFallsBackToRepoStatsWhenNamesDoNotMatch(t *t
 		},
 	}
 
-	projectID, applicationID, err := ResolveWorkspaceApplication(ctx, 1001, "target-project", "target-app")
+	projectID, applicationID, err := ResolveWorkspaceApplication(ctx, 1001, "demo-org", "target-project", "target-app")
 	if err != nil {
 		t.Fatalf("ResolveWorkspaceApplication() error = %v", err)
 	}
@@ -125,7 +125,7 @@ func TestResolveWorkspaceApplicationReturnsExplicitErrorWhenRepoStatsFails(t *te
 		return apistructs.GittarStatsData{}, errors.New("repo not found")
 	}
 
-	_, _, err := ResolveWorkspaceApplication(&command.Context{}, 1001, "demo-project", "demo-app")
+	_, _, err := ResolveWorkspaceApplication(&command.Context{}, 1001, "demo-org", "demo-project", "demo-app")
 	if err == nil {
 		t.Fatal("expected error when repo stats cannot resolve workspace")
 	}

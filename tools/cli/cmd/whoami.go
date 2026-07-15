@@ -24,8 +24,9 @@ import (
 )
 
 var WHOAMI = command.Command{
-	Name:      "whoami",
-	ShortHelp: "show current erda authentication info",
+	Name:                "whoami",
+	ShortHelp:           "show current erda authentication info",
+	PreferWorkspaceHost: true,
 	Example: `
 $ erda-cli whoami
 $ ERDA_HOST=https://erda.cloud erda-cli whoami
@@ -34,9 +35,6 @@ $ ERDA_HOST=https://erda.cloud erda-cli whoami
 }
 
 func RunWhoami(ctx *command.Context) error {
-	command.SetPreferWorkspaceHost(true)
-	defer command.SetPreferWorkspaceHost(false)
-
 	if err := command.LoadAuthState(); err != nil {
 		return err
 	}

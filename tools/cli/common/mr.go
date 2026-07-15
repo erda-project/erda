@@ -44,10 +44,7 @@ func CreateMr(ctx *command.Context, orgID uint64, project, application string, r
 	}
 
 	if !respponse.IsOK() {
-		return nil, fmt.Errorf("%s", utils.FormatErrMsg("create mr",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				respponse.StatusCode(), respponse.ResponseHeader("Content-Type"), b.String()), false))
-
+		return nil, formatHTTPFailureFromResponse("create mr", respponse, b.Bytes())
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {

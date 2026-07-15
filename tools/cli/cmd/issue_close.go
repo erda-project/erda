@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -35,17 +36,19 @@ var ISSUECLOSE = command.Command{
 		command.IntArg{}.Name("issue-id"),
 	},
 	Flags: []command.Flag{
+		command.StringFlag{Short: "", Name: "org", Doc: "organization name; defaults to current workspace context", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "project name; defaults to current workspace context", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "man-hour", Doc: "time for work, in format of 2m/2h/2d/2w", DefaultValue: ""},
 	},
 	ValidArgsFunction: CloseIssueCompletion,
 	Run:               IssueClose,
 }
 
-func CloseIssueCompletion(ctx *cobra.Command, args []string, toComplete string, issueID int, manHour string) []string {
+func CloseIssueCompletion(ctx *cobra.Command, args []string, toComplete string, issueID int, org string, project string, manHour string) []string {
 	return IssueCompletion(ctx, args, toComplete, issueID)
 }
 
-func IssueClose(ctx *command.Context, issueID int, manHour string) error {
+func IssueClose(ctx *command.Context, issueID int, org string, project string, manHour string) error {
 	l := len(manHour)
 	if l == 0 {
 		return errors.Errorf("man-hour not set.")
@@ -71,37 +74,38 @@ func IssueClose(ctx *command.Context, issueID int, manHour string) error {
 		return errors.Errorf("Parse man-hour %s failed, not end with m/h/d/w", manHour)
 	}
 
-	issue, err := common.GetIssue(ctx, ctx.CurrentOrg.ID, ctx.CurrentProject.ProjectID, uint64(issueID))
+	_, orgID, err := resolveIssueScope(ctx, org, project, common.GetOrgID, common.GetProjectID)
 	if err != nil {
 		return err
 	}
+	projectID := ctx.CurrentProject.ProjectID
 
-	var reqState apistructs.IssueStateRelationGetRequest
-	reqState.ProjectID = ctx.CurrentProject.ProjectID
-	states, err := common.ListState(ctx, ctx.CurrentOrg.ID, reqState)
+	issue, err := common.GetIssue(ctx, orgID, projectID, uint64(issueID))
 	if err != nil {
 		return err
 	}
-	var state *apistructs.IssueStateRelation
-	stateMap := map[int64]*apistructs.IssueStateRelation{}
-	for i, s := range states {
-		if s.StateID == issue.State {
-			state = &states[i]
-		}
-		stateMap[s.StateID] = &states[i]
-	}
-	if state == nil {
-		return errors.Errorf("Issue state %d not found in erda", issue.State)
-	}
-	nextStateId, err := getDoneState(state, stateMap)
+	stateMap, err := loadIssueStateMap(ctx, projectID, issue.Type)
 	if err != nil {
 		return err
+	}
+	current := stateMap[issue.State]
+	if current == nil {
+		return fmt.Errorf("current issue state %d not found in project workflow", issue.State)
+	}
+	var target *apistructs.IssueStateRelation
+	switch issue.Type {
+	case apistructs.IssueTypeBug:
+		target = findTransitionByStateBelong(current, stateMap, apistructs.IssueStateBelongResolved)
+	default:
+		target = findTransitionByStateBelong(current, stateMap, apistructs.IssueStateBelongDone)
+	}
+	if target == nil {
+		return buildInvalidTransitionError(current, stateMap, "close target")
 	}
 
 	req := &apistructs.IssueUpdateRequest{}
 	req.ID = uint64(issue.ID)
-	req.State = &nextStateId
-	req.IterationID = &issue.IterationID
+	req.State = &target.StateID
 
 	issue.ManHour.ThisElapsedTime = manHourInMinutes
 	if issue.ManHour.EstimateTime == 0 {
@@ -116,58 +120,11 @@ func IssueClose(ctx *command.Context, issueID int, manHour string) error {
 
 	req.ManHour = &issue.ManHour
 
-	err = common.UpdateIssue(ctx, ctx.CurrentOrg.ID, req)
+	err = common.UpdateIssue(ctx, orgID, req)
 	if err != nil {
 		return err
 	}
 
+	ctx.Succ("Issue %d state updated: %s -> %s", issue.ID, formatStateDebug(current), formatStateDebug(target))
 	return nil
-}
-
-func getDoneState(state *apistructs.IssueStateRelation, stateMap map[int64]*apistructs.IssueStateRelation) (int64, error) {
-	var nextStateId int64
-	var done bool
-	switch state.IssueType {
-	case apistructs.IssueTypeRequirement:
-		if state.StateBelong == apistructs.IssueStateBelongWorking {
-			for _, next := range state.StateRelation {
-				if n, ok := stateMap[next]; ok {
-					if n.StateBelong == apistructs.IssueStateBelongDone {
-						nextStateId = n.StateID
-						done = true
-					}
-				}
-			}
-		}
-	case apistructs.IssueTypeBug:
-		if state.StateBelong == apistructs.IssueStateBelongOpen ||
-			state.StateBelong == apistructs.IssueStateBelongReopen {
-			for _, next := range state.StateRelation {
-				if n, ok := stateMap[next]; ok {
-					if n.StateBelong == apistructs.IssueStateBelongResolved {
-						nextStateId = n.StateID
-						done = true
-					}
-				}
-			}
-		}
-	case apistructs.IssueTypeTask:
-		if state.StateBelong == apistructs.IssueStateBelongWorking {
-			for _, next := range state.StateRelation {
-				if n, ok := stateMap[next]; ok {
-					if n.StateBelong == apistructs.IssueStateBelongDone {
-						nextStateId = n.StateID
-						done = true
-					}
-				}
-			}
-		}
-	}
-
-	if !done {
-		return 0, errors.Errorf("Issue type is %s, state is %s, could not change to done",
-			state.IssueType.String(), state.StateName)
-	}
-
-	return nextStateId, nil
 }

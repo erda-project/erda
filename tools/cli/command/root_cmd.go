@@ -43,6 +43,10 @@ import (
 var (
 	host         string // erda host, format: http[s]://<domain> eg: https://erda.cloud
 	Remote       string // git remote name for erda repo
+	OrgName      string // preferred org name override
+	ProjectName  string // preferred project name override
+	OrgID        uint64 // preferred org id override
+	ProjectID    uint64 // preferred project id override
 	username     string
 	password     string
 	debugMode    bool
@@ -66,12 +70,14 @@ var (
 var loginAndStoreSession = loginAndStoreSessionWithPassword
 
 var preferWorkspaceHost bool
+const PreferWorkspaceHostAnnotationKey = "erda.prefer_workspace_host"
 
 var (
 	commandErrorOutput  io.Writer = os.Stdout
 	commandErrorPrinted bool
 	cursorStateMu       sync.Mutex
 	cursorHidden        bool
+	exitWithCode        = os.Exit
 )
 
 // Default portal origin (same host family as git clone URLs, e.g. https://erda.cloud/org/dop/...).
@@ -182,7 +188,7 @@ func PrepareCtx(cmd *cobra.Command, args []string) error {
 		err = fmt.Errorf("%s", color_str.Red("✗ ")+err.Error())
 		return err
 	}
-	preferWorkspaceHost = commandPrefersWorkspaceHost(u)
+	preferWorkspaceHost = lookupPreferWorkspaceHost(cmd)
 
 	// For completion zsh etc.
 	if strings.HasPrefix(u, "completion ") || strings.HasPrefix(u, "__complete") {
@@ -423,28 +429,15 @@ func resolveBaseHost() (string, error) {
 	return resolveGlobalHost()
 }
 
-// commandPrefersWorkspaceHost returns true when the command should resolve the
-// API host from the git remote URL rather than the global config. This ensures
-// that workspace commands (pipeline, runtime, build, whoami) talk to the same
-// Erda instance that owns the repository, even when the global config points
-// elsewhere. Non-workspace commands (login, update, project list, etc.) fall
-// through to the global config host first.
-func commandPrefersWorkspaceHost(fullUse string) bool {
-	switch {
-	case fullUse == "whoami":
-		return true
-	case strings.HasPrefix(fullUse, "pipeline "):
-		return true
-	case strings.HasPrefix(fullUse, "runtime "):
-		return true
-	case strings.HasPrefix(fullUse, "build "):
-		return true
+// lookupPreferWorkspaceHost returns true when the active command or an ancestor
+// was generated with PreferWorkspaceHost (workspace git remote drives API host).
+func lookupPreferWorkspaceHost(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		if c.Annotations[PreferWorkspaceHostAnnotationKey] == "true" {
+			return true
+		}
 	}
 	return false
-}
-
-func SetPreferWorkspaceHost(v bool) {
-	preferWorkspaceHost = v
 }
 
 func loadWorkspaceInfo() (utils.GitterURLInfo, bool, error) {
@@ -494,6 +487,18 @@ func parseCtx() error {
 			}
 			ctx.Applications = append(ctx.Applications, a2)
 		}
+	}
+	if OrgID > 0 {
+		ctx.CurrentOrg.ID = OrgID
+	}
+	if ProjectID > 0 {
+		ctx.CurrentProject.ProjectID = ProjectID
+	}
+	if strings.TrimSpace(OrgName) != "" {
+		ctx.CurrentOrg.Name = strings.TrimSpace(OrgName)
+	}
+	if strings.TrimSpace(ProjectName) != "" {
+		ctx.CurrentProject.Project = strings.TrimSpace(ProjectName)
 	}
 
 	workspaceInfo, hasWorkspaceInfo, err := loadWorkspaceInfo()
@@ -692,6 +697,10 @@ func hasUsableAuth(s status.StatusInfo) bool {
 func Execute() {
 	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda portal base URL (default: https://erda.cloud, same as git remote host; use your OpenAPI URL only if the deployment exposes API without portal; overrides ERDA_HOST and ~/.erda.d/config)")
 	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "", "origin", "the remote for Erda repo")
+	RootCmd.PersistentFlags().StringVar(&OrgName, "org", "", "organization name override for commands using workspace context")
+	RootCmd.PersistentFlags().StringVar(&ProjectName, "project", "", "project name override for commands using workspace context")
+	RootCmd.PersistentFlags().Uint64Var(&OrgID, "org-id", 0, "organization ID override for commands using workspace context")
+	RootCmd.PersistentFlags().Uint64Var(&ProjectID, "project-id", 0, "project ID override for commands using workspace context")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Erda username to authenticate")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Erda password to authenticate")
 	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "if true, enable verbose mode")
@@ -705,7 +714,9 @@ func Execute() {
 		restoreCursorIfHidden(tput)
 	})
 
-	_ = executeRootCommand(RootCmd)
+	if err := executeRootCommand(RootCmd); err != nil {
+		exitWithCode(1)
+	}
 }
 
 func MarkCommandErrorPrinted() {
@@ -717,7 +728,18 @@ func executeRootCommand(root *cobra.Command) error {
 	err := root.Execute()
 	if err != nil && !IsCompletion && !commandErrorPrinted {
 		MarkCommandErrorPrinted()
-		_, _ = fmt.Fprintln(commandErrorOutput, err)
+		_, _ = fmt.Fprintln(commandErrorOutput, formatCommandError(err))
+	}
+	return err
+}
+
+func formatCommandError(err error) error {
+	if err == nil {
+		return nil
+	}
+	message := err.Error()
+	if strings.Contains(message, "accepts between 0 and 0 arg(s), received 1") {
+		return fmt.Errorf("unknown subcommand or unexpected argument; run \"erda-cli --help\" or \"erda-cli <command> --help\"")
 	}
 	return err
 }

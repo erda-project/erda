@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -113,6 +114,9 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 		req.IdentityInfo.UserID = req.Creator
 	}
 	planStartedAt, planFinishedAt := common.ToIssueTime(req.PlanStartedAt), common.ToIssueTime(req.PlanFinishedAt)
+	if err := i.validateIssueCreateRequest(req, planStartedAt, planFinishedAt); err != nil {
+		return nil, err
+	}
 	// 初始状态为排序级最高的状态
 	initState, err := i.db.GetIssuesStatesByProjectID(req.ProjectID, req.Type.String())
 	if err != nil {
@@ -198,9 +202,8 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 		PlanStartedAt:  planStartedAt,
 		PlanFinishedAt: planFinishedAt,
 	}
-
 	if err := i.query.AfterIssueUpdate(u); err != nil {
-		return nil, fmt.Errorf("after issue update failed when issue id: %v create, err: %v", issueID, err)
+		return nil, fmt.Errorf("after issue update failed when issue id: %v create, err: %w", issueID, err)
 	}
 
 	go func() {
@@ -256,6 +259,27 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	return &pb.IssueCreateResponse{
 		Data: create.ID,
 	}, nil
+}
+
+func (i *IssueService) validateIssueCreateRequest(req *pb.IssueCreateRequest, planStartedAt, planFinishedAt *time.Time) error {
+	if planStartedAt != nil && planFinishedAt != nil && planStartedAt.After(*planFinishedAt) {
+		return apierrors.ErrCreateIssue.InvalidParameter("planStartedAt must be earlier than or equal to planFinishedAt")
+	}
+	if req.IterationID <= 0 {
+		return nil
+	}
+
+	iteration, err := i.db.GetIteration(uint64(req.IterationID))
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return apierrors.ErrCreateIssue.InvalidParameter("iterationID does not exist")
+		}
+		return apierrors.ErrCreateIssue.InternalError(err)
+	}
+	if iteration.ProjectID != req.ProjectID {
+		return apierrors.ErrCreateIssue.InvalidParameter("iterationID does not belong to current project")
+	}
+	return nil
 }
 
 func getStage(req *pb.IssueCreateRequest) string {

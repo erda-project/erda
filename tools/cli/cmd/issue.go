@@ -29,10 +29,13 @@ import (
 )
 
 var ISSUE = command.Command{
-	Name:      "issue",
-	ShortHelp: "list issue already started to handle",
-	Example:   "$ erda-cli issue",
+	Name:                "issue",
+	ShortHelp:           "list issue already started to handle",
+	PreferWorkspaceHost: true,
+	Example:             "$ erda-cli issue",
 	Flags: []command.Flag{
+		command.StringFlag{Short: "", Name: "org", Doc: "organization name; defaults to current workspace context", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "project name; defaults to current workspace context", DefaultValue: ""},
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
 		command.BoolFlag{Short: "", Name: "requirement", Doc: "if true, list requirements", DefaultValue: false},
 		command.BoolFlag{Short: "", Name: "task", Doc: "if true, list tasks", DefaultValue: false},
@@ -42,9 +45,9 @@ var ISSUE = command.Command{
 	Run: MyIssueList,
 }
 
-func MyIssueList(ctx *command.Context, noHeaders, requirement, task, bug bool, pageSize int) error {
+func MyIssueList(ctx *command.Context, org, project string, noHeaders, requirement, task, bug bool, pageSize int) error {
 
-	req, states, err := makeRequest(ctx, requirement, task, bug)
+	req, states, err := makeRequest(ctx, org, project, requirement, task, bug)
 	if err != nil {
 		return err
 	}
@@ -71,16 +74,13 @@ func MyIssueList(ctx *command.Context, noHeaders, requirement, task, bug bool, p
 	return nil
 }
 
-func makeRequest(ctx *command.Context, requirement, task, bug bool) (*apistructs.IssuePagingRequest, []apistructs.IssueStateRelation, error) {
-	var org, project string
-	org, orgID, err := common.GetOrgID(ctx, org)
+func makeRequest(ctx *command.Context, org, project string, requirement, task, bug bool) (*apistructs.IssuePagingRequest, []apistructs.IssueStateRelation, error) {
+	org, orgID, err := resolveIssueScope(ctx, org, project, common.GetOrgID, common.GetProjectID)
 	if err != nil {
 		return nil, nil, err
 	}
-	project, projectID, err := common.GetProjectID(ctx, orgID, project)
-	if err != nil {
-		return nil, nil, err
-	}
+	project = ctx.CurrentProject.Project
+	projectID := ctx.CurrentProject.ProjectID
 	userID := ctx.GetUserID()
 	if userID == "" {
 		return nil, nil, errors.New("Invalid user")
@@ -99,10 +99,12 @@ func makeRequest(ctx *command.Context, requirement, task, bug bool) (*apistructs
 	}
 
 	var req apistructs.IssuePagingRequest
+	req.OrgID = int64(orgID)
 	req.Assignees = []string{userID}
 	req.State = todoStateIds
 	req.OrderBy = "planFinishedAt"
 	req.ProjectID = projectID
+	req.ProjectIDs = []uint64{projectID}
 	if requirement {
 		req.Type = append(req.Type, "REQUIREMENT")
 	}
@@ -166,7 +168,7 @@ func IssueCompletion(ctx *cobra.Command, args []string, toComplete string, issue
 	}
 
 	c := command.GetContext()
-	req, _, err := makeRequest(c, true, true, true)
+	req, _, err := makeRequest(c, "", "", true, true, true)
 	if err != nil {
 		return comps
 	}

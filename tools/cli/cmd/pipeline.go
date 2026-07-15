@@ -15,15 +15,18 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
 var PIPELINE = command.Command{
-	Name:      "pipeline",
-	ShortHelp: "Pipeline operations",
-	Example:   `erda-cli pipeline logs -i <pipelineID>`,
+	Name:                "pipeline",
+	ShortHelp:           "Pipeline operations",
+	PreferWorkspaceHost: true,
+	Example:             `erda-cli pipeline logs -i <pipelineID>`,
 }
 
 var (
@@ -34,3 +37,17 @@ var (
 	getLatestPipelineID         = common.GetLatestPipelineID
 	listPipelinesCICD           = common.ListPipelinesCICD
 )
+
+func getScopedWorkspaceInfo() (utils.GitterURLInfo, error) {
+	info, err := getWorkspaceInfo(".", command.Remote)
+	if err != nil {
+		return utils.GitterURLInfo{}, err
+	}
+	if strings.TrimSpace(command.OrgName) != "" {
+		info.Org = strings.TrimSpace(command.OrgName)
+	}
+	if strings.TrimSpace(command.ProjectName) != "" {
+		info.Project = strings.TrimSpace(command.ProjectName)
+	}
+	return info, nil
+}
