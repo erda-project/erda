@@ -33,6 +33,16 @@ import (
 
 var InvalidErdaRepo = errors.New("Invalid Erda git repository!")
 
+func IsWorkspaceGitRepository(dir string) (bool, error) {
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, errors.WithMessage(err, strings.TrimSpace(string(out)))
+	}
+	return strings.TrimSpace(string(out)) == "true", nil
+}
+
 func GetWorkspaceBranch(dir string) (string, error) {
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	branchCmd.Dir = dir

@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -33,21 +34,22 @@ var PIPELINERUN = command.Command{
 	ParentName: "PIPELINE",
 	Name:       "run",
 	ShortHelp:  "create a pipeline and run it",
-	LongHelp:   `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log.`,
-	Example:    "$ erda-cli pipeline run <path-to/pipeline.yml>\n$ erda-cli -V pipeline run <path-to/pipeline.yml>",
+	LongHelp:   `With global -V (--verbose): prints the JSON body sent to POST /api/cicds and the full HTTP response body when the call fails or returns success=false, in addition to the HTTP client debug log. Use repeatable --param name=value to pass runtime parameters.`,
+	Example:    "$ erda-cli pipeline run <path-to/pipeline.yml>\n$ erda-cli pipeline run pipeline.yml --param verificationHoldAfterPass=60m\n$ erda-cli -V pipeline run <path-to/pipeline.yml>",
 	Args: []command.Arg{
 		command.StringArg{}.Name("filename"),
 	},
 	Flags: []command.Flag{
 		command.StringFlag{Short: "", Name: "branch", Doc: "branch to create pipeline, default is current branch", DefaultValue: ""},
 		command.BoolFlag{Short: "w", Name: "watch", Doc: "watch the status", DefaultValue: false},
+		command.StringListFlag{Short: "", Name: "param", Doc: "runtime parameter (repeatable, name=value; values are strings)", DefaultValue: nil},
 	},
 	ValidArgsFunction:          FilenameCompletion,
 	RegisterFlagCompletionFunc: map[string]interface{}{"branch": BranchCompletion},
 	Run:                        PipelineRun,
 }
 
-func FilenameCompletion(ctx *cobra.Command, args []string, toComplete string, filename, branch string, watch bool) []string {
+func FilenameCompletion(ctx *cobra.Command, args []string, toComplete string, filename, branch string, watch bool, params []string) []string {
 	comps := []string{}
 	if branch != "" {
 		b, err := utils.GetWorkspaceBranch(".")
@@ -83,7 +85,7 @@ func getWorkspacePipelines() ([]string, error) {
 	return pipelineymls, nil
 }
 
-func BranchCompletion(ctx *cobra.Command, args []string, toComplete string, filename, branch string, watch bool) []string {
+func BranchCompletion(ctx *cobra.Command, args []string, toComplete string, filename, branch string, watch bool, params []string) []string {
 	return applicationBranches(".")
 }
 
@@ -104,12 +106,18 @@ func applicationBranches(dir string) []string {
 }
 
 // Create an pipeline and run it
-func PipelineRun(ctx *command.Context, filename, branch string, watch bool) error {
-	// 1. check if .git dir exists in current directory
+var pipelineStatusForRun = PipelineStatus
+
+func PipelineRun(ctx *command.Context, filename, branch string, watch bool, rawParams []string) error {
+	params, err := parsePipelineParams(rawParams)
+	if err != nil {
+		return err
+	}
+	// 1. check if current directory is inside a Git work tree
 	// 2. parse current branch
 	// 3. create pipeline, run it
-	gitDir, err := os.Stat(".git")
-	if err != nil || !gitDir.IsDir() {
+	gitRepo, err := utils.IsWorkspaceGitRepository(".")
+	if err != nil || !gitRepo {
 		return errors.New("Current directory is not a local git repository")
 	}
 
@@ -145,16 +153,8 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return err
 	}
 
-	var (
-		request      apistructs.PipelineCreateRequest
-		pipelineResp apistructs.PipelineCreateResponse
-	)
-	request.AppID = uint64(applicationID)
-	request.Branch = branch
-	request.Source = apistructs.PipelineSourceDice
-	request.PipelineYmlSource = apistructs.PipelineYmlSourceGittar
-	request.PipelineYmlName = normalizePipelineYmlName(filename)
-	request.AutoRun = true
+	var pipelineResp apistructs.PipelineCreateResponse
+	request := pipelineCreateRequest(uint64(applicationID), branch, filename, len(params) > 0)
 
 	if ctx.Debug {
 		if reqJSON, err := json.Marshal(request); err == nil {
@@ -180,8 +180,14 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
 
+	if len(params) > 0 {
+		if err := runPipelineWithParams(ctx, pipelineResp.Data.ID, params); err != nil {
+			return err
+		}
+	}
+
 	if watch {
-		err = PipelineStatus(ctx, branch, pipelineResp.Data.ID, true)
+		err = watchCreatedPipeline(ctx, branch, pipelineResp.Data.ID, true)
 		if err != nil {
 			ctx.Fail("failed to watch status of pipeline %d", pipelineResp.Data.ID)
 		}
@@ -190,6 +196,66 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 			filename, branch, pipelineResp.Data.ID, pipelineResp.Data.ID)
 	}
 
+	return nil
+}
+
+func watchCreatedPipeline(ctx *command.Context, branch string, pipelineID uint64, watch bool) error {
+	if !watch {
+		return nil
+	}
+	return pipelineStatusForRun(ctx, branch, pipelineID, true)
+}
+
+func pipelineCreateRequest(appID uint64, branch, filename string, parameterized bool) apistructs.PipelineCreateRequest {
+	return apistructs.PipelineCreateRequest{
+		AppID:             appID,
+		Branch:            branch,
+		Source:            apistructs.PipelineSourceDice,
+		PipelineYmlSource: apistructs.PipelineYmlSourceGittar,
+		PipelineYmlName:   normalizePipelineYmlName(filename),
+		AutoRun:           !parameterized,
+	}
+}
+
+func parsePipelineParams(raw []string) ([]apistructs.PipelineRunParam, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	params := make([]apistructs.PipelineRunParam, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for _, item := range raw {
+		name, value, ok := strings.Cut(item, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid --param %q: expected name=value", item)
+		}
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return nil, fmt.Errorf("invalid --param %q: parameter name cannot be empty", item)
+		}
+		if _, ok := seen[name]; ok {
+			return nil, fmt.Errorf("duplicate --param name %q", name)
+		}
+		seen[name] = struct{}{}
+		params = append(params, apistructs.PipelineRunParam{Name: name, Value: value})
+	}
+	return params, nil
+}
+
+func runPipelineWithParams(ctx *command.Context, pipelineID uint64, params []apistructs.PipelineRunParam) error {
+	request := struct {
+		PipelineRunParams []apistructs.PipelineRunParam `json:"pipelineRunParams"`
+	}{PipelineRunParams: params}
+	var runResp apistructs.PipelineRunResponse
+	response, err := ctx.Post().Path(fmt.Sprintf("/api/cicds/%d/actions/run", pipelineID)).JSONBody(request).Do().JSON(&runResp)
+	if err != nil {
+		return fmt.Errorf("run pipeline %d after create: %w", pipelineID, err)
+	}
+	if !response.IsOK() {
+		return fmt.Errorf("run pipeline %d failed, status code: %d, err: %+v", pipelineID, response.StatusCode(), runResp.Error)
+	}
+	if !runResp.Success {
+		return fmt.Errorf("run pipeline %d failed: %+v", pipelineID, runResp.Error)
+	}
 	return nil
 }
 
