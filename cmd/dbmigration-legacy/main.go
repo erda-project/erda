@@ -38,11 +38,11 @@ func (parameters) LintConfig() map[string]sqllint.Config { return nil }
 func (parameters) MySQLParameters() *migrator.DSNParameters {
 	port, _ := strconv.Atoi(os.Getenv("MYSQL_PORT"))
 	return &migrator.DSNParameters{
-		Username:  os.Getenv("MYSQL_USER"),
+		Username:  getenvFirst("MYSQL_USER", "MYSQL_USERNAME"),
 		Password:  os.Getenv("MYSQL_PASSWORD"),
 		Host:      os.Getenv("MYSQL_HOST"),
 		Port:      port,
-		Database:  os.Getenv("MYSQL_DICE_DB"),
+		Database:  getenvFirst("MYSQL_DICE_DB", "MYSQL_DATABASE"),
 		ParseTime: true,
 		Timeout:   150 * time.Second,
 		TLS:       os.Getenv("MYSQL_TLS"),
@@ -59,7 +59,7 @@ func (parameters) SandboxParameters() *migrator.DSNParameters {
 		Password:  getenvFirst("SANDBOX_MYSQL_ROOT_PASSWORD", "SANDBOX_MYSQL_PASSWORD"),
 		Host:      getenvFirst("SANDBOX_MYSQL_HOST", "MIGRATION_SANDBOX_HOST", "127.0.0.1"),
 		Port:      port,
-		Database:  os.Getenv("MYSQL_DICE_DB"),
+		Database:  getenvFirst("MYSQL_DICE_DB", "MYSQL_DATABASE"),
 		ParseTime: true,
 		Timeout:   150 * time.Second,
 	}
