@@ -56,8 +56,8 @@ func (parameters) SandboxParameters() *migrator.DSNParameters {
 	}
 	return &migrator.DSNParameters{
 		Username:  "root",
-		Password:  os.Getenv("SANDBOX_MYSQL_ROOT_PASSWORD"),
-		Host:      getenvDefault("SANDBOX_MYSQL_HOST", "127.0.0.1"),
+		Password:  getenvFirst("SANDBOX_MYSQL_ROOT_PASSWORD", "SANDBOX_MYSQL_PASSWORD"),
+		Host:      getenvFirst("SANDBOX_MYSQL_HOST", "MIGRATION_SANDBOX_HOST", "127.0.0.1"),
 		Port:      port,
 		Database:  os.Getenv("MYSQL_DICE_DB"),
 		ParseTime: true,
@@ -79,6 +79,15 @@ func getenvDefault(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func getenvFirst(names ...string) string {
+	for _, name := range names {
+		if value := os.Getenv(name); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func main() {
