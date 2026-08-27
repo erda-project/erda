@@ -49,6 +49,8 @@ services:
   erda-server:
     cmd: /erda/cmd/erda-server/bin
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
       AVATAR_STORAGE_URL: "file:///avatars"
       CMDB_CONTAINER_TOPIC: "spot-metaserver_container"
@@ -134,6 +136,8 @@ services:
         protocol: TCP
         l4_protocol: TCP
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
     resources:
       cpu: ${request_cpu:2}
@@ -262,6 +266,8 @@ services:
         l4_protocol: "TCP"
         expose: true
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       GITTAR_BRANCH_FILTER: "master,develop,feature/*,support/*,release/*,hotfix/*"
       GITTAR_PORT: "5566"
       GITTAR_RPC_METRICS_ENABLED: "true"
@@ -293,6 +299,9 @@ services:
       exec: { }
   hepa:
     cmd: /erda/cmd/hepa/bin
+    envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
     ports:
       - port: 8080
         protocol: "TCP"
@@ -329,6 +338,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       LOG_LEVEL: INFO
     resources:
       cpu: ${request_cpu:0.5}
@@ -366,6 +377,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
       TENANT_GROUP_KEY: "58dcbf490ef3"
       COLLECTOR_SIDECAR_IMAGE: "registry.erda.cloud/erda/erda-fluent-bit:2.1-alpha-20220329155354-3fcba88"
@@ -400,6 +413,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
       PIPELINE_STORAGE_URL: "file:///devops/storage"
     resources:
@@ -435,6 +450,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       BROWSER_ENABLE: "true"
       BROWSER_GROUP_ID: "spot-monitor-browser"
       LOG_GROUP_ID: "spot-monitor-log"
@@ -480,6 +497,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       LOG_SERVICE_INSTANCE_ID: "30563290-f3a8-4f8f-b42b-cc5d3b8ac7c7"
       LOG_KAFKA_TOPICS: "spot-container-log"
       LOG_TOPICS: "spot-container-log"
