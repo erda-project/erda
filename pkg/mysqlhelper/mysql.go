@@ -47,7 +47,11 @@ func (r Request) addr() (string, string) {
 
 func (r Request) dsn(proto string) string {
 	host, port := r.addr()
-	return fmt.Sprintf("%s:%s@%s(%s:%s)/?charset=utf8mb4,utf8&parseTime=true&multiStatements=true", r.User, r.Password, proto, host, port)
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/?charset=utf8mb4,utf8&parseTime=true&multiStatements=true", r.User, r.Password, proto, host, port)
+	if tlsName := os.Getenv("MYSQL_TLS"); tlsName != "" {
+		dsn += "&tls=" + tlsName
+	}
+	return dsn
 }
 
 func (r Request) isRemoteCluster() bool {
@@ -64,7 +68,7 @@ func (r Request) dbOpen() (*sql.DB, error) {
 		proto = fmt.Sprintf("tcp-%s", r.ClusterKey)
 		mysql.RegisterDialContext(proto, mysql.DialContextFunc(clusterdialer.DialContextTCP(r.ClusterKey)))
 	}
-	logrus.Debugf("mysql dsn is:%s", r.dsn(proto))
+	logrus.Debugf("mysql connection configured (remote=%t, tls=%t)", r.isRemoteCluster(), os.Getenv("MYSQL_TLS") != "")
 	db, err := sql.Open("mysql", r.dsn(proto))
 	if err != nil {
 		return nil, err

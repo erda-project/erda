@@ -16,8 +16,18 @@ package mysqlhelper
 
 import (
 	"net"
+	"strings"
 	"testing"
 )
+
+func TestRequestDSNUsesConfiguredTLS(t *testing.T) {
+	t.Setenv("MYSQL_TLS", "rds")
+	r := Request{Host: "ignored", Url: "mysql.example:3306", User: "u", Password: "p"}
+	got := r.dsn("tcp")
+	if want := "&tls=rds"; !strings.Contains(got, want) {
+		t.Fatalf("dsn %q does not contain %q", got, want)
+	}
+}
 
 func TestSplitHost(t *testing.T) {
 	host, port, err := net.SplitHostPort("mysql-slave.group-addon-mysql--df161e4cd23934dfeb75b96203a7970ea.svc.cluster.local:3306")
