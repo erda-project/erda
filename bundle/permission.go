@@ -31,6 +31,7 @@ func (b *Bundle) CheckPermission(req *apistructs.PermissionCheckRequest) (*apist
 	var permissionResp apistructs.PermissionCheckResponse
 	resp, err := hc.Post(host).Path("/api/permissions/actions/check").
 		Header("Internal-Client", "bundle").
+		Header(httputil.UserHeader, req.UserID).
 		JSONBody(req).
 		Do().JSON(&permissionResp)
 	if err != nil {
@@ -54,6 +55,7 @@ func (b *Bundle) StateCheckPermission(req *apistructs.PermissionCheckRequest) (*
 	var permissionResp apistructs.StatePermissionCheckResponse
 	resp, err := hc.Post(host).Path("/api/permissions/actions/stateCheck").
 		Header("Internal-Client", "bundle").
+		Header(httputil.UserHeader, req.UserID).
 		JSONBody(req).
 		Do().JSON(&permissionResp)
 	if err != nil {
