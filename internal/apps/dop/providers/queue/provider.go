@@ -16,6 +16,7 @@ package queue
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -42,6 +43,12 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithErdaServer())
+	service := ctx.Service("erda.core.pipeline.queue.QueueService")
+	queueService, ok := service.(pb.QueueServiceServer)
+	if !ok || queueService == nil {
+		return fmt.Errorf("pipeline queue service is unavailable, type=%T", service)
+	}
+	p.QueueManager = queueService
 	return nil
 }
 
@@ -54,7 +61,7 @@ func init() {
 	servicehub.Register("queue", &servicehub.Spec{
 		Services:     []string{"queue"},
 		Types:        []reflect.Type{interfaceType},
-		Dependencies: nil,
+		Dependencies: []string{"erda.core.pipeline.queue-client"},
 		Description:  "dop queue",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },
