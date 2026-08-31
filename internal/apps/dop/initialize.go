@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -112,17 +113,15 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	// QueueService is registered by the pipeline gRPC client provider. Resolve it
 	// during initialization so servicehub initialization order cannot leave the
 	// autowired field nil until the first pipeline request.
-	if p.PipelineQueue == nil {
-		service := ctx.Service("erda.core.pipeline.queue.QueueService")
-		if service == nil {
-			return fmt.Errorf("pipeline queue service is unavailable")
-		}
-		queueService, ok := service.(queuepb.QueueServiceServer)
-		if !ok {
-			return fmt.Errorf("invalid pipeline queue service type %T", service)
-		}
-		p.PipelineQueue = queueService
+	service := ctx.Service("erda.core.pipeline.queue.QueueService")
+	if service == nil {
+		return fmt.Errorf("pipeline queue service is unavailable")
 	}
+	queueService, ok := service.(queuepb.QueueServiceServer)
+	if !ok || reflect.ValueOf(queueService).Kind() == reflect.Ptr && reflect.ValueOf(queueService).IsNil() {
+		return fmt.Errorf("invalid pipeline queue service type %T", service)
+	}
+	p.PipelineQueue = queueService
 
 	// TODO invoke self use service
 	//_ = os.Setenv("QA_ADDR", discover.QA())
