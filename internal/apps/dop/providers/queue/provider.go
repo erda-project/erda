@@ -45,11 +45,24 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithErdaServer())
 	service := ctx.Service("erda.core.pipeline.queue.QueueService")
 	queueService, ok := service.(pb.QueueServiceServer)
-	if !ok || queueService == nil {
+	if !ok || isNilQueueService(queueService) {
 		return fmt.Errorf("pipeline queue service is unavailable, type=%T", service)
 	}
 	p.QueueManager = queueService
 	return nil
+}
+
+func isNilQueueService(service pb.QueueServiceServer) bool {
+	if service == nil {
+		return true
+	}
+	v := reflect.ValueOf(service)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 func (s *provider) Run(ctx context.Context) error {
