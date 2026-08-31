@@ -17,6 +17,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -98,6 +99,13 @@ func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *api
 }
 
 func (p *provider) InjectQueueManager(queueManager pb.QueueServiceServer) {
+	if queueManager == nil {
+		return
+	}
+	v := reflect.ValueOf(queueManager)
+	if (v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface || v.Kind() == reflect.Map || v.Kind() == reflect.Slice || v.Kind() == reflect.Func) && v.IsNil() {
+		return
+	}
 	p.QueueManager = queueManager
 }
 
