@@ -17,7 +17,6 @@ package dop
 import (
 	"context"
 	"fmt"
-	"fmt"
 	"net/url"
 	"time"
 
@@ -32,6 +31,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
