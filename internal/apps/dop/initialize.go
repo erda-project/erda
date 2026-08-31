@@ -17,6 +17,7 @@ package dop
 import (
 	"context"
 	"fmt"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -107,6 +108,20 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	if conf.PipelineGrpcClientMaxCallSendSizeBytes() > 0 {
 		p.PipelineSvc = ctx.Service("erda.core.pipeline.pipeline.PipelineService", grpc.MaxCallSendMsgSize(conf.PipelineGrpcClientMaxCallSendSizeBytes())).(pipelinepb.PipelineServiceServer)
+	}
+	// QueueService is registered by the pipeline gRPC client provider. Resolve it
+	// during initialization so servicehub initialization order cannot leave the
+	// autowired field nil until the first pipeline request.
+	if p.PipelineQueue == nil {
+		service := ctx.Service("erda.core.pipeline.queue.QueueService")
+		if service == nil {
+			return fmt.Errorf("pipeline queue service is unavailable")
+		}
+		queueService, ok := service.(queuepb.QueueServiceServer)
+		if !ok {
+			return fmt.Errorf("invalid pipeline queue service type %T", service)
+		}
+		p.PipelineQueue = queueService
 	}
 
 	// TODO invoke self use service
