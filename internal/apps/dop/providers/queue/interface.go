@@ -99,6 +99,7 @@ func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *api
 }
 
 func (p *provider) InjectQueueManager(queueManager pb.QueueServiceServer) {
+	p.Log.Infof("inject pipeline queue manager, provider=%p service=%T nil=%v", p, queueManager, isNilQueueService(queueManager))
 	if queueManager == nil {
 		return
 	}
