@@ -53,6 +53,9 @@ func (p *provider) createProjectLevelQueue(workspace string, project *apistructs
 	if isNilQueueService(p.QueueManager) {
 		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
 	}
+	if project == nil || project.ResourceConfig == nil {
+		return nil, fmt.Errorf("project resource config is unavailable")
+	}
 	resourceConfig := project.ResourceConfig.GetWSConfig(workspace)
 	if resourceConfig == nil {
 		return nil, fmt.Errorf("workspace: %s resource info not found", workspace)
