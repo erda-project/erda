@@ -46,6 +46,9 @@ type Interface interface {
 }
 
 func (p *provider) createProjectLevelQueue(workspace string, project *apistructs.ProjectDTO) (*pb.Queue, error) {
+	if err := p.ensureRuntimeDependencies(); err != nil {
+		return nil, err
+	}
 	if isNilQueueService(p.QueueManager) {
 		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
 	}
@@ -79,6 +82,9 @@ func (p *provider) createProjectLevelQueue(workspace string, project *apistructs
 }
 
 func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *apistructs.ProjectDTO) (*pb.Queue, error) {
+	if err := p.ensureRuntimeDependencies(); err != nil {
+		return nil, err
+	}
 	if isNilQueueService(p.QueueManager) {
 		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
 	}
@@ -102,6 +108,23 @@ func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *api
 		return queuePaging.Queues[0], nil
 	}
 	return p.createProjectLevelQueue(workspace, project)
+}
+
+func (p *provider) ensureRuntimeDependencies() error {
+	if p.Cfg == nil {
+		p.Cfg = &config{
+			DefaultQueueConcurrency: 20,
+			DefaultQueueCPU:         30,
+			DefaultQueueMemoryMB:    30720,
+		}
+	}
+	if p.bdl == nil {
+		p.bdl = bundle.New(bundle.WithErdaServer())
+	}
+	if isNilQueueService(p.QueueManager) {
+		return fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
+	}
+	return nil
 }
 
 func (p *provider) InjectQueueManager(queueManager pb.QueueServiceServer) {
