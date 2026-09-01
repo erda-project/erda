@@ -46,6 +46,9 @@ type Interface interface {
 }
 
 func (p *provider) createProjectLevelQueue(workspace string, project *apistructs.ProjectDTO) (*pb.Queue, error) {
+	if isNilQueueService(p.QueueManager) {
+		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
+	}
 	resourceConfig := project.ResourceConfig.GetWSConfig(workspace)
 	if resourceConfig == nil {
 		return nil, fmt.Errorf("workspace: %s resource info not found", workspace)
@@ -76,6 +79,9 @@ func (p *provider) createProjectLevelQueue(workspace string, project *apistructs
 }
 
 func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *apistructs.ProjectDTO) (*pb.Queue, error) {
+	if isNilQueueService(p.QueueManager) {
+		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
+	}
 	clusterName, ok := project.ClusterConfig[strings.ToUpper(workspace)]
 	if !ok {
 		return nil, fmt.Errorf("workspace: %s cluster not found", workspace)
