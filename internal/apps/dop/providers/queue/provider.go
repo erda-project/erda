@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	grpcclient "github.com/erda-project/erda-infra/pkg/transport/grpc"
 	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/bundle"
 )
@@ -45,7 +46,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithErdaServer())
 	service := ctx.Service("erda.core.pipeline.queue.QueueService")
 	queueService, ok := service.(pb.QueueServiceServer)
-	clientService, clientOK := ctx.Service("erda.core.pipeline.queue.QueueService.client").(pb.QueueServiceClient)
+	var clientService pb.QueueServiceClient
+	clientOK := false
+	if conn, connOK := ctx.Service("grpc-client@erda.core.pipeline.queue").(grpcclient.ClientConnInterface); connOK && conn != nil {
+		clientService = pb.NewQueueServiceClient(conn)
+		clientOK = true
+	} else {
+		clientService, clientOK = ctx.Service("erda.core.pipeline.queue.QueueService.client").(pb.QueueServiceClient)
+	}
 	if clientOK && clientService != nil {
 		queueService = &clientAdapter{client: clientService}
 	} else if !ok || isNilQueueService(queueService) {
