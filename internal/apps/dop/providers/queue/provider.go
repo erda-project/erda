@@ -38,7 +38,7 @@ type provider struct {
 	Log      logs.Logger
 	Register transport.Register
 
-	QueueManager pb.QueueServiceServer `autowired:"erda.core.pipeline.queue.QueueService" required:"true"`
+	QueueManager pb.QueueServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
