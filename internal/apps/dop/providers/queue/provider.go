@@ -54,13 +54,31 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	} else {
 		clientService, clientOK = ctx.Service("erda.core.pipeline.queue.QueueService.client").(pb.QueueServiceClient)
 	}
-	if clientOK && clientService != nil {
+	if clientOK && !isNilQueueClient(clientService) {
 		queueService = &clientAdapter{client: clientService}
 	} else if !ok || isNilQueueService(queueService) {
 		return fmt.Errorf("pipeline queue service is unavailable, type=%T", service)
 	}
 	p.QueueManager = queueService
 	return nil
+}
+
+func isNilQueueClient(client pb.QueueServiceClient) bool {
+	if client == nil {
+		return true
+	}
+	v := reflect.ValueOf(client)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return true
+	}
+	e := v.Elem()
+	if e.Kind() == reflect.Struct {
+		field := e.FieldByName("cc")
+		if field.IsValid() && (field.Kind() == reflect.Interface || field.Kind() == reflect.Ptr) {
+			return field.IsNil()
+		}
+	}
+	return false
 }
 
 type clientAdapter struct{ client pb.QueueServiceClient }
