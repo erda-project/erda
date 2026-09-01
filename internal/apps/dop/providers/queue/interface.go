@@ -61,6 +61,9 @@ func (p *provider) createProjectLevelQueue(workspace string, project *apistructs
 	if err != nil {
 		return nil, err
 	}
+	if p.QueueManager == nil {
+		return nil, fmt.Errorf("pipeline queue manager is unavailable after resource calculation")
+	}
 	queue, err := p.QueueManager.CreateQueue(context.Background(), &pb.QueueCreateRequest{
 		Name:             p.makeProjectLevelQueueName(workspace, project.Name),
 		ClusterName:      resourceConfig.ClusterName,
