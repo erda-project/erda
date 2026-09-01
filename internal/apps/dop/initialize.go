@@ -32,8 +32,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/endpoints"
 	"github.com/erda-project/erda/internal/apps/dop/event"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	queueprovider "github.com/erda-project/erda/internal/apps/dop/providers/queue"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/appcertificate"
@@ -156,6 +157,17 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.OrgService, p.Org)
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
+	// Resolve the queue facade explicitly; servicehub may leave interface
+	// fields unset when the provider is registered through a generated client.
+	queueProviderService := ctx.Service("queue")
+	if queueProviderService == nil {
+		return fmt.Errorf("dop queue provider is unavailable")
+	}
+	queue, ok := queueProviderService.(queueprovider.Interface)
+	if !ok || queue == nil {
+		return fmt.Errorf("invalid dop queue provider type %T", queueProviderService)
+	}
+	p.Queue = queue
 	p.Queue.InjectQueueManager(p.PipelineQueue)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
