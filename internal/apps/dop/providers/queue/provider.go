@@ -46,10 +46,32 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	service := ctx.Service("erda.core.pipeline.queue.QueueService")
 	queueService, ok := service.(pb.QueueServiceServer)
 	if !ok || isNilQueueService(queueService) {
-		return fmt.Errorf("pipeline queue service is unavailable, type=%T", service)
+		clientService, clientOK := ctx.Service("erda.core.pipeline.queue.QueueService.client").(pb.QueueServiceClient)
+		if !clientOK || clientService == nil {
+			return fmt.Errorf("pipeline queue service is unavailable, type=%T", service)
+		}
+		queueService = &clientAdapter{client: clientService}
 	}
 	p.QueueManager = queueService
 	return nil
+}
+
+type clientAdapter struct{ client pb.QueueServiceClient }
+
+func (a *clientAdapter) CreateQueue(ctx context.Context, req *pb.QueueCreateRequest) (*pb.QueueCreateResponse, error) {
+	return a.client.CreateQueue(ctx, req)
+}
+func (a *clientAdapter) GetQueue(ctx context.Context, req *pb.QueueGetRequest) (*pb.QueueGetResponse, error) {
+	return a.client.GetQueue(ctx, req)
+}
+func (a *clientAdapter) PagingQueue(ctx context.Context, req *pb.QueuePagingRequest) (*pb.QueuePagingResponse, error) {
+	return a.client.PagingQueue(ctx, req)
+}
+func (a *clientAdapter) UpdateQueue(ctx context.Context, req *pb.QueueUpdateRequest) (*pb.QueueUpdateResponse, error) {
+	return a.client.UpdateQueue(ctx, req)
+}
+func (a *clientAdapter) DeleteQueue(ctx context.Context, req *pb.QueueDeleteRequest) (*pb.QueueDeleteResponse, error) {
+	return a.client.DeleteQueue(ctx, req)
 }
 
 func isNilQueueService(service pb.QueueServiceServer) bool {
