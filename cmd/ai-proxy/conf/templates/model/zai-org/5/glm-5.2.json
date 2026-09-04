@@ -1,0 +1,66 @@
+{
+  "glm-5.2": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/glm-5.2"
+    },
+    "desc": "GLM-5.2 是智谱 AI 推出的面向长程任务（Long Horizon Task）的最新旗舰模型，支持 1M 超长上下文，拥有强大逻辑推理、长文本理解与代码生成能力，兼顾性能与推理效率，适用于智能交互、企业应用、开发辅助等场景。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "zai-org",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "reasoning",
+              "enable_thinking",
+              "tool",
+              "structured_output",
+              "responses_api"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1000000,
+            "max_prompt_tokens": 1000000,
+            "max_prompt_tokens_with_reasoning": 1000000,
+            "max_completion_tokens": 128000,
+            "max_reasoning_tokens": 128000,
+            "rpm": 500,
+            "tpm": 2000000
+          },
+          "pricing": {
+            "prompt": "0.000008",
+            "completion": "0.000028",
+            "request": "0",
+            "image": "0",
+            "web_search": "0.004",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.000002",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

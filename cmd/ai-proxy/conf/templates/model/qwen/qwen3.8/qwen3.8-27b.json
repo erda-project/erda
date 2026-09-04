@@ -1,0 +1,69 @@
+{
+  "qwen3.8-27b": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3.8-27b"
+    },
+    "desc": "Qwen3.8 系列 27B 原生视觉语言 Dense 模型，模型效果相较 3.6-27B 重点提升了文本和视觉模态下的编程和办公场景能力，能更可靠地端到端完成复杂任务，输出值得信赖的成果。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "structured_output",
+              "reasoning",
+              "enable_thinking",
+              "web_search"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1000000,
+            "max_prompt_tokens": 991000,
+            "max_prompt_tokens_with_reasoning": 983000,
+            "max_completion_tokens": 128000,
+            "max_reasoning_tokens": 256000,
+            "rpm": 5000,
+            "tpm": 5000000
+          },
+          "pricing": {
+            "prompt": "0.000003",
+            "completion": "0.000012",
+            "request": "0",
+            "image": "0",
+            "web_search": "0",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.0000006",
+            "input_cache_write": "0.00000375",
+            "input_cache_read_explicit": "0.0000003",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

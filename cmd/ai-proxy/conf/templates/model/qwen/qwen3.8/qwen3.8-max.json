@@ -1,0 +1,69 @@
+{
+  "qwen3.8-max": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/qwen3.8-max"
+    },
+    "desc": "2.4 万亿参数 MoE 旗舰模型，编程与办公能力全面提升，可自主规划并迭代完成长程任务，支持原生视觉理解、超长文档与长视频语义解析，适用于法律、金融、设计等专业场景。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "qwen",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "enable_thinking",
+              "structured_output",
+              "responses_api",
+              "web_search"
+            ],
+            "input_modalities": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1000000,
+            "max_prompt_tokens": 991000,
+            "max_prompt_tokens_with_reasoning": 983000,
+            "max_completion_tokens": 128000,
+            "max_reasoning_tokens": 256000,
+            "tpm": 5000000
+          },
+          "pricing": {
+            "prompt": "0.000012",
+            "completion": "0.000036",
+            "request": "0",
+            "image": "0",
+            "web_search": "0.004",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.0000015",
+            "input_cache_write": "0.000015",
+            "input_cache_read_explicit": "0.000001",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}"
+        },
+        "secret": {}
+      }
+    }
+  }
+}

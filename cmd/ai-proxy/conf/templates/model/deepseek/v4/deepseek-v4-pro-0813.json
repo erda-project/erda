@@ -1,0 +1,68 @@
+{
+  "deepseek-v4-pro-0813": {
+    "placeholders": [
+      {
+        "name": "target-model-name",
+        "type": "string",
+        "required": false,
+        "default": "${@template.name}"
+      }
+    ],
+    "metadata": {
+      "recommended_service_provider_templates": [
+        "aliyun-bailian"
+      ],
+      "website": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/detail/deepseek-v4-pro-0813"
+    },
+    "desc": "旗舰级 MoE 大模型，总参数 1.6T、激活 49B，原生支持百万级上下文。依托海量高质量训练数据，具备顶尖数学逻辑、复杂推理、专业代码与长文本深度解析能力，适配高阶科研、复杂办公和智能代理场景。",
+    "config": {
+      "desc": "${@template.desc}",
+      "apiKey": "",
+      "type": "text_generation",
+      "publisher": "deepseek",
+      "metadata": {
+        "public": {
+          "abilities": {
+            "abilities": [
+              "tool",
+              "reasoning",
+              "enable_thinking",
+              "structured_output",
+              "responses_api",
+              "web_search"
+            ],
+            "input_modalities": [
+              "text"
+            ],
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "context": {
+            "context_length": 1000000,
+            "max_prompt_tokens": 1000000,
+            "max_prompt_tokens_with_reasoning": 1000000,
+            "max_completion_tokens": 384000,
+            "max_reasoning_tokens": 384000,
+            "rpm": 15000,
+            "tpm": 1200000
+          },
+          "pricing": {
+            "prompt": "0.0000045",
+            "completion": "0.0000135",
+            "request": "0",
+            "image": "0",
+            "web_search": "0.004",
+            "internal_reasoning": "0",
+            "input_cache_read": "0.00000045",
+            "input_cache_write": "0",
+            "unit": "CNY"
+          },
+          "model_name": "${@template.placeholders.target-model-name}",
+          "request_type": "openai"
+        },
+        "secret": {}
+      }
+    }
+  }
+}
