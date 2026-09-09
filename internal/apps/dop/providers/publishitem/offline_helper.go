@@ -116,11 +116,6 @@ func (s *PublishItemService) UploadFileFromReader(fileHeader *multipart.FileHead
 		return nil, err
 	}
 
-	// 客户临时修改
-	v := strings.ReplaceAll(resp.DownloadURL, "http://source.example.com", "https://appstore.example.com")
-	v = strings.ReplaceAll(v, "https://source.example.com", "https://appstore.example.com")
-	resp.DownloadURL = v
-
 	return resp, nil
 }
 
@@ -140,11 +135,6 @@ func (s *PublishItemService) UploadFileFromFile(filePath string) (*pb.File, erro
 	if err != nil {
 		return nil, err
 	}
-
-	// 客户临时修改
-	v := strings.ReplaceAll(resp.DownloadURL, "http://source.example.com", "https://appstore.example.com")
-	v = strings.ReplaceAll(v, "https://source.example.com", "https://appstore.example.com")
-	resp.DownloadURL = v
 
 	return resp, nil
 }

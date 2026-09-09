@@ -295,7 +295,7 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 		for i, v := range req.Addons {
 			newAddonName := addonutil.TransAddonName(v.Type)
 			// 如果zk具备canDeploy属性，则对外展现,可以对外发布
-			// zkCanDeploy属性是针对特定的集群，添加的策略，有些私有化集群，如客户、家家悦，烟草，他们是已经上线的集群，不能让他们走多租户注册中心
+			// zkCanDeploy属性是针对特定集群添加的策略，部分已上线的私有化集群不能走多租户注册中心
 			// 所以要提供zookeeper的部署。
 			// 但是还有一个问题存在，就是他们的服务已经跑了老的注册中心的情况下，不能被下面这个判断所影响，所以需要加一个zkExist(是否存在老的zk或者roost)
 			// 如果存在，则不走下面这个判断逻辑。这样做的目的，是为了兼容新老roost和zk的情况
