@@ -169,7 +169,7 @@ func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
 		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
 			// drop future data
 			if m.Timestamp > time.Now().Add(p.Cfg.FutureDiscardDate).UnixNano() {
-				datadrop.WithLabelValues(string(spotMetric), "").Inc()
+				datadrop.WithLabelValues(string(spotMetric)).Inc()
 				return nil
 			}
 			return p.consumeData(m)
