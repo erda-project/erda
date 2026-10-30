@@ -60,22 +60,18 @@ func (p *provider) ComponentClose() error {
 
 func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
 func (p *provider) ExportLog(items ...*log.Log) error {
-	p.storage.WriteBatchAsync(items)
-	return nil
+	return p.storage.WriteBatchAsync(items)
 }
 func (p *provider) ExportProfile(items ...*profile.Output) error {
-	p.storage.WriteBatchAsync(items)
-	return nil
+	return p.storage.WriteBatchAsync(items)
 }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
-	p.storage.WriteBatchAsync(items)
-	return nil
+	return p.storage.WriteBatchAsync(items)
 }
 
 func (p *provider) ExportSpan(items ...*trace.Span) error {
-	p.storage.WriteBatchAsync(items)
-	return nil
+	return p.storage.WriteBatchAsync(items)
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -135,10 +131,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("invalid data_type: %q", p.Cfg.BuilderCfg.DataType)
 	}
 	p.storage = &Storage{
-		cfg:             p.Cfg.StorageCfg,
-		logger:          p.Log.Sub("storage"),
-		currencyLimiter: make(chan struct{}, p.Cfg.StorageCfg.CurrencyNum),
-		sqlBuilder:      batchBuilder,
+		cfg:        p.Cfg.StorageCfg,
+		logger:     p.Log.Sub("storage"),
+		sqlBuilder: batchBuilder,
 	}
 	return nil
 }
