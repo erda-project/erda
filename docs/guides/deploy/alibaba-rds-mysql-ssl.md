@@ -113,6 +113,18 @@ Action 支持需要先发布包含 TLS migrator API 的 Erda 主仓版本，再�
 4. 使用错误 CA、缺失 CA 和证书不匹配的连接地址分别验证启动或迁移明确失败，且不会回退明文。
 5. 按阿里云变更窗口启用或更新 RDS SSL，验证实例重启/切换后平台服务可依赖现有连接池与重连机制恢复。
 
+## Pipeline Action 元数据
+
+Pipeline 页面会读取公开 Action 元数据来展示节点名称、图标和描述。完成平台部署后，先确认 Action 目录不是空的：
+
+```sh
+curl 'http://<erda-server>/api/extensions?public=true&type=action'
+```
+
+如果某个 Pipeline 引用的 Action 尚未导入，应通过 Erda Extension API 或 `erda-cli ext push` 导入对应 `spec.yml`、`dice.yml` 和 README。不要直接写扩展数据表。
+
+后端在 Action 元数据缺失或 `spec.yml` 无效时仍会保留已解析的 Pipeline Action，并使用 alias 或 Action type 作为显示名，避免流程图把所有 stage 变成空数组。Action 元数据本身仍应补齐，否则页面可以渲染，但对应任务可能无法执行。
+
 ## 回滚
 
 先将 RDS 侧策略恢复为允许非 SSL 连接，再清空 `MYSQL_TLS` 和 `MYSQL_CACERTPATH`，滚动重启平台服务并移除 CA 挂载。若 RDS 仍强制 SSL，提前清空客户端配置会导致平台数据库连接失败。
