@@ -1669,7 +1669,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 
 						req := apistructs.ServiceGroupDeleteRequest{Namespace: relationIns.Namespace,
 							Name: relationIns.ScheduleName, Force: force}
-						if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, force, nil); err != nil {
+						if err := ignoreMissingServiceGroup(a.serviceGroupImpl.Delete(req.Namespace, req.Name, force, nil)); err != nil {
 							logrus.Errorf("delete service group failed, request: %v, error: %v", req, err)
 							return err
 						}
@@ -1695,7 +1695,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 
 				req := apistructs.ServiceGroupDeleteRequest{Namespace: addonInstance.Namespace,
 					Name: addonInstance.ScheduleName, Force: force}
-				if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, force, nil); err != nil {
+				if err := ignoreMissingServiceGroup(a.serviceGroupImpl.Delete(req.Namespace, req.Name, force, nil)); err != nil {
 					logrus.Errorf("delete service group failed, request: %+v, error: %+v", req, err)
 					return err
 				}
@@ -1775,6 +1775,13 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 	}
 
 	return nil
+}
+
+func ignoreMissingServiceGroup(err error) error {
+	if err == servicegroup.DeleteNotFound {
+		return nil
+	}
+	return err
 }
 
 // Scale 根据 routingInstanceID 调整 addon 实例副本数实现:
