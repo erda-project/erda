@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
@@ -109,4 +110,47 @@ locale:
 	ymlbyte, err := yml.MarshalJSON()
 	assert.NoError(t, err)
 	t.Log(string(ymlbyte))
+}
+
+func Test_loadGraphActionNameAndLogoKeepsActionsWithoutExtensionMetadata(t *testing.T) {
+	actionStages := [][]*pb.PipelineYmlAction{
+		{
+			{Type: "git-checkout", Alias: "git-checkout"},
+			{Type: apistructs.ActionTypeSnippet, Alias: "nested-pipeline"},
+		},
+	}
+	stages := make([]interface{}, 0, len(actionStages))
+	for _, stage := range actionStages {
+		pbStages := make([]interface{}, 0, len(stage))
+		for _, action := range stage {
+			pbAction, err := convertAction2Value(action)
+			assert.NoError(t, err)
+			pbStages = append(pbStages, pbAction.AsInterface())
+		}
+		stages = append(stages, pbStages)
+	}
+	stageList, err := structpb.NewList(stages)
+	assert.NoError(t, err)
+	yml := &pb.PipelineYml{
+		Stages:  stageList,
+		Version: "1.1",
+	}
+	bdl := bundle.New()
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "SearchExtensions", func(_ *bundle.Bundle, req apistructs.ExtensionSearchRequest) (map[string]apistructs.ExtensionVersion, error) {
+		return map[string]apistructs.ExtensionVersion{}, nil
+	})
+	defer pm.Unpatch()
+
+	s := &graphService{bdl: bdl}
+	err = s.loadGraphActionNameAndLogo(yml, "zh-CN")
+	assert.NoError(t, err)
+
+	graphStages := yml.Stages.GetValues()
+	if assert.Len(t, graphStages, 1) {
+		actions := graphStages[0].GetListValue().GetValues()
+		if assert.Len(t, actions, 2) {
+			assert.Equal(t, "git-checkout", actions[0].GetStructValue().GetFields()["displayName"].GetStringValue())
+			assert.Equal(t, pipelineyml.SnippetDisplayName, actions[1].GetStructValue().GetFields()["displayName"].GetStringValue())
+		}
+	}
 }
