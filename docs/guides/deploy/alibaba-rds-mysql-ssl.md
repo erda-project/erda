@@ -125,6 +125,16 @@ curl 'http://<erda-server>/api/extensions?public=true&type=action'
 
 后端在 Action 元数据缺失或 `spec.yml` 无效时仍会保留已解析的 Pipeline Action，并使用 alias 或 Action type 作为显示名，避免流程图把所有 stage 变成空数组。Action 元数据本身仍应补齐，否则页面可以渲染，但对应任务可能无法执行。
 
+安装后还应确认标准运行依赖已经导入：
+
+- Action Agent：`agent@1.0`
+- 应用 addon：`redis@6.2.10`、`monitor@3.6`
+- addon Operator：`redis-operator@6.2.10`
+
+这些元数据应通过 Extension API 或 `erda-cli ext push` 导入。Orchestrator 会在启动时加载 addon 类型并在内存中维护索引；导入后如果当前进程未及时刷新，可滚动重启 Orchestrator。
+
+如果 addon 调度记录已经丢失，删除 addon 时不能因为 ServiceGroup 返回 `not found` 而保留数据库中的孤儿路由。Orchestrator 应将缺失的调度记录视为已清理，并继续删除 addon routing/instance 记录，否则后续部署会持续复用损坏的 addon。
+
 ## 回滚
 
 先将 RDS 侧策略恢复为允许非 SSL 连接，再清空 `MYSQL_TLS` 和 `MYSQL_CACERTPATH`，滚动重启平台服务并移除 CA 挂载。若 RDS 仍强制 SSL，提前清空客户端配置会导致平台数据库连接失败。
