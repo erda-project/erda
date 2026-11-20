@@ -43,6 +43,26 @@ func TestFetchOpenapiPrintsInfoInDebugMode(t *testing.T) {
 	require.Contains(t, out.String(), "dice_version: 2.4")
 }
 
+func TestFetchOpenapiUsesDirectHost(t *testing.T) {
+	t.Setenv(directHostEnv, "true")
+
+	client := httpclient.New()
+	client.BackendClient().Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
+		t.Fatal("metadata endpoint must not be requested in direct-host mode")
+		return nil, nil
+	})
+	ctx := &Context{
+		CurrentHost: "http://127.0.0.1:19529",
+		Sessions:    map[string]status.StatusInfo{},
+		HttpClient:  client,
+	}
+
+	require.NoError(t, ctx.FetchOpenapi())
+	require.Equal(t, ctx.CurrentHost, ctx.Openapi.String())
+	require.Equal(t, ctx.CurrentHost, ctx.Hepaapi.String())
+	require.Equal(t, ctx.CurrentHost, ctx.Domain.String())
+}
+
 func newFetchOpenapiTestContext(t *testing.T, debug bool) (*Context, *bytes.Buffer) {
 	t.Helper()
 
