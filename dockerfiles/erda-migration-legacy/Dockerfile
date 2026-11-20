@@ -1,19 +1,35 @@
-# Builds the v2.4 legacy migration image by reusing the binary that the
-# standard `make build-all` pipeline already produces in the unified image.
-# The base image keeps the MySQL sandbox and client that the migration needs;
-# only /usr/bin/erda-migrate is replaced.
+# Builds the v2.4 legacy migration image.
+#
+# The runtime image keeps the MySQL sandbox and client required by the
+# migration, but its glibc is too old for a dynamically linked binary.
+# The runner is therefore compiled here with CGO disabled.
 #
 # Usage:
-#   docker build \
-#     --build-arg ERDA_IMAGE=registry.erda.cloud/erda/erda:<tag> \
-#     -t registry.erda.cloud/erda/erda-migration-legacy:<tag> .
+#   docker build --platform linux/amd64 \
+#     -t registry.erda.cloud/erda/erda-migration-legacy:<tag> \
+#     -f dockerfiles/erda-migration-legacy/Dockerfile .
 
-ARG ERDA_IMAGE
-FROM --platform=$TARGETPLATFORM ${ERDA_IMAGE} AS erda-binaries
+ARG GO_IMAGE=golang:1.24
+ARG GOPROXY=https://goproxy.cn,direct
+
+FROM --platform=$TARGETPLATFORM ${GO_IMAGE} AS builder
+
+ARG GOPROXY
+ENV GOPROXY=${GOPROXY}
+ENV CGO_ENABLED=0
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN GOOS=linux GOARCH=amd64 go build -o /out/dbmigration-legacy ./cmd/dbmigration-legacy
 
 FROM --platform=$TARGETPLATFORM registry.erda.cloud/erda/erda-migratoin:57-20260504230057-9dafe6754dc644c375514a9a0818b650e9791ef0
 
-COPY --from=erda-binaries /erda/cmd/dbmigration-legacy/bin /usr/bin/erda-migrate
+COPY --from=builder /out/dbmigration-legacy /usr/bin/erda-migrate
 
 RUN chmod 0755 /usr/bin/erda-migrate
 
