@@ -42,14 +42,15 @@ const (
 	RoleOrgGuest           = "Guest"
 
 	// project
-	RoleProjectOwner    = "Owner"
-	RoleProjectLead     = "Lead"
-	RoleProjectPM       = "PM"
-	RoleProjectPD       = "PD"
-	RoleProjectDev      = "Dev"
-	RoleProjectQA       = "QA"
-	RoleProjectReporter = "Reporter"
-	RoleProjectGuest    = "Guest"
+	RoleProjectOwner            = "Owner"
+	RoleProjectLead             = "Lead"
+	RoleProjectPM               = "PM"
+	RoleProjectPD               = "PD"
+	RoleProjectDev              = "Dev"
+	RoleProjectQA               = "QA"
+	RoleProjectReporter         = "Reporter"
+	RoleProjectGuest            = "Guest"
+	RoleProjectSpecForgeManager = "SpecForgeManager"
 
 	// app
 	RoleAppOwner = "Owner"
@@ -82,14 +83,15 @@ var allScopeRoleMap = map[apistructs.ScopeType]map[string]RoleInfo{
 		RoleOrgGuest:           {Role: RoleProjectGuest, IsHide: true, I18nKey: "OrgGuestRole", IsManager: false, Level: 9},
 	},
 	apistructs.ProjectScope: {
-		RoleProjectOwner:    {Role: RoleProjectOwner, IsHide: false, I18nKey: "ProjectOwnerRole", IsManager: true, Level: 0},
-		RoleProjectLead:     {Role: RoleProjectLead, IsHide: false, I18nKey: "ProjectLeadRole", IsManager: true, Level: 1},
-		RoleProjectPM:       {Role: RoleProjectPM, IsHide: false, I18nKey: "ProjectPMRole", IsManager: true, Level: 2},
-		RoleProjectPD:       {Role: RoleProjectPD, IsHide: false, I18nKey: "ProjectPDRole", IsManager: false, Level: 3},
-		RoleProjectDev:      {Role: RoleProjectDev, IsHide: false, I18nKey: "ProjectDevRole", IsManager: false, Level: 4},
-		RoleProjectQA:       {Role: RoleProjectQA, IsHide: false, I18nKey: "ProjectQARole", IsManager: false, Level: 5},
-		RoleProjectReporter: {Role: RoleProjectReporter, IsHide: false, I18nKey: "ProjectReporterRole", IsManager: false, Level: 6},
-		RoleProjectGuest:    {Role: RoleProjectGuest, IsHide: true, I18nKey: "ProjectGuestRole", IsManager: false, Level: 7},
+		RoleProjectOwner:            {Role: RoleProjectOwner, IsHide: false, I18nKey: "ProjectOwnerRole", IsManager: true, Level: 0},
+		RoleProjectLead:             {Role: RoleProjectLead, IsHide: false, I18nKey: "ProjectLeadRole", IsManager: true, Level: 1},
+		RoleProjectPM:               {Role: RoleProjectPM, IsHide: false, I18nKey: "ProjectPMRole", IsManager: true, Level: 2},
+		RoleProjectPD:               {Role: RoleProjectPD, IsHide: false, I18nKey: "ProjectPDRole", IsManager: false, Level: 3},
+		RoleProjectDev:              {Role: RoleProjectDev, IsHide: false, I18nKey: "ProjectDevRole", IsManager: false, Level: 4},
+		RoleProjectQA:               {Role: RoleProjectQA, IsHide: false, I18nKey: "ProjectQARole", IsManager: false, Level: 5},
+		RoleProjectReporter:         {Role: RoleProjectReporter, IsHide: false, I18nKey: "ProjectReporterRole", IsManager: false, Level: 6},
+		RoleProjectGuest:            {Role: RoleProjectGuest, IsHide: true, I18nKey: "ProjectGuestRole", IsManager: false, Level: 7},
+		RoleProjectSpecForgeManager: {Role: RoleProjectSpecForgeManager, IsHide: false, I18nKey: "ProjectSpecForgeManagerRole", IsManager: false, Level: 8},
 	},
 	apistructs.AppScope: {
 		RoleAppOwner: {Role: RoleAppOwner, IsHide: false, I18nKey: "AppOwnerRole", IsManager: true, Level: 0},
