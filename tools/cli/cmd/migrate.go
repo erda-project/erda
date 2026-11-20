@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/pkg/database/mysqltls"
 	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 	"github.com/erda-project/erda/tools/cli/command"
@@ -64,6 +65,18 @@ var mysqlFlags = []command.Flag{
 		Name:         "database",
 		Doc:          "[MySQL] database to use. env: ERDA_MYSQL_DATABASE",
 		DefaultValue: os.Getenv("ERDA_MYSQL_DATABASE"),
+	},
+	command.StringFlag{
+		Short:        "",
+		Name:         "mysql-tls",
+		Doc:          "[MySQL] registered TLS configuration name. env: MYSQL_TLS",
+		DefaultValue: os.Getenv("MYSQL_TLS"),
+	},
+	command.StringFlag{
+		Short:        "",
+		Name:         "mysql-ca-cert-path",
+		Doc:          "[MySQL] CA certificate path. env: MYSQL_CACERTPATH",
+		DefaultValue: os.Getenv("MYSQL_CACERTPATH"),
 	},
 	command.IntFlag{
 		Short:        "",
@@ -135,9 +148,12 @@ var Migrate = command.Command{
 	Run: RunMigrate,
 }
 
-func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
+func RunMigrate(ctx *command.Context, host string, port int, username, password, database, mysqlTLS, mysqlCaCertPath string, sandboxPort int,
 	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool, output string) error {
 	logrus.Infoln("Erda Migrator is working")
+	if err := registerMySQLTLS(mysqlTLS, mysqlCaCertPath); err != nil {
+		return errors.Wrap(err, "failed to register MySQL TLS")
+	}
 
 	var p = parameters{
 		mySQLParams: &migrator.DSNParameters{
@@ -148,6 +164,7 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 			Database:  database,
 			ParseTime: true,
 			Timeout:   time.Second * 150,
+			TLS:       mysqlTLS,
 		},
 		sandboxParams: &migrator.DSNParameters{
 			Username:  "root",
@@ -202,6 +219,10 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 	}
 
 	return nil
+}
+
+func registerMySQLTLS(tlsName, caCertPath string) error {
+	return mysqltls.Open(tlsName, caCertPath, "", "")
 }
 
 func getPortFromEnv(key string) int {

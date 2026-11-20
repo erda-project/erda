@@ -49,6 +49,8 @@ services:
   erda-server:
     cmd: /erda/cmd/erda-server/bin
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
       AVATAR_STORAGE_URL: "file:///avatars"
       CMDB_CONTAINER_TOPIC: "spot-metaserver_container"
@@ -99,6 +101,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
       - "${nfs_root:/netdata}/avatars:/avatars:rw"
       - "${nfs_root:/netdata}/dice/cmdb/files:/files:rw"
     resources:
@@ -134,6 +137,8 @@ services:
         protocol: TCP
         l4_protocol: TCP
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
     resources:
       cpu: ${request_cpu:2}
@@ -146,6 +151,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:2}
       labels:
@@ -262,6 +268,8 @@ services:
         l4_protocol: "TCP"
         expose: true
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       GITTAR_BRANCH_FILTER: "master,develop,feature/*,support/*,release/*,hotfix/*"
       GITTAR_PORT: "5566"
       GITTAR_RPC_METRICS_ENABLED: "true"
@@ -279,6 +287,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: 1
       labels:
@@ -293,6 +302,9 @@ services:
       exec: { }
   hepa:
     cmd: /erda/cmd/hepa/bin
+    envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
     ports:
       - port: 8080
         protocol: "TCP"
@@ -310,6 +322,8 @@ services:
         GROUP: "addons"
     expose:
       - 8080
+    binds:
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     health_check:
       http:
         port: 8080
@@ -329,6 +343,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       LOG_LEVEL: INFO
     resources:
       cpu: ${request_cpu:0.5}
@@ -353,6 +369,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
   orchestrator:
     cmd: /erda/cmd/orchestrator/bin
     ports:
@@ -366,6 +383,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
       TENANT_GROUP_KEY: "58dcbf490ef3"
       COLLECTOR_SIDECAR_IMAGE: "registry.erda.cloud/erda/erda-fluent-bit:2.1-alpha-20220329155354-3fcba88"
@@ -380,6 +399,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:1}
       labels:
@@ -400,6 +420,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       DEBUG: "false"
       PIPELINE_STORAGE_URL: "file:///devops/storage"
     resources:
@@ -413,6 +435,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:2}
       labels:
@@ -435,6 +458,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       BROWSER_ENABLE: "true"
       BROWSER_GROUP_ID: "spot-monitor-browser"
       LOG_GROUP_ID: "spot-monitor-log"
@@ -460,6 +485,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:4}
       labels:
@@ -480,6 +506,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      MYSQL_TLS: "${mysql_tls:}"
+      MYSQL_CACERTPATH: "${mysql_ca_cert_path:}"
       LOG_SERVICE_INSTANCE_ID: "30563290-f3a8-4f8f-b42b-cc5d3b8ac7c7"
       LOG_KAFKA_TOPICS: "spot-container-log"
       LOG_TOPICS: "spot-container-log"
@@ -495,6 +523,8 @@ services:
       max_mem: 1024
       network:
         mode: "container"
+    binds:
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${log_service_replicas:2}
       labels:

@@ -114,7 +114,7 @@ type provider struct {
 	Identity              userpb.UserServiceServer
 	RuleService           rulepb.RuleServiceServer
 	PipelineAction        pipeline.Interface
-	Queue                 queue.Interface
+	Queue                 queue.Interface `autowired:"queue" required:"true"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n"`

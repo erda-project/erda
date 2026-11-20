@@ -45,6 +45,16 @@ import (
 
 const count = 20
 
+func TestIgnoreMissingServiceGroup(t *testing.T) {
+	if err := ignoreMissingServiceGroup(servicegroup.DeleteNotFound); err != nil {
+		t.Fatalf("expected missing service group to be ignored, got %v", err)
+	}
+	want := errors.New("delete failed")
+	if err := ignoreMissingServiceGroup(want); !errors.Is(err, want) {
+		t.Fatalf("expected delete error to be preserved, got %v", err)
+	}
+}
+
 func TestConcurrentReadWriteAppInfos(t *testing.T) {
 	var keys = []string{"1", "2", "3", "4", "5"}
 

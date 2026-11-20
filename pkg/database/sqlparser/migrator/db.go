@@ -62,7 +62,7 @@ func (mig *Migrator) DB() *gorm.DB {
 	dsn = mig.MySQLParameters().Format(true)
 	mig.db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
-		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
+		logrus.WithError(err).Fatalln("failed to open MySQL connection")
 	}
 	// set the gorm logger SQL collector
 	mig.db.Logger, err = gormutil.NewSQLCollector(mig.collectorFilename, nil)
@@ -115,7 +115,7 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	dsn = mig.SandboxParameters().Format(true)
 	mig.sandbox, err = gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
-		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open connection to sandbox")
+		logrus.WithError(err).Fatalln("failed to open connection to sandbox")
 	}
 	mig.sandbox.Logger = logger.New(
 		log.New(os.Stdout, "\r\n", log.Ltime),
@@ -140,7 +140,7 @@ func (mig *Migrator) initConnToDB(dsn string, timeout time.Duration, initF func(
 	}()
 
 	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
-		loopLog := logrus.WithField("DSN", dsn).WithField("left time", timeout.Seconds()-time.Since(now).Seconds())
+		loopLog := logrus.WithField("left time", timeout.Seconds()-time.Since(now).Seconds())
 		open, err = sql.Open("mysql", dsn)
 		if err != nil {
 			loopLog.WithError(err).Warnln("failed to connect to the MySQL Server, it will try again in 3 seconds")
@@ -158,6 +158,6 @@ func (mig *Migrator) initConnToDB(dsn string, timeout time.Duration, initF func(
 		return nil
 	}
 
-	logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to dial the MySQL Server")
+	logrus.WithError(err).Fatalln("failed to dial the MySQL Server")
 	return err
 }

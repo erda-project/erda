@@ -15,6 +15,7 @@
 package dao_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -261,9 +262,39 @@ func TestTX_Create(t *testing.T) {
 		t.Fatalf("failed to Updates: %v", err)
 	}
 	t.Logf("user: %+v", user)
+
+	commitTx := dao.Begin()
+	if err := commitTx.Create(&User{Age: 11, Name: "committed"}); err != nil {
+		t.Fatalf("failed to create in commit transaction: %v", err)
+	}
+	commitTx.CommitOrRollback()
+	var committed User
+	ok, err = dao.Q().Get(&committed, dao.Where("name = ?", "committed"))
+	if err != nil || !ok {
+		t.Fatalf("committed row was not readable: ok=%v err=%v", ok, err)
+	}
+
+	rollbackTx := dao.Begin()
+	if err := rollbackTx.Create(&User{Age: 12, Name: "rolled-back"}); err != nil {
+		t.Fatalf("failed to create in rollback transaction: %v", err)
+	}
+	rollbackTx.Error = errors.New("force rollback")
+	rollbackTx.CommitOrRollback()
+	var rolledBack User
+	ok, err = dao.Q().Get(&rolledBack, dao.Where("name = ?", "rolled-back"))
+	if err != nil {
+		t.Fatalf("failed to query rolled-back row: %v", err)
+	}
+	if ok {
+		t.Fatal("rolled-back row should not be readable")
+	}
+	if err := rollbackTx.Create(&User{Age: 13, Name: "invalid"}); !errors.Is(err, dao.InvalidTransactionError) {
+		t.Fatalf("expected invalid transaction error, got %v", err)
+	}
 }
 
 func openDB(t *testing.T) {
+	_ = os.Remove(dsn)
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open %s: %v", dsn, err)

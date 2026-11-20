@@ -712,6 +712,9 @@ func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to select the quota record of the project")
+		if dto.ResourceConfig == nil {
+			dto.ResourceConfig = apistructs.NewResourceConfig()
+		}
 		return
 	}
 	setProjectDtoQuotaFromModel(dto, &projectQuota)

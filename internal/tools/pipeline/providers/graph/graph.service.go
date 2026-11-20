@@ -97,28 +97,25 @@ func (s *graphService) loadGraphActionNameAndLogo(graph *basepb.PipelineYml, lan
 				action.LogoUrl = pipelineyml.SnippetLogo
 				action.DisplayName = pipelineyml.SnippetDisplayName
 				action.Description = pipelineyml.SnippetDesc
-				continue
+			} else if version, ok := resultMap[action.Type]; ok {
+				if specYmlStr, ok := version.Spec.(string); ok {
+					var actionSpec apistructs.ActionSpec
+					if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err != nil {
+						logrus.Errorf("pipelineYmlGraph Unmarshal spec error: %v", err)
+					} else {
+						action.DisplayName = actionSpec.GetLocaleDisplayName(lang)
+						action.LogoUrl = actionSpec.LogoUrl
+						action.Description = actionSpec.GetLocaleDesc(lang)
+					}
+				}
 			}
 
-			version, ok := resultMap[action.Type]
-			if !ok {
-				continue
+			if action.DisplayName == "" {
+				action.DisplayName = action.Alias
+				if action.DisplayName == "" {
+					action.DisplayName = action.Type
+				}
 			}
-
-			specYmlStr, ok := version.Spec.(string)
-			if !ok {
-				continue
-			}
-
-			var actionSpec apistructs.ActionSpec
-			if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err != nil {
-				logrus.Errorf("pipelineYmlGraph Unmarshal spec error: %v", err)
-				continue
-			}
-
-			action.DisplayName = actionSpec.GetLocaleDisplayName(lang)
-			action.LogoUrl = actionSpec.LogoUrl
-			action.Description = actionSpec.GetLocaleDesc(lang)
 			actionValue, err := convertAction2Value(action)
 			if err != nil {
 				return err

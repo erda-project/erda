@@ -23,6 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
+
+	"github.com/erda-project/erda/pkg/common"
 )
 
 var Engine *xorm.Engine
@@ -34,6 +36,7 @@ type config struct {
 	Password string `env:"MYSQL_PASSWORD" envDefault:"anywhere"`
 	Database string `env:"MYSQL_DATABASE" envDefault:"ci"`
 	Charset  string `env:"MYSQL_CHARSET" envDefault:"utf8mb4"`
+	TLS      string `env:"MYSQL_TLS"`
 
 	MaxIdle int `env:"MYSQL_MAXIDLE" envDefault:"10"`
 	MaxConn int `env:"MYSQL_MAXCONN" envDefault:"10"`
@@ -44,16 +47,23 @@ type config struct {
 }
 
 func init() {
+	common.RegisterInitializer(func() {
+		if err := initialize(); err != nil {
+			logrus.Fatalf("initialize ci mysql: %v", err)
+		}
+	})
+}
+
+func initialize() error {
 	cfg := config{}
 	err := env.Parse(&cfg)
 	if err != nil {
-		logrus.Fatalf("get mysql configuration failed: %v", err)
+		return fmt.Errorf("get mysql configuration: %w", err)
 	}
 
-	Engine, err = xorm.NewEngine("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
-		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset))
+	Engine, err = xorm.NewEngine("mysql", cfg.dsn())
 	if err != nil {
-		logrus.Fatalf("connect to mysql failed: %v", err)
+		return fmt.Errorf("create mysql engine: %w", err)
 	}
 
 	// if err := Engine.Ping(); err != nil {
@@ -72,4 +82,14 @@ func init() {
 	Engine.SetMaxOpenConns(cfg.MaxConn)
 	Engine.SetMaxIdleConns(cfg.MaxIdle)
 	Engine.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+	return nil
+}
+
+func (cfg config) dsn() string {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
+		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset)
+	if cfg.TLS != "" {
+		dsn += "&tls=" + cfg.TLS
+	}
+	return dsn
 }
