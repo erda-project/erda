@@ -42,7 +42,7 @@ func TestOpen(t *testing.T) {
 	})
 
 	t.Run("custom profile requires CA", func(t *testing.T) {
-		assert.Error(t, Open("rds", "", "", ""))
+		assert.Error(t, Open("mysql", "", "", ""))
 	})
 
 	t.Run("certificate path requires profile", func(t *testing.T) {

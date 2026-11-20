@@ -28,7 +28,7 @@ func TestRegisterMySQLTLS(t *testing.T) {
 	})
 
 	t.Run("missing CA path", func(t *testing.T) {
-		assert.Error(t, registerMySQLTLS("rds", ""))
+		assert.Error(t, registerMySQLTLS("mysql", ""))
 	})
 
 	t.Run("invalid CA", func(t *testing.T) {

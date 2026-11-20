@@ -118,3 +118,6 @@ GEMINI.md
 .gemini-clipboard
 .worktrees/
 docs/plans/
+
+# 构建产物，禁止提交
+dockerfiles/erda-migration-legacy/dbmigration-legacy

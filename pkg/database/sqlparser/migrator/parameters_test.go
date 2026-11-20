@@ -38,7 +38,7 @@ func TestDSNParameters_Format(t *testing.T) {
 	p2 := p1
 	p2.Password = ""
 	p3 := p1
-	p3.TLS = "rds"
+	p3.TLS = "mysql"
 
 	cases := []DSNParameters_Format{
 		{p1, "root:12345678@tcp(0.0.0.0:3306)/erda?charset=utf8mb4%2Cutf8&loc=Local&multiStatements=true&parseTime=true&timeout=0s"},

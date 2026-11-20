@@ -36,8 +36,8 @@ func TestConfigDSN(t *testing.T) {
 		},
 		{
 			name: "with named TLS",
-			tls:  "rds",
-			want: "erda:secret@tcp(mysql:3306)/erda?charset=utf8mb4&parseTime=True&loc=Local&tls=rds",
+			tls:  "mysql",
+			want: "erda:secret@tcp(mysql:3306)/erda?charset=utf8mb4&parseTime=True&loc=Local&tls=mysql",
 		},
 	}
 
