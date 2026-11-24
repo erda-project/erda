@@ -25,7 +25,7 @@ import (
 type Conf struct {
 	Debug               bool          `env:"DEBUG" default:"false"`
 	EnableEss           bool          `env:"ENABLE_ESS" default:"false"`
-	KubectlShellEnabled bool          `env:"CMP_KUBECTL_SHELL_ENABLED" default:"false"`
+	ShellConsoleEnabled bool          `env:"CMP_SHELL_CONSOLE_ENABLED" default:"false"`
 	SoldierAddr         string        `env:"SOLDIER_ADDR"`
 	SchedulerAddr       string        `env:"SCHEDULER_ADDR"`
 	TaskSyncDuration    time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`
@@ -71,8 +71,8 @@ func EnableEss() bool {
 	return cfg.EnableEss
 }
 
-func KubectlShellEnabled() bool {
-	return cfg.KubectlShellEnabled
+func ShellConsoleEnabled() bool {
+	return cfg.ShellConsoleEnabled
 }
 
 func TaskSyncDuration() time.Duration {

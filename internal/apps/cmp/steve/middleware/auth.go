@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -39,16 +40,16 @@ const varsKey = "stevePathVars"
 type Authenticator struct {
 	bdl                 *bundle.Bundle
 	clusterSvc          clusterpb.ClusterServiceServer
-	kubectlShellEnabled bool
+	shellConsoleEnabled bool
 }
 
 // NewAuthenticator return a steve Authenticator with bundle.
 // bdl need withCoreServices to check permission.
-func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer, kubectlShellEnabled bool) *Authenticator {
+func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer, shellConsoleEnabled bool) *Authenticator {
 	return &Authenticator{
 		bdl:                 bdl,
 		clusterSvc:          clusterSvc,
-		kubectlShellEnabled: kubectlShellEnabled,
+		shellConsoleEnabled: shellConsoleEnabled,
 	}
 }
 
@@ -66,7 +67,7 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 
 		logrus.Infof("Steve server receive request. User-ID: %s, Org-ID: %s, Path: %s.", userID, orgID, req.URL.String())
 
-		if muxVars["kubectl-shell"] != "" && !a.kubectlShellEnabled {
+		if isCmpShellConsoleRequest(muxVars) && !a.shellConsoleEnabled {
 			resp.WriteHeader(http.StatusNotFound)
 			resp.Write(apistructs.NewSteveError(apistructs.NotFound, "not found").JSON())
 			return
@@ -154,6 +155,13 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 		req = req.WithContext(ctx)
 		next.ServeHTTP(resp, req)
 	})
+}
+
+func isCmpShellConsoleRequest(vars map[string]string) bool {
+	if vars["kubectl-shell"] != "" {
+		return true
+	}
+	return strings.EqualFold(vars["type"], "pods") && strings.EqualFold(vars["link"], "exec")
 }
 
 func (a *Authenticator) listClusterByType(ctx context.Context, orgID uint64, types ...string) ([]*clusterpb.ClusterInfo, error) {
