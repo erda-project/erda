@@ -18,8 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jinzhu/gorm"
-
+	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	apierrors "github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
@@ -36,10 +35,10 @@ type authorizedUserService struct {
 	sysAdminChecker sysAdminChecker
 }
 
-func newAuthorizedUserService(service common.Interface, db *gorm.DB) common.Interface {
+func newAuthorizedUserService(service common.Interface, mysqlSvc mysql.Interface) common.Interface {
 	var checker sysAdminChecker
-	if db != nil {
-		checker = &dao.DBClient{DB: db}
+	if mysqlSvc != nil {
+		checker = &dao.DBClient{DB: mysqlSvc.DB()}
 	}
 	return &authorizedUserService{
 		Interface:       service,

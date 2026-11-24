@@ -20,13 +20,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/jinzhu/gorm"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
+	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/auth/domain"
 	"github.com/erda-project/erda/internal/core/user/common"
@@ -47,7 +46,7 @@ type provider struct {
 
 	IAM         iam.Interface
 	UC          uc.Interface
-	DB          *gorm.DB `autowired:"mysql-client" optional:"true"`
+	MySQL       mysql.Interface
 	userService common.Interface
 }
 
@@ -60,7 +59,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 	default:
 		return fmt.Errorf("illegal oauth provider %s", p.Cfg.OAuthProvider)
 	}
-	p.userService = newAuthorizedUserService(p.userService, p.DB)
+	p.userService = newAuthorizedUserService(p.userService, p.MySQL)
 
 	p.Log.Infof("use oauth provider %s as user service", p.Cfg.OAuthProvider)
 	if p.Register != nil {
