@@ -22,6 +22,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -116,7 +117,7 @@ func TestChain(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	auth := NewAuthenticator(bdl, &fakeClusterServiceServer{})
+	auth := NewAuthenticator(bdl, &fakeClusterServiceServer{}, true)
 	audit := NewAuditor(bdl)
 	shell := NewShellHandler(context.Background())
 	chain := Chain{
@@ -191,6 +192,31 @@ func TestChain(t *testing.T) {
 			// do
 			if _, err = httpClient.Do(req); err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestAuthMiddlewareRejectsKubectlShellWhenDisabled(t *testing.T) {
+	auth := NewAuthenticator(nil, nil, false)
+	nextCalled := false
+	handler := auth.AuthMiddleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		nextCalled = true
+	}))
+
+	for _, method := range []string{http.MethodGet, http.MethodPost} {
+		t.Run(method, func(t *testing.T) {
+			nextCalled = false
+			req := httptest.NewRequest(method, "/api/k8s/clusters/local/kubectl-shell", nil)
+			resp := httptest.NewRecorder()
+
+			handler.ServeHTTP(resp, req)
+
+			if resp.Code != http.StatusNotFound {
+				t.Fatalf("expected status %d, got %d", http.StatusNotFound, resp.Code)
+			}
+			if nextCalled {
+				t.Fatal("expected disabled kubectl shell request to stop before the next handler")
 			}
 		})
 	}

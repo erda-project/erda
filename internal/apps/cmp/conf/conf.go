@@ -23,17 +23,18 @@ import (
 
 // Conf Define the configuration
 type Conf struct {
-	Debug              bool          `env:"DEBUG" default:"false"`
-	EnableEss          bool          `env:"ENABLE_ESS" default:"false"`
-	SoldierAddr        string        `env:"SOLDIER_ADDR"`
-	SchedulerAddr      string        `env:"SCHEDULER_ADDR"`
-	TaskSyncDuration   time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`
-	TaskCleanDuration  time.Duration `env:"TASK_CLEAN_DURATION" default:"24h"`
-	LocalMode          bool          `env:"LOCAL_MODE" default:"false"`
-	RedisMasterName    string        `default:"my-master" env:"REDIS_MASTER_NAME"`
-	RedisSentinelAddrs string        `default:"" env:"REDIS_SENTINELS_ADDR"`
-	RedisAddr          string        `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
-	RedisPwd           string        `default:"anywhere" env:"REDIS_PASSWORD"`
+	Debug               bool          `env:"DEBUG" default:"false"`
+	EnableEss           bool          `env:"ENABLE_ESS" default:"false"`
+	KubectlShellEnabled bool          `env:"CMP_KUBECTL_SHELL_ENABLED" default:"false"`
+	SoldierAddr         string        `env:"SOLDIER_ADDR"`
+	SchedulerAddr       string        `env:"SCHEDULER_ADDR"`
+	TaskSyncDuration    time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`
+	TaskCleanDuration   time.Duration `env:"TASK_CLEAN_DURATION" default:"24h"`
+	LocalMode           bool          `env:"LOCAL_MODE" default:"false"`
+	RedisMasterName     string        `default:"my-master" env:"REDIS_MASTER_NAME"`
+	RedisSentinelAddrs  string        `default:"" env:"REDIS_SENTINELS_ADDR"`
+	RedisAddr           string        `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
+	RedisPwd            string        `default:"anywhere" env:"REDIS_PASSWORD"`
 
 	// size of steve server cache, default 1Gi
 	CacheSize int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`
@@ -68,6 +69,10 @@ func Debug() bool {
 
 func EnableEss() bool {
 	return cfg.EnableEss
+}
+
+func KubectlShellEnabled() bool {
+	return cfg.KubectlShellEnabled
 }
 
 func TaskSyncDuration() time.Duration {

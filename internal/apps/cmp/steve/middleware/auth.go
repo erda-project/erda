@@ -37,14 +37,19 @@ import (
 const varsKey = "stevePathVars"
 
 type Authenticator struct {
-	bdl        *bundle.Bundle
-	clusterSvc clusterpb.ClusterServiceServer
+	bdl                 *bundle.Bundle
+	clusterSvc          clusterpb.ClusterServiceServer
+	kubectlShellEnabled bool
 }
 
 // NewAuthenticator return a steve Authenticator with bundle.
 // bdl need withCoreServices to check permission.
-func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Authenticator {
-	return &Authenticator{bdl: bdl, clusterSvc: clusterSvc}
+func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer, kubectlShellEnabled bool) *Authenticator {
+	return &Authenticator{
+		bdl:                 bdl,
+		clusterSvc:          clusterSvc,
+		kubectlShellEnabled: kubectlShellEnabled,
+	}
 }
 
 // AuthMiddleware authenticate for steve server by bundle.
@@ -60,6 +65,12 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 		orgID := req.Header.Get("Org-ID")
 
 		logrus.Infof("Steve server receive request. User-ID: %s, Org-ID: %s, Path: %s.", userID, orgID, req.URL.String())
+
+		if muxVars["kubectl-shell"] != "" && !a.kubectlShellEnabled {
+			resp.WriteHeader(http.StatusNotFound)
+			resp.Write(apistructs.NewSteveError(apistructs.NotFound, "not found").JSON())
+			return
+		}
 
 		scopeID, err := strconv.ParseUint(orgID, 10, 64)
 		if err != nil {
