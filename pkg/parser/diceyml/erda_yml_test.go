@@ -47,4 +47,10 @@ func TestErdaYmlMySQLTLSDefaults(t *testing.T) {
 		require.NotContains(t, service.Envs, "MYSQL_TLS", name)
 		require.NotContains(t, service.Envs, "MYSQL_CACERTPATH", name)
 	}
+	for name, service := range obj.Services {
+		for _, bind := range service.Binds {
+			require.NotContains(t, bind, "mysql-tls", name)
+			require.NotContains(t, bind, "ApsaraDB-CA-Chain", name)
+		}
+	}
 }

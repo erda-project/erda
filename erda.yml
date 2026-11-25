@@ -101,7 +101,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
       - "${nfs_root:/netdata}/avatars:/avatars:rw"
       - "${nfs_root:/netdata}/dice/cmdb/files:/files:rw"
     resources:
@@ -151,7 +150,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:2}
       labels:
@@ -287,7 +285,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: 1
       labels:
@@ -322,8 +319,6 @@ services:
         GROUP: "addons"
     expose:
       - 8080
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     health_check:
       http:
         port: 8080
@@ -369,7 +364,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
   orchestrator:
     cmd: /erda/cmd/orchestrator/bin
     ports:
@@ -399,7 +393,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:1}
       labels:
@@ -435,7 +428,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:2}
       labels:
@@ -485,7 +477,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${replicas:4}
       labels:
@@ -523,8 +514,6 @@ services:
       max_mem: 1024
       network:
         mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/ApsaraDB-CA-Chain.pem:/etc/erda/mysql-tls/ApsaraDB-CA-Chain.pem:ro"
     deployments:
       replicas: ${log_service_replicas:2}
       labels:
