@@ -43,7 +43,7 @@ func TestDSNParameters_Format(t *testing.T) {
 	cases := []DSNParameters_Format{
 		{p1, "root:12345678@tcp(0.0.0.0:3306)/erda?charset=utf8mb4%2Cutf8&loc=Local&multiStatements=true&parseTime=true&timeout=0s"},
 		{p2, "root@tcp(0.0.0.0:3306)/erda?charset=utf8mb4%2Cutf8&loc=Local&multiStatements=true&parseTime=true&timeout=0s"},
-		{p3, "root:12345678@tcp(0.0.0.0:3306)/erda?charset=utf8mb4%2Cutf8&loc=Local&multiStatements=true&parseTime=true&timeout=0s&tls=rds"},
+		{p3, "root:12345678@tcp(0.0.0.0:3306)/erda?charset=utf8mb4%2Cutf8&loc=Local&multiStatements=true&parseTime=true&timeout=0s&tls=mysql"},
 	}
 	for _, case_ := range cases {
 		if dsn := case_.P.Format(true); dsn != case_.DSN {
