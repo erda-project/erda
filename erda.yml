@@ -98,6 +98,9 @@ services:
     expose:
       - 9529
     binds:
+      # When MySQL TLS is enabled, the deployment layer must add a read-only CA
+      # bind at the path configured by MYSQL_CACERTPATH. For example:
+      # - "${mysql_ca_host_path}:/etc/erda/mysql-tls/mysql-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
