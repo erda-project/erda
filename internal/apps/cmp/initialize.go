@@ -180,7 +180,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	server := httpserver.New("")
 	server.RegisterEndpoint(append(ep.Routes()))
 
-	authenticator := middleware.NewAuthenticator(bdl, p.ClusterSvc)
+	authenticator := middleware.NewAuthenticator(bdl, p.ClusterSvc, conf.ShellConsoleEnabled())
 	shellHandler := middleware.NewShellHandler(ctx)
 	auditor := middleware.NewAuditor(bdl)
 

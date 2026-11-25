@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -37,14 +38,19 @@ import (
 const varsKey = "stevePathVars"
 
 type Authenticator struct {
-	bdl        *bundle.Bundle
-	clusterSvc clusterpb.ClusterServiceServer
+	bdl                 *bundle.Bundle
+	clusterSvc          clusterpb.ClusterServiceServer
+	shellConsoleEnabled bool
 }
 
 // NewAuthenticator return a steve Authenticator with bundle.
 // bdl need withCoreServices to check permission.
-func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Authenticator {
-	return &Authenticator{bdl: bdl, clusterSvc: clusterSvc}
+func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer, shellConsoleEnabled bool) *Authenticator {
+	return &Authenticator{
+		bdl:                 bdl,
+		clusterSvc:          clusterSvc,
+		shellConsoleEnabled: shellConsoleEnabled,
+	}
 }
 
 // AuthMiddleware authenticate for steve server by bundle.
@@ -60,6 +66,12 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 		orgID := req.Header.Get("Org-ID")
 
 		logrus.Infof("Steve server receive request. User-ID: %s, Org-ID: %s, Path: %s.", userID, orgID, req.URL.String())
+
+		if isCmpShellConsoleRequest(muxVars) && !a.shellConsoleEnabled {
+			resp.WriteHeader(http.StatusNotFound)
+			resp.Write(apistructs.NewSteveError(apistructs.NotFound, "not found").JSON())
+			return
+		}
 
 		scopeID, err := strconv.ParseUint(orgID, 10, 64)
 		if err != nil {
@@ -145,6 +157,13 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func isCmpShellConsoleRequest(vars map[string]string) bool {
+	if vars["kubectl-shell"] != "" {
+		return true
+	}
+	return strings.EqualFold(vars["type"], "pods") && strings.EqualFold(vars["link"], "exec")
+}
+
 func (a *Authenticator) listClusterByType(ctx context.Context, orgID uint64, types ...string) ([]*clusterpb.ClusterInfo, error) {
 	var result []*clusterpb.ClusterInfo
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
@@ -162,6 +181,8 @@ func (a *Authenticator) listClusterByType(ctx context.Context, orgID uint64, typ
 }
 
 func parseVars(req *http.Request) map[string]string {
+	req = requestWithNormalizedPath(req)
+
 	var match mux.RouteMatch
 	m := mux.NewRouter().PathPrefix("/api/k8s/clusters/{clusterName}")
 	s := m.Subrouter()
@@ -189,4 +210,21 @@ func parseVars(req *http.Request) map[string]string {
 		vars["kubectl-shell"] = "true"
 	}
 	return vars
+}
+
+func requestWithNormalizedPath(req *http.Request) *http.Request {
+	normalizedPath := strings.TrimRight(req.URL.Path, "/")
+	if normalizedPath == req.URL.Path {
+		return req
+	}
+	if normalizedPath == "" {
+		normalizedPath = "/"
+	}
+
+	normalizedReq := req.Clone(req.Context())
+	normalizedURL := *req.URL
+	normalizedURL.Path = normalizedPath
+	normalizedURL.RawPath = ""
+	normalizedReq.URL = &normalizedURL
+	return normalizedReq
 }
