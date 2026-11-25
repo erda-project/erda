@@ -25,7 +25,7 @@ import (
 type Conf struct {
 	Debug               bool          `env:"DEBUG" default:"false"`
 	EnableEss           bool          `env:"ENABLE_ESS" default:"false"`
-	ShellConsoleEnabled bool          `env:"CMP_SHELL_CONSOLE_ENABLED" default:"false"`
+	ShellConsoleEnabled bool          `env:"CMP_SHELL_CONSOLE_ENABLED" default:"true"`
 	SoldierAddr         string        `env:"SOLDIER_ADDR"`
 	SchedulerAddr       string        `env:"SCHEDULER_ADDR"`
 	TaskSyncDuration    time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`
