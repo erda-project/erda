@@ -38,8 +38,8 @@ func TestErdaYmlMySQLTLSDefaults(t *testing.T) {
 	} {
 		service := obj.Services[name]
 		require.NotNil(t, service, name)
-		require.Empty(t, service.Envs["MYSQL_TLS"], name)
-		require.Empty(t, service.Envs["MYSQL_CACERTPATH"], name)
+		require.NotContains(t, service.Envs, "MYSQL_TLS", name)
+		require.NotContains(t, service.Envs, "MYSQL_CACERTPATH", name)
 	}
 	for _, name := range []string{"cluster-agent", "collector", "collector-agent"} {
 		service := obj.Services[name]

@@ -13,7 +13,26 @@ Erda 平台支持使用 PEM CA 证书连接开启 SSL 的 MySQL 实例，云上�
 | `MYSQL_TLS` | `mysql` | Go MySQL 驱动的命名 TLS 配置。使用自定义名称以启用 CA 校验，不要使用 `skip-verify` 或 `preferred`。 |
 | `MYSQL_CACERTPATH` | `/etc/erda/mysql-tls/mysql-ca.pem` | PEM CA 在容器内的绝对路径。 |
 
-`erda.yml` 通过部署值 `mysql_tls`、`mysql_ca_cert_path` 将这两个变量传给其中的数据库消费服务。两个值默认为空；保持为空时沿用原有非 SSL 连接。非数据库服务不接收这两个变量，避免要求它们挂载 CA。
+`erda.yml` 不声明这两个运行时变量，也不声明任何 MySQL CA 挂载。唯一安装入口是 `config.yaml`：
+
+```yaml
+installs:
+  addons:
+    mysql:
+      host: mysql.example.com
+      port: 3306
+      user: erda
+      password: <password>
+      db: erda
+      ssl: true
+      ssl_ca_path: /netdata/dice-ops/dice-config/certificates/mysql-ca.pem
+```
+
+`admin install` 和 `admin update` 渲染最终 Dice YAML 时，根据上述配置统一注入：
+
+- `MYSQL_TLS=mysql`
+- `MYSQL_CACERTPATH=/etc/erda/mysql-tls/mysql-ca.pem`
+- 对应的只读 CA bind
 
 推荐配置：
 
@@ -28,7 +47,7 @@ MYSQL_CACERTPATH=/etc/erda/mysql-tls/mysql-ca.pem
 
 从数据库服务商处获取 PEM 格式 CA 链。不要把证书提交到 Erda 或业务代码仓库，也不要打入平台镜像。
 
-通过 Kubernetes Secret 或等效受控配置源，把 CA 只读挂载到所有数据库消费容器的相同路径。主发布描述不自动创建 Secret，也不声明默认宿主机 bind；这样未启用 SSL 的现有部署不会因为缺少证书文件而失败。
+标准安装器会校验并复制 `ssl_ca_path` 指向的证书，再渲染到所有数据库消费服务的最终 Dice YAML。不使用标准安装器时，可以通过 Kubernetes Secret 或等效受控配置源，把 CA 只读挂载到相同路径；基础 `erda.yml` 始终保持无 CA bind，这样未启用 SSL 的现有部署不会因为缺少证书文件而失败。
 
 至少覆盖：
 
@@ -101,7 +120,7 @@ Action 支持需要先发布包含 TLS migrator API 的 Erda 主仓版本，再�
 
 ## 验收
 
-1. 在预发布环境挂载 CA，并设置两个环境变量。
+1. 在预发布环境的 `config.yaml` 中启用 `installs.addons.mysql.ssl`，并执行 `admin install` 或 `admin update`。
 2. 使用证书覆盖的数据库域名启动全部数据库消费服务，确认不存在 CA 读取、PEM 解析或主机名校验错误。
 3. 在数据库会话执行：
 
