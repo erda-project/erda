@@ -206,8 +206,11 @@ func TestAuthMiddlewareRejectsCmpShellConsoleWhenDisabled(t *testing.T) {
 
 	paths := []string{
 		"/api/k8s/clusters/local/kubectl-shell",
+		"/api/k8s/clusters/local/kubectl-shell/",
 		"/api/k8s/clusters/local/api/v1/namespaces/default/pods/demo/exec",
+		"/api/k8s/clusters/local/api/v1/namespaces/default/pods/demo/exec/",
 		"/api/k8s/clusters/local/v1/pods/default/demo/exec",
+		"/api/k8s/clusters/local/v1/pods/default/demo/exec//",
 	}
 	for _, method := range []string{http.MethodGet, http.MethodPost} {
 		for _, path := range paths {
@@ -235,9 +238,13 @@ func TestIsCmpShellConsoleRequest(t *testing.T) {
 		want bool
 	}{
 		{path: "/api/k8s/clusters/local/kubectl-shell", want: true},
+		{path: "/api/k8s/clusters/local/kubectl-shell/", want: true},
 		{path: "/api/k8s/clusters/local/api/v1/namespaces/default/pods/demo/exec", want: true},
+		{path: "/api/k8s/clusters/local/api/v1/namespaces/default/pods/demo/exec/", want: true},
 		{path: "/api/k8s/clusters/local/v1/pods/default/demo/exec", want: true},
+		{path: "/api/k8s/clusters/local/v1/pods/default/demo/exec//", want: true},
 		{path: "/api/k8s/clusters/local/api/v1/namespaces/default/pods/demo/log", want: false},
+		{path: "/api/k8s/clusters/local/api/v1/namespaces/default/pods/demo/log/", want: false},
 		{path: "/api/k8s/clusters/local/v1/deployments", want: false},
 		{path: "/api/terminal", want: false},
 	}

@@ -181,6 +181,8 @@ func (a *Authenticator) listClusterByType(ctx context.Context, orgID uint64, typ
 }
 
 func parseVars(req *http.Request) map[string]string {
+	req = requestWithNormalizedPath(req)
+
 	var match mux.RouteMatch
 	m := mux.NewRouter().PathPrefix("/api/k8s/clusters/{clusterName}")
 	s := m.Subrouter()
@@ -208,4 +210,21 @@ func parseVars(req *http.Request) map[string]string {
 		vars["kubectl-shell"] = "true"
 	}
 	return vars
+}
+
+func requestWithNormalizedPath(req *http.Request) *http.Request {
+	normalizedPath := strings.TrimRight(req.URL.Path, "/")
+	if normalizedPath == req.URL.Path {
+		return req
+	}
+	if normalizedPath == "" {
+		normalizedPath = "/"
+	}
+
+	normalizedReq := req.Clone(req.Context())
+	normalizedURL := *req.URL
+	normalizedURL.Path = normalizedPath
+	normalizedURL.RawPath = ""
+	normalizedReq.URL = &normalizedURL
+	return normalizedReq
 }
