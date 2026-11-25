@@ -293,6 +293,7 @@ services:
       exec: { }
   hepa:
     cmd: /erda/cmd/hepa/bin
+    envs:
     ports:
       - port: 8080
         protocol: "TCP"

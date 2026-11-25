@@ -38,10 +38,9 @@ type DBClient struct {
 }
 
 func newDB() (*gorm.DB, error) {
-	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=%s",
-		conf.MySQLUsername(), conf.MySQLPassword(), conf.MySQLHost(), conf.MySQLPort(), conf.MySQLDatabase(), conf.MySQLLoc())
+	url := mysqlDSN(conf.MySQLUsername(), conf.MySQLPassword(), conf.MySQLHost(), conf.MySQLPort(), conf.MySQLDatabase(), conf.MySQLLoc(), conf.MySQLTLS())
 
-	logrus.Debugf("Initialize db with %s, url: %s", DIALECT, url)
+	logDBInitialization()
 
 	db, err := gorm.Open(DIALECT, url)
 	if err != nil {
@@ -56,6 +55,19 @@ func newDB() (*gorm.DB, error) {
 	db.DB().SetConnMaxLifetime(time.Hour)
 
 	return db, nil
+}
+
+func logDBInitialization() {
+	logrus.Debugf("Initialize db with %s at %s:%s/%s", DIALECT, conf.MySQLHost(), conf.MySQLPort(), conf.MySQLDatabase())
+}
+
+func mysqlDSN(username, password, host, port, database, loc, tlsName string) string {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=%s",
+		username, password, host, port, database, loc)
+	if tlsName != "" {
+		dsn += "&tls=" + tlsName
+	}
+	return dsn
 }
 
 // NewDBClient create new db client

@@ -14,7 +14,11 @@
 
 package config
 
-import "github.com/erda-project/erda/pkg/envconf"
+import (
+	"net/url"
+
+	"github.com/erda-project/erda/pkg/envconf"
+)
 
 type Conf struct {
 	APIProxyPolicyHostPassThrough bool `file:"api_proxy_policy_host_pass_through" default:"true"`
@@ -79,4 +83,15 @@ type ServerConfig struct {
 	TenantGroupKey           string   `default:"58dcbf490ef3"`
 	CenterDomainNameKeepList []string `default:"collector,gittar,hepa,openapi,soldier,uc,dice,uc-adaptor,nexus-sys,sonar-sys"`
 	EdgeDomainNameKeepList   []string `default:"soldier,nexus-sys"`
+}
+
+func MySQLTLSDataSources(sources []string, tlsName string) []string {
+	if tlsName == "" {
+		return sources
+	}
+	result := make([]string, len(sources))
+	for i, source := range sources {
+		result[i] = source + "&tls=" + url.QueryEscape(tlsName)
+	}
+	return result
 }

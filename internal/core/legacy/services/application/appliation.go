@@ -111,6 +111,9 @@ func (a *Application) CreateWithEvent(userID string, createReq *apistructs.Appli
 }
 
 func getRepoConfigStr(config *apistructs.GitRepoConfig) string {
+	if config == nil {
+		return ""
+	}
 	configBytes, _ := json.Marshal(map[string]string{
 		"url":  config.Url,
 		"desc": config.Desc,

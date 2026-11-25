@@ -50,3 +50,10 @@ func TestLoad(t *testing.T) {
 	Load()
 	assert.Equal(t, uint64(365), OrgAuditDefaultRetentionDays())
 }
+
+func TestMySQLTLS(t *testing.T) {
+	t.Setenv("MYSQL_TLS", "rds")
+	LoadForTest()
+
+	assert.Equal(t, "rds", MySQLTLS())
+}

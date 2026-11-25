@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -32,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -42,6 +44,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/endpoints"
 	"github.com/erda-project/erda/internal/apps/dop/event"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	queueprovider "github.com/erda-project/erda/internal/apps/dop/providers/queue"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/appcertificate"
@@ -108,6 +111,18 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	if conf.PipelineGrpcClientMaxCallSendSizeBytes() > 0 {
 		p.PipelineSvc = ctx.Service("erda.core.pipeline.pipeline.PipelineService", grpc.MaxCallSendMsgSize(conf.PipelineGrpcClientMaxCallSendSizeBytes())).(pipelinepb.PipelineServiceServer)
 	}
+	// QueueService is registered by the pipeline gRPC client provider. Resolve it
+	// during initialization so servicehub initialization order cannot leave the
+	// autowired field nil until the first pipeline request.
+	service := ctx.Service("erda.core.pipeline.queue.QueueService")
+	if service == nil {
+		return fmt.Errorf("pipeline queue service is unavailable")
+	}
+	queueService, ok := service.(queuepb.QueueServiceServer)
+	if !ok || reflect.ValueOf(queueService).Kind() == reflect.Ptr && reflect.ValueOf(queueService).IsNil() {
+		return fmt.Errorf("invalid pipeline queue service type %T", service)
+	}
+	p.PipelineQueue = queueService
 
 	// TODO invoke self use service
 	//_ = os.Setenv("QA_ADDR", discover.QA())
@@ -142,6 +157,17 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.OrgService, p.Org)
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
+	// Resolve the queue facade explicitly; servicehub may leave interface
+	// fields unset when the provider is registered through a generated client.
+	queueProviderService := ctx.Service("queue")
+	if queueProviderService == nil {
+		return fmt.Errorf("dop queue provider is unavailable")
+	}
+	queue, ok := queueProviderService.(queueprovider.Interface)
+	if !ok || queue == nil {
+		return fmt.Errorf("invalid dop queue provider type %T", queueProviderService)
+	}
+	p.Queue = queue
 	p.Queue.InjectQueueManager(p.PipelineQueue)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server

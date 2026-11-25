@@ -25,10 +25,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda-infra/pkg/mysqldriver"
 	"github.com/erda-project/erda/pkg/common/entrance"
 	"github.com/erda-project/erda/pkg/common/trace"
 	_ "github.com/erda-project/erda/pkg/common/trace" // nolint
+	"github.com/erda-project/erda/pkg/database/mysqltls"
 )
 
 var instanceID = uuid.NewV4().String()
@@ -61,7 +61,9 @@ func loadRootEnvFile() {
 
 func prepare() {
 	trace.Init()
-	openMysqlTLS()
+	if err := openMysqlTLS(); err != nil {
+		logrus.Fatalf("register mysql tls: %v", err)
+	}
 	version.PrintIfCommand()
 	Env()
 	for _, fn := range initializers {
@@ -78,11 +80,8 @@ func setCwd() {
 	}
 }
 
-func openMysqlTLS() {
-	err := mysqldriver.OpenTLS(os.Getenv("MYSQL_TLS"), os.Getenv("MYSQL_CACERTPATH"), os.Getenv("MYSQL_CLIENTCERTPATH"), os.Getenv("MYSQL_CLIENTKEYPATH"))
-	if err != nil {
-		logrus.Errorf("register tls error %v", err)
-	}
+func openMysqlTLS() error {
+	return mysqltls.Open(os.Getenv("MYSQL_TLS"), os.Getenv("MYSQL_CACERTPATH"), os.Getenv("MYSQL_CLIENTCERTPATH"), os.Getenv("MYSQL_CLIENTKEYPATH"))
 }
 
 var initializers []func()

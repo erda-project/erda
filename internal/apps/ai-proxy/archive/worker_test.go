@@ -257,14 +257,33 @@ func TestMarkUploadedDaySucceeded_WritesEndWhenSuccessAlreadyExists(t *testing.T
 func TestTick_UsesUploadedDetailForMultipartSuccessDay(t *testing.T) {
 	svc := newTestService(t, Config{Enable: true, BatchSize: 2, Name: "cluster-a", RetentionDays: 180})
 	ctx := context.Background()
+	day := archiveDayStart(time.Now()).AddDate(0, 0, -1)
+	dayStr := day.Format("2006-01-02")
+	objectKeyPrefix := fmt.Sprintf("ai-proxy/cluster-a/audit/archive/%04d/%02d/audit-%s",
+		day.Year(), int(day.Month()), dayStr)
+	partOneKey := objectKeyPrefix + "_1.csv.gz"
+	partTwoKey := objectKeyPrefix + "_2.csv.gz"
+	uploadedDetail := mustArchiveEventDetailJSON(archiveEventDetail{
+		Day:                 dayStr,
+		RowCount:            2,
+		RawSizeBytes:        100,
+		CompressedSizeBytes: 50,
+		Parts: []archivePartDetail{
+			{Index: 1, ObjectKey: partOneKey, RowCount: 1, RawSizeBytes: 50, CompressedSizeBytes: 25},
+			{Index: 2, ObjectKey: partTwoKey, RowCount: 1, RawSizeBytes: 50, CompressedSizeBytes: 25},
+		},
+	})
 
 	_, err := svc.EventClient.Create(ctx, EventArchiveStart, "true")
 	require.NoError(t, err)
-	_, err = svc.EventClient.Create(ctx, EventArchiveDayUploaded, `{"day":"2026-03-29","row_count":2,"raw_size_bytes":100,"compressed_size_bytes":50,"parts":[{"index":1,"object_key":"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_1.csv.gz","row_count":1,"raw_size_bytes":50,"compressed_size_bytes":25},{"index":2,"object_key":"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_2.csv.gz","row_count":1,"raw_size_bytes":50,"compressed_size_bytes":25}]}`)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayUploaded, uploadedDetail)
 	require.NoError(t, err)
-	_, err = svc.EventClient.Create(ctx, EventArchiveDayDBDeleted, `{"day":"2026-03-29","deleted_row_count":2}`)
+	_, err = svc.EventClient.Create(ctx, EventArchiveDayDBDeleted, mustArchiveDBDeletedEventDetailJSON(archiveDBDeletedEventDetail{
+		Day:             dayStr,
+		DeletedRowCount: 2,
+	}))
 	require.NoError(t, err)
-	_, err = svc.EventClient.Create(ctx, EventArchiveDaySuccess, "2026-03-29")
+	_, err = svc.EventClient.Create(ctx, EventArchiveDaySuccess, dayStr)
 	require.NoError(t, err)
 
 	oldObjectExists := archiveObjectExists
@@ -285,8 +304,8 @@ func TestTick_UsesUploadedDetailForMultipartSuccessDay(t *testing.T) {
 
 	require.NoError(t, svc.tick(ctx))
 	require.Equal(t, []string{
-		"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_1.csv.gz",
-		"ai-proxy/cluster-a/audit/archive/2026/03/audit-2026-03-29_2.csv.gz",
+		partOneKey,
+		partTwoKey,
 	}, checked)
 
 	latestStart, err := svc.EventClient.LatestByEvent(ctx, EventArchiveDayStart)

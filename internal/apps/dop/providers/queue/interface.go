@@ -17,11 +17,13 @@ package queue
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 type projectQueueLabelKey string
@@ -45,6 +47,15 @@ type Interface interface {
 }
 
 func (p *provider) createProjectLevelQueue(workspace string, project *apistructs.ProjectDTO) (*pb.Queue, error) {
+	if err := p.ensureRuntimeDependencies(); err != nil {
+		return nil, err
+	}
+	if isNilQueueService(p.QueueManager) {
+		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
+	}
+	if project == nil || project.ResourceConfig == nil {
+		return nil, fmt.Errorf("project resource config is unavailable")
+	}
 	resourceConfig := project.ResourceConfig.GetWSConfig(workspace)
 	if resourceConfig == nil {
 		return nil, fmt.Errorf("workspace: %s resource info not found", workspace)
@@ -52,6 +63,9 @@ func (p *provider) createProjectLevelQueue(workspace string, project *apistructs
 	queueResource, err := p.calculateProjectResource(workspace, project)
 	if err != nil {
 		return nil, err
+	}
+	if p.QueueManager == nil {
+		return nil, fmt.Errorf("pipeline queue manager is unavailable after resource calculation")
 	}
 	queue, err := p.QueueManager.CreateQueue(context.Background(), &pb.QueueCreateRequest{
 		Name:             p.makeProjectLevelQueueName(workspace, project.Name),
@@ -75,6 +89,12 @@ func (p *provider) createProjectLevelQueue(workspace string, project *apistructs
 }
 
 func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *apistructs.ProjectDTO) (*pb.Queue, error) {
+	if err := p.ensureRuntimeDependencies(); err != nil {
+		return nil, err
+	}
+	if isNilQueueService(p.QueueManager) {
+		return nil, fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
+	}
 	clusterName, ok := project.ClusterConfig[strings.ToUpper(workspace)]
 	if !ok {
 		return nil, fmt.Errorf("workspace: %s cluster not found", workspace)
@@ -97,7 +117,32 @@ func (p *provider) IdempotentGetProjectLevelQueue(workspace string, project *api
 	return p.createProjectLevelQueue(workspace, project)
 }
 
+func (p *provider) ensureRuntimeDependencies() error {
+	if p.Cfg == nil {
+		p.Cfg = &config{
+			DefaultQueueConcurrency: 20,
+			DefaultQueueCPU:         30,
+			DefaultQueueMemoryMB:    30720,
+		}
+	}
+	if p.bdl == nil {
+		p.bdl = bundle.New(bundle.WithErdaServer())
+	}
+	if isNilQueueService(p.QueueManager) {
+		return fmt.Errorf("pipeline queue manager is unavailable, provider=%p manager=%T", p, p.QueueManager)
+	}
+	return nil
+}
+
 func (p *provider) InjectQueueManager(queueManager pb.QueueServiceServer) {
+	p.Log.Infof("inject pipeline queue manager, provider=%p service=%T nil=%v", p, queueManager, isNilQueueService(queueManager))
+	if queueManager == nil {
+		return
+	}
+	v := reflect.ValueOf(queueManager)
+	if (v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface || v.Kind() == reflect.Map || v.Kind() == reflect.Slice || v.Kind() == reflect.Func) && v.IsNil() {
+		return
+	}
 	p.QueueManager = queueManager
 }
 

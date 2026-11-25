@@ -51,6 +51,7 @@ type DSNParameters struct {
 	Database  string
 	ParseTime bool
 	Timeout   time.Duration
+	TLS       string
 }
 
 func (c DSNParameters) Format(database bool) (dsn string) {
@@ -75,6 +76,9 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 	params.Add("multiStatements", "true")
 	params.Add("charset", "utf8mb4,utf8")
 	params.Add("loc", "Local")
+	if c.TLS != "" {
+		params.Add("tls", c.TLS)
+	}
 	return dsn + "?" + params.Encode()
 }
 

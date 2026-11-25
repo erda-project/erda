@@ -437,6 +437,9 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *pipelinepb.PipelineCreateRequest) (*
 		}
 	}
 	// bind queue
+	if pj.ClusterConfig == nil {
+		pj.ClusterConfig = make(map[string]string)
+	}
 	pj.ClusterConfig[strings.ToUpper(workspace)] = pv2.ClusterName
 	queue, err := p.queueService.IdempotentGetProjectLevelQueue(workspace, pj)
 	if err != nil {

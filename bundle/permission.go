@@ -30,6 +30,8 @@ func (b *Bundle) CheckPermission(req *apistructs.PermissionCheckRequest) (*apist
 
 	var permissionResp apistructs.PermissionCheckResponse
 	resp, err := hc.Post(host).Path("/api/permissions/actions/check").
+		Header("Internal-Client", "bundle").
+		Header(httputil.UserHeader, req.UserID).
 		JSONBody(req).
 		Do().JSON(&permissionResp)
 	if err != nil {
@@ -52,6 +54,8 @@ func (b *Bundle) StateCheckPermission(req *apistructs.PermissionCheckRequest) (*
 
 	var permissionResp apistructs.StatePermissionCheckResponse
 	resp, err := hc.Post(host).Path("/api/permissions/actions/stateCheck").
+		Header("Internal-Client", "bundle").
+		Header(httputil.UserHeader, req.UserID).
 		JSONBody(req).
 		Do().JSON(&permissionResp)
 	if err != nil {
@@ -74,6 +78,7 @@ func (b *Bundle) ScopeRoleAccess(userID string, req *apistructs.ScopeRoleAccessR
 
 	var permissionResp apistructs.ScopeRoleAccessResponse
 	resp, err := hc.Post(host).Path("/api/permissions/actions/access").
+		Header("Internal-Client", "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(req).
 		Do().JSON(&permissionResp)
@@ -95,6 +100,7 @@ func (b *Bundle) ScopeRoleAccessList(userID string, req *apistructs.ScopeRoleAcc
 	hc := b.hc
 	var permissionListResp apistructs.PermissionListResponse
 	resp, err := hc.Post(host).Path("/api/permissions/actions/access").
+		Header("Internal-Client", "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(req).
 		Do().JSON(&permissionListResp)

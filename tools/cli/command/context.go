@@ -102,6 +102,8 @@ type MetadataResponse struct {
 	Version          MetadataResponseVersion `json:"version,omitempty"`
 }
 
+const directHostEnv = "ERDA_CLI_DIRECT_HOST"
+
 type MetadataResponseVersion struct {
 	Built       string `json:"built"`
 	DiceVersion string `json:"dice_version"`
@@ -115,6 +117,13 @@ func (ctx *Context) FetchOpenapi() error {
 		return errors.Wrap(err, "invalid host")
 	}
 	ctx.Domain = domain
+
+	if os.Getenv(directHostEnv) == "true" {
+		ctx.Openapi = domain
+		ctx.Hepaapi = domain
+		ctx.CurrentHost = domain.String()
+		return nil
+	}
 
 	var resp MetadataResponse
 	response, err := ctx.Get().Path("/metadata.json").Do().RAW()

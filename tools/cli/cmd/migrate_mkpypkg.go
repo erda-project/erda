@@ -70,7 +70,7 @@ func (t textFile) GetData() []byte {
 	return t.data
 }
 
-func RunMigrateMkPyPkg(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
+func RunMigrateMkPyPkg(ctx *command.Context, host string, port int, username, password, database, mysqlTLS, mysqlCaCertPath string, sandboxPort int,
 	filename, requirements string, commit bool) (err error) {
 	logrus.Infoln("Erda Migrator generate the python package")
 

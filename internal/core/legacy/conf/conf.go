@@ -39,6 +39,7 @@ type Conf struct {
 	MySQLPassword         string `env:"MYSQL_PASSWORD"`
 	MySQLDatabase         string `env:"MYSQL_DATABASE"`
 	MySQLLoc              string `env:"MYSQL_LOC" default:"Local"`
+	MySQLTLS              string `env:"MYSQL_TLS"`
 	GittarOutterURL       string `env:"GITTAR_PUBLIC_URL"`
 	UCClientID            string `env:"UC_CLIENT_ID"`
 	UCClientSecret        string `env:"UC_CLIENT_SECRET"`
@@ -247,6 +248,11 @@ func MySQLDatabase() string {
 // MySQLLoc 返回 MySQLLoc 选项.
 func MySQLLoc() string {
 	return cfg.MySQLLoc
+}
+
+// MySQLTLS returns the registered MySQL TLS configuration name.
+func MySQLTLS() string {
+	return cfg.MySQLTLS
 }
 
 // GittarOutterURL 返回 GittarOutterURL 选项.

@@ -16,6 +16,7 @@ package hepa
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -53,11 +54,12 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	config.Load()
 	config.ServerConf = &p.Cfg.Server
+	config.ServerConf.DbSources = config.MySQLTLSDataSources(config.ServerConf.DbSources, os.Getenv("MYSQL_TLS"))
 	config.LogConf = &p.Cfg.Log
 	common.InitLogger()
 	orm.Init()
 	logrus.Info(version.String())
-	logrus.Infof("server conf: %+v", config.ServerConf)
+	logrus.Infof("server conf: dbDriver=%s, dbSourceCount=%d", config.ServerConf.DbDriver, len(config.ServerConf.DbSources))
 	logrus.Infof("log conf: %+v", config.LogConf)
 	logrus.Infof("default api proxy policy host pass through: %v", config.APIProxyPolicyHostPassThrough())
 	orgCache.CacheInit(p.Org)

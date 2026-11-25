@@ -81,7 +81,7 @@ var MigrateRecord = command.Command{
 	Run: RunMigrateRecord,
 }
 
-func RunMigrateRecord(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
+func RunMigrateRecord(ctx *command.Context, host string, port int, username, password, database, mysqlTLS, mysqlCaCertPath string, sandboxPort int,
 	module, filename string, dry bool) error {
 	script, err := migrator.NewScript(".", filepath.Join(module, filename))
 	if err != nil {
@@ -100,6 +100,9 @@ func RunMigrateRecord(ctx *command.Context, host string, port int, username, pas
 	if dry {
 		return nil
 	}
+	if err := registerMySQLTLS(mysqlTLS, mysqlCaCertPath); err != nil {
+		return errors.Wrap(err, "failed to register MySQL TLS")
+	}
 
 	dsn := migrator.DSNParameters{
 		Username:  username,
@@ -109,6 +112,7 @@ func RunMigrateRecord(ctx *command.Context, host string, port int, username, pas
 		Database:  database,
 		ParseTime: true,
 		Timeout:   time.Second * 150,
+		TLS:       mysqlTLS,
 	}.Format(true)
 	errMsg := "failed to connect to your MySQL server," +
 		"you can run the command with '--dry' to print the SQL " +
