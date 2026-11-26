@@ -15,6 +15,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"reflect"
 	"testing"
@@ -30,37 +31,64 @@ func TestVerifyAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	tokenService := NewMockTokenServiceServer(ctrl)
-	tokenService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
-		Data: []*tokenpb.Token{
-			{
-				Id:      "1",
-				ScopeId: "2",
-			},
-		},
-		Total: 1,
-	}, nil)
-	r := http.Request{
-		Header: make(http.Header),
-	}
-	r.Header.Add(HeaderAuthorization, "Bearer abcdef")
+	tokenService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(_ context.Context, req *tokenpb.QueryTokensRequest) (*tokenpb.QueryTokensResponse, error) {
+			if req.Access != "valid-access-key" {
+				return &tokenpb.QueryTokensResponse{}, nil
+			}
+			return &tokenpb.QueryTokensResponse{
+				Data: []*tokenpb.Token{
+					{
+						Id:      "1",
+						ScopeId: "2",
+					},
+				},
+				Total: 1,
+			}, nil
+		})
 	tests := []struct {
-		name    string
-		want    TokenClient
-		wantErr bool
+		name   string
+		header string
+		want   TokenClient
 	}{
 		{
-			name: "valid",
-			want: TokenClient{
-				"2", "2",
-			},
-			wantErr: false,
+			name:   "valid bearer",
+			header: "Bearer valid-access-key",
+			want:   TokenClient{"2", "2"},
+		},
+		{
+			name:   "valid raw access key",
+			header: "valid-access-key",
+			want:   TokenClient{"2", "2"},
+		},
+		{
+			name:   "empty",
+			header: "",
+		},
+		{
+			name:   "junk",
+			header: "junk",
+		},
+		{
+			name:   "empty bearer",
+			header: "Bearer ",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			r := http.Request{Header: make(http.Header)}
+			if tt.header != "" {
+				r.Header.Set(HeaderAuthorization, tt.header)
+			}
 			got, err := VerifyAccessKey(tokenService, &r)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("VerifyAccessKey() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.want.ClientID == "" {
+				if err == nil {
+					t.Errorf("VerifyAccessKey() error = nil, want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("VerifyAccessKey() error = %v", err)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

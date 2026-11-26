@@ -33,12 +33,26 @@ import (
 	tenant "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 ////go:generate mockgen -destination=./credential_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
 ////go:generate mockgen -destination=./credential_ak_test.go -package exporter github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
 ////go:generate mockgen -destination=./credential_context_test.go -package exporter github.com/erda-project/erda-infra/base/servicehub Context
 ////go:generate mockgen -destination=./tenant_test.go -package exporter github.com/erda-project/erda-proto-go/msp/tenant/pb TenantServiceServer
+
+func ownerContext() context.Context {
+	return apis.WithUserIDContext(context.Background(), "user-1")
+}
+
+func patchProjectOwnerRole() {
+	monkey.Patch((*bundle.Bundle).ScopeRoleAccess, func(_ *bundle.Bundle, _ string, _ *apistructs.ScopeRoleAccessRequest) (*apistructs.ScopeRole, error) {
+		return &apistructs.ScopeRole{
+			Access: true,
+			Roles:  []string{bundle.RoleProjectOwner},
+		}, nil
+	})
+}
 
 func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -56,6 +70,7 @@ func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 		},
 	}, nil)
 	defer monkey.UnpatchAll()
+	patchProjectOwnerRole()
 	monkey.Patch((*bundle.Bundle).GetProject, func(bdl *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
 		return &apistructs.ProjectDTO{
 			ID:                   89,
@@ -96,10 +111,11 @@ func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
-	_, err := pro.credentialKeyService.CreateAccessKey(context.Background(), &pb.CreateAccessKeyRequest{
+	_, err := pro.credentialKeyService.CreateAccessKey(ownerContext(), &pb.CreateAccessKeyRequest{
 		SubjectType: pb.SubjectTypeEnum_SYSTEM,
 		Subject:     "xddd",
 		Description: "cdddd",
+		ScopeId:     "tenant-1",
 	})
 	if err != nil {
 		fmt.Println("should not err")
@@ -141,6 +157,7 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 		}, nil
 	})
 	defer monkey.UnpatchAll()
+	patchProjectOwnerRole()
 	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
 		Data: &tokenpb.Token{
 			Id:          "2",
@@ -170,7 +187,7 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
-	_, err := pro.credentialKeyService.DeleteAccessKey(context.Background(), &pb.DeleteAccessKeyRequest{
+	_, err := pro.credentialKeyService.DeleteAccessKey(ownerContext(), &pb.DeleteAccessKeyRequest{
 		Id: "13eef468-1d0b-42ce-aa7b-b499545bf92d",
 	})
 	if err != nil {
@@ -182,21 +199,30 @@ func Test_accessKeyService_QueryAccessKeys1(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	akService := NewMockTokenServiceServer(ctrl)
+	tenantService := NewMockTenantServiceServer(ctrl)
 	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
 		Data: make([]*tokenpb.Token, 0),
 	}, nil)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{ProjectId: "98"},
+	}, nil)
+	defer monkey.UnpatchAll()
+	patchProjectOwnerRole()
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
 		TokenService:         akService,
+		bdl:                  &bundle.Bundle{},
+		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
-	_, err := pro.credentialKeyService.QueryAccessKeys(context.Background(), &pb.QueryAccessKeysRequest{
+	_, err := pro.credentialKeyService.QueryAccessKeys(ownerContext(), &pb.QueryAccessKeysRequest{
 		SubjectType: 3,
 		Subject:     "22",
 		PageSize:    1,
 		PageNo:      3,
+		ScopeId:     "tenant-1",
 	})
 	if err != nil {
 		fmt.Println("should not err")
@@ -207,17 +233,25 @@ func Test_accessKeyService_GetAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	akService := NewMockTokenServiceServer(ctrl)
+	tenantService := NewMockTenantServiceServer(ctrl)
 	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
 		Data: &tokenpb.Token{},
 	}, nil)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{ProjectId: "98"},
+	}, nil)
+	defer monkey.UnpatchAll()
+	patchProjectOwnerRole()
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
 		TokenService:         akService,
+		bdl:                  &bundle.Bundle{},
+		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
-	_, err := pro.credentialKeyService.GetAccessKey(context.Background(), &pb.GetAccessKeyRequest{
+	_, err := pro.credentialKeyService.GetAccessKey(ownerContext(), &pb.GetAccessKeyRequest{
 		Id: "13eef468-1d0b-42ce-aa7b-b499545bf92d",
 	})
 	if err != nil {
@@ -229,6 +263,7 @@ func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	akService := NewMockTokenServiceServer(ctrl)
+	tenantService := NewMockTenantServiceServer(ctrl)
 	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
 		Data: &tokenpb.Token{
 			Id:          "ssss",
@@ -238,14 +273,21 @@ func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 			CreatedAt:   &timestamppb.Timestamp{},
 		},
 	}, nil)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{ProjectId: "98"},
+	}, nil)
+	defer monkey.UnpatchAll()
+	patchProjectOwnerRole()
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
 		TokenService:         akService,
+		bdl:                  &bundle.Bundle{},
+		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
-	_, err := pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
+	_, err := pro.credentialKeyService.DownloadAccessKeyFile(ownerContext(), &pb.DownloadAccessKeyFileRequest{
 		Id: "ssss",
 	})
 	if err != nil {
@@ -257,6 +299,7 @@ func Test_Init(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	akService := NewMockTokenServiceServer(ctrl)
+	tenantService := NewMockTenantServiceServer(ctrl)
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
@@ -264,10 +307,11 @@ func Test_Init(t *testing.T) {
 		TokenService:         akService,
 		bdl:                  &bundle.Bundle{},
 		audit:                nil,
-		Tenant:               nil,
+		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
 	defer monkey.UnpatchAll()
+	patchProjectOwnerRole()
 	monkey.Patch(encoding.EncodeResponse, func(w http1.ResponseWriter, r *http1.Request, out interface{}) error {
 		return nil
 	})
@@ -282,11 +326,40 @@ func Test_Init(t *testing.T) {
 			CreatedAt:   &timestamppb.Timestamp{},
 		},
 	}, nil)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{ProjectId: "98"},
+	}, nil)
 	pro.credentialKeyService.p = pro
-	_, err := pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
+	_, err := pro.credentialKeyService.DownloadAccessKeyFile(ownerContext(), &pb.DownloadAccessKeyFileRequest{
 		Id: "ssss",
 	})
 	if err != nil {
 		fmt.Println("should not err2")
+	}
+}
+
+func Test_checkProjectOwnerOrLeadDeniesNonOwner(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tenantService := NewMockTenantServiceServer(ctrl)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{ProjectId: "98"},
+	}, nil)
+	pro := &provider{
+		Cfg:    &config{},
+		bdl:    &bundle.Bundle{},
+		Tenant: tenantService,
+	}
+	pro.credentialKeyService = &accessKeyService{p: pro}
+	defer monkey.UnpatchAll()
+	monkey.Patch((*bundle.Bundle).ScopeRoleAccess, func(_ *bundle.Bundle, _ string, _ *apistructs.ScopeRoleAccessRequest) (*apistructs.ScopeRole, error) {
+		return &apistructs.ScopeRole{
+			Access: true,
+			Roles:  []string{"Dev"},
+		}, nil
+	})
+
+	if _, err := pro.credentialKeyService.checkProjectOwnerOrLead(ownerContext(), "tenant-1"); err == nil {
+		t.Errorf("checkProjectOwnerOrLead() should reject a project member without Owner/Lead role")
 	}
 }

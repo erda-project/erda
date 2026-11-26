@@ -165,12 +165,18 @@ func matchAPISpec(accessibleAPI apistructs.AccessibleAPI, spec OAuth2APISpec) bo
 }
 
 func VerifyAccessKey(tokenService tokenpb.TokenServiceServer, r *http.Request) (TokenClient, error) {
-	auth := r.Header.Get(HeaderAuthorization)
-	token := ""
-	if auth != "" && strings.HasPrefix(auth, HeaderAuthorizationBearerPrefix) {
-		token = auth[len(HeaderAuthorizationBearerPrefix):]
+	auth := strings.TrimSpace(r.Header.Get(HeaderAuthorization))
+	if auth == "" {
+		return TokenClient{}, fmt.Errorf("auth failed: missing access key")
 	}
-	resp, err := tokenService.QueryTokens(r.Context(), &tokenpb.QueryTokensRequest{
+	token := auth
+	if strings.HasPrefix(auth, HeaderAuthorizationBearerPrefix) {
+		token = strings.TrimSpace(auth[len(HeaderAuthorizationBearerPrefix):])
+	}
+	if token == "" {
+		return TokenClient{}, fmt.Errorf("auth failed: missing access key")
+	}
+	resp, err := tokenService.QueryTokens(apis.WithInternalClientContext(r.Context(), discover.SvcOpenapi), &tokenpb.QueryTokensRequest{
 		Access: token,
 		Scope:  strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
 		Type:   mysqltokenstore.AccessKey.String(),
