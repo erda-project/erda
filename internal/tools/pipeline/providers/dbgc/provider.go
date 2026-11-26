@@ -15,7 +15,6 @@
 package dbgc
 
 import (
-	"context"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -56,10 +55,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.Log.Debugf("dbgc config: %+v", p.Cfg)
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	p.LW.OnLeader(p.PipelineDatabaseGC)
 	return nil
 }

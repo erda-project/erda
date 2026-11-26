@@ -31,6 +31,12 @@ FROM --platform=$TARGETPLATFORM registry.erda.cloud/erda/erda-migratoin:57-20260
 
 COPY --from=builder /out/dbmigration-legacy /usr/bin/erda-migrate
 
-RUN chmod 0755 /usr/bin/erda-migrate
+RUN chmod 0755 /usr/bin/erda-migrate \
+    && python3 -m pip install --no-cache-dir \
+        Django==3.2.25 \
+        mysql-connector-python==8.0.26 \
+        pytz==2021.1 \
+        requests==2.27.1 \
+        sqlparse==0.4.4
 
 ENTRYPOINT ["/usr/bin/erda-migrate"]

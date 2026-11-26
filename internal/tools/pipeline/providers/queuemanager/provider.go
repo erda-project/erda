@@ -15,7 +15,6 @@
 package queuemanager
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -74,10 +73,7 @@ func (q *provider) Init(ctx servicehub.Context) error {
 	if q.Register != nil {
 		pb.RegisterQueueServiceImp(q.Register, q, apis.Options())
 	}
-	return nil
-}
 
-func (q *provider) Run(ctx context.Context) error {
 	q.LW.OnLeader(q.continueBackupQueueUsage)
 	q.LW.OnLeader(q.QueueManager.ListenInputQueueFromEtcd)
 	q.LW.OnLeader(q.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd)

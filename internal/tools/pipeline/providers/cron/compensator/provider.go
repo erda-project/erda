@@ -81,10 +81,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.jsonStore = jsonStore
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	p.LeaderWorker.OnLeader(func(ctx context.Context) {
 		p.ContinueCompensate(ctx)
 	})

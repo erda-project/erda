@@ -107,10 +107,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.dbClient = &db.Client{Interface: p.MySQL}
 	p.crond = cron.New()
 	p.mu = &sync.Mutex{}
-	return nil
-}
 
-func (p *provider) Run(ctx context.Context) error {
 	p.LeaderWorker.OnLeader(func(ctx context.Context) {
 		p.DoCrondAbout(ctx)
 	})
