@@ -15,7 +15,6 @@
 package definition_cleanup
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -82,10 +81,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("failed to handle log dir, err: %v", err)
 	}
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	p.LW.OnLeader(p.RepeatPipelineRecordCleanup)
 	return nil
 }

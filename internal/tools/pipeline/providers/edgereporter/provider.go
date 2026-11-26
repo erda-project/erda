@@ -77,6 +77,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		} else {
 			p.Log.Infof("target auth token not set, get from edge register when used")
 		}
+		p.LW.OnLeader(p.compensatorPipelineReporter)
 	}
 	return nil
 }
@@ -86,7 +87,6 @@ func (p *provider) Run(ctx context.Context) error {
 		safe.Go(func() { p.pipelineReporter(ctx) })
 		safe.Go(func() { p.taskReporter(ctx) })
 		safe.Go(func() { p.cronReporter(ctx) })
-		p.LW.OnLeader(p.compensatorPipelineReporter)
 	}
 	return nil
 }

@@ -15,7 +15,6 @@
 package resourcegc
 
 import (
-	"context"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -55,10 +54,7 @@ func (r *provider) Init(ctx servicehub.Context) error {
 	}
 	r.js = js
 	r.etcd = etcdClient
-	return nil
-}
 
-func (r *provider) Run(ctx context.Context) error {
 	// gc
 	r.LW.OnLeader(r.listenGC)
 	r.LW.OnLeader(r.compensateGCNamespaces)

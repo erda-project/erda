@@ -15,7 +15,6 @@
 package dispatcher
 
 import (
-	"context"
 	"reflect"
 	"sync"
 
@@ -48,10 +47,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.pipelineIDsChan = make(chan uint64, p.Cfg.Concurrency)
 	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	// just register handler, and leader-worker provider will handle properly
 	p.LW.RegisterLeaderListener(&leaderworker.DefaultListener{
 		BeforeExecOnLeaderFunc: p.initConsistentUntilSuccess,

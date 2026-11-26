@@ -106,10 +106,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.waitingEdgeReady(ctx)
 	p.OnCenter(p.registerClientHookUntilSuccess)
 	p.OnCenter(p.continuousUpdateClient)
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	p.LW.OnLeader(p.RegisterEdgeToDialer)
 	return nil
 }
