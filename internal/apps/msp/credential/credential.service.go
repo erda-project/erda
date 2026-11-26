@@ -24,9 +24,12 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
 
@@ -35,6 +38,9 @@ type accessKeyService struct {
 }
 
 func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
+	if _, err := a.checkProjectOwnerOrLead(ctx, request.ScopeId); err != nil {
+		return nil, err
+	}
 	req := &tokenpb.QueryTokensRequest{
 		Access:   request.AccessKey,
 		PageNo:   request.PageNo,
@@ -42,7 +48,7 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 		Scope:    strings.ToLower(tokenpb.ScopeEnum_MSP_ENV.String()),
 		ScopeId:  request.ScopeId,
 	}
-	accessKeyList, err := a.p.TokenService.QueryTokens(ctx, req)
+	accessKeyList, err := a.p.TokenService.QueryTokens(apis.WithInternalClientContext(ctx, discover.SvcMSP), req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -76,16 +82,16 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *pb.DownloadAccessKeyFileRequest) (*pb.DownloadAccessKeyFileResponse, error) {
 	buf := &bytes.Buffer{}
 	w := csv.NewWriter(buf)
-	akRequest := &tokenpb.GetTokenRequest{
-		Id: request.Id,
-	}
-	accessKey, err := a.p.TokenService.GetToken(ctx, akRequest)
+	accessKey, err := a.GetAccessKeyItem(ctx, request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if _, err := a.checkProjectOwnerOrLead(ctx, accessKey.ScopeId); err != nil {
+		return nil, err
+	}
 	fileData := [][]string{
-		{"secretKey", accessKey.Data.SecretKey},
-		{"accessKey", accessKey.Data.AccessKey},
+		{"secretKey", accessKey.SecretKey},
+		{"accessKey", accessKey.AccessKey},
 	}
 	err = w.WriteAll(fileData)
 	if err != nil {
@@ -98,6 +104,9 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 }
 
 func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
+	if _, err := a.checkProjectOwnerOrLead(ctx, request.ScopeId); err != nil {
+		return nil, err
+	}
 	userIdStr := apis.GetUserID(ctx)
 	req := &tokenpb.CreateTokenRequest{
 		Type:        mysqltokenstore.AccessKey.String(),
@@ -151,6 +160,9 @@ func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.Dele
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if _, err := a.checkProjectOwnerOrLead(ctx, token.ScopeId); err != nil {
+		return nil, err
+	}
 	akRequest := &tokenpb.DeleteTokenRequest{
 		Id: request.Id,
 	}
@@ -173,6 +185,9 @@ func (a *accessKeyService) GetAccessKey(ctx context.Context, request *pb.GetAcce
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if _, err := a.checkProjectOwnerOrLead(ctx, token.ScopeId); err != nil {
+		return nil, err
+	}
 	result := &pb.GetAccessKeyResponse{
 		Data: &pb.AccessKeysItem{
 			Id:          token.Id,
@@ -192,9 +207,45 @@ func (a *accessKeyService) GetAccessKeyItem(ctx context.Context, Id string) (*to
 	akRequest := &tokenpb.GetTokenRequest{
 		Id: Id,
 	}
-	accessKey, err := a.p.TokenService.GetToken(ctx, akRequest)
+	accessKey, err := a.p.TokenService.GetToken(apis.WithInternalClientContext(ctx, discover.SvcMSP), akRequest)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return accessKey.Data, nil
+}
+
+func (a *accessKeyService) checkProjectOwnerOrLead(ctx context.Context, scopeID string) (uint64, error) {
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return 0, errors.NewUnauthorizedError("missing user identity")
+	}
+	projectData, err := a.p.Tenant.GetTenantProject(ctx, &tenantpb.GetTenantProjectRequest{ScopeId: scopeID})
+	if err != nil {
+		return 0, errors.NewInternalServerError(err)
+	}
+	if projectData == nil || projectData.Data == nil {
+		return 0, errors.NewNotFoundError("tenant project")
+	}
+	projectID, err := strconv.ParseUint(projectData.Data.ProjectId, 10, 64)
+	if err != nil {
+		return 0, errors.NewInternalServerError(err)
+	}
+	role, err := a.p.bdl.ScopeRoleAccess(userID, &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.ProjectScope,
+			ID:   strconv.FormatUint(projectID, 10),
+		},
+	})
+	if err != nil {
+		return 0, errors.NewInternalServerError(err)
+	}
+	if role == nil || !role.Access {
+		return 0, errors.NewPermissionError("access-key", "view", "project access denied")
+	}
+	for _, r := range role.Roles {
+		if r == bundle.RoleProjectOwner || r == bundle.RoleProjectLead {
+			return projectID, nil
+		}
+	}
+	return 0, errors.NewPermissionError("access-key", "view", "only project Owner or Lead can manage access keys")
 }

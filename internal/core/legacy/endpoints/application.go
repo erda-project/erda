@@ -858,8 +858,8 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 	}
 
 	token := ""
-	if withProjectToken {
-		res, err := e.tokenService.QueryTokens(ctx, &tokenpb.QueryTokensRequest{
+	if withProjectToken && userID != "" {
+		res, err := e.tokenService.QueryTokens(apis.WithInternalClientContext(ctx, discover.SvcErdaServer), &tokenpb.QueryTokensRequest{
 			Scope:     string(apistructs.OrgScope),
 			ScopeId:   strconv.FormatInt(application.OrgID, 10),
 			Type:      mysqltokenstore.PAT.String(),

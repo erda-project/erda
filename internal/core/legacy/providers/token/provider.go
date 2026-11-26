@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/token/pb"
+	legacyDao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -37,8 +38,9 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.tokenService = &TokenService{
-		logger: p.Log,
-		dao:    &dao{db: p.DB},
+		logger:          p.Log,
+		dao:             &dao{db: p.DB},
+		sysAdminChecker: &legacyDao.DBClient{DB: p.DB},
 	}
 	if p.Register != nil {
 		pb.RegisterTokenServiceImp(p.Register, p.tokenService, apis.Options())
