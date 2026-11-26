@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	tokenstore "github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/secret"
@@ -83,7 +84,7 @@ func (s *TokenService) prepareQuery(ctx context.Context, req *pb.QueryTokensRequ
 
 	if apis.IsInternalClient(ctx) {
 		if !hasFilter {
-			return false, fmt.Errorf("token query requires at least one explicit filter")
+			return false, errors.NewInvalidParameterError("filter", "at least one explicit filter is required")
 		}
 		return true, nil
 	}
@@ -98,7 +99,7 @@ func (s *TokenService) prepareQuery(ctx context.Context, req *pb.QueryTokensRequ
 			return false, nil
 		}
 		if req.CreatorId != "" && req.CreatorId != userID {
-			return false, fmt.Errorf("cannot query tokens created by another user")
+			return false, errors.NewPermissionError("token", "query", "cannot query tokens created by another user")
 		}
 		req.CreatorId = userID
 		return false, nil
@@ -106,7 +107,7 @@ func (s *TokenService) prepareQuery(ctx context.Context, req *pb.QueryTokensRequ
 
 	// Calls without an identity are in-process service calls. They still need an explicit filter.
 	if !hasFilter {
-		return false, fmt.Errorf("token query requires at least one explicit filter")
+		return false, errors.NewInvalidParameterError("filter", "at least one explicit filter is required")
 	}
 	return true, nil
 }
@@ -150,7 +151,7 @@ func (s *TokenService) authorizeTokenAccess(ctx context.Context, creatorID strin
 	if admin || creatorID == userID {
 		return nil
 	}
-	return fmt.Errorf("token not found")
+	return errors.NewNotFoundError("token")
 }
 
 func maskToken(token *pb.Token) {
