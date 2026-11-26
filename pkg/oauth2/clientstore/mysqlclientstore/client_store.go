@@ -30,11 +30,14 @@ type ClientStore struct {
 
 // ClientStoreItem data item
 type ClientStoreItem struct {
-	ID        string `gorm:"primary_key"`
-	Secret    string
-	Domain    string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID                      string `gorm:"primary_key"`
+	Secret                  string
+	PreviousSecret          string
+	PreviousSecretExpiresAt *time.Time
+	RotatedAt               *time.Time
+	Domain                  string
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
 }
 
 func (ClientStoreItem) TableName() string {
@@ -57,16 +60,24 @@ func (s *ClientStore) toClientInfo(item ClientStoreItem) oauth2.ClientInfo {
 
 // GetByID retrieves and returns client information by id
 func (s *ClientStore) GetByID(id string) (oauth2.ClientInfo, error) {
+	item, err := s.GetItemByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return s.toClientInfo(*item), nil
+}
+
+func (s *ClientStore) GetItemByID(id string) (*ClientStoreItem, error) {
 	if id == "" {
 		return nil, nil
 	}
 
 	var item ClientStoreItem
-	if err := s.db.Where("id = ?", id).Find(&item).Error; err != nil {
+	if err := s.db.Where("id = ?", id).First(&item).Error; err != nil {
 		return nil, err
 	}
 
-	return s.toClientInfo(item), nil
+	return &item, nil
 }
 
 // Create creates and stores the new client information

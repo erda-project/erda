@@ -32,7 +32,7 @@ var (
 
 type config struct {
 	ClientID     string `env:"CLIENT_ID" default:"action-runner"`
-	ClientSecret string `env:"CLIENT_SECRET" default:"devops/action-runner"`
+	ClientSecret string `env:"CLIENT_SECRET"`
 	RunnerUserID string `env:"RUNNER_USER_ID" default:"1111"`
 }
 

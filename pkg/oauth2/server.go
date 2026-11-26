@@ -15,8 +15,13 @@
 package oauth2
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -31,7 +36,8 @@ import (
 )
 
 type OAuth2Server struct {
-	srv *server.Server
+	srv         *server.Server
+	clientStore *mysqlclientstore.ClientStore
 }
 
 func (o *OAuth2Server) Server() *server.Server {
@@ -46,7 +52,11 @@ func NewOAuth2Server() *OAuth2Server {
 		IsGenerateRefresh: false,
 	})
 
-	manager.MustClientStorage(mysqlclientstore.NewClientStore())
+	clientStore, err := mysqlclientstore.NewClientStore()
+	if err != nil {
+		panic(err)
+	}
+	manager.MustClientStorage(clientStore, nil)
 	manager.MustTokenStorage(mysqltokenstore.NewTokenStore(mysqltokenstore.WithTokenStoreGCInterval(time.Second * 30)))
 
 	// jwt token generate
@@ -67,16 +77,88 @@ func NewOAuth2Server() *OAuth2Server {
 	})
 
 	return &OAuth2Server{
-		srv: srv,
+		srv:         srv,
+		clientStore: clientStore,
 	}
 }
 
-// {{openapi}}/oauth2/token?grant_type=client_credentials&client_id=pipeline&client_secret=devops/pipeline&scope=read
+// {{openapi}}/oauth2/token?grant_type=client_credentials&client_id=<client-id>&client_secret=<client-secret>&scope=read
 func (o *OAuth2Server) Token(w http.ResponseWriter, r *http.Request) {
+	o.rewriteExpiredPreviousSecret(r)
 	err := o.srv.HandleTokenRequest(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+}
+
+// rewriteExpiredPreviousSecret keeps the old client secret valid during a rotation window.
+// The oauth2 client store only exposes one secret, so requests using previous_secret are
+// rewritten to the current secret before the library validates the client.
+func (o *OAuth2Server) rewriteExpiredPreviousSecret(r *http.Request) {
+	if o == nil || o.clientStore == nil {
+		return
+	}
+	clientID, clientSecret, source := extractClientCredentials(r)
+	if clientID == "" || clientSecret == "" {
+		return
+	}
+	stored, err := o.clientStore.GetItemByID(clientID)
+	if err != nil {
+		return
+	}
+	if stored == nil || stored.PreviousSecret == "" || stored.PreviousSecret != clientSecret {
+		return
+	}
+	if stored.PreviousSecretExpiresAt == nil || time.Now().After(*stored.PreviousSecretExpiresAt) {
+		return
+	}
+	switch source {
+	case "basic":
+		r.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(clientID+":"+stored.Secret)))
+	case "query":
+		values := r.URL.Query()
+		values.Set("client_secret", stored.Secret)
+		r.URL.RawQuery = values.Encode()
+	case "form":
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return
+		}
+		values, err := url.ParseQuery(string(body))
+		if err != nil {
+			return
+		}
+		values.Set("client_secret", stored.Secret)
+		rewritten := []byte(values.Encode())
+		r.Body = io.NopCloser(bytes.NewReader(rewritten))
+		r.ContentLength = int64(len(rewritten))
+		r.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(rewritten)), nil
+		}
+	}
+}
+
+func extractClientCredentials(r *http.Request) (clientID, clientSecret, source string) {
+	if username, password, ok := r.BasicAuth(); ok {
+		return username, password, "basic"
+	}
+	if id := r.URL.Query().Get("client_id"); id != "" {
+		return id, r.URL.Query().Get("client_secret"), "query"
+	}
+	if strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/x-www-form-urlencoded") && r.Body != nil {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return "", "", ""
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		r.ContentLength = int64(len(body))
+		values, err := url.ParseQuery(string(body))
+		if err != nil {
+			return "", "", ""
+		}
+		return values.Get("client_id"), values.Get("client_secret"), "form"
+	}
+	return "", "", ""
 }
 
 // {{openapi}}/oauth2/invalidate_token?access_token=xxx

@@ -77,7 +77,7 @@ type Conf struct {
 
 	// openapi oauth2 token client
 	OpenapiOAuth2TokenClientID     string `env:"OPENAPI_OAUTH2_TOKEN_CLIENT_ID" default:"pipeline"`
-	OpenapiOAuth2TokenClientSecret string `env:"OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET" default:"devops/pipeline"`
+	OpenapiOAuth2TokenClientSecret string `env:"OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET"`
 
 	// DisablePipelineVolume default is false, means enable context volumes
 	DisablePipelineVolume bool `env:"DISABLE_PIPELINE_VOLUME" default:"false"`
