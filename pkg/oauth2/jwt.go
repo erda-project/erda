@@ -74,6 +74,13 @@ func (a *JWTAccessGenerate) Token(data *oauth2.GenerateBasic, isGenRefresh bool)
 	if err := json.NewDecoder(data.Request.Body).Decode(&payload); err != nil && err != io.EOF {
 		return "", "", fmt.Errorf("failed to json decode payload from request body, err: %v", err)
 	}
+	clientID := ""
+	if data.Client != nil {
+		clientID = data.Client.GetID()
+	}
+	if err := validateOAuth2TokenPayload(clientID, &payload); err != nil {
+		return "", "", err
+	}
 
 	// expire_in
 	if payload.AccessTokenExpiredIn == "" {
@@ -134,6 +141,61 @@ func (a *JWTAccessGenerate) Token(data *oauth2.GenerateBasic, isGenRefresh bool)
 	}
 
 	return access, refresh, nil
+}
+
+var oauth2MetadataAllowlist = map[string]map[string]struct{}{
+	"openapi": {
+		"user-id": {},
+	},
+	"pipeline": {
+		"user-id":                {},
+		"org-id":                 {},
+		"internal-client":        {},
+		"internal-action-client": {},
+		"pipelineid":             {},
+		"taskid":                 {},
+	},
+	"orchestrator": {
+		"internal-client": {},
+		"org-id":          {},
+		"runtimeid":       {},
+	},
+	"action-runner": {
+		"user-id": {},
+	},
+	"fdp": {
+		"uuid":            {},
+		"user-id":         {},
+		"org-id":          {},
+		"internal-client": {},
+	},
+	"elf": {
+		"user-id":         {},
+		"org-id":          {},
+		"internal-client": {},
+	},
+}
+
+func validateOAuth2TokenPayload(clientID string, payload *apistructs.OAuth2TokenPayload) error {
+	if payload == nil {
+		return nil
+	}
+	if payload.AllowAccessAllAPIs && clientID != "openapi" {
+		return fmt.Errorf("allowAccessAllApIs is not permitted for client %q", clientID)
+	}
+	allowed, ok := oauth2MetadataAllowlist[clientID]
+	if !ok {
+		allowed = map[string]struct{}{
+			"user-id": {},
+			"org-id":  {},
+		}
+	}
+	for key := range payload.Metadata {
+		if _, ok := allowed[strings.ToLower(key)]; !ok {
+			return fmt.Errorf("metadata key %q is not permitted for client %q", key, clientID)
+		}
+	}
+	return nil
 }
 
 func (a *JWTAccessGenerate) isEs() bool {

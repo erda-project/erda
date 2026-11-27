@@ -1734,6 +1734,9 @@ func (fsm *DeployFSMContext) generateRuntimeFileToken() error {
 	if fsm.Runtime.FileToken != "" {
 		return nil
 	}
+	if conf.TokenClientSecret() == "" {
+		return fmt.Errorf("missing TOKEN_CLIENT_SECRET for orchestrator client %q", conf.TokenClientID())
+	}
 	if tokeninfo, err := fsm.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
 		ClientID:     conf.TokenClientID(),
 		ClientSecret: conf.TokenClientSecret(),

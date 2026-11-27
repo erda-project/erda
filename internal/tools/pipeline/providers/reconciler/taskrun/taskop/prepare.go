@@ -636,10 +636,13 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 
 	var tokenInfo *apistructs.OAuth2Token
 	var err error
+	if conf.OpenapiOAuth2TokenClientSecret() == "" {
+		return fmt.Errorf("missing OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET for pipeline client %q", conf.OpenapiOAuth2TokenClientID())
+	}
 	// the applied token can only request the get-bootstrap-info api, and ensure that pipelineID and taskID must match
 	req := apistructs.OAuth2TokenGetRequest{
-		ClientID:     "pipeline",
-		ClientSecret: "devops/pipeline",
+		ClientID:     conf.OpenapiOAuth2TokenClientID(),
+		ClientSecret: conf.OpenapiOAuth2TokenClientSecret(),
 		Payload: apistructs.OAuth2TokenPayload{
 			AccessTokenExpiredIn: "0", // there is currently no timeout period from the time the token is applied until the agent runs, so setting 0 means it will not expire
 			AllowAccessAllAPIs:   false,

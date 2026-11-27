@@ -17,6 +17,7 @@ package action_runner_scheduler
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/action_runner_scheduler/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -66,6 +67,9 @@ func (s *runnerTaskService) GetRunnerTask(ctx context.Context, req *pb.RunnerTas
 }
 
 func (s *runnerTaskService) FetchRunnerTask(ctx context.Context, req *pb.RunnerTaskFetchRequest) (*pb.RunnerTaskFetchResponse, error) {
+	if s.p.Cfg.ClientSecret == "" {
+		return nil, apierrors.ErrFetchRunnerTask.InternalError(fmt.Errorf("missing CLIENT_SECRET for action-runner client %q", s.p.Cfg.ClientID))
+	}
 	task, err := s.dbClient.GetFirstPendingTask(req.OrgId)
 	if err != nil {
 		return nil, apierrors.ErrFetchRunnerTask.InternalError(err)
