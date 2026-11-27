@@ -126,9 +126,12 @@ func getOpenapiToken() (string, error) {
 		AccessToken string `json:"access_token"`
 	}
 	clientID := strings.TrimSpace(os.Getenv("OPENAPI_OAUTH2_TOKEN_CLIENT_ID"))
+	if clientID == "" {
+		clientID = "pipeline"
+	}
 	clientSecret := strings.TrimSpace(os.Getenv("OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET"))
-	if clientID == "" || clientSecret == "" {
-		return "", errors.Errorf("missing OpenAPI OAuth2 client credentials: set OPENAPI_OAUTH2_TOKEN_CLIENT_ID and OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET")
+	if clientSecret == "" {
+		return "", errors.Errorf("missing OpenAPI OAuth2 client secret: set OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET")
 	}
 	authHeader := base64.StdEncoding.EncodeToString([]byte(clientID + ":" + clientSecret))
 	resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
